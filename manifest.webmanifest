@@ -1,1 +1,1 @@
-{"name":"Card Vault","short_name":"CardVault","start_url":"./","display":"standalone","background_color":"#080c18","theme_color":"#0b1020","description":"Colección y radar privado de cartas PSA, local-first."}
+{"name":"Card Vault","short_name":"CardVault","start_url":"./","display":"standalone","orientation":"portrait","background_color":"#080c18","theme_color":"#080c18","description":"Colección y radar privado de cartas PSA, local-first."}
