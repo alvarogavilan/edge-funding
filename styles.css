@@ -15,3 +15,9 @@ nav button{min-height:46px;line-height:1.05}
 .scanStatus{padding:12px;border-radius:13px;background:#0f1a31;border:1px solid #293b61;color:#c7d5f5;font-size:13px;line-height:1.35}
 .autoMatch{display:grid;gap:7px}.matchBtn{text-align:left;background:#182440;border:1px solid #31456e}
 .cardFields{display:grid;gap:10px}
+
+.statsGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 14px}
+.statsGrid>div{background:#101727;border:1px solid #26324d;border-radius:15px;padding:12px}
+.statsGrid span{display:block;color:#8f99b2;font-size:11px;margin-bottom:5px}
+.statsGrid b{font-size:17px}
+#radarSummary{margin-top:12px}
