@@ -11,7 +11,7 @@ const invested=()=>state.cards.reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase|
 const drafts=()=>state.cards.filter(x=>x.draft).length;
 const gain=()=>total()-invested();function save(){localStorage.setItem(KEY,JSON.stringify(state))}
 function forecast(x){let obs=state.market.filter(m=>m.name.toLowerCase()===x.name.toLowerCase()&&String(m.grade||"")===String(x.grade||"")&&m.kind==="sold").slice(-12);if(obs.length<3)return null;let a=obs.map(o=>o.price),first=a.slice(0,Math.ceil(a.length/2)).reduce((s,n)=>s+n,0)/Math.ceil(a.length/2),last=a.slice(Math.floor(a.length/2)).reduce((s,n)=>s+n,0)/(a.length-Math.floor(a.length/2)),trend=Math.max(-.25,Math.min(.25,(last-first)/Math.max(first,1)));return {low:x.value*(1+trend*.5),base:x.value*(1+trend),high:x.value*(1+trend*1.75),evidence:obs.length}}
-async function hydratePhotos(){for(const x of state.cards){if(x.photoKey&&!x.photoURL){let b=await photoGet(x.photoKey);if(b)x.photoURL=URL.createObjectURL(b)}}render()}function render(){let q=(document.querySelector("#searchCards")?.value||"").toLowerCase(),ft=document.querySelector("#filterType")?.value||"",visible=state.cards.filter(x=>(!ft||(x.grading||"PSA")===ft)&&(!q||[x.name,x.set,x.number,x.cert].join(" ").toLowerCase().includes(q)));document.querySelector("#cards").innerHTML=visible.map(x=>{let p=x.purchase!=null?((x.value-x.purchase)*qty(x)):null;return `<article class="card" onclick="editCard(\`${x.id}\`)"><div class="thumb">${x.photoURL?`<img src="${x.photoURL}">`:x.photo?`<img src="${x.photo}">`:x.referenceImage?`<img src="${x.referenceImage}" alt="${x.name}">`:x.icon||"🃏"}</div><div><h3>${x.draft?"⚠️ ":""}${x.name}</h3><div class="meta">${x.number?x.number+" · ":""}${x.set||""}<br>${x.cert?"Cert. "+x.cert:""}${qty(x)>1?" · Cant. "+qty(x):""}</div><span class="grade">${x.grading||"PSA"} ${x.grade||""}</span></div><div class="price">${euro(x.value)}${forecast(x)?`<div class="future">12m ≈ ${euro(forecast(x).base)}</div>`:""}${p==null?"":`<div class="profit ${p>=0?"up":"down"}">${p>=0?"+":""}${euro(p)}</div>`}</div></article>`}).join("");document.querySelector("#total").textContent=euro(total());document.querySelector("#count").textContent=state.cards.reduce((n,x)=>n+qty(x),0)+" cartas";
+async function hydratePhotos(){for(const x of state.cards){if(x.photoKey&&!x.photoURL){let b=await photoGet(x.photoKey);if(b)x.photoURL=URL.createObjectURL(b)}}render()}function render(){let q=(document.querySelector("#searchCards")?.value||"").toLowerCase(),ft=document.querySelector("#filterType")?.value||"",visible=state.cards.filter(x=>(!ft||(x.grading||"PSA")===ft)&&(!q||[x.name,x.set,x.number,x.cert].join(" ").toLowerCase().includes(q)));document.querySelector("#cards").innerHTML=visible.map(x=>{let p=x.purchase!=null?((x.value-x.purchase)*qty(x)):null;return `<article class="card" onclick="editCard(\`${x.id}\`)"><div class="thumb">${x.photoURL?`<img src="${x.photoURL}">`:x.photo?`<img src="${x.photo}">`:x.referenceImage?`<img src="${x.referenceImage}" alt="${x.name}">`:x.icon||"🃏"}</div><div><h3>${x.draft?"⚠️ ":""}${x.name}</h3><div class="meta">${x.number?x.number+" · ":""}${x.set||""}<br>${x.cert?"Cert. "+x.cert:""}${qty(x)>1?" · Cant. "+qty(x):""}</div><span class="grade">${x.grading||"PSA"} ${x.grade||""}</span>${x.recognition?.score?`<div class="recognition">Reconocimiento ${x.recognition.score}%</div>`:""}</div><div class="price">${euro(x.value)}${forecast(x)?`<div class="future">12m ≈ ${euro(forecast(x).base)}</div>`:""}${p==null?"":`<div class="profit ${p>=0?"up":"down"}">${p>=0?"+":""}${euro(p)}</div>`}</div></article>`}).join("");document.querySelector("#total").textContent=euro(total());document.querySelector("#count").textContent=state.cards.reduce((n,x)=>n+qty(x),0)+" cartas";
 let cs=document.querySelector("#collectionStats");if(cs){let g=gain(),inv=invested();cs.innerHTML=
 '<div><span>Valor actual</span><b>'+euro(total())+'</b></div>'+
 '<div><span>Invertido</span><b>'+euro(inv)+'</b></div>'+
@@ -38,28 +38,37 @@ function guessFromOCR(text){
   const year=(raw.match(/\b(19\d{2}|20\d{2})\b/)||[])[0]||"";
   const language=/\bESPAÑOL|SPANISH\b/i.test(raw)?"Español":/\bJAPANESE|JAPON[EÉ]S\b/i.test(raw)?"Japonés":/\bENGLISH\b/i.test(raw)?"Inglés":"";
   const stop=/POK[EÉ]MON|TRAINER|ENERGY|BASIC|STAGE|PSA|GEM|MINT|HP|SVP|ILLUSTRATION|RARE|HOLO|CARD/i;
-  let name=lines.find(x=>x.length>=3&&x.length<=35&&!stop.test(x)&&!/^\d/.test(x))||"";
+  let name=lines.find(x=>x.length>=3&&x.length<=28&&!stop.test(x)&&!/^\d/.test(x)&&/^[A-Za-zÀ-ÿ0-9 .\-]+$/.test(x)&&(/[A-Za-zÀ-ÿ]{3,}/.test(x)))||"";
   return {number,cert,grade,grading,year,language,name};
 }
-async function findCardMeta(g){
+async function queryCards(q){
   try{
-    let q=[];
-    if(g.number)q.push("number:"+g.number.split("/")[0]);
-    if(g.name)q.push('name:"'+g.name.replace(/"/g,"")+'"');
-    if(!q.length)return [];
-    let u="https://api.scrydex.com/pokemon/v1/cards?page_size=12&q="+encodeURIComponent(q.join(" "));
+    let u="https://api.scrydex.com/pokemon/v1/cards?page_size=30&q="+encodeURIComponent(q);
     let r=await fetch(u); if(!r.ok)return [];
     let j=await r.json(); return j.data||j.cards||[];
   }catch{return []}
+}
+async function findCardMeta(g){
+  let tries=[];
+  if(g.number)tries.push("number:"+g.number.replace(/\s/g,""));
+  if(g.number)tries.push("number:"+g.number.split("/")[0]);
+  if(g.name&&g.number)tries.push('name:"'+g.name.replace(/"/g,"")+'" number:'+g.number.split("/")[0]);
+  if(g.name)tries.push('name:"'+g.name.replace(/"/g,"")+'"');
+  let seen=new Map();
+  for(const q of tries){
+    for(const c of await queryCards(q)){let k=c.id||(c.name+"|"+c.number);if(!seen.has(k))seen.set(k,c)}
+    if(seen.size>=12)break;
+  }
+  return [...seen.values()];
 }
 
 function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function tokenScore(a,b){let A=new Set(norm(a).split(" ").filter(Boolean)),B=new Set(norm(b).split(" ").filter(Boolean));if(!A.size||!B.size)return 0;let hit=[...A].filter(x=>B.has(x)).length;return hit/Math.max(A.size,B.size)}
 function candidateScore(c,g){
-  let s=0, cn=String(c.number||"").replace(/\s/g,""), gn=String(g.number||"").replace(/\s/g,"");
-  if(cn&&gn){if(cn===gn)s+=70;else if(cn.split("/")[0]===gn.split("/")[0])s+=45}
-  s+=Math.round(tokenScore(c.name,g.name)*25);
-  if(g.year&&String(c.expansion?.release_date||c.expansion?.releaseDate||"").startsWith(g.year))s+=5;
+  let s=0,cn=String(c.number||"").replace(/\s/g,"").toLowerCase(),gn=String(g.number||"").replace(/\s/g,"").toLowerCase();
+  if(cn&&gn){if(cn===gn)s+=82;else if(cn.split("/")[0]===gn.split("/")[0])s+=48}
+  let ns=tokenScore(c.name,g.name);if(ns>=.5)s+=Math.round(ns*15);
+  if(g.year&&String(c.expansion?.release_date||c.expansion?.releaseDate||"").startsWith(g.year))s+=3;
   return Math.min(100,s)
 }
 function bestCandidate(found,g){
@@ -71,19 +80,25 @@ function marketValueFor(name,grading,grade){
   let mid=Math.floor(sold.length/2), med=sold.length%2?sold[mid]:(sold[mid-1]+sold[mid])/2;
   return {value:med,count:sold.length}
 }
+async function cropForOCR(file){
+  return new Promise((ok,no)=>{let im=new Image(),r=new FileReader();r.onload=()=>im.src=r.result;r.onerror=no;im.onload=()=>{let w=im.width,h=im.height,x=w*.08,y=h*.05,cw=w*.84,ch=h*.9,cv=document.createElement("canvas");cv.width=Math.min(1400,Math.round(cw));cv.height=Math.round(cv.width*ch/cw);cv.getContext("2d").drawImage(im,x,y,cw,ch,0,0,cv.width,cv.height);cv.toBlob(ok,"image/jpeg",.9)};r.readAsDataURL(file)})
+}
 async function analyzeCardFile(file){
   if(!window.Tesseract)throw new Error("OCR no disponible");
-  const res=await Tesseract.recognize(file,"eng");
-  const g=guessFromOCR(res.data.text);
-  const found=await findCardMeta(g);
-  const best=bestCandidate(found,g);
+  let res=await Tesseract.recognize(file,"eng"),g=guessFromOCR(res.data.text),found=await findCardMeta(g),best=bestCandidate(found,g);
+  if(!best||best.score<75){
+    try{
+      let crop=await cropForOCR(file),res2=await Tesseract.recognize(crop,"eng"),g2=guessFromOCR(res2.data.text),found2=await findCardMeta(g2),best2=bestCandidate(found2,g2);
+      if((best2?.score||0)>(best?.score||0)){g=g2;found=found2;best=best2}
+    }catch{}
+  }
   return {g,found,best};
 }
 function cardFromRecognition(id,blob,r){
   const g=r.g||{}, best=r.best, c=best?.c||null, confident=!!best&&best.score>=75;
-  const img=c?.images?.[0], name=confident?(c.name||g.name):g.name, grading=g.grading||"RAW", grade=g.grade||"";
+  const img=c?.images?.[0], name=confident?(c.name||"Carta identificada"):"Carta por identificar", grading=g.grading||"RAW", grade=g.grade||"";
   const mv=marketValueFor(name,grading,grade);
-  return {id,name:name||"Carta por identificar",set:confident?(c.expansion?.name||c.set?.name||""):"",number:confident?(c.number||g.number||""):(g.number||""),year:confident?String(c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").slice(0,4):(g.year||""),language:confident?(c.language_code||c.language||g.language||""):(g.language||""),grading,grade,cert:g.cert||"",value:mv?.value||0,valueEvidence:mv?.count||0,purchase:null,quantity:1,purchaseDate:"",referenceImage:img?(img.large||img.medium||img.small||""):"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:!confident,recognition:{score:best?.score||0,source:confident?"catalog+ocr":"ocr",at:new Date().toISOString()},createdAt:new Date().toISOString()}
+  return {id,name:name||"Carta por identificar",set:confident?(c.expansion?.name||c.set?.name||""):"",number:confident?(c.number||g.number||""):(g.number||""),year:confident?String(c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").slice(0,4):(g.year||""),language:confident?(c.language_code||c.language||g.language||""):(g.language||""),grading,grade,cert:g.cert||"",value:mv?.value||0,valueEvidence:mv?.count||0,purchase:null,quantity:1,purchaseDate:"",referenceImage:img?(img.large||img.medium||img.small||""):"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:!confident,recognition:{score:best?.score||0,source:confident?"catalog+ocr":"ocr-pendiente",ocrName:g.name||"",ocrNumber:g.number||"",at:new Date().toISOString()},createdAt:new Date().toISOString()}
 }
 function applyCandidate(c,g={}){
   if(!c)return;
@@ -103,7 +118,7 @@ async function scanCardFile(file){
   try{
     const r=await analyzeCardFile(file),g=r.g,best=r.best;
     if(form.elements.grading)form.elements.grading.value=g.grading;
-    for(const k of ["name","number","year","language","cert","grade"])if(g[k]&&form.elements[k])form.elements[k].value=g[k];
+    for(const k of ["number","year","language","cert","grade"])if(g[k]&&form.elements[k])form.elements[k].value=g[k];
     if(best&&best.score>=75){
       applyCandidate(best.c,g);form.dataset.recognitionScore=best.score;
       const mv=marketValueFor(form.elements.name.value,form.elements.grading.value,form.elements.grade.value);
@@ -118,7 +133,7 @@ async function scanCardFile(file){
       box.querySelectorAll("[data-match]").forEach(b=>b.onclick=()=>{applyCandidate(r.found[+b.dataset.match],g);box.classList.add("hidden");st.textContent="✅ Carta seleccionada. Pulsa «Guardar carta»."});
       return;
     }
-    st.textContent="⚠️ He leído la foto, pero no pude identificarla con seguridad. Prueba con una foto frontal más nítida.";
+    form.elements.name.value="";st.textContent="⚠️ No voy a guardar un nombre dudoso. He conservado lo que sí pude leer. Prueba otra foto o elige una coincidencia.";
   }catch(e){st.textContent="⚠️ No pude reconocerla automáticamente. Prueba con una foto frontal, nítida y sin reflejos."}
 }
 
