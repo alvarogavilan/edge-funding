@@ -1,10 +1,15 @@
-# Edge Funding
+# Card Vault
 
-**Automated crypto funding rate arbitrage with AI-powered sustainability analysis.**
+Aplicación privada, iPhone-first y local-first para colección PSA y radar de mercado.
 
-Escanea Bybit y Binance en tiempo real, identifica oportunidades de arbitraje neutral (largo spot + corto perpetuo) y analiza si el funding es sostenible o una trampa. El sistema se ejecuta 24/7 en Cloudflare Workers + Python local.
+## Principios
+- Cero gasto recurrente.
+- Sin backend propio en V1.
+- Datos de colección almacenados en el dispositivo mediante almacenamiento local.
+- Sin GitHub Actions.
+- Preparada para añadir fuentes gratuitas/permitidas de mercado y migrar a backend opcional en el futuro.
 
----
+## V1
+Dashboard, colección inicial, watchlist, snapshots locales y esqueleto de Radar PSA 10.
 
-## Arquitectura
-
+> GitHub aloja únicamente el código durante el desarrollo; no es la base de datos de la colección.
