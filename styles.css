@@ -31,4 +31,4 @@ nav button{min-height:46px;line-height:1.05}
 .candidateCard img{width:54px;height:74px;object-fit:contain;border-radius:6px;background:#fff1}
 .candidateCard span{display:grid;gap:3px}.candidateCard small{font-size:10px;color:#9eabc9}
 #clearTests{background:#3a2025}
-.scanStatus{min-height:42px}.miniActions button:disabled{opacity:.55}
+.scanStatus{min-height:42px}.miniActions button:disabled{opacity:.55}.scanStatus{white-space:normal}
