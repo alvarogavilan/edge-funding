@@ -26,3 +26,8 @@ nav button{min-height:46px;line-height:1.05}
 .cameraPhoto{background:#152038;border:1px solid #33466e;text-align:center}
 @media(max-width:380px){.photoChoice{grid-template-columns:1fr}}
 .recognition{margin-top:5px;font-size:10px;color:#91a9d9}.miniActions #reanalyzePending{background:#24365f}.scanStatus.hidden{display:none}
+.version{font-size:10px;vertical-align:middle;color:#91a9d9;font-weight:700}
+.candidateCard{display:grid;grid-template-columns:54px 1fr;gap:10px;align-items:center;text-align:left;width:100%;padding:8px;background:#141f38;border:1px solid #2f4269}
+.candidateCard img{width:54px;height:74px;object-fit:contain;border-radius:6px;background:#fff1}
+.candidateCard span{display:grid;gap:3px}.candidateCard small{font-size:10px;color:#9eabc9}
+#clearTests{background:#3a2025}
