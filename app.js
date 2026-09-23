@@ -41,27 +41,34 @@ function guessFromOCR(text){
   let name=lines.find(x=>x.length>=3&&x.length<=28&&!stop.test(x)&&!/^\d/.test(x)&&/^[A-Za-zÀ-ÿ0-9 .\-]+$/.test(x)&&(/[A-Za-zÀ-ÿ]{3,}/.test(x)))||"";
   return {number,cert,grade,grading,year,language,name:""};
 }
-async function queryCards(q){
-  try{
-    let u="https://api.scrydex.com/pokemon/v1/cards?page_size=60&q="+encodeURIComponent(q);
-    let r=await fetch(u,{headers:{"Accept":"application/json"}});if(!r.ok)return[];
-    let j=await r.json();return j.data||j.cards||[];
-  }catch{return[]}
+async function tcgdexList(lang){
+  try{let r=await fetch("https://api.tcgdex.net/v2/"+lang+"/cards");if(!r.ok)return[];return await r.json()}catch{return[]}
 }
+async function tcgdexCard(lang,id){
+  try{let r=await fetch("https://api.tcgdex.net/v2/"+lang+"/cards/"+encodeURIComponent(id));if(!r.ok)return null;return await r.json()}catch{return null}
+}
+function normNum(v){return String(v||"").replace(/\s/g,"").replace(/^0+(?=\d)/,"").toLowerCase()}
 async function findCardMeta(g){
-  let seen=new Map(), tries=[];
-  if(g.number){
-    tries.push('printed_number:"'+g.number+'"');
-    tries.push("number:"+g.number.split("/")[0].replace(/^0+/,""));
-  }
-  for(const q of tries){
-    for(const c of await queryCards(q)){
-      let k=c.id||(c.name+"|"+c.printed_number+"|"+c.expansion?.id);
-      if(!seen.has(k))seen.set(k,c);
+  if(!g.number)return[];
+  const front=normNum(g.number.split("/")[0]);
+  const langs=["es","en"];
+  let out=[];
+  for(const lang of langs){
+    const list=await Promise.race([tcgdexList(lang),timeoutAfter(6000)]).catch(()=>[]);
+    const hits=(list||[]).filter(c=>normNum(c.localId)===front).slice(0,16);
+    for(const h of hits){
+      const full=await Promise.race([tcgdexCard(lang,h.id),timeoutAfter(4000)]).catch(()=>null);
+      if(full){
+        full._lang=lang;
+        full.printed_number=full.localId||h.localId||"";
+        full.expansion=full.set||full.expansion||{};
+        if(!full.images&&full.image)full.images=[{small:full.image+"/low.webp",medium:full.image+"/high.webp",large:full.image+"/high.webp"}];
+        out.push(full);
+      }
     }
-    if(seen.size===1&&q.startsWith("printed_number"))break;
+    if(out.length===1)break;
   }
-  return [...seen.values()];
+  return out;
 }
 function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function tokenScore(a,b){let A=new Set(norm(a).split(" ").filter(Boolean)),B=new Set(norm(b).split(" ").filter(Boolean));if(!A.size||!B.size)return 0;let hit=[...A].filter(x=>B.has(x)).length;return hit/Math.max(A.size,B.size)}
@@ -97,10 +104,10 @@ async function analyzeCardFile(file){
   return {g,found,best};
 }
 function cardFromRecognition(id,blob,r){
-  const g=r.g||{}, exact=(r.found||[]).filter(c=>String(c.printed_number||"").replace(/\s/g,"").toLowerCase()===String(g.number||"").replace(/\s/g,"").toLowerCase());
+  const g=r.g||{}, exact=(r.found||[]).filter(c=>normNum(c.localId||c.printed_number||c.number)===normNum((g.number||"").split("/")[0]));
   const c=exact.length===1?exact[0]:null, confident=!!c, img=c?.images?.[0], name=confident?(c.name||"Carta identificada"):"Carta por identificar",grading=g.grading||"RAW",grade=g.grade||"";
   const mv=confident?marketValueFor(name,grading,grade):null;
-  return {id,name,set:confident?(c.expansion?.name||c.set?.name||""):"",number:confident?(c.printed_number||c.number||g.number||""):(g.number||""),year:confident?String(c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").slice(0,4):(g.year||""),language:confident?(c.language_code||c.language||g.language||""):(g.language||""),grading,grade,cert:g.cert||"",value:mv?.value||0,valueEvidence:mv?.count||0,purchase:null,quantity:1,purchaseDate:"",referenceImage:img?(img.large||img.medium||img.small||""):"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:!confident,recognition:{score:confident?100:0,source:confident?"printed-number":"pending",at:new Date().toISOString()},createdAt:new Date().toISOString()}
+  return {id,name,set:confident?(c.set?.name||c.expansion?.name||""):"",number:confident?(c.localId||c.printed_number||c.number||g.number||""):(g.number||""),year:confident?String(c.set?.releaseDate||c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").slice(0,4):(g.year||""),language:confident?(c._lang==="es"?"Español":c._lang==="en"?"Inglés":(c.language_code||c.language||g.language||"")):(g.language||""),grading,grade,cert:g.cert||"",value:mv?.value||0,valueEvidence:mv?.count||0,purchase:null,quantity:1,purchaseDate:"",referenceImage:img?(img.large||img.medium||img.small||""):"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:!confident,recognition:{score:confident?100:0,source:confident?"printed-number":"pending",at:new Date().toISOString()},createdAt:new Date().toISOString()}
 }
 async function recognizeSavedCard(card,file){
   try{
@@ -119,19 +126,19 @@ function applyCandidate(c,g={}){
   if(!c)return;
   form.elements.name.value=c.name||g.name||"";
   form.elements.number.value=c.number||g.number||"";
-  form.elements.year.value=(c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").toString().slice(0,4);
-  form.elements.set.value=c.expansion?.name||c.set?.name||"";
-  form.elements.language.value=c.language_code||c.language||g.language||"";
+  form.elements.year.value=(c.set?.releaseDate||c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").toString().slice(0,4);
+  form.elements.set.value=c.set?.name||c.expansion?.name||"";
+  form.elements.language.value=c._lang==="es"?"Español":c._lang==="en"?"Inglés":(c.language_code||c.language||g.language||"");
   if(g.grading)form.elements.grading.value=g.grading;
   if(g.grade)form.elements.grade.value=g.grade;
   if(g.cert)form.elements.cert.value=g.cert;
-  const img=(c.images||[])[0]; if(img) form.dataset.referenceImage=img.large||img.medium||img.small||"";
+  const img=(c.images||[])[0]; if(img) form.dataset.referenceImage=img.large||img.medium||img.small||""; else if(c.image) form.dataset.referenceImage=c.image+"/high.webp";
 }
 async function scanCardFile(file){
   const st=document.querySelector("#scanStatus"),box=document.querySelector("#autoMatch");
   st.textContent="Leyendo número de colección, grado y certificado…";box.classList.add("hidden");box.innerHTML="";
   try{
-    const r=await analyzeCardFile(file),g=r.g,exact=r.found.filter(c=>String(c.printed_number||"").replace(/\s/g,"").toLowerCase()===String(g.number||"").replace(/\s/g,"").toLowerCase());
+    const r=await analyzeCardFile(file),g=r.g,exact=r.found.filter(c=>normNum(c.localId||c.printed_number||c.number)===normNum((g.number||"").split("/")[0]));
     if(form.elements.grading)form.elements.grading.value=g.grading;
     for(const k of ["number","year","language","cert","grade"])if(g[k]&&form.elements[k])form.elements[k].value=g[k];
     if(exact.length===1){
