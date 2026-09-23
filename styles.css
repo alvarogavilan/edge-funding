@@ -25,3 +25,4 @@ nav button{min-height:46px;line-height:1.05}
 .photoChoice{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cameraPhoto{background:#152038;border:1px solid #33466e;text-align:center}
 @media(max-width:380px){.photoChoice{grid-template-columns:1fr}}
+.recognition{margin-top:5px;font-size:10px;color:#91a9d9}
