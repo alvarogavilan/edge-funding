@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020"><title>Card Vault</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css">
+</head><body>
+<header><div><small>PRIVATE · LOCAL FIRST</small><h1>Card Vault</h1></div><button id="refresh">Actualizar</button></header>
+<main>
+<section class="hero"><p>Valor estimado</p><h2 id="total">€0</h2><div id="delta">Colección PSA · datos guardados en este iPhone</div></section>
+<nav><button data-tab="collection" class="active">Colección</button><button data-tab="radar">Radar</button><button data-tab="watch">Watchlist</button></nav>
+<section id="collection" class="tab"></section>
+<section id="radar" class="tab hidden"><h3>Radar PSA 10</h3><p class="muted">V1 local. Preparado para comparar oportunidades ≤20 / ≤30 / ≤40 € cuando conectemos fuentes gratuitas compatibles.</p><div class="filters"><button>≤20 €</button><button>≤30 €</button><button>≤40 €</button></div><div class="empty">Sin oportunidades verificadas todavía.</div></section>
+<section id="watch" class="tab hidden"><h3>Watchlist</h3><div id="watchList"></div><button id="addWatch">+ Añadir seguimiento</button></section>
+</main>
+<script src="app.js"></script></body></html>
