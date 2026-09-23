@@ -22,3 +22,6 @@ nav button{min-height:46px;line-height:1.05}
 .statsGrid b{font-size:17px}
 #radarSummary{margin-top:12px}
 .recognition{font-size:10px;color:#9fb7e8}.matchBtn{width:100%}
+.photoChoice{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cameraPhoto{background:#152038;border:1px solid #33466e;text-align:center}
+@media(max-width:380px){.photoChoice{grid-template-columns:1fr}}
