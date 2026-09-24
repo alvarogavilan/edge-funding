@@ -449,13 +449,13 @@ function readinessScore(){
   const photos=state.cards.filter(c=>c.photoKey),identified=photos.filter(c=>!c.draft&&c.recognition?.score>0);
   const scan=state.marketScan||[],signals=state.signalHistory||[],graded=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW"),pop=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt);
   const checks=[
-    {k:"code",ok:(state.selfTest?.pass||0)>=6,label:"Autotest técnico ≥6/7"},
+    {k:"code",ok:(state.selfTest?.pass||0)>=7,label:"Autotest técnico ≥7/8"},
     {k:"market",ok:scan.length>=20,label:"Market Lab con datos"},{k:"coverage",ok:(state.marketCoverage?.seen||0)>=120,label:"Cobertura acumulada ≥120 cartas"},
     {k:"recognition",ok:(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7&&state.photoValidation?.completed===true,label:"Reconocimiento real ≥70% (≥3 fotos)"},
     {k:"history",ok:signals.length>=50,label:"Histórico ≥50 señales"},
     {k:"graded",ok:graded.length>=4,label:"Comparables graduadas ≥4"},
     {k:"population",ok:pop.length>=1,label:"Población verificada"},
-    {k:"backup",ok:(state.selfTest?.results||[]).some(x=>x.label==="Backup serializable"&&x.ok),label:"Backup serializable"},{k:"integrity",ok:stateIntegrityReport().ok,label:"Integridad de datos local"},{k:"evidence",ok:marketEvidenceQuality().score>=60,label:"Evidencia de mercado ≥60/100"}
+    {k:"backup",ok:(state.selfTest?.results||[]).some(x=>x.label==="Backup serializable"&&x.ok)&&(state.selfTest?.results||[]).some(x=>x.label==="IndexedDB radar"&&x.ok),label:"Backup + radar local"},{k:"integrity",ok:stateIntegrityReport().ok,label:"Integridad de datos local"},{k:"evidence",ok:marketEvidenceQuality().score>=60,label:"Evidencia de mercado ≥60/100"}
   ];
   return {checks,score:Math.round(checks.filter(x=>x.ok).length/checks.length*100),identified:identified.length,photos:photos.length};
 }
@@ -466,7 +466,7 @@ function readinessBlockers(){
     if(c.k==="history")return "Acumula al menos 50 señales reales con escaneos.";
     if(c.k==="graded")return "Añade al menos 4 ventas cerradas comparables de cartas graduadas.";
     if(c.k==="population")return "Verifica población oficial de al menos una carta graduada.";
-    if(c.k==="code")return "Ejecuta el autotest técnico y supera al menos 6 de 7 pruebas.";
+    if(c.k==="code")return "Ejecuta el autotest técnico y supera al menos 7 de 8 pruebas.";
     if(c.k==="backup")return "Ejecuta el autotest para verificar el backup.";if(c.k==="integrity")return "Pulsa «Revisar y reparar» en Integridad local.";if(c.k==="evidence")return "Añade más ventas cerradas con fecha, moneda y URL de evidencia hasta alcanzar 60/100.";
     return c.label;
   })
@@ -801,6 +801,17 @@ function blobToDataURL(blob){return new Promise((ok,no)=>{let r=new FileReader()
   const exact=done.filter(c=>c.recognition?.source==="collector-number").length,assisted=done.filter(c=>c.recognition?.source==="collector-number+name-tokens").length;
   box.innerHTML='<h3>Reconocimiento de fotos</h3><div class="qaRow"><span>Fotos procesables</span><b>'+withPhoto.length+'</b></div><div class="qaRow"><span>Identificadas</span><b class="'+(done.length?"ok":"warn")+'">'+done.length+' · '+rate.toFixed(0)+'%</b></div><div class="qaRow"><span>Coincidencia exacta</span><b>'+exact+'</b></div><div class="qaRow"><span>Coincidencia asistida</span><b>'+assisted+'</b></div><div class="qaRow"><span>Pendientes</span><b class="'+(pending.length?"warn":"ok")+'">'+pending.length+'</b></div>';
 }
+async function testMarketStoreRoundtrip(){
+  const id="__cardvault_market_test__";
+  try{
+    await marketSignalPutMany([{id,name:"test",score:1,price:1}]);
+    const all=await marketSignalAll();
+    const ok=all.some(x=>x.id===id);
+    let t=db.transaction("marketSignals","readwrite"),r=t.objectStore("marketSignals").delete(id);
+    await new Promise((yes,no)=>{r.onsuccess=()=>yes();r.onerror=()=>no(r.error)});
+    return ok;
+  }catch{return false}
+}
 async function testIndexedDBRoundtrip(){
   const id="__cardvault_test__";try{const blob=new Blob(["ok"],{type:"text/plain"});await photoPut(id,blob);const got=await photoGet(id);await photoDel(id);return !!got&&got.size===2}catch{return false}
 }
@@ -825,11 +836,11 @@ async function runSelfTest(){
   const push=(label,ok)=>results.push({label,ok:!!ok});
   push("JavaScript cargado",true);
   push("Estado local",testLocalState());
-  push("IndexedDB lectura/escritura",await testIndexedDBRoundtrip());
+  push("IndexedDB fotos",await testIndexedDBRoundtrip());push("IndexedDB radar",await testMarketStoreRoundtrip());
   push("Catálogo TCGdex",await testCatalogConnectivity());
   push("Motor OCR cargado",!!window.Tesseract);
   push("Procesamiento de imagen",await testImagePipeline());
-  push("Backup serializable",(()=>{try{JSON.stringify({format:"cardvault-backup",state});return true}catch{return false}})());
+  push("Backup serializable",(()=>{try{JSON.stringify({format:"cardvault-backup",version:3,state});return true}catch{return false}})());
   state.selfTest={at:new Date().toISOString(),results,pass:results.filter(r=>r.ok).length};save();renderSelfTest();renderQA();renderReadiness();btn.disabled=false;
 }
 function valuationAuditData(){
@@ -864,7 +875,7 @@ function dataQualityScore(){
     {k:"preparacion",v:r.score,w:.35},
     {k:"mercado",v:m.score,w:.25},
     {k:"fotos",v:(photos.tested||0)>=3?Math.round((photos.rate||0)*100):0,w:.20},
-    {k:"autotest",v:Math.round(((self.pass||0)/7)*100),w:.20}
+    {k:"autotest",v:Math.round(((self.pass||0)/8)*100),w:.20}
   ];
   return {score:Math.round(parts.reduce((s,x)=>s+x.v*x.w,0)),parts};
 }
@@ -874,11 +885,11 @@ function renderValuationAudit(){
 }function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const checks=[["Build","V40","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/7",(state.selfTest?.pass||0)>=6?"ok":"warn"],["Prueba fotos",(state.photoValidation?.tested||0)?Math.round((state.photoValidation.rate||0)*100)+"%":"Sin prueba",(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  const checks=[["Build","V41","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/8",(state.selfTest?.pass||0)>=7?"ok":"warn"],["Prueba fotos",(state.photoValidation?.tested||0)?Math.round((state.photoValidation.rate||0)*100)+"%":"Sin prueba",(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
   box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();renderPhotoValidation();renderCertification();renderIntegrity();renderValuationAudit();renderMarketEvidence();
 }
-async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos y radar guardados localmente · copia completa disponible · "+(persisted?"almacenamiento persistente concedido":"haz copias periódicas en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:2,createdAt:new Date().toISOString(),state:clean,photos},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
-document.querySelector("#import").onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text()),s=x.format==="cardvault-backup"?x.state:x;if(!s.cards)throw 0;if(x.photos)for(const [id,data] of Object.entries(x.photos))await photoPut(id,dataURLToBlob(data));state=s;normalizePendingCards();save();await hydratePhotos();storageStatus();setTimeout(async()=>{let todo=state.cards.filter(c=>c.draft&&c.photoKey).slice(0,3);for(const c of todo){let b=await photoGet(c.photoKey);if(b)enqueueRecognition(c,b)}},700);alert("Backup completo restaurado")}catch(err){alert("Backup no válido o incompleto")}};
+async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos y radar guardados localmente · copia V3 completa · "+(persisted?"almacenamiento persistente concedido":"haz copias periódicas en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let marketSignals=await marketSignalAll().catch(()=>[]),clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:3,createdAt:new Date().toISOString(),state:clean,photos,marketSignals},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+document.querySelector("#import").onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text()),s=x.format==="cardvault-backup"?x.state:x;if(!s.cards)throw 0;if(x.photos)for(const [id,data] of Object.entries(x.photos))await photoPut(id,dataURLToBlob(data));if(x.marketSignals){await marketSignalClear();await marketSignalPutMany(x.marketSignals)}state=s;if(!state.schemaVersion||state.schemaVersion<41)state.schemaVersion=41;if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};state.marketCoverage.priced=await marketSignalCount().catch(()=>state.marketCoverage.priced||0);normalizePendingCards();save();await hydratePhotos();storageStatus();renderCoverage();setTimeout(async()=>{let todo=state.cards.filter(c=>c.draft&&c.photoKey).slice(0,3);for(const c of todo){let b=await photoGet(c.photoKey);if(b)enqueueRecognition(c,b)}},700);alert("Copia completa restaurada")}catch(err){alert("Copia no válida o incompleta")}};
 
 function normalizePendingCards(){
   let changed=false;
