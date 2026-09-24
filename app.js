@@ -324,13 +324,13 @@ function readinessScore(){
   const photos=state.cards.filter(c=>c.photoKey),identified=photos.filter(c=>!c.draft&&c.recognition?.score>0);
   const scan=state.marketScan||[],signals=state.signalHistory||[],graded=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW"),pop=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt);
   const checks=[
-    {k:"code",ok:true,label:"Código válido"},
+    {k:"code",ok:(state.selfTest?.pass||0)>=6,label:"Autotest técnico ≥6/7"},
     {k:"market",ok:scan.length>=20,label:"Market Lab con datos"},
     {k:"recognition",ok:photos.length>=3&&identified.length/photos.length>=.7,label:"Reconocimiento ≥70% en muestra"},
     {k:"history",ok:signals.length>=50,label:"Histórico ≥50 señales"},
     {k:"graded",ok:graded.length>=4,label:"Comparables graduadas ≥4"},
     {k:"population",ok:pop.length>=1,label:"Población verificada"},
-    {k:"backup",ok:true,label:"Backup/restauración disponible"}
+    {k:"backup",ok:(state.selfTest?.results||[]).some(x=>x.label==="Backup serializable"&&x.ok),label:"Backup serializable"}
   ];
   return {checks,score:Math.round(checks.filter(x=>x.ok).length/checks.length*100),identified:identified.length,photos:photos.length};
 }
@@ -604,11 +604,42 @@ function blobToDataURL(blob){return new Promise((ok,no)=>{let r=new FileReader()
   const exact=done.filter(c=>c.recognition?.source==="collector-number").length,assisted=done.filter(c=>c.recognition?.source==="collector-number+name-tokens").length;
   box.innerHTML='<h3>Reconocimiento de fotos</h3><div class="qaRow"><span>Fotos procesables</span><b>'+withPhoto.length+'</b></div><div class="qaRow"><span>Identificadas</span><b class="'+(done.length?"ok":"warn")+'">'+done.length+' · '+rate.toFixed(0)+'%</b></div><div class="qaRow"><span>Coincidencia exacta</span><b>'+exact+'</b></div><div class="qaRow"><span>Coincidencia asistida</span><b>'+assisted+'</b></div><div class="qaRow"><span>Pendientes</span><b class="'+(pending.length?"warn":"ok")+'">'+pending.length+'</b></div>';
 }
+async function testIndexedDBRoundtrip(){
+  const id="__cardvault_test__";try{const blob=new Blob(["ok"],{type:"text/plain"});await photoPut(id,blob);const got=await photoGet(id);await photoDel(id);return !!got&&got.size===2}catch{return false}
+}
+async function testCatalogConnectivity(){
+  try{const r=await Promise.race([fetch("https://api.tcgdex.net/v2/en/cards/base1-4"),timeoutAfter(6000)]);if(!r.ok)return false;const j=await r.json();return !!j?.id}catch{return false}
+}
+async function testImagePipeline(){
+  try{
+    const cv=document.createElement("canvas");cv.width=120;cv.height=180;const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,120,180);g.fillStyle="#000";g.font="16px sans-serif";g.fillText("149/131",20,155);
+    const blob=await new Promise(ok=>cv.toBlob(ok,"image/jpeg",.8));const q=await imageQuality(blob);const fp=await imageFingerprint(blob);return !!blob&&q.score>=0&&!!fp
+  }catch{return false}
+}
+function testLocalState(){try{const s=JSON.stringify(state);JSON.parse(s);localStorage.setItem("__cv_test__","1");const ok=localStorage.getItem("__cv_test__")==="1";localStorage.removeItem("__cv_test__");return ok}catch{return false}}
+function renderSelfTest(){
+  const box=document.querySelector("#selfTestResults");if(!box)return;const t=state.selfTest||{},rows=t.results||[];
+  if(!rows.length){box.innerHTML='<p class="muted">Comprueba almacenamiento, catálogo, OCR, imagen y estado local.</p>';return}
+  box.innerHTML='<div class="selfTestHeader"><b>'+((t.pass||0))+'/'+rows.length+' pruebas superadas</b><span>'+new Date(t.at).toLocaleString("es-ES")+'</span></div>'+rows.map(r=>'<div class="qaRow"><span>'+r.label+'</span><b class="'+(r.ok?"ok":"warn")+'">'+(r.ok?"OK":"FALLO")+'</b></div>').join("");
+}
+async function runSelfTest(){
+  const btn=document.querySelector("#runSelfTest"),box=document.querySelector("#selfTestResults");btn.disabled=true;box.innerHTML='<p class="muted">Ejecutando pruebas…</p>';
+  const results=[];
+  const push=(label,ok)=>results.push({label,ok:!!ok});
+  push("JavaScript cargado",true);
+  push("Estado local",testLocalState());
+  push("IndexedDB lectura/escritura",await testIndexedDBRoundtrip());
+  push("Catálogo TCGdex",await testCatalogConnectivity());
+  push("Motor OCR cargado",!!window.Tesseract);
+  push("Procesamiento de imagen",await testImagePipeline());
+  push("Backup serializable",(()=>{try{JSON.stringify({format:"cardvault-backup",state});return true}catch{return false}})());
+  state.selfTest={at:new Date().toISOString(),results,pass:results.filter(r=>r.ok).length};save();renderSelfTest();renderQA();renderReadiness();btn.disabled=false;
+}
 function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const checks=[["Build","V21","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
-  box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderRecognitionStats();renderBatchStatus();renderReadiness();
+  const checks=[["Build","V21","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/7",(state.selfTest?.pass||0)>=6?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos en IndexedDB · backup completo disponible · "+(persisted?"almacenamiento persistente concedido":"haz backups periódicos en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:2,createdAt:new Date().toISOString(),state:clean,photos},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 document.querySelector("#import").onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text()),s=x.format==="cardvault-backup"?x.state:x;if(!s.cards)throw 0;if(x.photos)for(const [id,data] of Object.entries(x.photos))await photoPut(id,dataURLToBlob(data));state=s;normalizePendingCards();save();await hydratePhotos();storageStatus();setTimeout(async()=>{let todo=state.cards.filter(c=>c.draft&&c.photoKey).slice(0,3);for(const c of todo){let b=await photoGet(c.photoKey);if(b)enqueueRecognition(c,b)}},700);alert("Backup completo restaurado")}catch(err){alert("Backup no válido o incompleto")}};
@@ -647,6 +678,7 @@ normalizePendingCards();
 document.querySelector("#reanalyzePending").onclick=reanalyzePending;
 document.querySelector("#clearTests").onclick=async()=>{let bad=state.cards.filter(c=>c.draft);if(!bad.length){alert("No hay pruebas pendientes que limpiar.");return}if(!confirm("Esto borrará solo las cartas pendientes/de prueba. ¿Continuar?"))return;for(const c of bad){if(c.photoKey)await photoDel(c.photoKey)}state.cards=state.cards.filter(c=>!c.draft);save();render();storageStatus();alert("Pruebas pendientes eliminadas.")};
 
+document.querySelector("#runSelfTest").onclick=runSelfTest;renderSelfTest();
 document.querySelector("#searchCards").oninput=render;document.querySelector("#filterType").onchange=render;
 const bulkDialog=document.querySelector("#bulkDialog"),bulkPhotos=document.querySelector("#bulkPhotos");document.querySelector("#bulkAdd").onclick=()=>bulkDialog.showModal();
 document.querySelector("#saveBulk").onclick=async e=>{e.preventDefault();let fs=[...bulkPhotos.files];if(!fs.length)return;let btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="Guardando fotos…";let jobs=[];for(let i=0;i<fs.length;i++){let id=crypto.randomUUID(),blob=await resizeBlob(fs[i]);await photoPut(id,blob);let card={id,name:"Carta por identificar",set:"",number:"",year:"",language:"",grading:"RAW",grade:"",value:0,purchase:null,quantity:1,purchaseDate:"",cert:"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:true,recognition:{score:0,source:"pending",at:new Date().toISOString()},createdAt:new Date().toISOString()};state.cards.push(card);jobs.push({card,blob});}save();render();storageStatus();btn.disabled=false;btn.textContent=old;bulkPhotos.value="";bulkDialog.close();let st=document.querySelector("#repairStatus");st.classList.remove("hidden");st.textContent=fs.length+" fotos guardadas. La identificación continuará sin bloquear la app.";for(const j of jobs)enqueueRecognition(j.card,j.blob)};
