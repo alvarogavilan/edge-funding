@@ -3,7 +3,7 @@ const seed=[
 {id:"eev174",name:"Eevee ex #174",set:"SVP Promo · 2025",grade:9,cert:"136142568",value:30,purchase:null,referenceImage:"https://images.pokemontcg.io/svp/174_hires.png",icon:"✨"},
 {id:"cha074",name:"Charizard ex #074",set:"Paldean Fates Tin · 2024",grade:9,cert:"136142569",value:38,purchase:null,referenceImage:"https://images.pokemontcg.io/svp/74_hires.png",icon:"🔥"},
 {id:"cha228",name:"Charizard ex #228/197",set:"Obsidian Flames · 2023",grade:9,cert:"136142567",value:55,purchase:null,referenceImage:"https://images.pokemontcg.io/sv3/228_hires.png",icon:"🏆"}];
-const KEY="cardvault.v2";let editId=null;const catalogCache={};let recognitionQueue=[];let queueRunning=false;const DB="cardvault.media.v1";let db;function openDB(){return new Promise((ok,no)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore("photos");r.onsuccess=()=>{db=r.result;ok(db)};r.onerror=()=>no(r.error)})}function photoPut(id,blob){return new Promise((ok,no)=>{let t=db.transaction("photos","readwrite"),r=t.objectStore("photos").put(blob,id);r.onsuccess=()=>ok();r.onerror=()=>no(r.error)})}function photoGet(id){return new Promise((ok,no)=>{let r=db.transaction("photos").objectStore("photos").get(id);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}function photoDel(id){return new Promise(ok=>{let r=db.transaction("photos","readwrite").objectStore("photos").delete(id);r.onsuccess=()=>ok()})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
+const KEY="cardvault.v2";let editId=null;const catalogCache={};let recognitionQueue=[];let queueRunning=false;const DB="cardvault.media.v1";let db;function openDB(){return new Promise((ok,no)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore("photos");r.onsuccess=()=>{db=r.result;ok(db)};r.onerror=()=>no(r.error)})}function photoPut(id,blob){return new Promise((ok,no)=>{let t=db.transaction("photos","readwrite"),r=t.objectStore("photos").put(blob,id);r.onsuccess=()=>ok();r.onerror=()=>no(r.error)})}function photoGet(id){return new Promise((ok,no)=>{let r=db.transaction("photos").objectStore("photos").get(id);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}function photoDel(id){return new Promise(ok=>{let r=db.transaction("photos","readwrite").objectStore("photos").delete(id);r.onsuccess=()=>ok()})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
 const total=()=>state.cards.reduce((a,x)=>a+(+x.value||0)*qty(x),0);
@@ -74,10 +74,10 @@ function buildMarketSignal(c){
   const vol=vals.length>1?Math.sqrt(vals.reduce((s,n)=>s+Math.pow((n-mean)/mean,2),0)/vals.length):0.18;
   const global=!!tcgplayerMarket(c),dataCount=[a1,a7,a30,low,trend].filter(Boolean).length;
   const analysts={momentum:Math.round(clamp(50+(m1*.35+m7*.65)*100,0,100)),value:Math.round(clamp(discount*170,0,100)),stability:Math.round(clamp(100-vol*360,0,100)),global:global?80:45,data:Math.round(clamp(dataCount/5*100,0,100))};
-  const score=Math.round(analysts.momentum*.30+analysts.value*.22+analysts.stability*.18+analysts.global*.12+analysts.data*.18);
+  const w=state.analystWeights||{},baseW={momentum:.30,value:.22,stability:.18,global:.12,data:.18};let denom=0,weighted=0;for(const k of Object.keys(baseW)){let wk=Number(w[k]??baseW[k]);denom+=wk;weighted+=(analysts[k]||0)*wk}const score=Math.round(weighted/Math.max(denom,.001));
   const risk=vol<0.08?"Bajo":vol<0.18?"Medio":"Alto";
   const scenario12=trend*(1+clamp(m7*3,-0.25,0.35));
-  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;if(sc){analysts.scarcity=sc.score;score=Math.round(score*.88+sc.score*.12)}return {id:c.id,name:c.name,set:c.set?.name||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tcgplayerMarket(c),score,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,analysts,scarcity:sc};
+  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}return {id:c.id,name:c.name,set:c.set?.name||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tcgplayerMarket(c),score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,analysts,scarcity:sc};
 }
 async function mapLimit(items,limit,fn){
   let out=new Array(items.length),i=0;async function worker(){while(true){let n=i++;if(n>=items.length)return;try{out[n]=await fn(items[n],n)}catch{out[n]=null}}}
@@ -250,10 +250,58 @@ function rebalanceNotes(){
   if(graded<=.15)notes.push("Menos del 15% del valor está en cartas graduadas.");
   return notes;
 }
+function recordSignalSnapshot(rows){
+  const at=new Date().toISOString();
+  for(const x of rows){
+    state.signalHistory.push({at,id:x.id,name:x.name,price:x.price,score:x.score,conviction:convictionSignal(x),liquidity:liquiditySignal(x),risk:x.risk,analysts:{...(x.analysts||{})}});
+  }
+  const cutoff=Date.now()-180*86400000;
+  state.signalHistory=state.signalHistory.filter(s=>new Date(s.at).getTime()>=cutoff).slice(-5000);
+  save();
+}
+function evaluateSignalPerformance(){
+  const h=state.signalHistory||[],latest=state.marketScan||[],latestMap=new Map(latest.map(x=>[x.id,x]));
+  const windows=[7,30,90],stats={};
+  for(const d of windows){
+    const min=Date.now()-(d+3)*86400000,max=Date.now()-(d-3)*86400000;
+    const samples=h.filter(s=>{let t=new Date(s.at).getTime();return t>=min&&t<=max&&latestMap.has(s.id)&&s.price>0&&latestMap.get(s.id).price>0});
+    const strong=samples.filter(s=>s.conviction>=70);
+    const rets=strong.map(s=>(latestMap.get(s.id).price/s.price-1));
+    stats[d]={n:strong.length,avg:rets.length?rets.reduce((a,b)=>a+b,0)/rets.length:null,hit:rets.length?rets.filter(r=>r>0).length/rets.length:null};
+  }
+  return stats;
+}
+function analystBacktest(){
+  const h=state.signalHistory||[],latest=state.marketScan||[],latestMap=new Map(latest.map(x=>[x.id,x]));
+  const pairs=h.filter(s=>{let age=ageDays(s.at);return age>=20&&age<=45&&latestMap.has(s.id)&&s.price>0});
+  const keys=["momentum","value","stability","global","data","scarcity"],out={};
+  for(const k of keys){
+    const pts=pairs.filter(p=>p.analysts?.[k]!=null).map(p=>({a:p.analysts[k],r:latestMap.get(p.id).price/p.price-1}));
+    if(pts.length<5){out[k]=null;continue}
+    const hi=pts.filter(p=>p.a>=60),lo=pts.filter(p=>p.a<60);
+    const havg=hi.length?hi.reduce((s,p)=>s+p.r,0)/hi.length:0,lavg=lo.length?lo.reduce((s,p)=>s+p.r,0)/lo.length:0;
+    out[k]={n:pts.length,edge:havg-lavg};
+  }
+  return out;
+}
+function updateAnalystWeights(){
+  const bt=analystBacktest(),base={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12},raw={};
+  let sum=0;
+  for(const [k,b] of Object.entries(base)){let edge=bt[k]?.edge;let mult=edge==null?1:clamp(1+edge*3,.65,1.45);raw[k]=b*mult;sum+=raw[k]}
+  if(sum){for(const k of Object.keys(raw))raw[k]/=sum}
+  state.analystWeights=raw;save();return {weights:raw,backtest:bt};
+}
+function renderSignalPerformance(){
+  const box=document.querySelector("#signalPerformance");if(!box)return;
+  const perf=evaluateSignalPerformance(),learn=updateAnalystWeights(),labels={momentum:"Momentum",value:"Valor",stability:"Estabilidad",global:"Global",data:"Datos",scarcity:"Escasez"};
+  const perfHtml=[7,30,90].map(d=>{let x=perf[d];return '<div><span>'+d+' días</span><b>'+(x?.n?((x.avg>=0?"+":"")+(x.avg*100).toFixed(1)+"%"):"Sin muestra")+'</b><small>'+(x?.n?("acierto "+(x.hit*100).toFixed(0)+"% · "+x.n+" señales"):"")+'</small></div>'}).join("");
+  const weights=Object.entries(learn.weights||{}).map(([k,v])=>'<span>'+labels[k]+' '+Math.round(v*100)+'%</span>').join("");
+  box.innerHTML='<h3>Rendimiento de señales</h3><div class="performanceGrid">'+perfHtml+'</div><div class="learnedWeights"><b>Pesos aprendidos</b><div>'+weights+'</div><small>Los pesos solo se ajustan cuando existe historial suficiente; no convierten una señal en garantía.</small></div>';
+}
 function renderMarketScan(){
   renderPortfolioRisk();renderCompare();
   const box=document.querySelector("#marketLeaders");if(!box)return;
-  const rows=[...(state.marketScan||[])].sort((a,b)=>b.score-a.score);renderMarketIndex(rows);renderMarketHealth(rows);renderOpportunityAlerts(rows);
+  const rows=[...(state.marketScan||[])].sort((a,b)=>b.score-a.score);renderMarketIndex(rows);renderMarketHealth(rows);renderOpportunityAlerts(rows);renderSignalPerformance();
   if(!rows.length){box.innerHTML='<div class="empty">Pulsa «Escanear mercado» para crear el primer radar cuantitativo.</div>';return}
   box.innerHTML='<div class="marketGrid">'+rows.slice(0,20).map((x,i)=>'<article class="marketAsset">'+(x.image?'<img src="'+x.image+'" alt="">':'')+'<div class="assetBody"><div class="assetTop"><b>#'+(i+1)+' '+x.name+'</b><span class="signal '+(x.score>=75?'hot':x.score>=60?'warm':'')+'">'+x.score+'</span></div><div class="signalLabel">'+signalLabel(x)+'</div><small>'+x.set+(x.rarity?' · '+x.rarity:'')+'</small><div class="assetMetrics"><span>Mercado <b>'+euro(x.price)+'</b></span><span>Riesgo <b>'+x.risk+'</b></span><span>Liquidez <b>'+liquiditySignal(x)+'/100</b></span><span>Convicción <b>'+convictionSignal(x)+'/100</b></span><span>1d <b class="'+(x.momentum1>=0?'up':'down')+'">'+(x.momentum1>=0?'+':'')+(x.momentum1*100).toFixed(1)+'%</b></span><span>7/30d <b class="'+(x.momentum7>=0?'up':'down')+'">'+(x.momentum7>=0?'+':'')+(x.momentum7*100).toFixed(1)+'%</b></span></div><div class="analystStrip"><span>Mom '+(x.analysts?.momentum??0)+'</span><span>Valor '+(x.analysts?.value??0)+'</span><span>Estab '+(x.analysts?.stability??0)+'</span><span>Global '+(x.analysts?.global??0)+'</span><span>Datos '+(x.analysts?.data??0)+'</span>'+(x.analysts?.scarcity!=null?'<span>Escasez '+x.analysts.scarcity+'</span>':'')+'</div><div class="thesis">'+buildThesis(x)+'. Datos: '+freshnessLabel(ageDays(x.updated))+' · '+(buyZone(x)?('zona de compra basada en referencias '+euro(buyZone(x).low)+'–'+euro(buyZone(x).high)+'. '):'')+'Escenario 12m: '+euro(x.scenario12)+' (no es predicción).</div><div class="marketActions"><button class="watchFromMarket" data-watchid="'+x.id+'">Seguir</button><button class="compareMarket" data-compareid="'+x.id+'">'+((state.compare||[]).includes(x.id)?"✓ Comparando":"Comparar")+'</button></div></div></article>').join("")+'</div>';
 }
@@ -263,7 +311,7 @@ async function runMarketScan(mode="quick"){
   try{
     const cards=await fetchMarketUniverse(mode);st.textContent="Analizando "+cards.length+" cartas…";
     const signals=cards.map(buildMarketSignal).filter(Boolean);
-    state.marketScan=signals;state.marketScanAt=new Date().toISOString();state.marketScanMode=mode;const alerts=evaluateOpportunityAlerts(signals);state.alertHistory.push({at:state.marketScanAt,count:alerts.length,ids:alerts.map(a=>a.id)});state.alertHistory=state.alertHistory.slice(-30);save();renderMarketScan();snapshotMarketScan(mode);renderScanHistory();renderWatchSummary();
+    state.marketScan=signals;state.marketScanAt=new Date().toISOString();state.marketScanMode=mode;recordSignalSnapshot(signals);const alerts=evaluateOpportunityAlerts(signals);state.alertHistory.push({at:state.marketScanAt,count:alerts.length,ids:alerts.map(a=>a.id)});state.alertHistory=state.alertHistory.slice(-30);save();renderMarketScan();snapshotMarketScan(mode);renderScanHistory();renderWatchSummary();
     st.textContent=signals.length+" cartas analizadas · "+new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});renderQA();
   }catch(e){st.textContent="No se pudo completar el escaneo. Inténtalo de nuevo."}
   btn.disabled=false;
@@ -436,8 +484,8 @@ const dlg=document.querySelector("#cardDialog"),form=document.querySelector("#ca
 function resize(file){return new Promise(ok=>{let im=new Image(),rd=new FileReader();rd.onload=()=>im.src=rd.result;im.onload=()=>{let max=900,s=Math.min(1,max/im.width),cv=document.createElement("canvas");cv.width=im.width*s;cv.height=im.height*s;cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);ok(cv.toDataURL("image/jpeg",.78))};rd.readAsDataURL(file)})}
 function blobToDataURL(blob){return new Promise((ok,no)=>{let r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsDataURL(blob)})}function dataURLToBlob(s){let [h,d]=s.split(","),mime=(h.match(/:(.*?);/)||[])[1]||"image/jpeg",bin=atob(d),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:mime})}function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
-  const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const checks=[["Build","V21","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
+  const checks=[["Build","V21","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
   box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos en IndexedDB · backup completo disponible · "+(persisted?"almacenamiento persistente concedido":"haz backups periódicos en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:2,createdAt:new Date().toISOString(),state:clean,photos},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
