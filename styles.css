@@ -36,3 +36,13 @@ nav button{min-height:46px;line-height:1.05}
 .marketHint{display:grid;gap:4px;padding:11px;border-radius:13px;background:#12251c;border:1px solid #29523b}
 .marketHint b{font-size:12px}.marketHint span{font-size:11px;color:#a8cfb6}
 .marketRef{font-size:9px;color:#82c99e;margin-top:4px;max-width:90px}
+
+.labControls{display:flex;align-items:center;gap:10px;margin:10px 0 12px}.labControls span{font-size:12px;color:#9eabc9}
+#scanMarket{background:#263f75}
+.marketGrid{display:grid;gap:10px;margin:10px 0 16px}
+.marketAsset{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:10px;background:#0f1728;border:1px solid #263552;border-radius:16px}
+.marketAsset img{width:62px;height:86px;object-fit:contain;border-radius:8px;background:#fff1}
+.assetBody{min-width:0}.assetTop{display:flex;justify-content:space-between;gap:8px;align-items:center}.assetTop b{font-size:13px}.assetBody small{color:#8794b2;font-size:10px}
+.assetMetrics{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px}.assetMetrics span{font-size:10px;color:#9ba8c4}.assetMetrics b{color:#eef3ff}
+.signal{display:inline-grid;place-items:center;min-width:34px;height:30px;border-radius:10px;background:#26344f;font-size:12px;font-weight:800}.signal.warm{background:#54451c}.signal.hot{background:#174b30}.signal.mini{margin:4px 0 0 auto;width:30px;height:22px;font-size:10px}
+.thesis{margin-top:7px;font-size:10px;line-height:1.35;color:#aebbd6}
