@@ -77,3 +77,8 @@ nav button{min-height:46px;line-height:1.05}
 
 .opportunityAlerts{margin:10px 0 14px}.opportunityAlerts h3{font-size:15px;margin:0 0 8px}.alertCard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px;margin:7px 0;border-radius:14px;background:#10231a;border:1px solid #28533b}.alertCard b{font-size:12px}.alertCard small{display:block;color:#9ec4aa;font-size:9px;margin-top:3px}.alertNums{display:grid;gap:2px;text-align:right}.alertNums span{font-size:9px;color:#c8e5d0}
 .rebalanceNotes{display:grid;gap:5px;margin:8px 0;padding:8px;border-radius:10px;background:#281f14;border:1px solid #55452a}.rebalanceNotes div{font-size:9px;color:#d8c7a2}
+
+.signalPerformance{margin:12px 0;padding:12px;border-radius:16px;background:#10192b;border:1px solid #2d3c5b}.signalPerformance h3{margin:0 0 9px;font-size:14px}
+.performanceGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.performanceGrid>div{display:grid;gap:3px;padding:8px;border-radius:10px;background:#151f34}.performanceGrid span{font-size:9px;color:#91a0bf}.performanceGrid b{font-size:13px}.performanceGrid small{font-size:8px;color:#8290ac}
+.learnedWeights{margin-top:9px;padding-top:9px;border-top:1px solid #293754}.learnedWeights>b{font-size:11px}.learnedWeights>div{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.learnedWeights span{font-size:8px;padding:4px 6px;border-radius:7px;background:#1d2a45;color:#b6c6e7}.learnedWeights small{display:block;margin-top:7px;font-size:8px;color:#8592ad}
+@media(max-width:390px){.performanceGrid{grid-template-columns:1fr}}
