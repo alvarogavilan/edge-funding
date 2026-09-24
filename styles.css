@@ -46,3 +46,10 @@ nav button{min-height:46px;line-height:1.05}
 .assetMetrics{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:7px}.assetMetrics span{font-size:10px;color:#9ba8c4}.assetMetrics b{color:#eef3ff}
 .signal{display:inline-grid;place-items:center;min-width:34px;height:30px;border-radius:10px;background:#26344f;font-size:12px;font-weight:800}.signal.warm{background:#54451c}.signal.hot{background:#174b30}.signal.mini{margin:4px 0 0 auto;width:30px;height:22px;font-size:10px}
 .thesis{margin-top:7px;font-size:10px;line-height:1.35;color:#aebbd6}
+
+.marketIndex{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.marketIndex>div{background:#111a2c;border:1px solid #293955;border-radius:14px;padding:11px}
+.marketIndex span{display:block;font-size:10px;color:#8d9ab8;margin-bottom:4px}.marketIndex b{font-size:16px}
+.sectorGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px}.sector{display:grid;gap:3px;background:#101726;border:1px solid #25324c;border-radius:14px;padding:10px}.sector b{font-size:12px}.sector span,.sector small{font-size:9px;color:#94a2c1}
+.analystStrip{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}.analystStrip span{font-size:8px;padding:3px 5px;border-radius:6px;background:#1d2942;color:#aebddd}
+.qaPanel{margin-top:14px;padding:14px;border-radius:16px;background:#0f1727;border:1px solid #293754}.qaPanel h3{margin-top:0}.qaRow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #202b43;font-size:11px}.qaRow:last-child{border-bottom:0}.qaRow .ok{color:#6de6a0}.qaRow .warn{color:#f2c96d}
