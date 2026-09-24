@@ -101,3 +101,5 @@ nav button{min-height:46px;line-height:1.05}
 .visualMatchInfo{padding:8px 10px;border-radius:10px;background:#14283b;border:1px solid #2d536f;color:#acd4eb;font-size:10px}
 
 #integrityPanel{margin-top:10px}#repairIntegrity{background:#2d4468;width:100%}.integrityIssues{display:grid;gap:4px;margin-top:8px;padding:8px;border-radius:10px;background:#2a1d1f;border:1px solid #563238}.integrityIssues div{font-size:9px;color:#e2b4b9}
+
+#valuationAudit{margin-top:10px}
