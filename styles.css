@@ -92,3 +92,6 @@ nav button{min-height:46px;line-height:1.05}
 .readinessScore{font-size:30px;font-weight:850;margin:4px 0 9px}.qaPanel>small{display:block;margin-top:8px;font-size:9px;color:#8996b2}
 
 #selfTestPanel{margin-top:10px}.selfTestResults{margin-top:9px}.selfTestHeader{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}.selfTestHeader b{font-size:12px}.selfTestHeader span{font-size:9px;color:#8f9bb6}#runSelfTest{background:#24406e}
+
+.testActions{display:flex;gap:7px;flex-wrap:wrap}.testActions #runPhotoValidation{background:#28503a}
+.provenancePanel{margin:12px 0;padding:12px;border-radius:16px;background:#101927;border:1px solid #2c3a54}.provenancePanel h3{margin:0 0 8px;font-size:14px}.provenanceGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.provenanceGrid>div{padding:8px;border-radius:10px;background:#151f31}.provenanceGrid span{display:block;font-size:9px;color:#8f9bb4}.provenanceGrid b{font-size:14px}.provenancePanel small{display:block;margin-top:8px;font-size:8px;color:#8490aa}
