@@ -119,3 +119,5 @@ nav button{min-height:46px;line-height:1.05}
 #bootPanel{margin-top:14px}
 
 #photoValidationResults small{display:block;margin-top:8px;font-size:8px;color:#8794ad;line-height:1.35}
+
+.confirmIdentity{background:#204f37;border:1px solid #3c7655}
