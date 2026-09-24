@@ -115,3 +115,5 @@ nav button{min-height:46px;line-height:1.05}
 #selfTestPanel .qaRow b.ok{color:#6de6a0}
 
 @media(min-width:420px){.coveragePanel{grid-template-columns:repeat(3,1fr)}}
+
+#bootPanel{margin-top:14px}
