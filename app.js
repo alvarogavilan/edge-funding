@@ -9,7 +9,7 @@ function photoGet(id){return new Promise((ok,no)=>{let r=db.transaction("photos"
 function photoDel(id){return new Promise(ok=>{let r=db.transaction("photos","readwrite").objectStore("photos").delete(id);r.onsuccess=()=>ok()})}
 function marketSignalPutMany(rows){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const x of rows||[])if(x?.id)s.put(x);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
 function marketSignalAll(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
-function marketSignalCount(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").count();r.onsuccess=()=>ok(r.result||0);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
+function marketSignalCount(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").count();r.onsuccess=()=>ok(r.result||0);r.onerror=()=>no(r.error)}catch(e){no(e)}})}function marketSignalDeleteMany(ids){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const id of ids||[])s.delete(id);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
 function marketSignalClear(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals","readwrite").objectStore("marketSignals").clear();r.onsuccess=()=>ok();r.onerror=()=>no(r.error)}catch(e){no(e)}})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];if(!state.dataQuality)state.dataQuality={};if(!state.schemaVersion||state.schemaVersion<40)state.schemaVersion=40;if(!state.marketCursor)state.marketCursor=0;if(!state.marketUniverse)state.marketUniverse={};if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};if(!state.marketScannedIds)state.marketScannedIds={};if(!state.marketFailures)state.marketFailures={};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
@@ -138,11 +138,28 @@ function buildMarketSignal(c){
   const w=state.analystWeights||{},baseW={momentum:.30,value:.22,stability:.18,global:.12,data:.18};let denom=0,weighted=0;for(const k of Object.keys(baseW)){let wk=Number(w[k]??baseW[k]);denom+=wk;weighted+=(analysts[k]||0)*wk}const score=Math.round(weighted/Math.max(denom,.001));
   const risk=vol<0.08?"Bajo":vol<0.18?"Medio":"Alto";
   const scenario12=trend*(1+clamp(m7*3,-0.25,0.35));
-  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}return {id:c.id,name:c.name,set:c.set?.name||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tcgplayerMarket(c),score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,analysts,scarcity:sc};
+  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}return {id:c.id,name:c.name,set:c.set?.name||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tcgplayerMarket(c),score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc};
 }
 async function mapLimit(items,limit,fn){
   let out=new Array(items.length),i=0;async function worker(){while(true){let n=i++;if(n>=items.length)return;try{out[n]=await fn(items[n],n)}catch{out[n]=null}}}
   await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;
+}
+async function activeMarketSignals(maxAgeDays=45){
+  const all=await marketSignalAll().catch(()=>[]);
+  const now=Date.now(),active=[],stale=[];
+  for(const x of all){
+    const t=new Date(x.scannedAt||x.updated||0).getTime();
+    if(t&&now-t<=maxAgeDays*86400000)active.push(x);else stale.push(x);
+  }
+  return {all,active,stale};
+}
+async function refreshMarketFreshness(){
+  const q=await activeMarketSignals(45);
+  state.marketCoverage.priced=q.all.length;
+  state.marketCoverage.active=q.active.length;
+  state.marketCoverage.stale=q.stale.length;
+  save();
+  return q;
 }
 async function fetchMarketUniverse(mode="quick"){
   const list=await tcgdexList("en"),pool=(list||[]).filter(x=>x.id&&x.name);
@@ -155,16 +172,15 @@ async function fetchMarketUniverse(mode="quick"){
       else delete state.marketFailures[b.id];
       return c;
     });
-    const signals=full.filter(Boolean).map(buildMarketSignal).filter(Boolean);
-    if(signals.length)await marketSignalPutMany(signals);
+    const fetched=full.filter(Boolean),signals=fetched.map(buildMarketSignal).filter(Boolean),pricedIds=new Set(signals.map(x=>x.id)),lostPrice=fetched.filter(c=>!pricedIds.has(c.id)).map(c=>c.id);
+    if(signals.length)await marketSignalPutMany(signals);if(lostPrice.length)await marketSignalDeleteMany(lostPrice);
     state.marketCursor=total?((start+briefs.length)%total):0;
     const previousSeen=+state.marketCoverage?.seen||0;
     const seen=Math.min(total,previousSeen+briefs.length);
-    const priced=await marketSignalCount().catch(()=>0);
-    state.marketCoverage={total,seen,priced,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),cursor:state.marketCursor};
+    const fresh=await activeMarketSignals(45),priced=fresh.all.length;
+    state.marketCoverage={total,seen,priced,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),cursor:state.marketCursor};
     state.marketUniverse={};state.marketScannedIds={};save();
-    const all=await marketSignalAll().catch(()=>signals);
-    return all.sort((a,b)=>b.score-a.score).slice(0,400);
+    return fresh.active.sort((a,b)=>b.score-a.score).slice(0,400);
   }
   const wanted=MARKET_NAMES.map(n=>norm(n)),owned=new Set(state.cards.map(c=>c.catalogId).filter(Boolean)),briefs=[];
   for(const b of pool){
@@ -182,22 +198,24 @@ async function retryMarketFailures(){
   btn.disabled=true;st.textContent="Reintentando "+ids.length+" consultas fallidas…";
   const rows=await mapLimit(ids,3,async id=>{
     const c=await tcgdexCard("en",id);
-    if(c){delete state.marketFailures[id];return buildMarketSignal(c)}
+    if(c){delete state.marketFailures[id];let s=buildMarketSignal(c);if(!s)await marketSignalDeleteMany([id]);return s}
     state.marketFailures[id]=(state.marketFailures[id]||0)+1;return null
   });
   const good=rows.filter(Boolean);if(good.length)await marketSignalPutMany(good);
-  state.marketCoverage.failed=Object.keys(state.marketFailures).length;state.marketCoverage.priced=await marketSignalCount().catch(()=>state.marketCoverage.priced||0);save();renderCoverage();renderQA();
+  state.marketCoverage.failed=Object.keys(state.marketFailures).length;await refreshMarketFreshness();renderCoverage();renderQA();
   st.textContent=good.length+" recuperadas · "+state.marketCoverage.failed+" fallos pendientes";btn.disabled=false;
 }
 function renderCoverage(){
   const box=document.querySelector("#coveragePanel");if(!box)return;
-  const c=state.marketCoverage||{},total=+c.total||0,seen=+c.seen||0,priced=+c.priced||0,failed=+c.failed||0,pct=total?seen/total*100:0;
+  const c=state.marketCoverage||{},total=+c.total||0,seen=+c.seen||0,priced=+c.priced||0,active=+c.active||0,stale=+c.stale||0,failed=+c.failed||0,pct=total?seen/total*100:0;
   box.innerHTML='<div><span>Cartas recorridas</span><b>'+seen+(total?' / '+total:'')+'</b></div>'+
-    '<div><span>Con precio utilizable</span><b>'+priced+'</b></div>'+
+    '<div><span>Con precio guardado</span><b>'+priced+'</b></div>'+
+    '<div><span>Radar activo ≤45d</span><b>'+active+'</b></div>'+
+    '<div><span>Señales antiguas</span><b class="'+(stale?"warn":"")+'">'+stale+'</b></div>'+
     '<div><span>Cobertura real</span><b>'+pct.toFixed(1)+'%</b></div>'+
     '<div><span>Fallos de consulta</span><b class="'+(failed?"warn":"")+'">'+failed+'</b></div>'+
     '<div class="coverageBar"><i style="width:'+Math.min(100,pct)+'%"></i></div>'+
-    '<small>Cada carta cuenta como recorrida aunque no tenga precio. Las señales solo se guardan cuando existe información de mercado utilizable.</small>';
+    '<small>El radar operativo solo usa señales revisadas en los últimos 45 días. Las antiguas se conservan para trazabilidad, pero no entran en decisiones actuales.</small>';
 }
 function signalLabel(x){
   if(x.score>=78&&x.risk!=="Alto")return "Señal cuantitativa alta";
@@ -450,7 +468,7 @@ function readinessScore(){
   const scan=state.marketScan||[],signals=state.signalHistory||[],graded=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW"),pop=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt);
   const checks=[
     {k:"code",ok:(state.selfTest?.pass||0)>=7,label:"Autotest técnico ≥7/8"},
-    {k:"market",ok:scan.length>=20,label:"Market Lab con datos"},{k:"coverage",ok:(state.marketCoverage?.seen||0)>=120,label:"Cobertura acumulada ≥120 cartas"},
+    {k:"market",ok:scan.length>=20,label:"Market Lab con datos"},{k:"coverage",ok:(state.marketCoverage?.seen||0)>=120,label:"Cobertura acumulada ≥120 cartas"},{k:"freshmarket",ok:(state.marketCoverage?.active||0)>=40,label:"Radar activo ≥40 cartas"},
     {k:"recognition",ok:(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7&&state.photoValidation?.completed===true,label:"Reconocimiento real ≥70% (≥3 fotos)"},
     {k:"history",ok:signals.length>=50,label:"Histórico ≥50 señales"},
     {k:"graded",ok:graded.length>=4,label:"Comparables graduadas ≥4"},
@@ -461,7 +479,7 @@ function readinessScore(){
 }
 function readinessBlockers(){
   const r=readinessScore();return r.checks.filter(c=>!c.ok).map(c=>{
-    if(c.k==="market")return "Haz un escaneo de mercado.";if(c.k==="coverage")return "Haz al menos un escaneo amplio para iniciar la cobertura acumulada.";
+    if(c.k==="market")return "Haz un escaneo de mercado.";if(c.k==="coverage")return "Haz al menos un escaneo amplio para iniciar la cobertura acumulada.";if(c.k==="freshmarket")return "Actualiza el radar hasta tener al menos 40 cartas revisadas en los últimos 45 días.";
     if(c.k==="recognition")return "Valida al menos 3 fotos reales y alcanza ≥70% de identificación.";
     if(c.k==="history")return "Acumula al menos 50 señales reales con escaneos.";
     if(c.k==="graded")return "Añade al menos 4 ventas cerradas comparables de cartas graduadas.";
@@ -475,7 +493,7 @@ function renderCertification(){
   const box=document.querySelector("#certificationResults");if(!box)return;const c=state.certification||{},r=readinessScore(),blocks=readinessBlockers();
   const dq=dataQualityScore();let head='<div class="certScore '+(r.score===100?"complete":"")+'">'+r.score+'%</div><div class="certSub">Calidad global '+dq.score+'%</div>';
   if(c.at)head+='<small>Última comprobación: '+new Date(c.at).toLocaleString("es-ES")+'</small>';
-  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100%:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V35 están superados.</div>');
+  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100%:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V42 están superados.</div>');
 }
 async function runCertification(){
   const btn=document.querySelector("#runCertification");btn.disabled=true;btn.textContent="Comprobando…";repairStateIntegrity();renderIntegrity();
@@ -488,7 +506,7 @@ async function runCertification(){
 }
 function renderReadiness(){
   const box=document.querySelector("#readinessPanel");if(!box)return;const r=readinessScore();
-  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V35.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
+  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V42.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
 }
 function renderMarketScan(){
   renderPortfolioRisk();renderCompare();
@@ -509,7 +527,7 @@ async function continueCoverage(blocks=5){
       renderCoverage();
       await new Promise(r=>setTimeout(r,180));
     }
-    const signals=(await marketSignalAll().catch(()=>[])).sort((a,b)=>b.score-a.score).slice(0,400);
+    const signals=(await activeMarketSignals(45)).active.sort((a,b)=>b.score-a.score).slice(0,400);
     state.marketScan=signals;state.marketScanAt=new Date().toISOString();state.marketScanMode="wide";
     recordSignalSnapshot(signals);
     const alerts=evaluateOpportunityAlerts(signals);
@@ -885,7 +903,7 @@ function renderValuationAudit(){
 }function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const checks=[["Build","V41","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/8",(state.selfTest?.pass||0)>=7?"ok":"warn"],["Prueba fotos",(state.photoValidation?.tested||0)?Math.round((state.photoValidation.rate||0)*100)+"%":"Sin prueba",(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  const checks=[["Build","V42","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Radar activo",(state.marketCoverage?.active||0)+" cartas",(state.marketCoverage?.active||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/8",(state.selfTest?.pass||0)>=7?"ok":"warn"],["Prueba fotos",(state.photoValidation?.tested||0)?Math.round((state.photoValidation.rate||0)*100)+"%":"Sin prueba",(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
   box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();renderPhotoValidation();renderCertification();renderIntegrity();renderValuationAudit();renderMarketEvidence();
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos y radar guardados localmente · copia V3 completa · "+(persisted?"almacenamiento persistente concedido":"haz copias periódicas en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let marketSignals=await marketSignalAll().catch(()=>[]),clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:3,createdAt:new Date().toISOString(),state:clean,photos,marketSignals},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
@@ -934,7 +952,6 @@ async function migrateLegacyMarketUniverse(){
   const rows=Object.values(state.marketUniverse||{}).filter(x=>x?.id);
   if(rows.length){await marketSignalPutMany(rows);state.marketUniverse={};}
   state.marketScannedIds={};
-  state.marketCoverage.priced=await marketSignalCount().catch(()=>state.marketCoverage.priced||0);
-  save();
+  await refreshMarketFreshness();
 }
 openDB().then(async()=>{try{await navigator.storage?.persist?.()}catch{}await migrateLegacyMarketUniverse(); for(const x of state.cards){if(x.photo&&!x.photoKey&&x.photo.startsWith("data:")){try{let blob=await (await fetch(x.photo)).blob();x.photoKey=x.id;await photoPut(x.id,blob);delete x.photo}catch{}}}save();await hydratePhotos();storageStatus()}).catch(()=>{document.querySelector("#readyText").textContent="Error al abrir almacenamiento local. No cargues cartas hasta recargar la app."});
