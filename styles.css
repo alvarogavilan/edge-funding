@@ -32,3 +32,7 @@ nav button{min-height:46px;line-height:1.05}
 .candidateCard span{display:grid;gap:3px}.candidateCard small{font-size:10px;color:#9eabc9}
 #clearTests{background:#3a2025}
 .scanStatus{min-height:42px}.miniActions button:disabled{opacity:.55}.scanStatus{white-space:normal}
+.queueStatus{padding:10px 12px;margin:8px 0;border-radius:13px;background:#17233f;border:1px solid #31476f;color:#b9c9eb;font-size:12px}
+.marketHint{display:grid;gap:4px;padding:11px;border-radius:13px;background:#12251c;border:1px solid #29523b}
+.marketHint b{font-size:12px}.marketHint span{font-size:11px;color:#a8cfb6}
+.marketRef{font-size:9px;color:#82c99e;margin-top:4px;max-width:90px}
