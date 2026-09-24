@@ -103,3 +103,5 @@ nav button{min-height:46px;line-height:1.05}
 #integrityPanel{margin-top:10px}#repairIntegrity{background:#2d4468;width:100%}.integrityIssues{display:grid;gap:4px;margin-top:8px;padding:8px;border-radius:10px;background:#2a1d1f;border:1px solid #563238}.integrityIssues div{font-size:9px;color:#e2b4b9}
 
 #valuationAudit{margin-top:10px}
+
+#marketEvidencePanel{margin-top:10px}.evidenceScore{font-size:28px;font-weight:850;margin:4px 0 8px}.certSub{font-size:10px;color:#9ca9c4;margin-top:-2px;margin-bottom:8px}
