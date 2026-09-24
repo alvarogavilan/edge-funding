@@ -59,3 +59,8 @@ nav button{min-height:46px;line-height:1.05}
 .signalLabel{font-size:9px;color:#9fb0d5;margin:2px 0 5px}
 .watchFromMarket{margin-top:8px;padding:7px 9px;font-size:10px;background:#203152}
 .scanHistory{margin:14px 0}.scanHistory h3{font-size:15px}.scanRow{display:grid;gap:3px;padding:8px 2px;border-bottom:1px solid #202a41}.scanRow span{font-size:10px;color:#8e9ab5}.scanRow b{font-size:10px;color:#c8d3eb}
+
+.portfolioRisk{margin:10px 0 14px;padding:12px;background:#101827;border:1px solid #293651;border-radius:16px}.portfolioRisk h3{margin:0 0 9px;font-size:14px}.riskGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.riskGrid div{background:#151f33;border-radius:10px;padding:8px}.riskGrid span{display:block;font-size:9px;color:#8f9bb6}.riskGrid b{font-size:14px}.riskBars{display:grid;gap:6px;margin-top:9px}.riskBars div{display:grid;grid-template-columns:80px 1fr 28px;gap:6px;align-items:center;font-size:9px}.riskBars i{display:block;height:6px;background:#7287b8;border-radius:6px}
+.marketActions{display:flex;gap:6px}.compareMarket{margin-top:8px;padding:7px 9px;font-size:10px;background:#302b52}
+.compareTray{margin:12px 0;padding:12px;border:1px solid #34466d;border-radius:16px;background:#111a2f}.compareTray h3{margin:0 0 8px}.compareGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.compareGrid>div{display:grid;gap:3px;padding:8px;background:#17223b;border-radius:10px}.compareGrid b{font-size:10px}.compareGrid span{font-size:13px;font-weight:800}.compareGrid small{font-size:8px;color:#9aa8c5}
+@media(max-width:390px){.compareGrid{grid-template-columns:1fr}.riskBars div{grid-template-columns:70px 1fr 28px}}
