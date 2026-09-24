@@ -53,3 +53,9 @@ nav button{min-height:46px;line-height:1.05}
 .sectorGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 14px}.sector{display:grid;gap:3px;background:#101726;border:1px solid #25324c;border-radius:14px;padding:10px}.sector b{font-size:12px}.sector span,.sector small{font-size:9px;color:#94a2c1}
 .analystStrip{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}.analystStrip span{font-size:8px;padding:3px 5px;border-radius:6px;background:#1d2942;color:#aebddd}
 .qaPanel{margin-top:14px;padding:14px;border-radius:16px;background:#0f1727;border:1px solid #293754}.qaPanel h3{margin-top:0}.qaRow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #202b43;font-size:11px}.qaRow:last-child{border-bottom:0}.qaRow .ok{color:#6de6a0}.qaRow .warn{color:#f2c96d}
+
+.scanModes{display:flex;gap:10px;flex-wrap:wrap;margin:-3px 0 10px}.scanModes span{font-size:9px;color:#8491ad}
+#deepScanMarket{background:#1f3158}
+.signalLabel{font-size:9px;color:#9fb0d5;margin:2px 0 5px}
+.watchFromMarket{margin-top:8px;padding:7px 9px;font-size:10px;background:#203152}
+.scanHistory{margin:14px 0}.scanHistory h3{font-size:15px}.scanRow{display:grid;gap:3px;padding:8px 2px;border-bottom:1px solid #202a41}.scanRow span{font-size:10px;color:#8e9ab5}.scanRow b{font-size:10px;color:#c8d3eb}
