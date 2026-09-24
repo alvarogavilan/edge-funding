@@ -320,13 +320,44 @@ function renderDecisionBoard(rows){
     '<div class="decisionGroup"><b>Candidatas por criterios</b>'+(candidates.length?candidates.map(o=>'<div class="decisionRow"><span>'+o.x.name+'</span><strong>'+euro(o.x.price)+'</strong><small>Conv '+o.d.conv+' · Liq '+o.d.liq+(o.d.zone?' · zona '+euro(o.d.zone.low)+'–'+euro(o.d.zone.high):'')+'</small></div>').join(""):'<div class="empty">Ninguna carta cumple todos los filtros.</div>')+'</div>'+
     '<div class="decisionGroup"><b>En observación</b>'+observe.map(o=>'<div class="decisionRow mutedRow"><span>'+o.x.name+'</span><small>'+o.d.reasons.slice(0,2).join(" · ")+'</small></div>').join("")+'</div>';
 }
+function renderProvenance(rows){
+  const box=document.querySelector("#provenancePanel");if(!box)return;
+  if(!rows.length){box.innerHTML="";return}
+  let cm=rows.filter(x=>x.price>0).length,us=rows.filter(x=>x.global).length,fresh=rows.filter(x=>ageDays(x.updated)<=14).length,stale=rows.length-fresh;
+  box.innerHTML='<h3>Calidad de fuentes</h3><div class="provenanceGrid"><div><span>Cardmarket/TCGdex</span><b>'+cm+'</b></div><div><span>También EEUU</span><b>'+us+'</b></div><div><span>Datos ≤14 días</span><b>'+fresh+'</b></div><div><span>Datos >14 días</span><b>'+stale+'</b></div></div><small>Las señales cuantitativas se calculan solo con los campos disponibles; ausencia de una fuente no se rellena con estimaciones inventadas.</small>';
+}
+function renderPhotoValidation(){
+  const box=document.querySelector("#photoValidationResults");if(!box)return;const v=state.photoValidation||{};
+  if(!v.at){box.innerHTML='<p class="muted">Aún no se ha validado el reconocimiento con fotos reales guardadas.</p>';return}
+  box.innerHTML='<div class="selfTestHeader"><b>Prueba con fotos reales: '+v.identified+'/'+v.tested+'</b><span>'+new Date(v.at).toLocaleString("es-ES")+'</span></div>'+
+    '<div class="qaRow"><span>Tasa de identificación</span><b class="'+(v.rate>=.7?"ok":"warn")+'">'+(v.rate*100).toFixed(0)+'%</b></div>'+
+    '<div class="qaRow"><span>Sin bloqueo</span><b class="'+(v.completed?"ok":"warn")+'">'+(v.completed?"OK":"FALLO")+'</b></div>';
+}
+async function runPhotoValidation(){
+  const btn=document.querySelector("#runPhotoValidation"),box=document.querySelector("#photoValidationResults");
+  const candidates=state.cards.filter(c=>c.photoKey).slice(0,5);
+  if(!candidates.length){box.innerHTML='<p class="muted">No hay fotos guardadas para validar.</p>';return}
+  btn.disabled=true;box.innerHTML='<p class="muted">Validando '+candidates.length+' fotos reales…</p>';
+  let identified=0,tested=0,completed=true;
+  for(const c of candidates){
+    try{
+      const b=await photoGet(c.photoKey);if(!b)continue;tested++;
+      const r=await Promise.race([analyzeCardFile(b),timeoutAfter(22000)]);
+      const fresh=cardFromRecognition(c.id,b,r);
+      if(!fresh.draft)identified++;
+    }catch{completed=false}
+    await new Promise(r=>setTimeout(r,120));
+  }
+  const rate=tested?identified/tested:0;
+  state.photoValidation={at:new Date().toISOString(),tested,identified,rate,completed};save();renderPhotoValidation();renderReadiness();renderQA();btn.disabled=false;
+}
 function readinessScore(){
   const photos=state.cards.filter(c=>c.photoKey),identified=photos.filter(c=>!c.draft&&c.recognition?.score>0);
   const scan=state.marketScan||[],signals=state.signalHistory||[],graded=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW"),pop=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt);
   const checks=[
     {k:"code",ok:(state.selfTest?.pass||0)>=6,label:"Autotest técnico ≥6/7"},
     {k:"market",ok:scan.length>=20,label:"Market Lab con datos"},
-    {k:"recognition",ok:photos.length>=3&&identified.length/photos.length>=.7,label:"Reconocimiento ≥70% en muestra"},
+    {k:"recognition",ok:(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7&&state.photoValidation?.completed===true,label:"Reconocimiento real ≥70% (≥3 fotos)"},
     {k:"history",ok:signals.length>=50,label:"Histórico ≥50 señales"},
     {k:"graded",ok:graded.length>=4,label:"Comparables graduadas ≥4"},
     {k:"population",ok:pop.length>=1,label:"Población verificada"},
@@ -341,7 +372,7 @@ function renderReadiness(){
 function renderMarketScan(){
   renderPortfolioRisk();renderCompare();
   const box=document.querySelector("#marketLeaders");if(!box)return;
-  const rows=[...(state.marketScan||[])].sort((a,b)=>b.score-a.score);renderMarketIndex(rows);renderMarketHealth(rows);renderOpportunityAlerts(rows);renderDecisionBoard(rows);renderSignalPerformance();
+  const rows=[...(state.marketScan||[])].sort((a,b)=>b.score-a.score);renderMarketIndex(rows);renderMarketHealth(rows);renderOpportunityAlerts(rows);renderDecisionBoard(rows);renderProvenance(rows);renderSignalPerformance();
   if(!rows.length){box.innerHTML='<div class="empty">Pulsa «Escanear mercado» para crear el primer radar cuantitativo.</div>';return}
   box.innerHTML='<div class="marketGrid">'+rows.slice(0,20).map((x,i)=>'<article class="marketAsset">'+(x.image?'<img src="'+x.image+'" alt="">':'')+'<div class="assetBody"><div class="assetTop"><b>#'+(i+1)+' '+x.name+'</b><span class="signal '+(x.score>=75?'hot':x.score>=60?'warm':'')+'">'+x.score+'</span></div><div class="signalLabel">'+signalLabel(x)+'</div><small>'+x.set+(x.rarity?' · '+x.rarity:'')+'</small><div class="assetMetrics"><span>Mercado <b>'+euro(x.price)+'</b></span><span>Riesgo <b>'+x.risk+'</b></span><span>Liquidez <b>'+liquiditySignal(x)+'/100</b></span><span>Convicción <b>'+convictionSignal(x)+'/100</b></span><span>1d <b class="'+(x.momentum1>=0?'up':'down')+'">'+(x.momentum1>=0?'+':'')+(x.momentum1*100).toFixed(1)+'%</b></span><span>7/30d <b class="'+(x.momentum7>=0?'up':'down')+'">'+(x.momentum7>=0?'+':'')+(x.momentum7*100).toFixed(1)+'%</b></span></div><div class="analystStrip"><span>Mom '+(x.analysts?.momentum??0)+'</span><span>Valor '+(x.analysts?.value??0)+'</span><span>Estab '+(x.analysts?.stability??0)+'</span><span>Global '+(x.analysts?.global??0)+'</span><span>Datos '+(x.analysts?.data??0)+'</span>'+(x.analysts?.scarcity!=null?'<span>Escasez '+x.analysts.scarcity+'</span>':'')+'</div><div class="thesis">'+buildThesis(x)+'. Datos: '+freshnessLabel(ageDays(x.updated))+' · '+(buyZone(x)?('zona de compra basada en referencias '+euro(buyZone(x).low)+'–'+euro(buyZone(x).high)+'. '):'')+'Escenario 12m: '+euro(x.scenario12)+' (no es predicción).</div><div class="marketActions"><button class="watchFromMarket" data-watchid="'+x.id+'">Seguir</button><button class="compareMarket" data-compareid="'+x.id+'">'+((state.compare||[]).includes(x.id)?"✓ Comparando":"Comparar")+'</button></div></div></article>').join("")+'</div>';
 }
@@ -638,8 +669,8 @@ async function runSelfTest(){
 function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const checks=[["Build","V21","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/7",(state.selfTest?.pass||0)>=6?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
-  box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();
+  const checks=[["Build","V21","ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/7",(state.selfTest?.pass||0)>=6?"ok":"warn"],["Prueba fotos",(state.photoValidation?.tested||0)?Math.round((state.photoValidation.rate||0)*100)+"%":"Sin prueba",(state.photoValidation?.tested||0)>=3&&(state.photoValidation?.rate||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();renderPhotoValidation();
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos en IndexedDB · backup completo disponible · "+(persisted?"almacenamiento persistente concedido":"haz backups periódicos en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:2,createdAt:new Date().toISOString(),state:clean,photos},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 document.querySelector("#import").onchange=async e=>{try{let x=JSON.parse(await e.target.files[0].text()),s=x.format==="cardvault-backup"?x.state:x;if(!s.cards)throw 0;if(x.photos)for(const [id,data] of Object.entries(x.photos))await photoPut(id,dataURLToBlob(data));state=s;normalizePendingCards();save();await hydratePhotos();storageStatus();setTimeout(async()=>{let todo=state.cards.filter(c=>c.draft&&c.photoKey).slice(0,3);for(const c of todo){let b=await photoGet(c.photoKey);if(b)enqueueRecognition(c,b)}},700);alert("Backup completo restaurado")}catch(err){alert("Backup no válido o incompleto")}};
@@ -678,7 +709,7 @@ normalizePendingCards();
 document.querySelector("#reanalyzePending").onclick=reanalyzePending;
 document.querySelector("#clearTests").onclick=async()=>{let bad=state.cards.filter(c=>c.draft);if(!bad.length){alert("No hay pruebas pendientes que limpiar.");return}if(!confirm("Esto borrará solo las cartas pendientes/de prueba. ¿Continuar?"))return;for(const c of bad){if(c.photoKey)await photoDel(c.photoKey)}state.cards=state.cards.filter(c=>!c.draft);save();render();storageStatus();alert("Pruebas pendientes eliminadas.")};
 
-document.querySelector("#runSelfTest").onclick=runSelfTest;renderSelfTest();
+document.querySelector("#runSelfTest").onclick=runSelfTest;renderSelfTest();document.querySelector("#runPhotoValidation").onclick=runPhotoValidation;renderPhotoValidation();
 document.querySelector("#searchCards").oninput=render;document.querySelector("#filterType").onchange=render;
 const bulkDialog=document.querySelector("#bulkDialog"),bulkPhotos=document.querySelector("#bulkPhotos");document.querySelector("#bulkAdd").onclick=()=>bulkDialog.showModal();
 document.querySelector("#saveBulk").onclick=async e=>{e.preventDefault();let fs=[...bulkPhotos.files];if(!fs.length)return;let btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="Guardando fotos…";let jobs=[];for(let i=0;i<fs.length;i++){let id=crypto.randomUUID(),blob=await resizeBlob(fs[i]);await photoPut(id,blob);let card={id,name:"Carta por identificar",set:"",number:"",year:"",language:"",grading:"RAW",grade:"",value:0,purchase:null,quantity:1,purchaseDate:"",cert:"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:true,recognition:{score:0,source:"pending",at:new Date().toISOString()},createdAt:new Date().toISOString()};state.cards.push(card);jobs.push({card,blob});}save();render();storageStatus();btn.disabled=false;btn.textContent=old;bulkPhotos.value="";bulkDialog.close();let st=document.querySelector("#repairStatus");st.classList.remove("hidden");st.textContent=fs.length+" fotos guardadas. La identificación continuará sin bloquear la app.";for(const j of jobs)enqueueRecognition(j.card,j.blob)};
