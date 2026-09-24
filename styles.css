@@ -111,3 +111,5 @@ nav button{min-height:46px;line-height:1.05}
 #continueCoverage{background:#203b63}.coveragePanel{grid-template-columns:1fr 1fr}.coveragePanel .warn{color:#f2c96d}
 
 #retryMarketFailures{background:#3a2d4f}.coveragePanel .warn{color:#f2c96d}
+
+#selfTestPanel .qaRow b.ok{color:#6de6a0}
