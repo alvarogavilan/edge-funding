@@ -1,15 +1,20 @@
 # Card Vault
 
-Aplicación privada, iPhone-first y local-first para colección PSA y radar de mercado.
+Card Vault es una app iPhone-first para gestionar una colección de cartas Pokémon y analizar el mercado como un portfolio.
 
-## Principios
-- Cero gasto recurrente.
-- Sin backend propio en V1.
-- Datos de colección almacenados en el dispositivo mediante almacenamiento local.
-- Sin GitHub Actions.
-- Preparada para añadir fuentes gratuitas/permitidas de mercado y migrar a backend opcional en el futuro.
+## Estado actual — V21
+- Colección RAW, PSA, BGS y CGC.
+- Fotos guardadas localmente en IndexedDB.
+- Copia/restauración completa en JSON.
+- Reconocimiento asistido por OCR + catálogo TCGdex.
+- Precios RAW de referencia cuando TCGdex/Cardmarket los expone.
+- Market Lab con señales de momentum, valor, estabilidad, presencia internacional y calidad de datos.
+- Índice Card Vault, amplitud de mercado y sectores por personaje.
+- Histórico de valoración, watchlist y radar.
+- Diagnóstico interno de build, fotos, OCR y escaneo.
 
-## V1
-Dashboard, colección inicial, watchlist, snapshots locales y esqueleto de Radar PSA 10.
+## Privacidad
+GitHub Pages aloja el código de la aplicación. Las fotos y la colección del usuario permanecen en el navegador del dispositivo salvo exportación manual.
 
-> GitHub aloja únicamente el código durante el desarrollo; no es la base de datos de la colección.
+## Limitaciones
+Las señales y escenarios no son garantías de rentabilidad. Las valoraciones dependen de la disponibilidad y calidad de datos públicos de terceros. El reconocimiento puede requerir revisión manual.
