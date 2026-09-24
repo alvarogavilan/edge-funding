@@ -90,3 +90,5 @@ nav button{min-height:46px;line-height:1.05}
 
 .decisionBoard{margin:12px 0;padding:12px;border-radius:16px;background:#0f1829;border:1px solid #2b3c5b}.decisionBoard h3{margin:0 0 5px;font-size:15px}.decisionGroup{display:grid;gap:6px;margin-top:10px}.decisionGroup>b{font-size:11px;color:#b7c5df}.decisionRow{display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:9px;border-radius:11px;background:#13271d;border:1px solid #28513a}.decisionRow span{font-size:11px;font-weight:700}.decisionRow strong{font-size:11px}.decisionRow small{grid-column:1/-1;font-size:9px;color:#a7c8b2}.decisionRow.mutedRow{background:#171d2b;border-color:#2c3549}.decisionRow.mutedRow small{color:#9aa5bb}
 .readinessScore{font-size:30px;font-weight:850;margin:4px 0 9px}.qaPanel>small{display:block;margin-top:8px;font-size:9px;color:#8996b2}
+
+#selfTestPanel{margin-top:10px}.selfTestResults{margin-top:9px}.selfTestHeader{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}.selfTestHeader b{font-size:12px}.selfTestHeader span{font-size:9px;color:#8f9bb6}#runSelfTest{background:#24406e}
