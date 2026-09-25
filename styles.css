@@ -129,3 +129,7 @@ nav button{min-height:46px;line-height:1.05}
 #radarUniverse,#collectionUniverse{min-width:110px}
 
 #cardForm select[name="universe"],#bulkUniverse{font-weight:800}
+
+#marketIndex{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+#marketIndex>div{background:#111a29;border:1px solid #25334c;border-radius:10px;padding:8px}
+#marketIndex span{display:block;font-size:8px;color:#8fa0bc}#marketIndex b{font-size:11px}
