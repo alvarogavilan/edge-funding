@@ -10,18 +10,18 @@ function photoDel(id){return new Promise(ok=>{let r=db.transaction("photos","rea
 function marketSignalPutMany(rows){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const x of rows||[])if(x?.id)s.put(x);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
 function marketSignalAll(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
 function marketSignalCount(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").count();r.onsuccess=()=>ok(r.result||0);r.onerror=()=>no(r.error)}catch(e){no(e)}})}function marketSignalDeleteMany(ids){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const id of ids||[])s.delete(id);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
-function marketSignalClear(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals","readwrite").objectStore("marketSignals").clear();r.onsuccess=()=>ok();r.onerror=()=>no(r.error)}catch(e){no(e)}})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];if(!state.dataQuality)state.dataQuality={};if(!state.schemaVersion||state.schemaVersion<43)state.schemaVersion=48;if(!state.marketCursor)state.marketCursor=0;if(!state.marketUniverse)state.marketUniverse={};if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};if(!state.marketScannedIds)state.marketScannedIds={};if(!state.marketFailures)state.marketFailures={};if(!state.coverageByUniverse)state.coverageByUniverse={pokemon:state.marketCoverage||{},lorcana:{total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null},football:{total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null}};if(!state.cursorByUniverse)state.cursorByUniverse={pokemon:state.marketCursor||0,lorcana:0,football:0};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];state=ensureStateShape(state);const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
+function marketSignalClear(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals","readwrite").objectStore("marketSignals").clear();r.onsuccess=()=>ok();r.onerror=()=>no(r.error)}catch(e){no(e)}})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];if(!state.dataQuality)state.dataQuality={};if(!state.schemaVersion||state.schemaVersion<43)state.schemaVersion=49;if(!state.marketCursor)state.marketCursor=0;if(!state.marketUniverse)state.marketUniverse={};if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};if(!state.marketScannedIds)state.marketScannedIds={};if(!state.marketFailures)state.marketFailures={};if(!state.coverageByUniverse)state.coverageByUniverse={pokemon:state.marketCoverage||{},lorcana:{total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null}};if(!state.cursorByUniverse)state.cursorByUniverse={pokemon:state.marketCursor||0,lorcana:0};if(!state.archivedUniverses)state.archivedUniverses={};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];state=ensureStateShape(state);const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
 const total=()=>state.cards.reduce((a,x)=>a+(+x.value||0)*qty(x),0);
 const invested=()=>state.cards.reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase||0)*qty(x)),0);
 const drafts=()=>state.cards.filter(x=>x.draft).length;
 const gain=()=>total()-invested();function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function universeLabel(u){return u==="lorcana"?"Lorcana":u==="football"?"Fútbol":"Pokémon"}
-function universeIcon(u){return u==="lorcana"?"✨":u==="football"?"⚽":"⚡"}
-function currentRadarUniverse(){return document.querySelector("#radarUniverse")?.value||"pokemon"}
-function cardUniverse(c){return c?.universe||"pokemon"}
-function marketUniverseOf(x){return x?.universe||"pokemon"}
+function universeLabel(u){return u==="lorcana"?"Lorcana":"Pokémon"}
+function universeIcon(u){return u==="lorcana"?"✨":"⚡"}
+function currentRadarUniverse(){const u=document.querySelector("#radarUniverse")?.value||"pokemon";return u==="lorcana"?"lorcana":"pokemon"}
+function cardUniverse(c){return c?.universe==="lorcana"?"lorcana":"pokemon"}
+function marketUniverseOf(x){return x?.universe==="lorcana"?"lorcana":"pokemon"}
 function money(n,currency="EUR"){return (+n||0).toLocaleString("es-ES",{style:"currency",currency:currency||"EUR"})}
 function ensureStateShape(s){
   s=s&&typeof s==="object"?s:{};
@@ -31,10 +31,10 @@ function ensureStateShape(s){
   for(const k of ["selfTest","photoValidation","certification","releaseChecks","dataQuality","marketUniverse","marketFailures"])if(!s[k]||typeof s[k]!=="object"||Array.isArray(s[k]))s[k]={};
   if(!s.marketCoverage||typeof s.marketCoverage!=="object"||Array.isArray(s.marketCoverage))s.marketCoverage={total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null};
   s.marketCursor=Math.max(0,+s.marketCursor||0);
-  s.schemaVersion=48;
+  s.schemaVersion=49;
   for(const c of s.cards){
     if(!c||typeof c!=="object")continue;
-    if(!c.universe)c.universe="pokemon";
+    if(!c.universe)c.universe="pokemon";if(c.universe==="football"){c.archivedUniverse="football";c.universe="pokemon";c.archivedAt=c.archivedAt||new Date().toISOString();}
     if(!c.id)c.id=crypto.randomUUID();
     c.quantity=Math.max(1,+c.quantity||1);
     c.value=Number.isFinite(+c.value)?+c.value:0;
@@ -230,28 +230,9 @@ async function fetchLorcanaUniverse(mode){
   save();
   return all.filter(x=>ageDays(x.scannedAt)<=45).sort((a,b)=>b.score-a.score).slice(0,400);
 }
-function flattenSportsRows(j){
-  const candidates=[j?.constituents,j?.ranked,j?.items,j?.cards,j?.members,j?.data?.constituents,j?.data?.items].find(Array.isArray)||[];
-  return candidates;
-}
-function buildSportsSignal(x,i){
-  const cents=Number(x.priceUsdCents??x.price_usd_cents??x.card?.priceUsdCents),price=cents>0?cents/100:Number(x.price||x.value||0);
-  if(!price)return null;
-  const delta=Number(x.deltaPct??x.delta_pct??x.change7d??0)/100;
-  const name=x.name||x.card?.name||x.title||("Sports card "+(i+1));
-  return {id:"football:"+(x.id||x.card?.id||x.href||i),sourceId:x.id||x.card?.id||"",universe:"football",name,set:x.setName||x.set||x.card?.setName||"",number:x.cardNumber||x.number||"",image:x.imageUrl||x.image||x.card?.imageUrl||"",price,currency:"USD",low:null,avg1:null,avg7:null,avg30:null,momentum1:0,momentum7:Number.isFinite(delta)?delta:0,discount:0,volatility:.16,global:true,score:Math.round(clamp(55+(Number.isFinite(delta)?delta*80:0),35,85)),risk:"Medio",scenario12:price,rarity:"",updated:x.updatedAt||x.card?.updatedAt||null,scannedAt:new Date().toISOString(),source:"Renaiss Index",catalogOnly:true,analysts:{momentum:Math.round(clamp(50+delta*100,0,100)),value:50,stability:55,global:75,data:65}};
-}
-async function fetchFootballUniverse(){
-  const r=await fetch("https://api.renaissos.com/v1/indices/sports");if(!r.ok)throw new Error("Sports index "+r.status);
-  const j=await r.json(),rows=flattenSportsRows(j),signals=rows.map(buildSportsSignal).filter(Boolean);
-  if(signals.length)await marketSignalPutMany(signals);
-  const all=(await marketSignalAll()).filter(x=>marketUniverseOf(x)==="football");
-  state.coverageByUniverse.football={total:rows.length,seen:rows.length,priced:all.length,active:all.filter(x=>ageDays(x.scannedAt)<=45).length,stale:all.filter(x=>ageDays(x.scannedAt)>45).length,failed:signals.length?0:1,at:new Date().toISOString(),unit:"index"};
-  save();return all.filter(x=>ageDays(x.scannedAt)<=45).sort((a,b)=>b.score-a.score).slice(0,400);
-}
+
 async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse()){
   if(universe==="lorcana")return fetchLorcanaUniverse(mode);
-  if(universe==="football")return fetchFootballUniverse(mode);
   const list=await tcgdexList("en"),pool=(list||[]).filter(x=>x.id&&x.name);
   if(mode==="wide"){
     const batchSize=120,total=pool.length||0,start=total?state.marketCursor%total:0,briefs=[];
@@ -306,7 +287,7 @@ function renderCoverage(){
     '<div><span>Cobertura</span><b>'+pct.toFixed(1)+'%</b></div>'+
     '<div><span>Fallos</span><b class="'+(failed?"warn":"")+'">'+failed+'</b></div>'+
     '<div class="coverageBar"><i style="width:'+Math.min(100,pct)+'%"></i></div>'+
-    '<small>'+(u==="lorcana"?"Lorcast expone todos los sets y cartas; precios actuales se conservan en USD y no se mezclan con EUR.":u==="football"?"Fútbol usa el índice deportivo público cuando está disponible y tus observaciones verificadas. El catálogo individual completo requiere una fuente deportiva con cuota suficiente.":"TCGdex aporta catálogo y referencias Cardmarket para Pokémon.")+'</small>';
+    '<small>'+(u==="lorcana"?"Lorcast expone todos los sets y cartas; precios actuales se conservan en USD y no se mezclan con EUR.":"TCGdex aporta catálogo y referencias Cardmarket para Pokémon.")+'</small>';
 }
 function signalLabel(x){
   if(x.score>=78&&x.risk!=="Alto")return "Señal cuantitativa alta";
@@ -603,7 +584,7 @@ function renderCertification(){
   const box=document.querySelector("#certificationResults");if(!box)return;const c=state.certification||{},r=readinessScore(),blocks=readinessBlockers();
   const dq=dataQualityScore();let head='<div class="certScore '+(r.score===100?"complete":"")+'">'+r.score+'%</div><div class="certSub">Calidad global '+dq.score+'%</div>';
   if(c.at)head+='<small>Última comprobación: '+new Date(c.at).toLocaleString("es-ES")+'</small>';
-  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100%:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V48 están superados.</div>');
+  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100%:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V49 están superados.</div>');
 }
 async function runCertification(){
   const btn=document.querySelector("#runCertification");btn.disabled=true;btn.textContent="Comprobando…";repairStateIntegrity();renderIntegrity();
@@ -616,7 +597,7 @@ async function runCertification(){
 }
 function renderReadiness(){
   const box=document.querySelector("#readinessPanel");if(!box)return;const r=readinessScore();
-  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V48.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
+  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V49.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
 }
 function renderMarketScan(){
   renderPortfolioRisk();renderCompare();
@@ -630,7 +611,7 @@ async function continueCoverage(blocks=5){
   btn.disabled=true;document.querySelector("#deepScanMarket").disabled=true;
   let completed=0;
   try{
-    const u=currentRadarUniverse(),runs=u==="football"?1:blocks;for(let i=0;i<runs;i++){
+    const u=currentRadarUniverse(),runs=blocks;for(let i=0;i<runs;i++){
       st.textContent="Cobertura "+(i+1)+"/"+runs+" · "+universeLabel(u)+"…";
       await fetchMarketUniverse("wide",u);
       completed++;
@@ -899,13 +880,13 @@ async function analyzeCardFile(file){
   let visual=[];if(uniq.length>1)visual=await visualMatchCandidates(file,uniq);if(visual.length){uniq.sort((a,b)=>(visual.find(v=>v.c.id===b.id)?.visual||0)-(visual.find(v=>v.c.id===a.id)?.visual||0))}const best=uniq[0]||null;
   return {g,found:uniq,best,debug:{passes:texts.length,numbers:allNumbers,tokens,barcode,quality,visual:visual.map(v=>({id:v.c.id,score:v.visual}))}};
 }
-async function analyzeCollectibleFile(file,universe="pokemon"){return universe==="pokemon"?analyzeCardFile(file):analyzeNonPokemonFile(file,universe)}
+async function analyzeCollectibleFile(file,universe="pokemon"){return universe==="lorcana"?analyzeNonPokemonFile(file,"lorcana"):analyzeCardFile(file)}
 
 function cardFromRecognition(id,blob,r,universe="pokemon"){
   const g=r.g||{}, exact=(r.found||[]).filter(c=>normNum(c.localId||c.printed_number||c.number)===normNum((g.number||"").split("/")[0]));
   const ranked=(r.found||[]),top=ranked[0],second=ranked[1],topScore=top?candidateTextScore(top,r.debug?.tokens||[]):0,secondScore=second?candidateTextScore(second,r.debug?.tokens||[]):0,visTop=r.debug?.visual?.find(v=>v.id===top?.id)?.score||0,visSecond=r.debug?.visual?.find(v=>v.id===second?.id)?.score||0;const c=exact.length===1?exact[0]:(top&&((topScore>=16&&topScore-secondScore>=8)||(visTop>=72&&visTop-visSecond>=8))?top:null), confident=!!c, img=c?.images?.[0], name=confident?(c.name||"Carta identificada"):"Carta por identificar",grading=g.grading||"RAW",grade=g.grade||"";
   const mv=confident?marketValueFor(name,grading,grade,"",universe):null;
-  let result={id,universe,name,set:confident?(c.set?.name||c.expansion?.name||""):"",number:confident?(c.localId||c.printed_number||c.number||g.number||""):(g.number||""),year:confident?String(c.set?.releaseDate||c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").slice(0,4):(g.year||""),language:confident?(c._lang==="es"?"Español":c._lang==="en"?"Inglés":(c.language_code||c.language||g.language||"")):(g.language||""),grading,grade,cert:g.cert||"",value:mv?.value||0,valueEvidence:mv?.count||0,purchase:null,quantity:1,purchaseDate:"",catalogId:confident?(c.id||""):"",referenceImage:img?(img.large||img.medium||img.small||""):"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:!confident,recognition:{score:confident?(exact.length===1?100:(visTop>=72?92:88)):0,source:confident?(exact.length===1?"collector-number":visTop>=72?"collector-number+visual":"collector-number+name-tokens"):"pending",passes:r.debug?.passes||0,candidates:(r.found||[]).length,visualScore:visTop||0,barcode:r.debug?.barcode||null,quality:r.debug?.quality||null,gradingEvidence:g.gradingEvidence||"none",certEvidence:g.certEvidence||"",issuerDetected:g.issuerDetected||"",at:new Date().toISOString()},createdAt:new Date().toISOString()};if(confident&&universe==="pokemon")applyCatalogPricing(result,c);else if(confident&&c._price){result.value=+c._price||0;result.marketPricing={value:+c._price||0,source:universe==="lorcana"?"Lorcast":"Radar fútbol",currency:c._currency||"USD"};}return result
+  let result={id,universe,name,set:confident?(c.set?.name||c.expansion?.name||""):"",number:confident?(c.localId||c.printed_number||c.number||g.number||""):(g.number||""),year:confident?String(c.set?.releaseDate||c.expansion?.release_date||c.expansion?.releaseDate||g.year||"").slice(0,4):(g.year||""),language:confident?(c._lang==="es"?"Español":c._lang==="en"?"Inglés":(c.language_code||c.language||g.language||"")):(g.language||""),grading,grade,cert:g.cert||"",value:mv?.value||0,valueEvidence:mv?.count||0,purchase:null,quantity:1,purchaseDate:"",catalogId:confident?(c.id||""):"",referenceImage:img?(img.large||img.medium||img.small||""):"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:!confident,recognition:{score:confident?(exact.length===1?100:(visTop>=72?92:88)):0,source:confident?(exact.length===1?"collector-number":visTop>=72?"collector-number+visual":"collector-number+name-tokens"):"pending",passes:r.debug?.passes||0,candidates:(r.found||[]).length,visualScore:visTop||0,barcode:r.debug?.barcode||null,quality:r.debug?.quality||null,gradingEvidence:g.gradingEvidence||"none",certEvidence:g.certEvidence||"",issuerDetected:g.issuerDetected||"",at:new Date().toISOString()},createdAt:new Date().toISOString()};if(confident&&universe==="pokemon")applyCatalogPricing(result,c);else if(confident&&c._price){result.value=+c._price||0;result.marketPricing={value:+c._price||0,source:"Lorcast",currency:c._currency||"USD"};}return result
 }
 async function recognizeSavedCard(card,file){
   try{
@@ -930,7 +911,7 @@ function applyCandidate(c,g={}){
   if(g.grading&&g.grading!=="RAW"&&g.gradingEvidence==="ocr-label")form.elements.grading.value=g.grading;
   if(g.grade)form.elements.grade.value=g.grade;
   if(g.cert)form.elements.cert.value=g.cert;
-  const img=(c.images||[])[0]; if(img) form.dataset.referenceImage=img.large||img.medium||img.small||""; else if(c.image) form.dataset.referenceImage=c._universe&&c._universe!=="pokemon"?c.image:c.image+"/high.webp";const u=form.elements.universe?.value||"pokemon",rp=u==="pokemon"?extractRawPricing(c):(c._price?{value:+c._price,source:u==="lorcana"?"Lorcast":"Radar fútbol",currency:c._currency||"USD"}:null);if(form.elements.grading.value==="RAW"&&rp){form.elements.value.value=rp.value;form.dataset.marketPricing=JSON.stringify(rp);showMarketHint({marketPricing:rp})}else{delete form.dataset.marketPricing;showMarketHint(null)}
+  const img=(c.images||[])[0]; if(img) form.dataset.referenceImage=img.large||img.medium||img.small||""; else if(c.image) form.dataset.referenceImage=c._universe&&c._universe!=="pokemon"?c.image:c.image+"/high.webp";const u=form.elements.universe?.value||"pokemon",rp=u==="pokemon"?extractRawPricing(c):(c._price?{value:+c._price,source:"Lorcast",currency:c._currency||"USD"}:null);if(form.elements.grading.value==="RAW"&&rp){form.elements.value.value=rp.value;form.dataset.marketPricing=JSON.stringify(rp);showMarketHint({marketPricing:rp})}else{delete form.dataset.marketPricing;showMarketHint(null)}
 }
 async function scanCardFile(file){
   const st=document.querySelector("#scanStatus"),box=document.querySelector("#autoMatch");
@@ -1055,7 +1036,7 @@ function renderValuationAudit(){
 }function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V48","ok"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Radar activo",(state.marketCoverage?.active||0)+" cartas",(state.marketCoverage?.active||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/8",(state.selfTest?.pass||0)>=7?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V49","ok"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Radar activo",(state.marketCoverage?.active||0)+" cartas",(state.marketCoverage?.active||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/8",(state.selfTest?.pass||0)>=7?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
   box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderBootStatus();renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();renderPhotoValidation();renderCertification();renderIntegrity();renderValuationAudit();renderMarketEvidence();
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos y radar guardados localmente · copia V3 completa · "+(persisted?"almacenamiento persistente concedido":"haz copias periódicas en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let marketSignals=await marketSignalAll().catch(()=>[]),clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:3,createdAt:new Date().toISOString(),state:clean,photos,marketSignals},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
@@ -1107,10 +1088,29 @@ async function hydrateMarketFromStorage(){
   state.bootInfo={at:new Date().toISOString(),radarLoaded:true,radarCount:rows.length};
   save();renderCoverage();renderMarketScan();renderScanHistory();renderBootStatus();
 }
+async function archiveFootballUniverseData(){
+  try{
+    const all=await marketSignalAll(),football=all.filter(x=>x?.universe==="football");
+    if(football.length){
+      state.archivedUniverses=state.archivedUniverses||{};
+      state.archivedUniverses.football={at:new Date().toISOString(),signals:football.slice(0,500),count:football.length};
+      await marketSignalDeleteMany(football.map(x=>x.id));
+    }
+    state.market=state.market||[];
+    const fm=state.market.filter(x=>x?.universe==="football");
+    if(fm.length){
+      state.archivedUniverses=state.archivedUniverses||{};
+      state.archivedUniverses.footballMarket={at:new Date().toISOString(),rows:fm.slice(0,500),count:fm.length};
+      state.market=state.market.filter(x=>x?.universe!=="football");
+    }
+    delete state.coverageByUniverse?.football;delete state.cursorByUniverse?.football;
+    save();
+  }catch{}
+}
 async function migrateLegacyMarketUniverse(){
   const rows=Object.values(state.marketUniverse||{}).filter(x=>x?.id);
   if(rows.length){await marketSignalPutMany(rows);state.marketUniverse={};}
   state.marketScannedIds={};
   await refreshMarketFreshness();
 }
-openDB().then(async()=>{try{await navigator.storage?.persist?.()}catch{}await migrateLegacyMarketUniverse();await hydrateMarketFromStorage(); for(const x of state.cards){if(x.photo&&!x.photoKey&&x.photo.startsWith("data:")){try{let blob=await (await fetch(x.photo)).blob();x.photoKey=x.id;await photoPut(x.id,blob);delete x.photo}catch{}}}save();await hydratePhotos();storageStatus()}).catch(e=>{state.bootInfo={at:new Date().toISOString(),radarLoaded:false,radarCount:0,error:String(e?.message||e||"IndexedDB")};save();renderBootStatus();document.querySelector("#readyText").textContent="Error al abrir almacenamiento local. No cargues cartas hasta recargar la app."});
+openDB().then(async()=>{try{await navigator.storage?.persist?.()}catch{}await migrateLegacyMarketUniverse();await archiveFootballUniverseData();await hydrateMarketFromStorage(); for(const x of state.cards){if(x.photo&&!x.photoKey&&x.photo.startsWith("data:")){try{let blob=await (await fetch(x.photo)).blob();x.photoKey=x.id;await photoPut(x.id,blob);delete x.photo}catch{}}}save();await hydratePhotos();storageStatus()}).catch(e=>{state.bootInfo={at:new Date().toISOString(),radarLoaded:false,radarCount:0,error:String(e?.message||e||"IndexedDB")};save();renderBootStatus();document.querySelector("#readyText").textContent="Error al abrir almacenamiento local. No cargues cartas hasta recargar la app."});
