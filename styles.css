@@ -121,3 +121,5 @@ nav button{min-height:46px;line-height:1.05}
 #photoValidationResults small{display:block;margin-top:8px;font-size:8px;color:#8794ad;line-height:1.35}
 
 .confirmIdentity{background:#204f37;border:1px solid #3c7655}
+
+.microNote{font-size:9px;line-height:1.35;color:#8794ad;margin:8px 0 14px}
