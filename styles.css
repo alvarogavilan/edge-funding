@@ -125,7 +125,7 @@ nav button{min-height:46px;line-height:1.05}
 .microNote{font-size:9px;line-height:1.35;color:#8794ad;margin:8px 0 14px}
 
 .universeBadge{display:inline-flex;align-items:center;gap:4px;font-size:8px;font-weight:800;padding:3px 7px;border-radius:999px;margin-bottom:4px;background:#1b273b;color:#dfe8ff}
-.universeBadge.lorcana{background:#3b2855}.universeBadge.football{background:#214632}
+.universeBadge.lorcana{background:#3b2855}
 #radarUniverse,#collectionUniverse{min-width:110px}
 
 #cardForm select[name="universe"],#bulkUniverse{font-weight:800}
