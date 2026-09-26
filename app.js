@@ -10,7 +10,7 @@ function photoDel(id){return new Promise(ok=>{let r=db.transaction("photos","rea
 function marketSignalPutMany(rows){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const x of rows||[])if(x?.id)s.put(x);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
 function marketSignalAll(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
 function marketSignalCount(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").count();r.onsuccess=()=>ok(r.result||0);r.onerror=()=>no(r.error)}catch(e){no(e)}})}function marketSignalDeleteMany(ids){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const id of ids||[])s.delete(id);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
-function marketSignalClear(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals","readwrite").objectStore("marketSignals").clear();r.onsuccess=()=>ok();r.onerror=()=>no(r.error)}catch(e){no(e)}})}function catalogPutMany(rows){return new Promise((ok,no)=>{try{let t=db.transaction("catalog","readwrite"),s=t.objectStore("catalog");for(const x of rows||[])if(x&&x.id)s.put(x);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}function catalogAll(){return new Promise((ok,no)=>{try{let r=db.transaction("catalog").objectStore("catalog").getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)}catch(e){no(e)}})}function catalogCount(universe){return new Promise((ok,no)=>{try{let s=db.transaction("catalog").objectStore("catalog"),r=universe?s.index("universe").count(IDBKeyRange.only(universe)):s.count();r.onsuccess=()=>ok(r.result||0);r.onerror=()=>no(r.error)}catch(e){no(e)}})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];if(!state.dataQuality)state.dataQuality={};if(!state.schemaVersion||state.schemaVersion<43)state.schemaVersion=59;if(!state.marketCursor)state.marketCursor=0;if(!state.marketUniverse)state.marketUniverse={};if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};if(!state.marketScannedIds)state.marketScannedIds={};if(!state.marketFailures)state.marketFailures={};if(!state.coverageByUniverse)state.coverageByUniverse={pokemon:state.marketCoverage||{},lorcana:{total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null}};if(!state.cursorByUniverse)state.cursorByUniverse={pokemon:state.marketCursor||0,lorcana:0};if(!state.archivedUniverses)state.archivedUniverses={};if(!state.catalogMeta)state.catalogMeta={pokemon:{count:0,at:null},lorcana:{count:0,sets:0,at:null}};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];state=ensureStateShape(state);const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
+function marketSignalClear(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals","readwrite").objectStore("marketSignals").clear();r.onsuccess=()=>ok();r.onerror=()=>no(r.error)}catch(e){no(e)}})}function catalogPutMany(rows){return new Promise((ok,no)=>{try{let t=db.transaction("catalog","readwrite"),s=t.objectStore("catalog");for(const x of rows||[])if(x&&x.id)s.put(x);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}function catalogAll(){return new Promise((ok,no)=>{try{let r=db.transaction("catalog").objectStore("catalog").getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)}catch(e){no(e)}})}function catalogCount(universe){return new Promise((ok,no)=>{try{let s=db.transaction("catalog").objectStore("catalog"),r=universe?s.index("universe").count(IDBKeyRange.only(universe)):s.count();r.onsuccess=()=>ok(r.result||0);r.onerror=()=>no(r.error)}catch(e){no(e)}})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];if(!state.dataQuality)state.dataQuality={};if(!state.schemaVersion||state.schemaVersion<43)state.schemaVersion=60;if(!state.marketCursor)state.marketCursor=0;if(!state.marketUniverse)state.marketUniverse={};if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};if(!state.marketScannedIds)state.marketScannedIds={};if(!state.marketFailures)state.marketFailures={};if(!state.coverageByUniverse)state.coverageByUniverse={pokemon:state.marketCoverage||{},lorcana:{total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null}};if(!state.cursorByUniverse)state.cursorByUniverse={pokemon:state.marketCursor||0,lorcana:0};if(!state.archivedUniverses)state.archivedUniverses={};if(!state.catalogMeta)state.catalogMeta={pokemon:{count:0,at:null},lorcana:{count:0,sets:0,at:null}};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];state=ensureStateShape(state);const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
 const total=()=>state.cards.reduce((a,x)=>a+(+x.value||0)*qty(x),0);
@@ -31,7 +31,7 @@ function ensureStateShape(s){
   for(const k of ["selfTest","photoValidation","certification","releaseChecks","dataQuality","marketUniverse","marketFailures"])if(!s[k]||typeof s[k]!=="object"||Array.isArray(s[k]))s[k]={};
   if(!s.marketCoverage||typeof s.marketCoverage!=="object"||Array.isArray(s.marketCoverage))s.marketCoverage={total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null};
   s.marketCursor=Math.max(0,+s.marketCursor||0);
-  s.schemaVersion=59;
+  s.schemaVersion=60;
   for(const c of s.cards){
     if(!c||typeof c!=="object")continue;
     if(!c.universe)c.universe="pokemon";
@@ -119,7 +119,46 @@ function drawChart(){const c=document.querySelector("#chart"),dpr=devicePixelRat
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.add("hidden"));document.querySelector("#"+b.dataset.tab).classList.remove("hidden");if(b.dataset.tab==="data")drawChart()});document.querySelector("#runPregrade").onclick=runPSAPregrade;renderPregradeHistory();
 document.querySelector("#snapshot").onclick=()=>{state.history.push({at:new Date().toISOString(),total:total(),cards:Object.fromEntries(state.cards.map(x=>[x.id,x.value]))});save();render()};
 function radarScore(group){let sold=group.filter(x=>x.kind==="sold"),list=group.filter(x=>x.kind==="listing");if(!sold.length)return 0;let prices=sold.map(x=>x.price).sort((a,b)=>a-b),med=prices[Math.floor(prices.length/2)],latest=sold.at(-1)?.price||med,score=Math.min(55,sold.length*11);if(latest<med)score+=15;if(list.length&&Math.min(...list.map(x=>x.price))<med*.9)score+=20;return Math.min(100,score)}
-function renderRadar(){
+function setupMarketWorkspace(){
+  const section=document.querySelector("#radar"),host=document.querySelector("#marketPaneHost"),sub=document.querySelector("#marketSubnav");
+  if(!section||!host||host.dataset.ready)return;
+  const today=document.createElement("div"),radar=document.createElement("div"),catalog=document.createElement("div");
+  today.id="marketPaneToday";radar.id="marketPaneRadar";catalog.id="marketPaneCatalog";
+  today.className="marketPane";radar.className="marketPane hidden";catalog.className="marketPane hidden";
+  host.append(today,radar,catalog);
+  const move=id,target)=>{const el=document.querySelector(id);if(el)target.appendChild(el)};
+  // First screen: only the decision output.
+  move("#topBuyCandidates",today);move("#opportunityAlerts",today);move("#decisionBoard",today);
+  // Catalog gets its own clean screen.
+  move(".catalogHub",catalog);
+  // Everything else belongs to the technical radar screen.
+  const keep=[".labControls",".scanModes","#coveragePanel",".researchDesk","#marketIndex","#marketHealth","#provenancePanel","#sectorGrid","#portfolioRisk","#marketLeaders","#compareTray","#signalPerformance","#scanHistory"];
+  keep.forEach(sel=>move(sel,radar));
+  // Move the lower opportunities block and its controls into Radar.
+  const heads=[...section.querySelectorAll(".sectionHead")];
+  const oppHead=heads.find(h=>/Oportunidades de mercado/i.test(h.textContent||""));
+  if(oppHead){
+    radar.appendChild(oppHead);
+    let n=oppHead.nextElementSibling;
+    while(n&&n!==host&&n.tagName!=="SECTION"){
+      const next=n.nextElementSibling;
+      if(n.id==="pregrade"||n.id==="watch"||n.id==="data")break;
+      if(["radarSummary","radarList"].includes(n.id)||n.classList?.contains("filters")||n.classList?.contains("muted"))radar.appendChild(n);
+      n=next;
+    }
+  }
+  host.dataset.ready="1";
+  const show=name=>{
+    [today,radar,catalog].forEach(p=>p.classList.add("hidden"));
+    ({today,radar,catalog}[name]||today).classList.remove("hidden");
+    sub.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.marketpane===name));
+    if(name==="today"){renderTopBuyCandidates(state.marketScan||[]);renderOpportunityAlerts(state.marketScan||[]);renderDecisionBoard(state.marketScan||[])}
+    if(name==="catalog")refreshCatalogBrowser(false).catch(()=>{});
+  };
+  sub.querySelectorAll("button").forEach(b=>b.onclick=()=>show(b.dataset.marketpane));
+  show("today");
+}
+function renderRadar(){setupMarketWorkspace();
   const u=currentRadarUniverse(),auto=[...(state.marketScan||[])].filter(x=>marketUniverseOf(x)===u&&(+x.price||0)>0&&(+x.price||0)<=radarLimit).sort((a,b)=>{const A=topBuyRank(a),B=topBuyRank(b);return (B.eligible-A.eligible)||(B.rank-A.rank)||((+b.score||0)-(+a.score||0))});
   const manual=state.market.filter(x=>marketUniverseOf(x)===u),sales=manual.filter(x=>x.kind==="sold"),listings=manual.filter(x=>x.kind==="listing");
   const rs=document.querySelector("#radarSummary");
@@ -617,7 +656,7 @@ function renderTopBuyCandidates(rows){
   const box=document.querySelector("#topBuyCandidates");if(!box)return;
   const ranked=(rows||[]).map(topBuyRank).filter(o=>o.eligible).sort((a,b)=>b.rank-a.rank).slice(0,3);
   if(!ranked.length){
-    box.innerHTML='<div class="buyNone"><b>Compra clara: ninguna ahora mismo</b><span>No fuerzo una compra si los datos no superan simultáneamente convicción, liquidez, frescura, calidad de datos y zona de precio.</span></div>';
+    box.innerHTML='<div class="buyHead"><h3>Qué mirar hoy</h3><span>Filtro más estricto</span></div><div class="buyNone"><b>Ninguna candidata supera hoy todos los filtros</b><span>No fuerzo una compra. Revisa Radar para ver por qué las mejores se quedan fuera.</span></div>';
     return;
   }
   box.innerHTML='<div class="buyHead"><h3>Top 3 candidatas de compra</h3><span>Filtro estricto del radar actual</span></div>'+
@@ -702,7 +741,7 @@ function technicalCompletionScore(){
 }
 function renderTechnicalCompletion(){
   const box=document.querySelector("#technicalCompletionPanel");if(!box)return;const t=technicalCompletionScore();
-  box.innerHTML='<h3>Completitud técnica V59</h3><div class="readinessScore '+(t.score===100?"complete":"")+'">'+t.score+'%</div>'+
+  box.innerHTML='<h3>Completitud técnica V60</h3><div class="readinessScore '+(t.score===100?"complete":"")+'">'+t.score+'%</div>'+
     t.checks.map(x=>'<div class="qaRow"><span>'+x.label+'</span><b class="'+(x.ok?"ok":"warn")+'">'+(x.ok?"OK":"Pendiente")+'</b></div>').join("")+
     '<div class="qaRow"><span>Pokémon recorridas</span><b>'+((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)+'</b></div><div class="qaRow"><span>Lorcana sets</span><b>'+((state.coverageByUniverse?.lorcana||{}).seen||0)+'/'+((state.coverageByUniverse?.lorcana||{}).total||0)+'</b></div><small>Este porcentaje mide funcionamiento técnico. La preparación de datos reales (fotos, comparables, población y evidencia) se valida aparte para no fingir un 100% que todavía no se haya demostrado en tu iPhone.</small>';
 }
@@ -744,7 +783,7 @@ function renderCertification(){
   const box=document.querySelector("#certificationResults");if(!box)return;const c=state.certification||{},r=readinessScore(),blocks=readinessBlockers();
   const dq=dataQualityScore(),tech=technicalCompletionScore();let head='<div class="certScore '+(tech.score===100?"complete":"")+'">'+tech.score+'%</div><div class="certSub">Técnico · Datos reales '+r.score+'% · Calidad '+dq.score+'%</div>';
   if(c.at)head+='<small>Última comprobación: '+new Date(c.at).toLocaleString("es-ES")+'</small>';
-  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100% de datos reales:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V59 están superados.</div>');
+  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100% de datos reales:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V60 están superados.</div>');
 }
 async function advanceAutomaticCompletion(){
   const btn=document.querySelector("#advanceCompletion"),st=document.querySelector("#completionRunStatus"),selector=document.querySelector("#radarUniverse");
@@ -790,9 +829,9 @@ async function runCertification(){
 }
 function renderReadiness(){
   const box=document.querySelector("#readinessPanel");if(!box)return;const r=readinessScore();
-  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V59.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
+  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V60.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
 }
-function renderMarketScan(){
+function renderMarketScan(){setupMarketWorkspace();
   renderPortfolioRisk();renderCompare();
   const box=document.querySelector("#marketLeaders");if(!box)return;
   const rows=[...(state.marketScan||[])].sort((a,b)=>b.score-a.score);for(const fn of [()=>renderCoverage(),()=>renderMarketIndex(rows),()=>renderMarketHealth(rows),()=>renderTopBuyCandidates(rows),()=>renderOpportunityAlerts(rows),()=>renderDecisionBoard(rows),()=>renderProvenance(rows),()=>renderSignalPerformance()]){try{fn()}catch(e){pushRuntimeError("market-render",e?.message||e)}}
@@ -823,16 +862,26 @@ async function continueCoverage(blocks=5){
 }
 async function runMarketScan(mode="quick"){
   const btn=mode==="wide"?document.querySelector("#deepScanMarket"):document.querySelector("#scanMarket"),st=document.querySelector("#marketScanState");
-  btn.disabled=true;st.textContent=mode==="wide"?"Preparando escaneo amplio…":"Construyendo universo…";
+  btn.disabled=true;st.textContent=mode==="wide"?"Preparando escaneo amplio…":"Actualizando radar…";
   try{
-    const universe=currentRadarUniverse(),cards=await fetchMarketUniverse(mode,universe);st.textContent="Analizando "+cards.length+" elementos de "+universeLabel(universe)+"…";renderCoverage();
+    const universe=currentRadarUniverse(),cards=await fetchMarketUniverse(mode,universe);
+    st.textContent="Analizando "+cards.length+" elementos de "+universeLabel(universe)+"…";renderCoverage();
     const signals=universe==="pokemon"?cards.map(c=>c?.pricing?buildMarketSignal(c):c).filter(x=>x&&Number.isFinite(+x.score)&&(+x.price||0)>0):cards.filter(Boolean);
-    state.marketScan=signals;state.marketScanAt=new Date().toISOString();state.marketScanMode=mode;state.marketScanUniverse=currentRadarUniverse();recordSignalSnapshot(signals);const alerts=evaluateOpportunityAlerts(signals);state.alertHistory.push({at:state.marketScanAt,count:alerts.length,ids:alerts.map(a=>a.id)});state.alertHistory=state.alertHistory.slice(-30);save();renderMarketScan();renderRadar();snapshotMarketScan(mode);renderScanHistory();renderWatchSummary();
-    st.textContent=signals.length+" cartas analizadas"+(mode==="wide"&&state.marketCoverage?.total?" · cobertura "+((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"")+" · "+new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});renderQA();renderReadiness();
-  }catch(e){st.textContent="No se pudo completar el escaneo. Inténtalo de nuevo."}
+    if(!signals.length)throw new Error("La fuente no devolvió señales utilizables en esta pasada");
+    state.marketScan=signals;state.marketScanAt=new Date().toISOString();state.marketScanMode=mode;state.marketScanUniverse=universe;
+    recordSignalSnapshot(signals);const alerts=evaluateOpportunityAlerts(signals);state.alertHistory.push({at:state.marketScanAt,count:alerts.length,ids:alerts.map(a=>a.id)});state.alertHistory=state.alertHistory.slice(-30);
+    save();renderMarketScan();renderRadar();snapshotMarketScan(mode);renderScanHistory();renderWatchSummary();
+    st.textContent=signals.length+" señales activas · "+new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});renderQA();renderReadiness();
+  }catch(e){
+    pushRuntimeError("market-scan",e?.message||e);
+    const fallback=(await activeMarketSignals(45,currentRadarUniverse()).catch(()=>({active:[]}))).active.sort((a,b)=>b.score-a.score).slice(0,400);
+    if(fallback.length){
+      state.marketScan=fallback;state.marketScanUniverse=currentRadarUniverse();save();renderMarketScan();renderRadar();
+      st.textContent="No se pudo refrescar ahora; mostrando "+fallback.length+" señales guardadas.";
+    }else st.textContent="No se pudo refrescar y no hay señales guardadas para este universo.";
+  }
   btn.disabled=false;
 }
-
 function extractRawPricing(c){
   const p=c?.pricing?.cardmarket;if(!p)return null;
   const candidates=[p.trend,p.avg7,p.avg30,p.avg1,p.avg].map(Number).filter(n=>Number.isFinite(n)&&n>0);
@@ -1387,7 +1436,7 @@ function renderValuationAudit(){
 }function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const catalogP=state.catalogMeta?.pokemon?.count||0,catalogL=state.catalogMeta?.lorcana?.count||0;const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V59","ok"],["Catálogo Pokémon",catalogP.toLocaleString("es-ES")+" cartas",catalogP>1000?"ok":"warn"],["Catálogo Lorcana",catalogL.toLocaleString("es-ES")+" cartas",catalogL>1000?"ok":"warn"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Pokémon recorridas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)+" cartas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)>=120?"ok":"warn"],["Lorcana cobertura",((state.coverageByUniverse?.lorcana||{}).seen||0)+"/"+((state.coverageByUniverse?.lorcana||{}).total||0)+" sets",((state.coverageByUniverse?.lorcana||{}).total||0)>0&&((state.coverageByUniverse?.lorcana||{}).seen||0)>=((state.coverageByUniverse?.lorcana||{}).total||0)?"ok":"warn"],["Radar Pokémon",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)+" activas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)>=40?"ok":"warn"],["Radar Lorcana",((state.coverageByUniverse?.lorcana||{}).active||0)+" activas",((state.coverageByUniverse?.lorcana||{}).active||0)>=20?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/11",(state.selfTest?.pass||0)>=11?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  const catalogP=state.catalogMeta?.pokemon?.count||0,catalogL=state.catalogMeta?.lorcana?.count||0;const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V60","ok"],["Catálogo Pokémon",catalogP.toLocaleString("es-ES")+" cartas",catalogP>1000?"ok":"warn"],["Catálogo Lorcana",catalogL.toLocaleString("es-ES")+" cartas",catalogL>1000?"ok":"warn"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Pokémon recorridas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)+" cartas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)>=120?"ok":"warn"],["Lorcana cobertura",((state.coverageByUniverse?.lorcana||{}).seen||0)+"/"+((state.coverageByUniverse?.lorcana||{}).total||0)+" sets",((state.coverageByUniverse?.lorcana||{}).total||0)>0&&((state.coverageByUniverse?.lorcana||{}).seen||0)>=((state.coverageByUniverse?.lorcana||{}).total||0)?"ok":"warn"],["Radar Pokémon",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)+" activas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)>=40?"ok":"warn"],["Radar Lorcana",((state.coverageByUniverse?.lorcana||{}).active||0)+" activas",((state.coverageByUniverse?.lorcana||{}).active||0)>=20?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/11",(state.selfTest?.pass||0)>=11?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
   box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderBootStatus();renderTechnicalCompletion();renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();renderPhotoValidation();renderCertification();renderIntegrity();renderValuationAudit();renderMarketEvidence();
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos y radar guardados localmente · copia V3 completa · "+(persisted?"almacenamiento persistente concedido":"haz copias periódicas en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let marketSignals=await marketSignalAll().catch(()=>[]),clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:3,createdAt:new Date().toISOString(),state:clean,photos,marketSignals},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
