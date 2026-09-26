@@ -24,6 +24,13 @@ function assetAccounting(key,currentUnitValue=0){
 }
 let editId=null;
 function total(r){const gross=num(r.unitPrice)*num(r.qty||1);return gross+num(r.shipping)+num(r.fees)}
+function integrity(){
+ const issues=[];
+ const keys=[...new Set(state.investmentLedger.map(r=>r.assetKey).filter(Boolean))];
+ for(const key of keys){let held=0;for(const r of state.investmentLedger.filter(x=>x.assetKey===key).sort((a,b)=>(a.date||"").localeCompare(b.date||""))){if(r.type==="buy")held+=num(r.qty||1);if(r.type==="sell"){held-=num(r.qty||1);if(held<-1e-9){issues.push("Venta supera unidades compradas: "+r.name);held=0}}}}
+ for(const r of state.investmentLedger){if(!r.name||!r.date||num(r.qty)<=0)issues.push("Operación incompleta: "+(r.name||r.id));if(r.type==="sell"&&!r.assetKey)issues.push("Venta sin posición vinculada: "+r.name)}
+ return [...new Set(issues)];
+}
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
  sales=rows.filter(r=>r.type==="sell").reduce((a,r)=>a+(num(r.unitPrice)*num(r.qty||1)-num(r.shipping)-num(r.fees)),0),
@@ -32,7 +39,8 @@ function stats(){
 }
 function render(){
  const box=$("#ledgerSummary"),list=$("#ledgerList");if(!box||!list)return;const x=stats();
- box.innerHTML='<div class="stat"><b>'+eur(x.buys)+'</b><span>Compras registradas</span></div><div class="stat"><b>'+eur(x.sales)+'</b><span>Ventas netas</span></div><div class="stat"><b>'+eur(x.costs)+'</b><span>Graduación/costes</span></div><div class="stat"><b>'+eur(x.netCash)+'</b><span>Flujo neto realizado</span></div>';
+ const issues=integrity();
+ box.innerHTML='<div class="stat"><b>'+eur(x.buys)+'</b><span>Compras registradas</span></div><div class="stat"><b>'+eur(x.sales)+'</b><span>Ventas netas</span></div><div class="stat"><b>'+eur(x.costs)+'</b><span>Graduación/costes</span></div><div class="stat"><b>'+eur(x.netCash)+'</b><span>Flujo neto realizado</span></div><div class="stat"><b>'+issues.length+'</b><span>Alertas contables</span></div>';
  const rows=[...state.investmentLedger].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
  list.innerHTML=rows.length?rows.map(r=>'<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>').join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
  document.querySelectorAll("[data-ledger-edit]").forEach(b=>b.onclick=()=>open(b.dataset.ledgerEdit));
@@ -46,5 +54,5 @@ $("#ledgerAdd")?.addEventListener("click",()=>open());$("#ledgerCancel")?.addEve
 $("#ledgerForm")?.addEventListener("submit",e=>{e.preventDefault();const r={id:editId||crypto.randomUUID(),type:$("#ledgerType").value,assetType:$("#ledgerAssetType").value,assetKey:$("#ledgerAssetKey").value,name:$("#ledgerName").value.trim(),date:$("#ledgerDate").value,qty:num($("#ledgerQty").value),unitPrice:num($("#ledgerUnitPrice").value),shipping:num($("#ledgerShipping").value),fees:num($("#ledgerFees").value),sourceUrl:$("#ledgerSource").value.trim(),notes:$("#ledgerNotes").value.trim(),updatedAt:new Date().toISOString()};if(!r.name||!r.date||r.qty<=0||r.unitPrice<0)return;if(editId)state.investmentLedger=state.investmentLedger.map(x=>x.id===editId?r:x);else state.investmentLedger.push(r);save();$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
 $("#ledgerDelete")?.addEventListener("click",()=>{if(!editId)return;state.investmentLedger=state.investmentLedger.filter(x=>x.id!==editId);save();$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
 render();
-window.renderInvestmentLedger=render;window.investmentLedgerStats=stats;window.assetAccounting=assetAccounting;
+window.renderInvestmentLedger=render;window.investmentLedgerStats=stats;window.assetAccounting=assetAccounting;window.investmentLedgerIntegrity=integrity;
 })();
