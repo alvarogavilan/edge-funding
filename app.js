@@ -802,8 +802,8 @@ function cardmarketProductLink(x){
     [/lorcana\|elsa spirit of winter.*first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2"]
   ];
   for(const [re,url] of known)if(re.test(key))return url;
-  const root=marketUniverseOf(x)==="lorcana"?"https://www.cardmarket.com/es/Lorcana/Cards":"https://www.cardmarket.com/es/Pokemon";
-  return root;
+  const game=marketUniverseOf(x)==="lorcana"?"Lorcana":"Pokemon",q=[String(x.name||"").replace(/ · Foil$/i,""),x.set||"",x.number?("#"+x.number):""].filter(Boolean).join(" ");
+  return "https://www.cardmarket.com/es/"+game+"/Products/Search?searchString="+encodeURIComponent(q);
 }
 
 function psa10BuyLink(x){
