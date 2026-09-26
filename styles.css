@@ -157,3 +157,5 @@ nav button{min-height:46px;line-height:1.05}
 
 #advanceCompletion{background:#244d3b}
 #completionRunStatus{margin-top:8px}
+
+.integrityIssues b{display:block;margin-bottom:5px}
