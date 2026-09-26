@@ -828,7 +828,7 @@ async function refreshGlobalToday(){
   const scored=active.map(topBuyRank),eligible=scored.filter(o=>o.eligible).sort((a,b)=>b.rank-a.rank),ranked=eligible.slice(0,10);
   const pokemon=active.filter(x=>marketUniverseOf(x)==="pokemon"),lorcana=active.filter(x=>marketUniverseOf(x)==="lorcana");
   if(sum)sum.innerHTML='<div><span>Pokémon activas</span><b>'+pokemon.length+'</b></div><div><span>Lorcana activas</span><b>'+lorcana.length+'</b></div><div><span>Pasan filtro compra</span><b>'+eligible.length+'</b></div>';
-  window.CVGlobalRadar={active,scored,eligible,ranked,near:scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10),at:new Date().toISOString()};try{window.CVTodaySimple?.render?.()}catch{}
+  window.CVGlobalRadar={active,scored,eligible,ranked,near:scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10),best:scored.filter(o=>(+o.x.price||0)>0).sort((a,b)=>b.rank-a.rank).slice(0,10),at:new Date().toISOString()};try{window.CVTodaySimple?.render?.()}catch{}
   renderBuyNow(ranked);
   if(!ranked.length){
     const near=scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10);
