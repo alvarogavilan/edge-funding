@@ -200,6 +200,30 @@ async function refreshMarketFreshness(universe=currentRadarUniverse()){
   }
   save();return q;
 }
+function pokemonCatalogRow(c){return {id:"pokemon:"+c.id,sourceId:c.id,universe:"pokemon",name:c.name||"",set:c.set?.name||c.expansion?.name||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":(c.images?.[0]?.small||""),rarity:c.rarity||"",source:"TCGdex"}}
+function lorcanaCatalogRow(c){return {id:"lorcana:"+c.id,sourceId:c.id,universe:"lorcana",name:(c.name||"")+(c.version?" · "+c.version:""),set:c.set?.name||"",number:c.collector_number||"",image:c.image_uris?.digital?.small||c.image_uris?.digital?.normal||"",rarity:c.rarity||"",source:"Lorcast"}}
+let catalogPage=0,catalogPageSize=60;
+async function refreshCatalogBrowser(reset=false){
+  if(reset)catalogPage=0;const u=document.querySelector("#catalogUniverse")?.value||"pokemon",q=norm(document.querySelector("#catalogSearch")?.value||"");
+  const all=(await catalogAll().catch(()=>[])).filter(x=>x.universe===u),rows=q?all.filter(x=>norm([x.name,x.set,x.number,x.rarity].join(" ")).includes(q)):all;
+  rows.sort((a,b)=>String(a.set).localeCompare(String(b.set))||String(a.number).localeCompare(String(b.number),undefined,{numeric:true})||String(a.name).localeCompare(String(b.name)));
+  const pages=Math.max(1,Math.ceil(rows.length/catalogPageSize));catalogPage=Math.min(catalogPage,pages-1);const slice=rows.slice(catalogPage*catalogPageSize,(catalogPage+1)*catalogPageSize);
+  const box=document.querySelector("#catalogResults");if(box)box.innerHTML=slice.length?slice.map(x=>'<article class="catalogCard">'+(x.image?'<img src="'+x.image+'" alt="">':'<div class="catalogNoImg">🃏</div>')+'<div><b>'+x.name+'</b><small>'+x.set+(x.number?' · #'+x.number:'')+(x.rarity?' · '+x.rarity:'')+'</small></div></article>').join(""):'<div class="empty">No hay cartas indexadas para este filtro.</div>';
+  const info=document.querySelector("#catalogPageInfo");if(info)info.textContent=rows.length?((catalogPage*catalogPageSize+1)+"–"+Math.min((catalogPage+1)*catalogPageSize,rows.length)+" de "+rows.length):"0 cartas";
+  const pc=await catalogCount("pokemon").catch(()=>0),lc=await catalogCount("lorcana").catch(()=>0),cc=document.querySelector("#catalogCounts");if(cc)cc.innerHTML='<div><span>Pokémon indexadas</span><b>'+pc.toLocaleString("es-ES")+'</b></div><div><span>Lorcana indexadas</span><b>'+lc.toLocaleString("es-ES")+'</b></div><div><span>Total local</span><b>'+(pc+lc).toLocaleString("es-ES")+'</b></div>';
+}
+async function indexFullCatalog(){
+  const btn=document.querySelector("#indexFullCatalog"),st=document.querySelector("#catalogStatus");btn.disabled=true;
+  try{
+    st.textContent="Pokémon · cargando índice completo…";const pok=await tcgdexList("en"),prows=(pok||[]).filter(x=>x.id).map(pokemonCatalogRow);
+    for(let i=0;i<prows.length;i+=800)await catalogPutMany(prows.slice(i,i+800));state.catalogMeta.pokemon={count:prows.length,at:new Date().toISOString()};
+    st.textContent="Lorcana · recorriendo todos los sets…";const sets=await lorcastSets();let lcount=0;
+    for(let i=0;i<sets.length;i++){st.textContent="Lorcana · set "+(i+1)+"/"+sets.length+"…";const cards=await lorcastSetCards(sets[i].code),rows=cards.map(lorcanaCatalogRow);lcount+=rows.length;await catalogPutMany(rows);await new Promise(r=>setTimeout(r,70))}
+    state.catalogMeta.lorcana={count:lcount,sets:sets.length,at:new Date().toISOString()};save();await refreshCatalogBrowser(true);
+    st.textContent="Índice local: "+prows.length.toLocaleString("es-ES")+" Pokémon + "+lcount.toLocaleString("es-ES")+" Lorcana. Precio/señal se enriquece aparte.";
+  }catch(e){pushRuntimeError("catalog-index",e?.message||e);st.textContent="Indexado interrumpido. Lo ya guardado se conserva; puedes reintentar."}
+  btn.disabled=false;
+}
 let lorcastSetsCache=null;
 async function lorcastSets(){
   if(lorcastSetsCache)return lorcastSetsCache;
