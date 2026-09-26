@@ -422,8 +422,8 @@ async function fetchLorcanaUniverse(mode){
   if(signals.length)await marketSignalPutMany(signals);
   state.cursorByUniverse.lorcana=(start+chosen.length)%total;
   const all=(await marketSignalAll()).filter(x=>marketUniverseOf(x)==="lorcana"),prev=state.coverageByUniverse.lorcana||{};
-  const seenSets=Math.min(total,(prev.seenSets||prev.seen||0)+chosen.length),seenCards=(prev.cycleStart===start?0:(+prev.seenCards||0))+cardsSeen;
-  state.coverageByUniverse.lorcana={total,seen:seenSets,seenSets,seenCards,priced:all.length,active:all.filter(x=>ageDays(x.scannedAt)<=45).length,stale:all.filter(x=>ageDays(x.scannedAt)>45).length,failed:0,at:new Date().toISOString(),unit:"sets",cursor:state.cursorByUniverse.lorcana,cycleStart:prev.cycleStart??start};
+  const prior=prev.cycleTotal===total?(+prev.cycleProgress||0):0,rawProgress=prior+chosen.length,completed=total>0&&rawProgress>=total,cycleProgress=total?rawProgress%total:0,everComplete=completed||!!prev.lastCompleteAt,seenSets=everComplete?total:Math.min(total,rawProgress),cycleCards=(+prev.cycleCards||0)+cardsSeen,lastCycleCards=completed?cycleCards:(+prev.lastCycleCards||0),seenCards=everComplete?(lastCycleCards||+state.catalogMeta?.lorcana?.count||cycleCards):cycleCards,lastCompleteAt=completed?new Date().toISOString():(prev.lastCompleteAt||null);
+  state.coverageByUniverse.lorcana={total,seen:seenSets,seenSets,seenCards,priced:all.length,active:all.filter(x=>ageDays(x.scannedAt)<=45).length,stale:all.filter(x=>ageDays(x.scannedAt)>45).length,failed:0,at:new Date().toISOString(),unit:"sets",cursor:state.cursorByUniverse.lorcana,cycleTotal:total,cycleProgress,cycleCards:completed?0:cycleCards,lastCycleCards,cycleComplete:everComplete,lastCompleteAt};
   save();
   return all.filter(x=>ageDays(x.scannedAt)<=45).sort((a,b)=>b.score-a.score).slice(0,400);
 }
