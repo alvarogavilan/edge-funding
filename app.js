@@ -443,10 +443,9 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
     const fetched=full.filter(Boolean),signals=fetched.map(buildMarketSignal).filter(Boolean),pricedIds=new Set(signals.map(x=>x.id)),lostPrice=fetched.filter(c=>!pricedIds.has(c.id)).map(c=>c.id);
     if(signals.length)await marketSignalPutMany(signals);if(lostPrice.length)await marketSignalDeleteMany(lostPrice);
     state.marketCursor=total?((start+briefs.length)%total):0;
-    const previousSeen=+state.marketCoverage?.seen||0;
-    const seen=Math.min(total,previousSeen+briefs.length);
+    const prev=state.marketCoverage||{},sameCycle=prev.cycleTotal===total&&!(start===0&&(+prev.seen||0)>=total),previousSeen=sameCycle?(+prev.seen||0):0,seen=Math.min(total,previousSeen+briefs.length),cycleComplete=total>0&&seen>=total;
     const fresh=await activeMarketSignals(45),priced=fresh.all.length;
-    state.marketCoverage={total,seen,priced,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),cursor:state.marketCursor};state.coverageByUniverse.pokemon=state.marketCoverage;
+    state.marketCoverage={total,seen,priced,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),cursor:state.marketCursor,cycleTotal:total,cycleComplete};state.coverageByUniverse.pokemon=state.marketCoverage;
     state.marketUniverse={};state.marketScannedIds={};save();
     return fresh.active.sort((a,b)=>b.score-a.score).slice(0,400);
   }
