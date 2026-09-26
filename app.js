@@ -725,7 +725,7 @@ function renderSignalPerformance(){
   box.innerHTML='<h3>Rendimiento de señales</h3><div class="performanceGrid">'+perfHtml+'</div><div class="learnedWeights"><b>Pesos aprendidos</b><div>'+weights+'</div><small>Los pesos solo se ajustan cuando existe historial suficiente; no convierten una señal en garantía.</small></div>';
 }
 function decisionFor(x){
-  const conv=convictionSignal(x),liq=liquiditySignal(x),zone=buyZone(x),fresh=ageDays(x.updated),reasons=[];
+  const conv=convictionSignal(x),liq=liquiditySignal(x),zone=buyZone(x),fresh=ageDays(x.updated||x.scannedAt),reasons=[];
   let status="OBSERVAR";
   if(conv>=80&&liq>=70&&x.risk!=="Alto"&&fresh<=14&&zone&&x.price<=zone.high){status="CANDIDATA";reasons.push("convicción alta","liquidez suficiente","dato reciente","precio en zona")}
   else{
@@ -785,10 +785,11 @@ function investabilityOf(x){
   return {score,priced,history,sourceHistory,localHistory,cross,fresh,investible:score>=80};
 }
 function topBuyRank(x){
-  const d=decisionFor(x),fresh=ageDays(x.updated||x.scannedAt),data=+x.analysts?.data||0,zone=d.zone,gate=investmentGate(x),investability=investabilityOf(x),historyOk=marketUniverseOf(x)!=="lorcana"||((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3);
-  const pokemonEvidence=marketUniverseOf(x)!=="pokemon"||(!!x.global&&data>=80&&[x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4);const eligible=gate.ok&&historyOk&&pokemonEvidence&&(+x.price||0)>0&&d.conv>=76&&d.liq>=65&&x.risk!=="Alto"&&fresh<=14&&zone&&x.price<=zone.high&&data>=60;
-  const rank=Math.round(d.conv*.33+d.liq*.23+(+x.score||0)*.20+data*.10+clamp((+x.discount||0)*100,0,100)*.07+clamp(gate.upside/Math.max(1,gate.profile.upside)*100,0,100)*.07);
-  return {x,d,fresh,data,eligible,rank,gate,historyOk,pokemonEvidence,investability};
+  const d=decisionFor(x),fresh=ageDays(x.updated||x.scannedAt),data=+x.analysts?.data||0,zone=d.zone,gate=investmentGate(x),investability=investabilityOf(x),historyOk=marketUniverseOf(x)!=="lorcana"||investability.history;
+  const pokemonEvidence=marketUniverseOf(x)!=="pokemon"||(!!x.global&&data>=80&&[x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4),eligible=gate.ok&&historyOk&&pokemonEvidence&&(+x.price||0)>0&&d.conv>=76&&d.liq>=65&&x.risk!=="Alto"&&fresh<=14&&zone&&x.price<=zone.high&&data>=60,reasons=[];
+  if(!gate.ok)reasons.push(...gate.reasons);if(!historyOk)reasons.push("faltan observaciones históricas");if(!pokemonEvidence)reasons.push("faltan referencias de mercado");if(d.conv<76)reasons.push("convicción < 76");if(d.liq<65)reasons.push("liquidez < 65");if(x.risk==="Alto")reasons.push("riesgo alto");if(fresh>14)reasons.push("precio no reciente");if(data<60)reasons.push("evidencia < 60");
+  const rank=Math.round(d.conv*.27+d.liq*.20+(+x.score||0)*.16+data*.10+investability.score*.17+clamp((+x.discount||0)*100,0,100)*.04+clamp(gate.upside/Math.max(1,gate.profile.upside)*100,0,100)*.06);
+  return {x,d,fresh,data,eligible,rank,gate,historyOk,pokemonEvidence,investability,reasons:[...new Set(reasons)].slice(0,4)};
 }
 function cardmarketProductLink(x){
   const key=(marketUniverseOf(x)+"|"+norm(x.name)+"|"+norm(x.set)).toLowerCase();
