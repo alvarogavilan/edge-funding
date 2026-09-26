@@ -765,10 +765,17 @@ function renderInvestmentProfile(){
     save();renderTopBuyCandidates(state.marketScan||[]);renderDecisionBoard(state.marketScan||[]);
   }});
 }
+function localObservedHistory(x){
+  const rows=(state.signalHistory||[]).filter(h=>h.id===x.id&&(+h.price||0)>0).sort((a,b)=>new Date(a.at)-new Date(b.at)),days=new Set(),prices=[];
+  for(const h of rows){const d=String(h.at||"").slice(0,10);if(!days.has(d)){days.add(d);prices.push({at:h.at,price:+h.price})}}
+  if((+x.price||0)>0){const d=new Date().toISOString().slice(0,10);if(!days.has(d))prices.push({at:new Date().toISOString(),price:+x.price})}
+  const span=prices.length>1?(new Date(prices[prices.length-1].at)-new Date(prices[0].at))/86400000:0,vals=prices.map(p=>p.price),low=vals.length?Math.min(...vals):null,high=vals.length?Math.max(...vals):null;
+  return {points:prices.length,spanDays:span,low,high,source:"Card Vault observations"};
+}
 function investabilityOf(x){
-  const u=marketUniverseOf(x),data=+x.analysts?.data||0,price=+x.price||0,priced=price>0,history=u==="lorcana"?((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3):([x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4),cross=u==="pokemon"?!!x.global:!!x.tcgplayer,fresh=ageDays(x.updated)<=14;
+  const u=marketUniverseOf(x),data=+x.analysts?.data||0,price=+x.price||0,priced=price>0,localHistory=localObservedHistory(x),sourceHistory=u==="lorcana"?((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3):([x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4),history=sourceHistory||(localHistory.points>=3&&localHistory.spanDays>=2),cross=u==="pokemon"?!!x.global:!!x.tcgplayer,fresh=ageDays(x.updated)<=14;
   let score=0;if(priced)score+=25;if(data>=80)score+=20;else if(data>=60)score+=12;if(history)score+=25;if(cross)score+=15;if(fresh)score+=15;
-  return {score,priced,history,cross,fresh,investible:score>=80};
+  return {score,priced,history,sourceHistory,localHistory,cross,fresh,investible:score>=80};
 }
 function topBuyRank(x){
   const d=decisionFor(x),fresh=ageDays(x.updated),data=+x.analysts?.data||0,zone=d.zone,gate=investmentGate(x),investability=investabilityOf(x),historyOk=marketUniverseOf(x)!=="lorcana"||((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3);
