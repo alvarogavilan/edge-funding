@@ -126,7 +126,7 @@ function setupMarketWorkspace(){
   today.id="marketPaneToday";radar.id="marketPaneRadar";catalog.id="marketPaneCatalog";
   today.className="marketPane";radar.className="marketPane hidden";catalog.className="marketPane hidden";
   host.append(today,radar,catalog);
-  const move=id,target)=>{const el=document.querySelector(id);if(el)target.appendChild(el)};
+  const move=(id,target)=>{const el=document.querySelector(id);if(el)target.appendChild(el)};
   // First screen: only the decision output.
   move("#topBuyCandidates",today);move("#opportunityAlerts",today);move("#decisionBoard",today);
   // Catalog gets its own clean screen.
