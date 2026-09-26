@@ -194,3 +194,6 @@ nav button{min-height:46px;line-height:1.05}
   .detailActions{grid-template-columns:1fr}
   .catalogGrid{grid-template-columns:1fr!important}
 }
+
+.investmentProfile{margin:4px 0 12px;padding:12px;border:1px solid #345342;border-radius:14px;background:#0f1d18}.investmentProfile>b,.investmentProfile div>b{font-size:13px}.investmentProfile span,.investmentProfile small{display:block;color:#91a99a;font-size:9px;line-height:1.35;margin-top:3px}.investmentInputs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.investmentInputs label{font-size:8px;color:#9eb4a4}.investmentInputs input{width:100%;margin-top:4px;padding:8px;border-radius:8px}.nearMisses{margin-top:10px;padding:10px;border:1px solid #3b465b;border-radius:12px}.nearMisses>b{display:block;margin-bottom:6px}.nearMisses>div{display:grid;gap:2px;padding:6px 0;border-top:1px solid #283246}.nearMisses span{font-size:10px}.nearMisses small{font-size:8px;color:#a4aec0}
+@media(max-width:480px){.investmentInputs{grid-template-columns:1fr}.filters{display:grid;grid-template-columns:1fr 1fr}.filters button{width:100%}}
