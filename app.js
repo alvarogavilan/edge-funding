@@ -267,7 +267,7 @@ function buildMarketSignal(c){
   const w=state.analystWeights||{},baseW={momentum:.30,value:.22,stability:.18,global:.12,data:.18};let denom=0,weighted=0;for(const k of Object.keys(baseW)){let wk=Number(w[k]??baseW[k]);denom+=wk;weighted+=(analysts[k]||0)*wk}const score=Math.round(weighted/Math.max(denom,.001));
   const risk=vol<0.08?"Bajo":vol<0.18?"Medio":"Alto";
   const scenario12=trend*(1+clamp(m7*3,-0.25,0.35));
-  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}return {id:c.id,universe:"pokemon",name:c.name,set:c.set?.name||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tcgplayerMarket(c),score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc};
+  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}return {id:c.id,sourceId:c.id,universe:"pokemon",name:c.name,set:c.set?.name||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tcgplayerMarket(c),score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc};
 }
 async function mapLimit(items,limit,fn){
   let out=new Array(items.length),i=0;async function worker(){while(true){let n=i++;if(n>=items.length)return;try{out[n]=await fn(items[n],n)}catch{out[n]=null}}}
@@ -638,7 +638,7 @@ async function refreshPortfolioValues(){
 function evaluateOpportunityAlerts(rows){
   const alerts=[];
   for(const x of rows){
-    const zone=buyZone(x),conv=convictionSignal(x),liq=liquiditySignal(x),gate=investmentGate(x),historyOk=marketUniverseOf(x)!=="lorcana"||((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3);
+    const zone=buyZone(x),conv=convictionSignal(x),liq=liquiditySignal(x),gate=investmentGate(x),historyOk=marketUniverseOf(x)!=="lorcana"||investability.history;
     if(!gate.ok||!historyOk)continue;
     if(conv>=78&&liq>=65&&x.risk!=="Alto"&&zone&&x.price<=zone.high){
       alerts.push({type:"oportunidad",id:x.id,name:x.name,score:x.score,conviction:conv,liquidity:liq,price:x.price,currency:x.currency||"EUR",zone,upside:gate.upside,reason:"Pasa precio, margen absoluto, liquidez, frescura y zona de entrada"});
@@ -780,12 +780,12 @@ function localObservedHistory(x){
   return {points:prices.length,spanDays:span,low,high,source:"Card Vault observations"};
 }
 function investabilityOf(x){
-  const u=marketUniverseOf(x),data=+x.analysts?.data||0,price=+x.price||0,priced=price>0,localHistory=localObservedHistory(x),sourceHistory=u==="lorcana"?((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3):([x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4),history=sourceHistory||(localHistory.points>=3&&localHistory.spanDays>=2),cross=u==="pokemon"?!!x.global:!!x.tcgplayer,fresh=ageDays(x.updated)<=14;
+  const u=marketUniverseOf(x),data=+x.analysts?.data||0,price=+x.price||0,priced=price>0,localHistory=localObservedHistory(x),sourceHistory=u==="lorcana"?((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3):([x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4),history=sourceHistory||(localHistory.points>=3&&localHistory.spanDays>=2),cross=u==="pokemon"?!!x.global:!!x.tcgplayer,fresh=ageDays(x.updated||x.scannedAt)<=14;
   let score=0;if(priced)score+=25;if(data>=80)score+=20;else if(data>=60)score+=12;if(history)score+=25;if(cross)score+=15;if(fresh)score+=15;
   return {score,priced,history,sourceHistory,localHistory,cross,fresh,investible:score>=80};
 }
 function topBuyRank(x){
-  const d=decisionFor(x),fresh=ageDays(x.updated),data=+x.analysts?.data||0,zone=d.zone,gate=investmentGate(x),investability=investabilityOf(x),historyOk=marketUniverseOf(x)!=="lorcana"||((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3);
+  const d=decisionFor(x),fresh=ageDays(x.updated||x.scannedAt),data=+x.analysts?.data||0,zone=d.zone,gate=investmentGate(x),investability=investabilityOf(x),historyOk=marketUniverseOf(x)!=="lorcana"||((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3);
   const pokemonEvidence=marketUniverseOf(x)!=="pokemon"||(!!x.global&&data>=80&&[x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4);const eligible=gate.ok&&historyOk&&pokemonEvidence&&(+x.price||0)>0&&d.conv>=76&&d.liq>=65&&x.risk!=="Alto"&&fresh<=14&&zone&&x.price<=zone.high&&data>=60;
   const rank=Math.round(d.conv*.33+d.liq*.23+(+x.score||0)*.20+data*.10+clamp((+x.discount||0)*100,0,100)*.07+clamp(gate.upside/Math.max(1,gate.profile.upside)*100,0,100)*.07);
   return {x,d,fresh,data,eligible,rank,gate,historyOk,pokemonEvidence,investability};
