@@ -765,11 +765,16 @@ function renderInvestmentProfile(){
     save();renderTopBuyCandidates(state.marketScan||[]);renderDecisionBoard(state.marketScan||[]);
   }});
 }
+function investabilityOf(x){
+  const u=marketUniverseOf(x),data=+x.analysts?.data||0,price=+x.price||0,priced=price>0,history=u==="lorcana"?((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3):([x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4),cross=u==="pokemon"?!!x.global:!!x.tcgplayer,fresh=ageDays(x.updated)<=14;
+  let score=0;if(priced)score+=25;if(data>=80)score+=20;else if(data>=60)score+=12;if(history)score+=25;if(cross)score+=15;if(fresh)score+=15;
+  return {score,priced,history,cross,fresh,investible:score>=80};
+}
 function topBuyRank(x){
-  const d=decisionFor(x),fresh=ageDays(x.updated),data=+x.analysts?.data||0,zone=d.zone,gate=investmentGate(x),historyOk=marketUniverseOf(x)!=="lorcana"||((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3);
+  const d=decisionFor(x),fresh=ageDays(x.updated),data=+x.analysts?.data||0,zone=d.zone,gate=investmentGate(x),investability=investabilityOf(x),historyOk=marketUniverseOf(x)!=="lorcana"||((+x.historyPoints||0)>=3&&(+x.historySpanDays||0)>=3);
   const pokemonEvidence=marketUniverseOf(x)!=="pokemon"||(!!x.global&&data>=80&&[x.avg7,x.avg30,x.low,x.price].filter(v=>v!=null).length>=4);const eligible=gate.ok&&historyOk&&pokemonEvidence&&(+x.price||0)>0&&d.conv>=76&&d.liq>=65&&x.risk!=="Alto"&&fresh<=14&&zone&&x.price<=zone.high&&data>=60;
   const rank=Math.round(d.conv*.33+d.liq*.23+(+x.score||0)*.20+data*.10+clamp((+x.discount||0)*100,0,100)*.07+clamp(gate.upside/Math.max(1,gate.profile.upside)*100,0,100)*.07);
-  return {x,d,fresh,data,eligible,rank,gate,historyOk,pokemonEvidence};
+  return {x,d,fresh,data,eligible,rank,gate,historyOk,pokemonEvidence,investability};
 }
 function cardmarketProductLink(x){
   const key=(marketUniverseOf(x)+"|"+norm(x.name)+"|"+norm(x.set)).toLowerCase();
@@ -836,7 +841,7 @@ async function refreshGlobalToday(){
   const scored=active.map(topBuyRank),eligible=scored.filter(o=>o.eligible).sort((a,b)=>b.rank-a.rank),ranked=eligible.slice(0,10);
   const pokemon=active.filter(x=>marketUniverseOf(x)==="pokemon"),lorcana=active.filter(x=>marketUniverseOf(x)==="lorcana");
   if(sum)sum.innerHTML='<div><span>Pokémon activas</span><b>'+pokemon.length+'</b></div><div><span>Lorcana activas</span><b>'+lorcana.length+'</b></div><div><span>Pasan filtro compra</span><b>'+eligible.length+'</b></div>';
-  window.CVGlobalRadar={active,scored,eligible,ranked,near:scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10),best:scored.filter(o=>(+o.x.price||0)>0).sort((a,b)=>b.rank-a.rank).slice(0,10),at:new Date().toISOString()};try{window.CVTodaySimple?.render?.()}catch{}
+  const investible=scored.filter(o=>o.investability?.investible).sort((a,b)=>b.rank-a.rank);window.CVGlobalRadar={active,scored,eligible,investible,ranked,near:scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10),best:scored.filter(o=>(+o.x.price||0)>0).sort((a,b)=>b.rank-a.rank).slice(0,10),at:new Date().toISOString()};try{window.CVTodaySimple?.render?.()}catch{}
   renderBuyNow(ranked);
   if(!ranked.length){
     const near=scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10);
