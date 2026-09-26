@@ -843,12 +843,13 @@ function renderBuyNow(ranked){
     '<small class="buyCaveat">Los enlaces llevan al producto/consulta correspondiente. Antes de pagar, verifica ejemplar, vendedor, fotos, idioma y certificado PSA. Una oferta online no permite garantizar al 100% autenticidad física.</small></div>';
 }
 async function refreshGlobalToday(){
-  const box=document.querySelector("#topBuyCandidates"),sum=document.querySelector("#globalTodaySummary");if(!box)return;
+  const box=document.querySelector("#topBuyCandidates"),sum=document.querySelector("#globalTodaySummary");
   const all=await marketSignalAll().catch(()=>[]),active=all.filter(x=>{const t=new Date(x.scannedAt||x.updated||0).getTime();return t&&Date.now()-t<=45*86400000});
   const scored=active.map(topBuyRank),eligible=scored.filter(o=>o.eligible).sort((a,b)=>b.rank-a.rank),ranked=eligible.slice(0,10);
   const pokemon=active.filter(x=>marketUniverseOf(x)==="pokemon"),lorcana=active.filter(x=>marketUniverseOf(x)==="lorcana");
   if(sum)sum.innerHTML='<div><span>Pokémon activas</span><b>'+pokemon.length+'</b></div><div><span>Lorcana activas</span><b>'+lorcana.length+'</b></div><div><span>Pasan filtro compra</span><b>'+eligible.length+'</b></div>';
   const investible=scored.filter(o=>o.investability?.investible).sort((a,b)=>b.rank-a.rank);window.CVGlobalRadar={active,scored,eligible,investible,ranked,near:scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10),best:scored.filter(o=>(+o.x.price||0)>0).sort((a,b)=>b.rank-a.rank).slice(0,10),at:new Date().toISOString()};try{window.CVTodaySimple?.render?.()}catch{}
+  if(!box)return;
   renderBuyNow(ranked);
   if(!ranked.length){
     const near=scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10);
