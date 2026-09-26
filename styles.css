@@ -199,3 +199,5 @@ nav button{min-height:46px;line-height:1.05}
 @media(max-width:480px){.investmentInputs{grid-template-columns:1fr}.filters{display:grid;grid-template-columns:1fr 1fr}.filters button{width:100%}}
 
 #finalizeApp{background:#1d633f;font-weight:900}.testActions{display:grid;grid-template-columns:1fr;gap:8px}.testActions button{width:100%}#finalizeStatus{margin:8px 0}.certDone{margin-top:10px;padding:10px;border-radius:10px;background:#10261a;border:1px solid #285239;color:#9be2b2;font-size:10px}
+
+.lorcanaFinish{font-size:8px;padding:3px 6px;border-radius:999px;background:#392a52;color:#d8c7ff}
