@@ -143,11 +143,15 @@ function renderRebalance(){
   const list=$("#rebalanceList");if(list)list.innerHTML=cards.length?cards.slice().sort((a,b)=>num(b.value)-num(a.value)).map(c=>{
     const v=num(c.value)*Math.max(1,num(c.quantity)||1),share=totalVal>0?v/totalVal*100:0,purpose=c.purpose||"investment";
     let action=purpose==="no_sell"||purpose==="personal"?"Mantener fuera del rebalanceo":purpose==="sell"?"Preparar para venta":purpose==="reinvest"?"Liberar capital para reinvertir":purpose==="psa"?"Evaluar en Pregrado PSA":"Mantener / revisar con evidencia de mercado";
-    return '<div class="rebalanceCard"><div><b>'+esc(c.name)+'</b><div class="meta">'+euro(v)+' · '+share.toFixed(1)+'% cartera · '+action+'</div><div class="allocationBar"><i style="width:'+Math.min(100,share)+'%"></i></div></div><select data-purpose="'+esc(c.id)+'">'+purposeOptions+'</select></div>';
+    const acc=typeof window.assetAccounting==="function"?window.assetAccounting("card:"+c.id,num(c.value)):null;
+    const accounting=acc&&acc.held>0?'<div class="meta">Libro: '+acc.held+' ud · coste '+euro(acc.basis)+' · medio '+euro(acc.avgCost)+' · latente '+euro(acc.latent)+' · realizado '+euro(acc.realized)+'</div>':acc&&acc.realized?'<div class="meta">Libro: posición cerrada · realizado '+euro(acc.realized)+'</div>':"";
+    return '<div class="rebalanceCard"><div><b>'+esc(c.name)+'</b><div class="meta">'+euro(v)+' · '+share.toFixed(1)+'% cartera · '+action+'</div>'+accounting+'<div class="allocationBar"><i style="width:'+Math.min(100,share)+'%"></i></div></div><select data-purpose="'+esc(c.id)+'">'+purposeOptions+'</select></div>';
   }).join(""):'<div class="empty">No hay cartas en la colección.</div>';
   document.querySelectorAll("[data-purpose]").forEach(sel=>{const c=cards.find(x=>x.id===sel.dataset.purpose);if(c)sel.value=c.purpose||"investment";sel.onchange=()=>{const x=cards.find(c=>c.id===sel.dataset.purpose);if(x){x.purpose=sel.value;save();renderRebalance()}}});
   const plan=$("#reinvestPlan"),buys=rankedProducts().filter(p=>sealedDecision(p).key==="buy").slice(0,3);
+  const ledger=typeof window.investmentLedgerStats==="function"?window.investmentLedgerStats():null,realizedCash=ledger?Math.max(0,ledger.netCash):0;
   if(plan)plan.innerHTML='<h3>Plan de reinversión</h3><div class="qaRow"><span>Capital marcado para vender/reinvertir</span><b>'+euro(released)+'</b></div>'+
+    '<div class="qaRow"><span>Caja neta realizada registrada</span><b>'+euro(realizedCash)+'</b></div>'+
     (released<=0?'<small>Marca posiciones “Para vender” o “Para reinvertir” para calcular capital liberable.</small>':buys.length?'<small>Hay '+buys.length+' candidato(s) sellado(s) que superan tus filtros actuales. Compáralos también con el Top 10 de cartas antes de reasignar capital.</small>':'<small>No hay compra sellada que supere todos los filtros actuales. Mantén el capital sin reasignar hasta tener evidencia suficiente.</small>');
 }
 function sealedSourceGuide(){
