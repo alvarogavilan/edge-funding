@@ -460,6 +460,23 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
   const full=await mapLimit(briefs.slice(0,100),4,async b=>tcgdexCard("en",b.id));
   return full.filter(Boolean);
 }
+async function turboMarketCoverage(rounds=6){
+  const status=document.querySelector("#todayCoverageStatus")||document.querySelector("#marketScanState");
+  if(state.turboMarketRunning)return;state.turboMarketRunning=true;save();let pok=0,lor=0,errors=0;
+  try{
+    for(let n=0;n<rounds;n++){
+      if(status)status.textContent="Turbo Radar · Pokémon "+(n+1)+"/"+rounds+"…";
+      try{await fetchMarketUniverse("wide","pokemon");pok++}catch(e){errors++;pushRuntimeError("turbo-pokemon",e?.message||e)}
+      if(status)status.textContent="Turbo Radar · Lorcana "+(n+1)+"/"+rounds+"…";
+      try{await fetchMarketUniverse("wide","lorcana");lor++}catch(e){errors++;pushRuntimeError("turbo-lorcana",e?.message||e)}
+      await new Promise(r=>setTimeout(r,120));
+    }
+    const all=await marketSignalAll().catch(()=>[]),now=Date.now(),active=all.filter(x=>{const t=new Date(x.scannedAt||x.updated||0).getTime();return t&&now-t<=45*86400000});
+    state.marketScan=active.sort((a,b)=>(+b.score||0)-(+a.score||0)).slice(0,800);state.marketScanAt=new Date().toISOString();state.turboMarketLast={at:state.marketScanAt,rounds,pokemonRounds:pok,lorcanaRounds:lor,errors,active:active.length};state.turboMarketRunning=false;save();recordSignalSnapshot(state.marketScan);renderMarketScan();renderRadar();await refreshGlobalToday();try{window.CVTodaySimple?.render?.()}catch{}if(status)status.textContent="Turbo Radar listo · "+active.length+" señales activas";return state.turboMarketLast;
+  }catch(e){state.turboMarketRunning=false;save();if(status)status.textContent="Turbo Radar interrumpido; el progreso guardado se conserva.";throw e}
+}
+window.CVTurboMarket={run:turboMarketCoverage};
+
 async function retryMarketFailures(){
   const btn=document.querySelector("#retryMarketFailures"),st=document.querySelector("#marketScanState"),ids=Object.keys(state.marketFailures||{}).slice(0,80);
   if(!ids.length){st.textContent="No hay fallos pendientes de mercado.";return}
