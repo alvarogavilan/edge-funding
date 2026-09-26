@@ -120,7 +120,7 @@ document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.query
 document.querySelector("#snapshot").onclick=()=>{state.history.push({at:new Date().toISOString(),total:total(),cards:Object.fromEntries(state.cards.map(x=>[x.id,x.value]))});save();render()};
 function radarScore(group){let sold=group.filter(x=>x.kind==="sold"),list=group.filter(x=>x.kind==="listing");if(!sold.length)return 0;let prices=sold.map(x=>x.price).sort((a,b)=>a-b),med=prices[Math.floor(prices.length/2)],latest=sold.at(-1)?.price||med,score=Math.min(55,sold.length*11);if(latest<med)score+=15;if(list.length&&Math.min(...list.map(x=>x.price))<med*.9)score+=20;return Math.min(100,score)}
 function renderRadar(){let groups={};state.market.filter(x=>marketUniverseOf(x)===currentRadarUniverse()).forEach(x=>{let key=[marketUniverseOf(x),x.name,x.set||"",x.grading||"",x.grade||""].join("||");(groups[key]??=[]).push(x)});let rows=Object.entries(groups).map(([key,g])=>({name:g[0]?.name||key,set:g[0]?.set||"",grading:g[0]?.grading||"",grade:g[0]?.grade||"",g,score:radarScore(g),sold:g.filter(x=>x.kind==="sold"),ask:g.filter(x=>x.kind==="listing")})).filter(x=>{let p=x.ask.length?Math.min(...x.ask.map(y=>y.price)):Infinity;return p<=radarLimit}).sort((a,b)=>b.score-a.score);let rs=document.querySelector("#radarSummary");if(rs){let obs=state.market.length,sales=state.market.filter(x=>x.kind==="sold").length,active=state.market.filter(x=>x.kind==="listing").length,opps=rows.filter(x=>x.score>=60).length;rs.innerHTML='<div><span>Observaciones</span><b>'+obs+'</b></div><div><span>Ventas</span><b>'+sales+'</b></div><div><span>Anuncios</span><b>'+active+'</b></div><div><span>Señales ≥60</span><b>'+opps+'</b></div>';}document.querySelector("#radarList").innerHTML=rows.length?rows.map(x=>{let sold=x.sold.map(y=>y.price).sort((a,b)=>a-b),med=sold.length?sold[Math.floor(sold.length/2)]:null,ask=x.ask.length?Math.min(...x.ask.map(y=>y.price)):null;return `<article class="opportunity"><div><b>${x.name}</b><div class="meta">${x.set||""}${x.grading||x.grade?" · "+(x.grading||"")+" "+(x.grade||""):""}<br>${x.sold.length} ventas · ${x.ask.length} anuncios · evidencia ${Math.round((x.sold.filter(y=>y.url).length/Math.max(1,x.sold.length))*100)}%</div></div><div><strong>${x.score}/100</strong><div class="meta">${ask!=null?"Oferta "+euro(ask):""}${med!=null?" · Mediana "+euro(med):""}</div></div></article>`}).join(""):'<div class="empty">No hay todavía oportunidades con evidencia suficiente dentro de este precio.</div>'}
-document.querySelector("#refreshValues").onclick=refreshPortfolioValues;document.querySelector("#scanMarket").onclick=()=>runMarketScan("quick");document.querySelector("#deepScanMarket").onclick=()=>runMarketScan("wide");document.querySelector("#radarUniverse").onchange=async()=>{const u=currentRadarUniverse(),q=await activeMarketSignals(45,u);state.marketScan=q.active.sort((a,b)=>b.score-a.score).slice(0,400);state.marketScanUniverse=u;renderCoverage();renderMarketScan();renderRadar();renderQA();};document.querySelector("#continueCoverage").onclick=()=>continueCoverage(5);document.querySelector("#retryMarketFailures").onclick=retryMarketFailures;renderMarketScan();renderScanHistory();
+document.querySelector("#refreshValues").onclick=refreshPortfolioValues;document.querySelector("#scanMarket").onclick=()=>runMarketScan("quick");document.querySelector("#deepScanMarket").onclick=()=>runMarketScan("wide");document.querySelector("#radarUniverse").onchange=async()=>{const u=currentRadarUniverse(),q=await activeMarketSignals(45,u);state.marketScan=q.active.sort((a,b)=>b.score-a.score).slice(0,400);state.marketScanUniverse=u;renderCoverage();renderMarketScan();renderRadar();renderQA();};document.querySelector("#continueCoverage").onclick=()=>continueCoverage(5);document.querySelector("#retryMarketFailures").onclick=retryMarketFailures;document.querySelector("#indexFullCatalog").onclick=indexFullCatalog;document.querySelector("#catalogSearch").oninput=()=>refreshCatalogBrowser(true);document.querySelector("#catalogUniverse").onchange=()=>refreshCatalogBrowser(true);document.querySelector("#catalogPrev").onclick=()=>{catalogPage=Math.max(0,catalogPage-1);refreshCatalogBrowser()};document.querySelector("#catalogNext").onclick=()=>{catalogPage++;refreshCatalogBrowser()};refreshCatalogBrowser(true);renderMarketScan();renderScanHistory();
 document.addEventListener("click",e=>{let b=e.target.closest(".watchFromMarket");if(!b)return;e.stopPropagation();let x=(state.marketScan||[]).find(m=>m.id===b.dataset.watchid);if(!x)return;if(!state.watch.some(w=>w.catalogId===x.id))state.watch.push({name:x.name,target:Math.round((x.low||x.price*.9)*100)/100,catalogId:x.id,source:"Market Lab"});save();render();b.textContent="En seguimiento";});
 document.addEventListener("click",e=>{let b=e.target.closest(".compareMarket");if(!b)return;e.stopPropagation();toggleCompare(b.dataset.compareid)});
 document.querySelectorAll("[data-limit]").forEach(b=>b.onclick=()=>{radarLimit=+b.dataset.limit;document.querySelectorAll("[data-limit]").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");renderRadar()});
@@ -249,7 +249,7 @@ async function fetchLorcanaUniverse(mode){
   for(let i=0;i<perRun;i++)chosen.push(sets[(start+i)%total]);
   let signals=[];
   for(const st of chosen){
-    const cards=await lorcastSetCards(st.code);
+    const cards=await lorcastSetCards(st.code);await catalogPutMany(cards.map(lorcanaCatalogRow));
     signals.push(...cards.map(buildLorcanaSignal).filter(Boolean));
     await new Promise(r=>setTimeout(r,90));
   }
@@ -264,7 +264,7 @@ async function fetchLorcanaUniverse(mode){
 
 async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse()){
   if(universe==="lorcana")return fetchLorcanaUniverse(mode);
-  const list=await tcgdexList("en"),pool=(list||[]).filter(x=>x.id&&x.name);
+  const list=await tcgdexList("en"),pool=(list||[]).filter(x=>x.id&&x.name);if(pool.length){await catalogPutMany(pool.map(pokemonCatalogRow));state.catalogMeta.pokemon={count:pool.length,at:new Date().toISOString()};save()}
   if(mode==="wide"){
     const batchSize=120,total=pool.length||0,start=total?state.marketCursor%total:0,briefs=[];
     for(let n=0;n<Math.min(batchSize,total);n++)briefs.push(pool[(start+n)%total]);
@@ -598,13 +598,13 @@ async function runPhotoValidation(){
   save();renderPhotoValidation();renderReadiness();renderQA();btn.disabled=false;
 }
 function technicalCompletionScore(){
-  const self=state.selfTest||{},results=self.results||[],required=["JavaScript cargado","Estado local","IndexedDB fotos","IndexedDB radar","Catálogo TCGdex","Catálogo Lorcast","Motor OCR cargado","Procesamiento de imagen","Pregrado PSA sintético","Backup serializable"];
+  const self=state.selfTest||{},results=self.results||[],required=["JavaScript cargado","Estado local","IndexedDB fotos","IndexedDB radar","IndexedDB catálogo","Catálogo TCGdex","Catálogo Lorcast","Motor OCR cargado","Procesamiento de imagen","Pregrado PSA sintético","Backup serializable"];
   const pass=required.filter(name=>results.some(x=>x.label===name&&x.ok)).length;
   const integrity=stateIntegrityReport().ok;
   const boot=state.bootInfo?.radarLoaded!==false;
   const bootAt=new Date(state.bootInfo?.at||0).getTime(),runtime=(state.runtimeErrors||[]).filter(x=>new Date(x.at).getTime()>=bootAt&&bootAt>0).length===0;
   const checks=[
-    {label:"10/10 autotests",ok:pass===required.length},
+    {label:"11/11 autotests",ok:pass===required.length},
     {label:"Integridad local",ok:integrity},
     {label:"Arranque/IndexedDB",ok:boot},
     {label:"Sin errores runtime recientes",ok:runtime},
@@ -616,7 +616,7 @@ function technicalCompletionScore(){
 }
 function renderTechnicalCompletion(){
   const box=document.querySelector("#technicalCompletionPanel");if(!box)return;const t=technicalCompletionScore();
-  box.innerHTML='<h3>Completitud técnica V55</h3><div class="readinessScore '+(t.score===100?"complete":"")+'">'+t.score+'%</div>'+
+  box.innerHTML='<h3>Completitud técnica V56</h3><div class="readinessScore '+(t.score===100?"complete":"")+'">'+t.score+'%</div>'+
     t.checks.map(x=>'<div class="qaRow"><span>'+x.label+'</span><b class="'+(x.ok?"ok":"warn")+'">'+(x.ok?"OK":"Pendiente")+'</b></div>').join("")+
     '<div class="qaRow"><span>Pokémon recorridas</span><b>'+((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)+'</b></div><div class="qaRow"><span>Lorcana sets</span><b>'+((state.coverageByUniverse?.lorcana||{}).seen||0)+'/'+((state.coverageByUniverse?.lorcana||{}).total||0)+'</b></div><small>Este porcentaje mide funcionamiento técnico. La preparación de datos reales (fotos, comparables, población y evidencia) se valida aparte para no fingir un 100% que todavía no se haya demostrado en tu iPhone.</small>';
 }
@@ -626,7 +626,7 @@ function readinessScore(){
   const pc=state.coverageByUniverse?.pokemon||state.marketCoverage||{},lc=state.coverageByUniverse?.lorcana||{};
   const allStoredScan=(state.marketScan||[]).length;
   const checks=[
-    {k:"code",ok:(state.selfTest?.pass||0)>=10,label:"Autotest técnico 10/10"},
+    {k:"code",ok:(state.selfTest?.pass||0)>=11,label:"Autotest técnico 11/11"},
     {k:"market",ok:allStoredScan>=20||(+pc.active||0)>=20||(+lc.active||0)>=20,label:"Market Lab con datos"},
     {k:"pokemonCoverage",ok:(+pc.seen||0)>=120,label:"Pokémon: ≥120 cartas recorridas"},
     {k:"lorcanaCoverage",ok:(+lc.total||0)>0&&(+lc.seen||0)>=(+lc.total||0),label:"Lorcana: todos los sets recorridos"},
@@ -649,7 +649,7 @@ function readinessBlockers(){
     if(c.k==="history")return "Acumula al menos 50 señales reales con escaneos.";
     if(c.k==="graded")return "Añade al menos 4 ventas cerradas comparables de cartas graduadas.";
     if(c.k==="population")return "Verifica población oficial de al menos una carta graduada.";
-    if(c.k==="code")return "Ejecuta el autotest técnico y supera las 10 de 10 pruebas.";
+    if(c.k==="code")return "Ejecuta el autotest técnico y supera las 11 de 11 pruebas.";
     if(c.k==="backup")return "Ejecuta el autotest para verificar el backup.";if(c.k==="integrity")return "Pulsa «Revisar y reparar» en Integridad local.";if(c.k==="slab")return "Revisa las cartas graduadas antiguas cuyo emisor se dedujo solo desde un código de barras.";if(c.k==="evidence")return "Añade más ventas cerradas con fecha, moneda y URL de evidencia hasta alcanzar 60/100.";
     return c.label;
   })
@@ -658,7 +658,7 @@ function renderCertification(){
   const box=document.querySelector("#certificationResults");if(!box)return;const c=state.certification||{},r=readinessScore(),blocks=readinessBlockers();
   const dq=dataQualityScore(),tech=technicalCompletionScore();let head='<div class="certScore '+(tech.score===100?"complete":"")+'">'+tech.score+'%</div><div class="certSub">Técnico · Datos reales '+r.score+'% · Calidad '+dq.score+'%</div>';
   if(c.at)head+='<small>Última comprobación: '+new Date(c.at).toLocaleString("es-ES")+'</small>';
-  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100% de datos reales:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V55 están superados.</div>');
+  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100% de datos reales:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V56 están superados.</div>');
 }
 async function advanceAutomaticCompletion(){
   const btn=document.querySelector("#advanceCompletion"),st=document.querySelector("#completionRunStatus"),selector=document.querySelector("#radarUniverse");
@@ -704,7 +704,7 @@ async function runCertification(){
 }
 function renderReadiness(){
   const box=document.querySelector("#readinessPanel");if(!box)return;const r=readinessScore();
-  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V55.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
+  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V56.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
 }
 function renderMarketScan(){
   renderPortfolioRisk();renderCompare();
@@ -1236,7 +1236,7 @@ function renderSelfTest(){
   const failed=rows.filter(r=>!r.ok);
   box.innerHTML='<div class="selfTestHeader"><b>'+((t.pass||0))+'/'+rows.length+' pruebas superadas</b><span>'+new Date(t.at).toLocaleString("es-ES")+'</span></div>'+
     rows.map(r=>'<div class="qaRow"><span>'+r.label+'</span><b class="'+(r.ok?"ok":"warn")+'">'+(r.ok?"OK":"FALLO")+'</b></div>').join("")+
-    (failed.length?'<div class="integrityIssues"><b>Faltan:</b>'+failed.map(r=>'<div>• '+r.label+(r.detail?' · '+r.detail:'')+'</div>').join("")+'</div>':'<div class="certDone">✅ Autotest 10/10.</div>');
+    (failed.length?'<div class="integrityIssues"><b>Faltan:</b>'+failed.map(r=>'<div>• '+r.label+(r.detail?' · '+r.detail:'')+'</div>').join("")+'</div>':'<div class="certDone">✅ Autotest 11/11.</div>');
 }
 async function runSelfTest(){
   const btn=document.querySelector("#runSelfTest"),box=document.querySelector("#selfTestResults");btn.disabled=true;box.innerHTML='<p class="muted">Ejecutando 10 pruebas independientes…</p>';
@@ -1245,7 +1245,7 @@ async function runSelfTest(){
   await one("JavaScript cargado",async()=>true);
   await one("Estado local",async()=>testLocalState());
   await one("IndexedDB fotos",testIndexedDBRoundtrip);
-  await one("IndexedDB radar",testMarketStoreRoundtrip);
+  await one("IndexedDB radar",testMarketStoreRoundtrip);await one("IndexedDB catálogo",async()=>{await catalogPutMany([{id:"__catalog_test__",universe:"pokemon",name:"test"}]);const all=await catalogAll();const ok=all.some(x=>x.id==="__catalog_test__");let t=db.transaction("catalog","readwrite"),rr=t.objectStore("catalog").delete("__catalog_test__");await new Promise((y,n)=>{rr.onsuccess=()=>y();rr.onerror=()=>n(rr.error)});return ok});
   await one("Catálogo TCGdex",testCatalogConnectivity);
   await one("Catálogo Lorcast",testLorcanaConnectivity);
   await one("Motor OCR cargado",async()=>!!window.Tesseract);
@@ -1253,7 +1253,7 @@ async function runSelfTest(){
   await one("Pregrado PSA sintético",testPregradePipeline);
   await one("Backup serializable",async()=>{JSON.stringify({format:"cardvault-backup",version:3,state});return true});
   state.selfTest={at:new Date().toISOString(),results,pass:results.filter(r=>r.ok).length};
-  if(state.selfTest.pass===10){
+  if(state.selfTest.pass===11){
     const bootAt=new Date(state.bootInfo?.at||0).getTime();
     state.runtimeErrors=(state.runtimeErrors||[]).filter(x=>new Date(x.at).getTime()<bootAt);
   }
@@ -1291,7 +1291,7 @@ function dataQualityScore(){
     {k:"preparacion",v:r.score,w:.35},
     {k:"mercado",v:m.score,w:.25},
     {k:"fotos",v:(photos.labeledTested||0)>=3?Math.round((photos.accuracy||0)*100):0,w:.20},
-    {k:"autotest",v:Math.round(((self.pass||0)/10)*100),w:.20}
+    {k:"autotest",v:Math.round(((self.pass||0)/11)*100),w:.20}
   ];
   return {score:Math.round(parts.reduce((s,x)=>s+x.v*x.w,0)),parts};
 }
@@ -1301,7 +1301,7 @@ function renderValuationAudit(){
 }function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V55","ok"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Pokémon recorridas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)+" cartas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)>=120?"ok":"warn"],["Lorcana cobertura",((state.coverageByUniverse?.lorcana||{}).seen||0)+"/"+((state.coverageByUniverse?.lorcana||{}).total||0)+" sets",((state.coverageByUniverse?.lorcana||{}).total||0)>0&&((state.coverageByUniverse?.lorcana||{}).seen||0)>=((state.coverageByUniverse?.lorcana||{}).total||0)?"ok":"warn"],["Radar Pokémon",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)+" activas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)>=40?"ok":"warn"],["Radar Lorcana",((state.coverageByUniverse?.lorcana||{}).active||0)+" activas",((state.coverageByUniverse?.lorcana||{}).active||0)>=20?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/10",(state.selfTest?.pass||0)>=10?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  const catalogP=state.catalogMeta?.pokemon?.count||0,catalogL=state.catalogMeta?.lorcana?.count||0;const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V56","ok"],["Catálogo Pokémon",catalogP.toLocaleString("es-ES")+" cartas",catalogP>1000?"ok":"warn"],["Catálogo Lorcana",catalogL.toLocaleString("es-ES")+" cartas",catalogL>1000?"ok":"warn"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Pokémon recorridas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)+" cartas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).seen||0)>=120?"ok":"warn"],["Lorcana cobertura",((state.coverageByUniverse?.lorcana||{}).seen||0)+"/"+((state.coverageByUniverse?.lorcana||{}).total||0)+" sets",((state.coverageByUniverse?.lorcana||{}).total||0)>0&&((state.coverageByUniverse?.lorcana||{}).seen||0)>=((state.coverageByUniverse?.lorcana||{}).total||0)?"ok":"warn"],["Radar Pokémon",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)+" activas",((state.coverageByUniverse?.pokemon||state.marketCoverage||{}).active||0)>=40?"ok":"warn"],["Radar Lorcana",((state.coverageByUniverse?.lorcana||{}).active||0)+" activas",((state.coverageByUniverse?.lorcana||{}).active||0)>=20?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/11",(state.selfTest?.pass||0)>=11?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
   box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderBootStatus();renderTechnicalCompletion();renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();renderPhotoValidation();renderCertification();renderIntegrity();renderValuationAudit();renderMarketEvidence();
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos y radar guardados localmente · copia V3 completa · "+(persisted?"almacenamiento persistente concedido":"haz copias periódicas en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let marketSignals=await marketSignalAll().catch(()=>[]),clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:3,createdAt:new Date().toISOString(),state:clean,photos,marketSignals},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
