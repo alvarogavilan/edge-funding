@@ -201,3 +201,5 @@ nav button{min-height:46px;line-height:1.05}
 #finalizeApp{background:#1d633f;font-weight:900}.testActions{display:grid;grid-template-columns:1fr;gap:8px}.testActions button{width:100%}#finalizeStatus{margin:8px 0}.certDone{margin-top:10px;padding:10px;border-radius:10px;background:#10261a;border:1px solid #285239;color:#9be2b2;font-size:10px}
 
 .lorcanaFinish{font-size:8px;padding:3px 6px;border-radius:999px;background:#392a52;color:#d8c7ff}
+
+#globalTodaySummary{margin:8px 0 10px}.benchRow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:8px 0;border-bottom:1px solid #202b43}.benchRow>b{font-size:10px}.benchRow>span{font-size:9px;font-weight:800}.benchRow>small{grid-column:1/-1;color:#8d9ab4;font-size:8px;line-height:1.35}
