@@ -109,7 +109,7 @@ function renderSealed(){
 }
 function bindSealedActions(){
   document.querySelectorAll("[data-edit-sealed]").forEach(b=>b.onclick=()=>openSealed(b.dataset.editSealed));
-  ["sealedMin","sealedMax","sealedUpside"].forEach(id=>{const el=$("#"+id);if(el)el.onchange=()=>{state.sealedPolicy.minPriceEUR=num($("#sealedMin")?.value);state.sealedPolicy.maxPriceEUR=num($("#sealedMax")?.value);state.sealedPolicy.minUpsideEUR=num($("#sealedUpside")?.value);save();renderSealed();renderRebalance();}});
+  ["sealedMin","sealedMax","sealedUpside"].forEach(id=>{const el=$("#"+id);if(el)el.onchange=()=>{state.sealedPolicy.minPriceEUR=num($("#sealedMin")?.value);state.sealedPolicy.maxPriceEUR=num($("#sealedMax")?.value);state.sealedPolicy.minUpsideEUR=num($("#sealedUpside")?.value);save();renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}}});
 }
 function openSealed(id){
   sealedEditId=id||null;const dlg=$("#sealedDialog"),form=$("#sealedForm"),del=$("#sealedDelete");form.reset();
@@ -122,11 +122,11 @@ function saveSealed(e){
   const p={...old,id,universe:f.get("universe")==="lorcana"?"lorcana":"pokemon",name:String(f.get("name")||"").trim(),set:String(f.get("set")||"").trim(),productType:String(f.get("productType")||"Otro"),releaseDate:String(f.get("releaseDate")||""),msrp:num(f.get("msrp")),currentPrice:num(f.get("currentPrice")),shipping:num(f.get("shipping")),recentLow:num(f.get("recentLow")),averagePrice:num(f.get("averagePrice")),targetLow:num(f.get("targetLow")),targetBase:num(f.get("targetBase")),targetHigh:num(f.get("targetHigh")),availability:String(f.get("availability")||"unknown"),printStatus:String(f.get("printStatus")||"unknown"),liquidity:String(f.get("liquidity")||""),reprintRisk:String(f.get("reprintRisk")||""),trend30:f.get("trend30")===""?"":num(f.get("trend30")),trend90:f.get("trend90")===""?"":num(f.get("trend90")),photoUrl:String(f.get("photoUrl")||"").trim(),sourceUrl:String(f.get("sourceUrl")||"").trim(),buyUrl:String(f.get("buyUrl")||"").trim(),seller:String(f.get("seller")||"").trim(),notes:String(f.get("notes")||"").trim(),updatedAt:new Date().toISOString()};
   if(!p.name||!p.currentPrice||!p.sourceUrl||!p.buyUrl){alert("Nombre, precio actual, fuente y enlace de compra son obligatorios.");return}
   if(sealedEditId)state.sealedProducts=state.sealedProducts.map(x=>x.id===id?p:x);else state.sealedProducts.push(p);
-  recordSealedSnapshot(p);save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();
+  recordSealedSnapshot(p);save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
 }
 function deleteSealed(){
   if(!sealedEditId||!confirm("¿Eliminar este producto sellado?"))return;
-  state.sealedProducts=state.sealedProducts.filter(x=>x.id!==sealedEditId);delete state.sealedSnapshots[sealedEditId];save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();
+  state.sealedProducts=state.sealedProducts.filter(x=>x.id!==sealedEditId);delete state.sealedSnapshots[sealedEditId];save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
 }
 function renderRebalance(){
   const cards=state.cards||[],totalVal=cards.reduce((s,c)=>s+num(c.value)*Math.max(1,num(c.quantity)||1),0);
@@ -182,6 +182,6 @@ $("#sealedExport").onclick=exportSealed;
 $("#sealedSearch").oninput=renderSealed;
 document.querySelectorAll('nav button[data-tab="sealed"],nav button[data-tab="rebalance"]').forEach(b=>b.addEventListener("click",()=>{renderSealed();renderRebalance()}));
 const sealedSection=$("#sealed");if(sealedSection&&!$("#sealedSourceGuide"))sealedSection.insertAdjacentHTML("beforeend",'<div id="sealedSourceGuide" class="qaPanel"></div>');
-sealedSourceGuide();renderSealed();renderRebalance();
+sealedSourceGuide();renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
 try{renderExcellenceBenchmark()}catch{}
 })();
