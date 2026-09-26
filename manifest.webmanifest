@@ -1,1 +1,15 @@
-{"name":"Card Vault","short_name":"CardVault","start_url":"./","display":"standalone","orientation":"portrait","background_color":"#080c18","theme_color":"#080c18","description":"Colección y radar privado de cartas PSA, local-first."}
+{
+  "name": "Card Vault",
+  "short_name": "CardVault",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080c18",
+  "theme_color": "#080c18",
+  "description": "Colección, inversión y radar local-first para Pokémon y Disney Lorcana: RAW, PSA y productos sellados.",
+  "id": "./",
+  "categories": [
+    "finance",
+    "utilities"
+  ]
+}
