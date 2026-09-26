@@ -413,17 +413,17 @@ async function fetchLorcanaUniverse(mode){
   if(!total)return [];
   const perRun=mode==="wide"?Math.min(4,total):Math.min(3,total),start=state.cursorByUniverse.lorcana%total,chosen=[];
   for(let i=0;i<perRun;i++)chosen.push(sets[(start+i)%total]);
-  let signals=[];
+  let signals=[],cardsSeen=0;
   for(const st of chosen){
-    const cards=await lorcastSetCards(st.code);await catalogPutMany(cards.map(lorcanaCatalogRow));
+    const cards=await lorcastSetCards(st.code);cardsSeen+=cards.length;await catalogPutMany(cards.map(lorcanaCatalogRow));
     signals.push(...cards.flatMap(buildLorcanaSignals));
     await new Promise(r=>setTimeout(r,90));
   }
   if(signals.length)await marketSignalPutMany(signals);
   state.cursorByUniverse.lorcana=(start+chosen.length)%total;
-  const all=(await marketSignalAll()).filter(x=>marketUniverseOf(x)==="lorcana");
-  const seenSets=Math.min(total,(state.coverageByUniverse.lorcana?.seen||0)+chosen.length);
-  state.coverageByUniverse.lorcana={total,seen:seenSets,priced:all.length,active:all.filter(x=>ageDays(x.scannedAt)<=45).length,stale:all.filter(x=>ageDays(x.scannedAt)>45).length,failed:0,at:new Date().toISOString(),unit:"sets"};
+  const all=(await marketSignalAll()).filter(x=>marketUniverseOf(x)==="lorcana"),prev=state.coverageByUniverse.lorcana||{};
+  const seenSets=Math.min(total,(prev.seenSets||prev.seen||0)+chosen.length),seenCards=(prev.cycleStart===start?0:(+prev.seenCards||0))+cardsSeen;
+  state.coverageByUniverse.lorcana={total,seen:seenSets,seenSets,seenCards,priced:all.length,active:all.filter(x=>ageDays(x.scannedAt)<=45).length,stale:all.filter(x=>ageDays(x.scannedAt)>45).length,failed:0,at:new Date().toISOString(),unit:"sets",cursor:state.cursorByUniverse.lorcana,cycleStart:prev.cycleStart??start};
   save();
   return all.filter(x=>ageDays(x.scannedAt)<=45).sort((a,b)=>b.score-a.score).slice(0,400);
 }
