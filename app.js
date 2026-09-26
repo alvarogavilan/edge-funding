@@ -10,7 +10,7 @@ function photoDel(id){return new Promise(ok=>{let r=db.transaction("photos","rea
 function marketSignalPutMany(rows){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const x of rows||[])if(x?.id)s.put(x);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
 function marketSignalAll(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").getAll();r.onsuccess=()=>ok(r.result||[]);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
 function marketSignalCount(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals").objectStore("marketSignals").count();r.onsuccess=()=>ok(r.result||0);r.onerror=()=>no(r.error)}catch(e){no(e)}})}function marketSignalDeleteMany(ids){return new Promise((ok,no)=>{try{let t=db.transaction("marketSignals","readwrite"),s=t.objectStore("marketSignals");for(const id of ids||[])s.delete(id);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)}catch(e){no(e)}})}
-function marketSignalClear(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals","readwrite").objectStore("marketSignals").clear();r.onsuccess=()=>ok();r.onerror=()=>no(r.error)}catch(e){no(e)}})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];if(!state.dataQuality)state.dataQuality={};if(!state.schemaVersion||state.schemaVersion<43)state.schemaVersion=50;if(!state.marketCursor)state.marketCursor=0;if(!state.marketUniverse)state.marketUniverse={};if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};if(!state.marketScannedIds)state.marketScannedIds={};if(!state.marketFailures)state.marketFailures={};if(!state.coverageByUniverse)state.coverageByUniverse={pokemon:state.marketCoverage||{},lorcana:{total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null}};if(!state.cursorByUniverse)state.cursorByUniverse={pokemon:state.marketCursor||0,lorcana:0};if(!state.archivedUniverses)state.archivedUniverses={};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];state=ensureStateShape(state);const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
+function marketSignalClear(){return new Promise((ok,no)=>{try{let r=db.transaction("marketSignals","readwrite").objectStore("marketSignals").clear();r.onsuccess=()=>ok();r.onerror=()=>no(r.error)}catch(e){no(e)}})}let state=JSON.parse(localStorage.getItem(KEY)||"null")||{cards:seed,watch:[],history:[],market:[]};if(!state.market)state.market=[];if(!state.watch)state.watch=[];if(!state.history)state.history=[];if(!state.marketScan)state.marketScan=[];if(!state.marketScanHistory)state.marketScanHistory=[];if(!state.compare)state.compare=[];if(!state.alertHistory)state.alertHistory=[];if(!state.signalHistory)state.signalHistory=[];if(!state.analystWeights)state.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];if(!state.dataQuality)state.dataQuality={};if(!state.schemaVersion||state.schemaVersion<43)state.schemaVersion=51;if(!state.marketCursor)state.marketCursor=0;if(!state.marketUniverse)state.marketUniverse={};if(!state.marketCoverage)state.marketCoverage={total:0,seen:0,priced:0,at:null};if(!state.marketScannedIds)state.marketScannedIds={};if(!state.marketFailures)state.marketFailures={};if(!state.coverageByUniverse)state.coverageByUniverse={pokemon:state.marketCoverage||{},lorcana:{total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null}};if(!state.cursorByUniverse)state.cursorByUniverse={pokemon:state.marketCursor||0,lorcana:0};if(!state.archivedUniverses)state.archivedUniverses={};if(!state.processingLog)state.processingLog=[];if(!state.selfTest)state.selfTest={};if(!state.photoValidation)state.photoValidation={};if(!state.certification)state.certification={};if(!state.releaseChecks)state.releaseChecks={};if(!state.runtimeErrors)state.runtimeErrors=[];state=ensureStateShape(state);const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
 const total=()=>state.cards.reduce((a,x)=>a+(+x.value||0)*qty(x),0);
@@ -25,13 +25,13 @@ function marketUniverseOf(x){return x?.universe==="lorcana"?"lorcana":"pokemon"}
 function money(n,currency="EUR"){return (+n||0).toLocaleString("es-ES",{style:"currency",currency:currency||"EUR"})}
 function ensureStateShape(s){
   s=s&&typeof s==="object"?s:{};
-  const arrays=["cards","watch","history","market","marketScan","marketScanHistory","compare","alertHistory","signalHistory","processingLog","runtimeErrors"];
+  const arrays=["cards","watch","history","market","marketScan","marketScanHistory","compare","alertHistory","signalHistory","processingLog","runtimeErrors","pregradeHistory"];
   for(const k of arrays)if(!Array.isArray(s[k]))s[k]=k==="cards"?[]:[];
   if(!s.analystWeights||typeof s.analystWeights!=="object")s.analystWeights={momentum:.30,value:.22,stability:.18,global:.12,data:.18,scarcity:.12};
   for(const k of ["selfTest","photoValidation","certification","releaseChecks","dataQuality","marketUniverse","marketFailures"])if(!s[k]||typeof s[k]!=="object"||Array.isArray(s[k]))s[k]={};
   if(!s.marketCoverage||typeof s.marketCoverage!=="object"||Array.isArray(s.marketCoverage))s.marketCoverage={total:0,seen:0,priced:0,active:0,stale:0,failed:0,at:null};
   s.marketCursor=Math.max(0,+s.marketCursor||0);
-  s.schemaVersion=50;
+  s.schemaVersion=51;
   for(const c of s.cards){
     if(!c||typeof c!=="object")continue;
     if(!c.universe)c.universe="pokemon";if(c.universe==="football"){c.archivedUniverse="football";c.universe="pokemon";c.archivedAt=c.archivedAt||new Date().toISOString();}
@@ -111,7 +111,7 @@ let cs=document.querySelector("#collectionStats");if(cs){let g=gain(),inv=invest
 '<div><span>Pendientes</span><b>'+drafts()+'</b></div>';} let prev=state.history.at(-1)?.total;document.querySelector("#change").textContent=prev==null?"Pulsa «Guardar valoración» para crear histórico":(total()-prev>=0?"+":"")+euro(total()-prev)+" desde la última valoración";document.querySelector("#watchList").innerHTML=state.watch.length?state.watch.map((x,i)=>{let m=(state.marketScan||[]).find(s=>s.id===x.catalogId||norm(s.name)===norm(x.name));return `<div class="card"><div class="thumb">👁️</div><div><h3>${x.name}</h3><div class="meta">Objetivo ≤ ${euro(x.target)}${m?" · mercado "+euro(m.price):""}${m&&m.price<=x.target?" · ✅ en objetivo":""}</div>${m?`<div class="recognition">Convicción ${convictionSignal(m)}/100 · Liquidez ${liquiditySignal(m)}/100</div>`:""}</div><button onclick="removeWatch(${i})">×</button></div>`}).join(""):'<div class="empty">No sigues ninguna carta todavía.</div>';renderWatchSummary();renderHistory()}
 function renderHistory(){const h=[...state.history].reverse();document.querySelector("#history").innerHTML=h.slice(0,10).map(x=>`<div class="historyRow"><span>${new Date(x.at).toLocaleString("es-ES")}</span><b>${euro(x.total)}</b></div>`).join("");drawChart()}
 function drawChart(){const c=document.querySelector("#chart"),dpr=devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*dpr;c.height=r.height*dpr;const g=c.getContext("2d");g.scale(dpr,dpr);g.clearRect(0,0,r.width,r.height);let a=state.history.slice(-30);if(a.length<2){g.fillStyle="#8992ad";g.font="13px -apple-system";g.fillText("Guarda 2 valoraciones para ver la evolución",12,30);return}let vals=a.map(x=>x.total),mn=Math.min(...vals),mx=Math.max(...vals);if(mx===mn){mx++;mn--}g.strokeStyle="#eef2ff";g.lineWidth=2;g.beginPath();a.forEach((x,i)=>{let px=10+i*(r.width-20)/(a.length-1),py=10+(mx-x.total)*(r.height-20)/(mx-mn);i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke()}
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.add("hidden"));document.querySelector("#"+b.dataset.tab).classList.remove("hidden");if(b.dataset.tab==="data")drawChart()});
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.add("hidden"));document.querySelector("#"+b.dataset.tab).classList.remove("hidden");if(b.dataset.tab==="data")drawChart()});document.querySelector("#runPregrade").onclick=runPSAPregrade;renderPregradeHistory();
 document.querySelector("#snapshot").onclick=()=>{state.history.push({at:new Date().toISOString(),total:total(),cards:Object.fromEntries(state.cards.map(x=>[x.id,x.value]))});save();render()};
 function radarScore(group){let sold=group.filter(x=>x.kind==="sold"),list=group.filter(x=>x.kind==="listing");if(!sold.length)return 0;let prices=sold.map(x=>x.price).sort((a,b)=>a-b),med=prices[Math.floor(prices.length/2)],latest=sold.at(-1)?.price||med,score=Math.min(55,sold.length*11);if(latest<med)score+=15;if(list.length&&Math.min(...list.map(x=>x.price))<med*.9)score+=20;return Math.min(100,score)}
 function renderRadar(){let groups={};state.market.filter(x=>marketUniverseOf(x)===currentRadarUniverse()).forEach(x=>{let key=[marketUniverseOf(x),x.name,x.set||"",x.grading||"",x.grade||""].join("||");(groups[key]??=[]).push(x)});let rows=Object.entries(groups).map(([key,g])=>({name:g[0]?.name||key,set:g[0]?.set||"",grading:g[0]?.grading||"",grade:g[0]?.grade||"",g,score:radarScore(g),sold:g.filter(x=>x.kind==="sold"),ask:g.filter(x=>x.kind==="listing")})).filter(x=>{let p=x.ask.length?Math.min(...x.ask.map(y=>y.price)):Infinity;return p<=radarLimit}).sort((a,b)=>b.score-a.score);let rs=document.querySelector("#radarSummary");if(rs){let obs=state.market.length,sales=state.market.filter(x=>x.kind==="sold").length,active=state.market.filter(x=>x.kind==="listing").length,opps=rows.filter(x=>x.score>=60).length;rs.innerHTML='<div><span>Observaciones</span><b>'+obs+'</b></div><div><span>Ventas</span><b>'+sales+'</b></div><div><span>Anuncios</span><b>'+active+'</b></div><div><span>Señales ≥60</span><b>'+opps+'</b></div>';}document.querySelector("#radarList").innerHTML=rows.length?rows.map(x=>{let sold=x.sold.map(y=>y.price).sort((a,b)=>a-b),med=sold.length?sold[Math.floor(sold.length/2)]:null,ask=x.ask.length?Math.min(...x.ask.map(y=>y.price)):null;return `<article class="opportunity"><div><b>${x.name}</b><div class="meta">${x.set||""}${x.grading||x.grade?" · "+(x.grading||"")+" "+(x.grade||""):""}<br>${x.sold.length} ventas · ${x.ask.length} anuncios · evidencia ${Math.round((x.sold.filter(y=>y.url).length/Math.max(1,x.sold.length))*100)}%</div></div><div><strong>${x.score}/100</strong><div class="meta">${ask!=null?"Oferta "+euro(ask):""}${med!=null?" · Mediana "+euro(med):""}</div></div></article>`}).join(""):'<div class="empty">No hay todavía oportunidades con evidencia suficiente dentro de este precio.</div>'}
@@ -598,7 +598,7 @@ function renderCertification(){
   const box=document.querySelector("#certificationResults");if(!box)return;const c=state.certification||{},r=readinessScore(),blocks=readinessBlockers();
   const dq=dataQualityScore();let head='<div class="certScore '+(r.score===100?"complete":"")+'">'+r.score+'%</div><div class="certSub">Calidad global '+dq.score+'%</div>';
   if(c.at)head+='<small>Última comprobación: '+new Date(c.at).toLocaleString("es-ES")+'</small>';
-  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100%:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V50 están superados.</div>');
+  box.innerHTML=head+(blocks.length?'<div class="blockers"><b>Para llegar al 100%:</b>'+blocks.map(x=>'<div>• '+x+'</div>').join("")+'</div>':'<div class="certDone">✅ Todos los criterios de V51 están superados.</div>');
 }
 async function runCertification(){
   const btn=document.querySelector("#runCertification");btn.disabled=true;btn.textContent="Comprobando…";repairStateIntegrity();renderIntegrity();
@@ -611,7 +611,7 @@ async function runCertification(){
 }
 function renderReadiness(){
   const box=document.querySelector("#readinessPanel");if(!box)return;const r=readinessScore();
-  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V50.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
+  const blocks=readinessBlockers();box.innerHTML='<h3>Preparación para uso real</h3><div class="readinessScore">'+r.score+'%</div>'+r.checks.map(c=>'<div class="qaRow"><span>'+c.label+'</span><b class="'+(c.ok?'ok':'warn')+'">'+(c.ok?'OK':'Pendiente')+'</b></div>').join("")+(blocks.length?'<div class="nextBlocker"><b>Siguiente bloqueo</b><span>'+blocks[0]+'</span></div>':'<div class="certDone">✅ Lista para el hito V51.</div>')+'<small>El 100% solo aparece cuando todas las comprobaciones objetivas están cumplidas.</small>';
 }
 function renderMarketScan(){
   renderPortfolioRisk();renderCompare();
@@ -796,6 +796,98 @@ async function detectSlabCode(file){
     const codes=await Promise.race([bd.detect(bmp),timeoutAfter(3500)]);bmp.close?.();
     for(const c of codes||[]){const raw=String(c.rawValue||"").trim(),m=raw.match(/\b\d{7,10}\b/);if(m)return {cert:m[0],format:c.format||"",raw}}
   }catch{} return null;
+}
+
+async function imageToCanvas(file,maxW=720){
+  const bmp=await createImageBitmap(file),scale=Math.min(1,maxW/bmp.width),cv=document.createElement("canvas");
+  cv.width=Math.max(1,Math.round(bmp.width*scale));cv.height=Math.max(1,Math.round(bmp.height*scale));
+  const g=cv.getContext("2d");g.drawImage(bmp,0,0,cv.width,cv.height);bmp.close?.();return cv;
+}
+function regionStats(data,w,h,x0,y0,x1,y1){
+  x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(w,Math.ceil(x1));y1=Math.min(h,Math.ceil(y1));
+  let n=0,lum=0,lum2=0,white=0,grad=0,prev=null;
+  for(let y=y0;y<y1;y+=2)for(let x=x0;x<x1;x+=2){
+    const i=(y*w+x)*4,v=.299*data[i]+.587*data[i+1]+.114*data[i+2];
+    lum+=v;lum2+=v*v;n++;if(v>238)white++;if(prev!=null)grad+=Math.abs(v-prev);prev=v;
+  }
+  const mean=lum/Math.max(1,n),variance=Math.max(0,lum2/Math.max(1,n)-mean*mean);
+  return {mean,contrast:Math.sqrt(variance),white:white/Math.max(1,n),gradient:grad/Math.max(1,n)};
+}
+function symmetryScore(a,b){
+  const d=Math.abs(a-b)/Math.max(1,(Math.abs(a)+Math.abs(b))/2);return Math.round(clamp(100-d*120,0,100));
+}
+function psaGradeFromScore(score){
+  if(score>=96)return 10;if(score>=91)return 9;if(score>=84)return 8;if(score>=75)return 7;if(score>=66)return 6;
+  if(score>=56)return 5;if(score>=46)return 4;if(score>=34)return 3;if(score>=22)return 2;return 1;
+}
+function psaRange(score,confidence){
+  const g=psaGradeFromScore(score),spread=confidence>=80?1:confidence>=60?2:3;
+  return {low:Math.max(1,g-spread+1),high:Math.min(10,g)};
+}
+async function analyzePregradeSide(file,side){
+  const q=await imageQuality(file),cv=await imageToCanvas(file,760),g=cv.getContext("2d"),w=cv.width,h=cv.height,d=g.getImageData(0,0,w,h).data;
+  const edge=Math.max(8,Math.round(Math.min(w,h)*.055)),corner=Math.max(18,Math.round(Math.min(w,h)*.13));
+  const L=regionStats(d,w,h,0,h*.15,edge,h*.85),R=regionStats(d,w,h,w-edge,h*.15,w,h*.85);
+  const T=regionStats(d,w,h,w*.15,0,w*.85,edge),B=regionStats(d,w,h,w*.15,h-edge,w*.85,h);
+  const tl=regionStats(d,w,h,0,0,corner,corner),tr=regionStats(d,w,h,w-corner,0,w,corner),bl=regionStats(d,w,h,0,h-corner,corner,h),br=regionStats(d,w,h,w-corner,h-corner,w,h);
+  const centerLR=symmetryScore(L.gradient,R.gradient),centerTB=symmetryScore(T.gradient,B.gradient);
+  const centering=Math.round((centerLR+centerTB)/2);
+  const edgeBalance=Math.round((symmetryScore(L.white,R.white)+symmetryScore(T.white,B.white))/2);
+  const cornerVals=[tl,tr,bl,br],cornerMean=cornerVals.reduce((s,x)=>s+x.gradient,0)/4;
+  const cornerSpread=Math.sqrt(cornerVals.reduce((s,x)=>s+Math.pow(x.gradient-cornerMean,2),0)/4);
+  const corners=Math.round(clamp(100-cornerSpread*4-(cornerVals.filter(x=>x.white>.18).length*5),0,100));
+  const edges=Math.round(clamp(edgeBalance*.65+Math.min(100,60+((L.gradient+R.gradient+T.gradient+B.gradient)/4)*1.2)*.35,0,100));
+  const full=regionStats(d,w,h,w*.08,h*.08,w*.92,h*.92),glarePenalty=clamp((full.white-.08)*180,0,28);
+  const surface=Math.round(clamp(94-Math.max(0,full.gradient-24)*1.1-glarePenalty,25,100));
+  const focus=Math.round(clamp(q.score,0,100));
+  const score=Math.round(centering*.25+corners*.27+edges*.23+surface*.20+focus*.05);
+  const issues=[];
+  if(centering<88)issues.push("centrado visual mejorable");
+  if(corners<88)issues.push("posible desgaste o asimetría en esquinas");
+  if(edges<88)issues.push("posible irregularidad/blanqueo en bordes");
+  if(surface<88)issues.push("posibles marcas, reflejos o defectos de superficie");
+  if(q.score<60)issues.push("foto insuficiente para máxima confianza");
+  return {side,q,centering,corners,edges,surface,focus,score,issues,canvas:cv};
+}
+function paintPregradeOverlay(src,target,analysis){
+  const ctx=target.getContext("2d"),w=src.width,h=src.height;target.width=w;target.height=h;ctx.drawImage(src,0,0);
+  ctx.lineWidth=Math.max(2,Math.round(Math.min(w,h)*.006));ctx.strokeStyle="rgba(255,80,80,.9)";
+  const c=Math.round(Math.min(w,h)*.13),e=Math.round(Math.min(w,h)*.055);
+  ctx.strokeRect(1,1,c,c);ctx.strokeRect(w-c-1,1,c,c);ctx.strokeRect(1,h-c-1,c,c);ctx.strokeRect(w-c-1,h-c-1,c,c);
+  ctx.strokeStyle="rgba(255,210,80,.9)";ctx.strokeRect(e,e,w-2*e,h-2*e);
+}
+function renderPregradeHistory(){
+  const box=document.querySelector("#pregradeHistory");if(!box)return;const h=[...(state.pregradeHistory||[])].reverse().slice(0,5);
+  box.innerHTML='<h3>Últimos pregrados</h3>'+(h.length?h.map(x=>'<div class="qaRow"><span>'+new Date(x.at).toLocaleString("es-ES")+'</span><b>PSA '+x.range.low+'–'+x.range.high+' · '+x.confidence+'%</b></div>').join(""):'<p class="muted">Aún no hay análisis guardados.</p>');
+}
+function renderPregradeReport(r){
+  const box=document.querySelector("#pregradeResult");if(!box)return;
+  const rows=[["Centrado",r.centering],["Esquinas",r.corners],["Bordes",r.edges],["Superficie",r.surface]];
+  box.innerHTML='<div class="pregradeHero"><span>Pregrado estimado</span><strong>PSA '+r.range.low+'–'+r.range.high+'</strong><small>Confianza fotográfica '+r.confidence+'%</small></div>'+
+    '<div class="gradeBreakdown">'+rows.map(([n,v])=>'<div><span>'+n+'</span><b>'+v+'/100</b><i><em style="width:'+v+'%"></em></i></div>').join("")+'</div>'+
+    '<div class="gradeNotes"><b>Hallazgos</b>'+(r.issues.length?r.issues.map(x=>'<div>• '+x+'</div>').join(""):'<div>• No se detectan defectos evidentes en estas fotografías.</div>')+'</div>'+
+    '<div class="gradeNotes"><b>Lectura</b><div>El rango es una estimación visual. Defectos microscópicos, presión, indentaciones, alteraciones, autenticidad o daños invisibles en foto pueden cambiar el grado oficial.</div></div>';
+}
+async function runPSAPregrade(){
+  const front=document.querySelector("#psaFront")?.files?.[0],back=document.querySelector("#psaBack")?.files?.[0],btn=document.querySelector("#runPregrade"),st=document.querySelector("#pregradeStatus");
+  if(!front){st.textContent="Añade al menos una foto frontal.";return}
+  btn.disabled=true;st.textContent="Analizando centrado, esquinas, bordes y superficie…";
+  try{
+    const f=await analyzePregradeSide(front,"front"),b=back?await analyzePregradeSide(back,"back"):null;
+    paintPregradeOverlay(f.canvas,document.querySelector("#pregradeFrontCanvas"),f);
+    const bc=document.querySelector("#pregradeBackCanvas");if(b)paintPregradeOverlay(b.canvas,bc,b);else{bc.width=1;bc.height=1}
+    const weightFront=b?.score!=null?.58:1,weightBack=b?.score!=null?.42:0;
+    const centering=Math.round(f.centering*(b?.centering!=null?.58:1)+(b?.centering||0)*(b?.centering!=null?.42:0));
+    const corners=Math.round(f.corners*weightFront+(b?.corners||0)*weightBack),edges=Math.round(f.edges*weightFront+(b?.edges||0)*weightBack),surface=Math.round(f.surface*weightFront+(b?.surface||0)*weightBack);
+    let overall=Math.round(centering*.25+corners*.27+edges*.23+surface*.25);
+    const minQuality=Math.min(f.q.score,b?.q.score??f.q.score),confidence=Math.round(clamp((b?72:48)+minQuality*.25,35,96));
+    if(minQuality<50)overall=Math.min(overall,88);
+    const range=psaRange(overall,confidence),issues=[...new Set([...(f.issues||[]),...(b?.issues||[])])];
+    const report={at:new Date().toISOString(),overall,centering,corners,edges,surface,confidence,range,issues,frontQuality:f.q.score,backQuality:b?.q.score??null};
+    state.pregradeHistory=state.pregradeHistory||[];state.pregradeHistory.push(report);state.pregradeHistory=state.pregradeHistory.slice(-20);save();
+    renderPregradeReport(report);renderPregradeHistory();st.textContent="Análisis completado.";
+  }catch(e){st.textContent="No se pudo completar el análisis. Usa fotos más rectas, nítidas y sin reflejos.";pushRuntimeError("pregrade",e?.message||e)}
+  btn.disabled=false;
 }
 async function imageQuality(file){
   return new Promise((ok,no)=>{let im=new Image(),r=new FileReader();r.onload=()=>im.src=r.result;r.onerror=no;im.onload=()=>{
@@ -1050,7 +1142,7 @@ function renderValuationAudit(){
 }function renderQA(){
   const box=document.querySelector("#qaPanel");if(!box)return;
   const pending=state.cards.filter(c=>c.draft).length,photos=state.cards.filter(c=>c.photoKey).length,scan=(state.marketScan||[]).length,gradedSales=state.market.filter(m=>m.kind==="sold"&&(m.grading||"RAW")!=="RAW").length,popVerified=state.cards.filter(c=>c.popGrade!=null&&c.popSource&&c.popUrl&&c.popCheckedAt).length,activeAlerts=evaluateOpportunityAlerts(state.marketScan||[]).length,signalPoints=(state.signalHistory||[]).length,last=state.marketScanAt?new Date(state.marketScanAt).toLocaleString("es-ES"):"Nunca",scanAge=state.marketScanAt?ageDays(state.marketScanAt):9999;
-  const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V50","ok"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Radar activo",(state.marketCoverage?.active||0)+" cartas",(state.marketCoverage?.active||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/8",(state.selfTest?.pass||0)>=7?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
+  const unsafeSlab=state.cards.filter(c=>c.recognition?.barcode?.cert&&(c.grading||"RAW")!=="RAW"&&c.recognition?.gradingEvidence!=="ocr-label"&&c.identityVerifiedBy!=="user").length;const checks=[["Build","V51","ok"],["Slab sin emisor verificado",String(unsafeSlab),unsafeSlab?"warn":"ok"],["Colección",state.cards.length+" fichas","ok"],["Fotos locales",photos+" guardadas",photos?"ok":"warn"],["Pendientes OCR",String(pending),pending?"warn":"ok"],["Market Lab",scan+" analizadas",scan?"ok":"warn"],["Cobertura catálogo",(state.marketCoverage?.total?((state.marketCoverage.seen/state.marketCoverage.total)*100).toFixed(1)+"%":"Sin iniciar"),(state.marketCoverage?.seen||0)>=120?"ok":"warn"],["Con precio",(state.marketCoverage?.priced||0)+" cartas",(state.marketCoverage?.priced||0)>=40?"ok":"warn"],["Radar activo",(state.marketCoverage?.active||0)+" cartas",(state.marketCoverage?.active||0)>=40?"ok":"warn"],["Ventas graduadas",gradedSales+" comps",gradedSales>=4?"ok":"warn"],["Población verificada",popVerified+" fichas",popVerified?"ok":"warn"],["Alertas activas",activeAlerts,activeAlerts?"ok":"warn"],["Histórico señales",signalPoints+" puntos",signalPoints>=20?"ok":"warn"],["Preparación",readinessScore().score+"%",readinessScore().score===100?"ok":"warn"],["Calidad global",dataQualityScore().score+"%",dataQualityScore().score>=80?"ok":"warn"],["Autotest",(state.selfTest?.pass||0)+"/8",(state.selfTest?.pass||0)>=7?"ok":"warn"],["Prueba fotos",(state.photoValidation?.labeledTested||0)?Math.round((state.photoValidation.accuracy||0)*100)+"%":"Sin muestra",(state.photoValidation?.labeledTested||0)>=3&&(state.photoValidation?.accuracy||0)>=.7?"ok":"warn"],["Modo",state.marketScanMode==="wide"?"Amplio":"Rápido",state.marketScanMode==="wide"?"ok":"warn"],["Último escaneo",last,scan?"ok":"warn"],["Frescura mercado",scanAge<=1?"Hoy":scanAge<=7?"< 7 días":"Antiguo",scanAge<=7?"ok":"warn"]];
   box.innerHTML="<h3>Diagnóstico Card Vault</h3>"+checks.map(c=>"<div class=\"qaRow\"><span>"+c[0]+"</span><b class=\""+c[2]+"\">"+c[1]+"</b></div>").join("");renderBootStatus();renderRecognitionStats();renderBatchStatus();renderReadiness();renderSelfTest();renderPhotoValidation();renderCertification();renderIntegrity();renderValuationAudit();renderMarketEvidence();
 }
 async function storageStatus(){let label="Almacenamiento disponible";if(navigator.storage?.estimate){let e=await navigator.storage.estimate(),u=e.usage||0,q=e.quota||0,p=q?u/q*100:0;label=(u/1048576).toFixed(1)+" MB usados"+(q?" de "+(q/1048576).toFixed(0)+" MB · "+p.toFixed(1)+"%":"");document.querySelector("#storageText").textContent=label}renderQA();let persisted=false;try{persisted=await navigator.storage?.persisted?.()}catch{}let r=document.querySelector("#readyText");if(r)r.textContent="Fotos y radar guardados localmente · copia V3 completa · "+(persisted?"almacenamiento persistente concedido":"haz copias periódicas en Archivos/iCloud")}document.querySelector("#export").onclick=async()=>{let photos={};for(const x of state.cards){if(x.photoKey){let b=await photoGet(x.photoKey);if(b)photos[x.photoKey]=await blobToDataURL(b)}}let marketSignals=await marketSignalAll().catch(()=>[]),clean=JSON.parse(JSON.stringify(state,(k,v)=>k==="photoURL"?undefined:v)),pack={format:"cardvault-backup",version:3,createdAt:new Date().toISOString(),state:clean,photos,marketSignals},blob=new Blob([JSON.stringify(pack)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-completo-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
