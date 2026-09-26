@@ -3,6 +3,7 @@
 (function(){
 "use strict";
 if(!Array.isArray(state.sealedProducts))state.sealedProducts=[];
+if(!state.sealedSnapshots||typeof state.sealedSnapshots!=="object"||Array.isArray(state.sealedSnapshots))state.sealedSnapshots={};
 if(!state.sealedPolicy||typeof state.sealedPolicy!=="object")state.sealedPolicy={minPriceEUR:40,maxPriceEUR:250,minUpsideEUR:50};
 for(const c of state.cards||[])if(!c.purpose)c.purpose="investment";
 save();
@@ -29,6 +30,20 @@ function sealedEvidenceScore(p){
   if(p.printStatus&&p.printStatus!=="unknown")s+=2;
   return Math.min(100,s);
 }
+function sealedHistory(p){return Array.isArray(state.sealedSnapshots?.[p.id])?state.sealedSnapshots[p.id]:[]}
+function recordSealedSnapshot(p){
+  if(!p?.id||!(num(p.currentPrice)>0)||!p.sourceUrl)return;
+  const day=new Date().toISOString().slice(0,10),rows=sealedHistory(p),last=rows.at(-1);
+  const row={day,price:num(p.currentPrice),shipping:num(p.shipping),sourceUrl:p.sourceUrl,at:new Date().toISOString()};
+  if(last?.day===day)rows[rows.length-1]=row;else rows.push(row);
+  state.sealedSnapshots[p.id]=rows.slice(-370);
+}
+function derivedSealedTrend(p,days){
+  const rows=sealedHistory(p).filter(x=>num(x.price)>0),now=rows.at(-1);if(!now)return null;
+  const cutoff=new Date(now.day+"T00:00:00Z").getTime()-days*86400000;
+  const prior=[...rows].reverse().find(x=>new Date(x.day+"T00:00:00Z").getTime()<=cutoff);
+  return prior&&num(prior.price)>0?(num(now.price)-num(prior.price))/num(prior.price)*100:null;
+}
 function sealedEconomics(p){
   const cost=num(p.currentPrice)+num(p.shipping),base=num(p.targetBase),low=num(p.targetLow),high=num(p.targetHigh);
   return {cost,base,low,high,baseProfit:base>0?base-cost:null,basePct:base>0&&cost>0?(base-cost)/cost*100:null};
@@ -52,7 +67,8 @@ function productCard(p,rank){
   const d=sealedDecision(p),x=sealedEconomics(p),ev=sealedEvidenceScore(p),age=ageYears(p.releaseDate);
   const premium=num(p.msrp)>0?((num(p.currentPrice)-num(p.msrp))/num(p.msrp)*100):null;
   const photo=p.photoUrl?'<img src="'+esc(p.photoUrl)+'" alt="'+esc(p.name)+'" loading="lazy">':'📦';
-  const trend=[p.trend30!==""&&p.trend30!=null?"30d "+pct(p.trend30):"",p.trend90!==""&&p.trend90!=null?"90d "+pct(p.trend90):""].filter(Boolean).join(" · ");
+  const t30=derivedSealedTrend(p,30),t90=derivedSealedTrend(p,90);
+  const trend=[t30!=null?"30d local "+pct(t30):(p.trend30!==""&&p.trend30!=null?"30d fuente "+pct(p.trend30):""),t90!=null?"90d local "+pct(t90):(p.trend90!==""&&p.trend90!=null?"90d fuente "+pct(p.trend90):"")].filter(Boolean).join(" · ");
   return '<article class="sealedCard" data-id="'+esc(p.id)+'"><div class="sealedPhoto">'+photo+'</div><div>'+
     '<div class="sealedTitle"><div>'+(rank?'<small>#'+rank+' · '+universeName(p.universe)+'</small>':'<small>'+universeName(p.universe)+'</small>')+'<h3>'+esc(p.name)+'</h3><div class="meta">'+esc(p.set||"—")+' · '+esc(p.productType||"Producto sellado")+'</div></div><span class="decisionPill '+d.key+'">'+d.label+'</span></div>'+
     '<div class="sealedMetrics"><div><span>Precio total</span><b>'+euro(x.cost)+'</b></div><div><span>Escenario base</span><b>'+(x.base?euro(x.base):"Sin dato")+'</b></div><div><span>Potencial base</span><b>'+(x.baseProfit==null?"Sin dato":(x.baseProfit>=0?"+":"")+euro(x.baseProfit))+'</b></div><div><span>Confianza datos</span><b>'+confidence(p)+' · '+ev+'/100</b></div><div><span>Liquidez</span><b>'+esc(p.liquidity||"Sin evaluar")+'</b></div><div><span>Riesgo reedición</span><b>'+esc(p.reprintRisk||"Sin evaluar")+'</b></div></div>'+
@@ -106,11 +122,11 @@ function saveSealed(e){
   const p={...old,id,universe:f.get("universe")==="lorcana"?"lorcana":"pokemon",name:String(f.get("name")||"").trim(),set:String(f.get("set")||"").trim(),productType:String(f.get("productType")||"Otro"),releaseDate:String(f.get("releaseDate")||""),msrp:num(f.get("msrp")),currentPrice:num(f.get("currentPrice")),shipping:num(f.get("shipping")),recentLow:num(f.get("recentLow")),averagePrice:num(f.get("averagePrice")),targetLow:num(f.get("targetLow")),targetBase:num(f.get("targetBase")),targetHigh:num(f.get("targetHigh")),availability:String(f.get("availability")||"unknown"),printStatus:String(f.get("printStatus")||"unknown"),liquidity:String(f.get("liquidity")||""),reprintRisk:String(f.get("reprintRisk")||""),trend30:f.get("trend30")===""?"":num(f.get("trend30")),trend90:f.get("trend90")===""?"":num(f.get("trend90")),photoUrl:String(f.get("photoUrl")||"").trim(),sourceUrl:String(f.get("sourceUrl")||"").trim(),buyUrl:String(f.get("buyUrl")||"").trim(),seller:String(f.get("seller")||"").trim(),notes:String(f.get("notes")||"").trim(),updatedAt:new Date().toISOString()};
   if(!p.name||!p.currentPrice||!p.sourceUrl||!p.buyUrl){alert("Nombre, precio actual, fuente y enlace de compra son obligatorios.");return}
   if(sealedEditId)state.sealedProducts=state.sealedProducts.map(x=>x.id===id?p:x);else state.sealedProducts.push(p);
-  save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();
+  recordSealedSnapshot(p);save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();
 }
 function deleteSealed(){
   if(!sealedEditId||!confirm("¿Eliminar este producto sellado?"))return;
-  state.sealedProducts=state.sealedProducts.filter(x=>x.id!==sealedEditId);save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();
+  state.sealedProducts=state.sealedProducts.filter(x=>x.id!==sealedEditId);delete state.sealedSnapshots[sealedEditId];save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();
 }
 function renderRebalance(){
   const cards=state.cards||[],totalVal=cards.reduce((s,c)=>s+num(c.value)*Math.max(1,num(c.quantity)||1),0);
@@ -134,6 +150,14 @@ function renderRebalance(){
   if(plan)plan.innerHTML='<h3>Plan de reinversión</h3><div class="qaRow"><span>Capital marcado para vender/reinvertir</span><b>'+euro(released)+'</b></div>'+
     (released<=0?'<small>Marca posiciones “Para vender” o “Para reinvertir” para calcular capital liberable.</small>':buys.length?'<small>Hay '+buys.length+' candidato(s) sellado(s) que superan tus filtros actuales. Compáralos también con el Top 10 de cartas antes de reasignar capital.</small>':'<small>No hay compra sellada que supere todos los filtros actuales. Mantén el capital sin reasignar hasta tener evidencia suficiente.</small>');
 }
+function sealedSourceGuide(){
+  const box=$("#sealedSourceGuide");if(!box)return;
+  box.innerHTML='<h3>Fuentes de datos · sellado</h3>'+
+  '<div class="qaRow"><span>Cardmarket</span><b class="ok">Prioridad EUR</b></div><small>Usa la URL exacta del producto/listado cuando sea verificable. Card Vault conserva precio + fuente + fecha en cada snapshot.</small>'+
+  '<div class="qaRow"><span>Pokémon TCG API sellado</span><b class="warn">Opcional</b></div><small>Existe catálogo/API de booster boxes, ETB, tins, blísteres y colecciones, pero requiere clave. No se activa ni genera coste automáticamente.</small>'+
+  '<div class="qaRow"><span>Lorcana</span><b class="warn">Evidencia por producto</b></div><small>No se rellena histórico sintético. Guarda fuentes reales por booster box, trove, gift set, D23 u otro producto.</small>'+
+  '<div class="qaRow"><span>Histórico propio</span><b class="ok">Activo</b></div><small>Cada actualización de precio con fuente crea un snapshot diario local; así 7d/30d/90d pasan a ser medibles sin inventar datos.</small>';
+}
 function exportSealed(){
   const blob=new Blob([JSON.stringify({format:"cardvault-sealed-v1",createdAt:new Date().toISOString(),policy:state.sealedPolicy,products:state.sealedProducts},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="card-vault-sellado-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
@@ -153,6 +177,7 @@ $("#sealedExport").onclick=exportSealed;
 ["sealedUniverse","sealedDecision"].forEach(id=>$("#"+id).onchange=renderSealed);
 $("#sealedSearch").oninput=renderSealed;
 document.querySelectorAll('nav button[data-tab="sealed"],nav button[data-tab="rebalance"]').forEach(b=>b.addEventListener("click",()=>{renderSealed();renderRebalance()}));
-renderSealed();renderRebalance();
+const sealedSection=$("#sealed");if(sealedSection&&!$("#sealedSourceGuide"))sealedSection.insertAdjacentHTML("beforeend",'<div id="sealedSourceGuide" class="qaPanel"></div>');
+sealedSourceGuide();renderSealed();renderRebalance();
 try{renderExcellenceBenchmark()}catch{}
 })();
