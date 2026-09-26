@@ -151,3 +151,6 @@ nav button{min-height:46px;line-height:1.05}
 .gradePhoto.mini{min-height:58px;font-size:9px;padding:6px;text-align:center}
 #cornerDetail small{display:block;margin-top:8px;color:#8794ad;font-size:9px}
 @media(max-width:420px){.cornerInputGrid{grid-template-columns:1fr 1fr}}
+
+#technicalCompletionPanel .readinessScore.complete{box-shadow:0 0 0 2px rgba(90,220,140,.22)}
+#technicalCompletionPanel small{display:block;margin-top:8px;color:#8794ad;line-height:1.4}
