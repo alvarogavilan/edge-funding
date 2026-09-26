@@ -154,3 +154,6 @@ nav button{min-height:46px;line-height:1.05}
 
 #technicalCompletionPanel .readinessScore.complete{box-shadow:0 0 0 2px rgba(90,220,140,.22)}
 #technicalCompletionPanel small{display:block;margin-top:8px;color:#8794ad;line-height:1.4}
+
+#advanceCompletion{background:#244d3b}
+#completionRunStatus{margin-top:8px}
