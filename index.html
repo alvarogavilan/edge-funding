@@ -87,6 +87,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script src="app.js?v=69"></script><script src="sealed.js?v=69"></script><dialog id="ledgerDialog"><form id="ledgerForm" method="dialog" class="formGrid">
 <h3 id="ledgerDialogTitle">Registrar operación</h3>
 <label>Tipo<select id="ledgerType"><option value="buy">Compra</option><option value="sell">Venta</option><option value="grading">Graduación</option><option value="fee">Comisión / coste</option></select></label>
+<label class="wide">Vincular a posición<select id="ledgerAssetKey"></select></label>
 <label>Activo<select id="ledgerAssetType"><option value="card">Carta</option><option value="sealed">Sellado</option><option value="other">Otro</option></select></label>
 <label class="wide">Nombre / producto<input id="ledgerName" required placeholder="Ej. Eevee ex / ETB..."></label>
 <label>Fecha<input id="ledgerDate" type="date" required></label>
