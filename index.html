@@ -20,6 +20,9 @@
   <div class="sectionHead"><h3>Mi cartera</h3><span class="microNote">Marca cada carta: NO vender · colección personal · inversión · para PSA · para vender · para reinvertir.</span></div>
   <div id="rebalanceList"></div>
   <div id="reinvestPlan" class="qaPanel"></div>
+  <div class="sectionHead"><h3>Libro de inversión</h3><button id="ledgerAdd">+ Registrar operación</button></div>
+  <div id="ledgerSummary" class="statsGrid"></div>
+  <div id="ledgerList"></div>
 </section>
 <section id="watch" class="tab hidden"><div class="welcome"><b>Seguimiento</b><span>Controla cartas que te interesan aunque todavía no estén en tu colección.</span></div><div id="watchSummary" class="statsGrid"></div><div class="sectionHead"><h3>Cartas en seguimiento</h3><button id="addWatch">+ Añadir seguimiento</button></div><div id="watchList"></div></section>
 <section id="pregrade" class="tab hidden">
@@ -81,4 +84,19 @@
 <div class="row"><button type="button" id="sealedCancel">Cancelar</button><button id="sealedSave">Guardar producto</button></div>
 <button type="button" id="sealedDelete" class="danger hidden">Eliminar producto</button>
 </form></dialog>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script src="app.js?v=69"></script><script src="sealed.js?v=69"></script></body></html>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script src="app.js?v=69"></script><script src="sealed.js?v=69"></script><dialog id="ledgerDialog"><form id="ledgerForm" method="dialog" class="formGrid">
+<h3 id="ledgerDialogTitle">Registrar operación</h3>
+<label>Tipo<select id="ledgerType"><option value="buy">Compra</option><option value="sell">Venta</option><option value="grading">Graduación</option><option value="fee">Comisión / coste</option></select></label>
+<label>Activo<select id="ledgerAssetType"><option value="card">Carta</option><option value="sealed">Sellado</option><option value="other">Otro</option></select></label>
+<label class="wide">Nombre / producto<input id="ledgerName" required placeholder="Ej. Eevee ex / ETB..."></label>
+<label>Fecha<input id="ledgerDate" type="date" required></label>
+<label>Cantidad<input id="ledgerQty" type="number" min="0.01" step="0.01" value="1" required></label>
+<label>Precio unitario €<input id="ledgerUnitPrice" type="number" min="0" step="0.01" required></label>
+<label>Envío €<input id="ledgerShipping" type="number" min="0" step="0.01" value="0"></label>
+<label>Comisiones €<input id="ledgerFees" type="number" min="0" step="0.01" value="0"></label>
+<label class="wide">Fuente / justificante URL<input id="ledgerSource" type="url" placeholder="https://..."></label>
+<label class="wide">Notas<input id="ledgerNotes" placeholder="Estado, plataforma, comprador/vendedor..."></label>
+<div class="dialogActions wide"><button type="button" id="ledgerCancel">Cancelar</button><button type="button" id="ledgerDelete" class="danger hidden">Eliminar</button><button type="submit" class="primary">Guardar</button></div>
+</form></dialog>
+<script src="ledger.js?v=69-ledger"></script>
+</body></html>
