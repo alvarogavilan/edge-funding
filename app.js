@@ -461,7 +461,7 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
 }
 async function ensureCompleteCatalog(){
   const p=state.catalogMeta?.pokemon||{},l=state.catalogMeta?.lorcana||{};
-  if((+p.count||0)>0&&(+l.count||0)>0&&(+l.sets||0)>0)return {pokemon:+p.count,lorcana:+l.count,sets:+l.sets,cached:true};
+  const age=Math.min(ageDays(p.at),ageDays(l.at));if((+p.count||0)>0&&(+l.count||0)>0&&(+l.sets||0)>0&&age<=7)return {pokemon:+p.count,lorcana:+l.count,sets:+l.sets,cached:true};
   const pok=await tcgdexList("en"),prows=(pok||[]).filter(x=>x.id).map(pokemonCatalogRow);for(let i=0;i<prows.length;i+=800)await catalogPutMany(prows.slice(i,i+800));state.catalogMeta.pokemon={count:prows.length,at:new Date().toISOString()};
   const sets=await lorcastSets();let lcount=0;for(const st of sets){const cards=await lorcastSetCards(st.code),rows=cards.map(lorcanaCatalogRow);lcount+=rows.length;await catalogPutMany(rows);await new Promise(r=>setTimeout(r,50))}state.catalogMeta.lorcana={count:lcount,sets:sets.length,at:new Date().toISOString()};save();try{window.CVTodaySimple?.render?.()}catch{}return {pokemon:prows.length,lorcana:lcount,sets:sets.length,cached:false};
 }
