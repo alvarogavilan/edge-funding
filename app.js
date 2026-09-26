@@ -476,6 +476,15 @@ async function turboMarketCoverage(rounds=6){
   }catch(e){state.turboMarketRunning=false;save();if(status)status.textContent="Turbo Radar interrumpido; el progreso guardado se conserva.";throw e}
 }
 window.CVTurboMarket={run:turboMarketCoverage};
+async function autoMarketCoverage(){
+  const last=new Date(state.turboMarketLast?.at||0).getTime(),fresh=last&&Date.now()-last<6*3600000;
+  if(fresh||state.turboMarketRunning)return;
+  const p=state.coverageByUniverse?.pokemon||{},l=state.coverageByUniverse?.lorcana||{},pDone=(+p.total>0&&+p.seen>=+p.total),lDone=(+l.total>0&&+l.seen>=+l.total);
+  if(pDone&&lDone){await refreshGlobalToday().catch(()=>{});return}
+  setTimeout(()=>turboMarketCoverage(2).catch(e=>pushRuntimeError("auto-turbo",e?.message||e)),900);
+}
+window.CVAutoMarketCoverage={run:autoMarketCoverage};
+
 
 async function retryMarketFailures(){
   const btn=document.querySelector("#retryMarketFailures"),st=document.querySelector("#marketScanState"),ids=Object.keys(state.marketFailures||{}).slice(0,80);
@@ -1747,7 +1756,7 @@ document.querySelector("#clearTests").onclick=async()=>{let bad=state.cards.filt
 document.querySelector("#runSelfTest").onclick=runSelfTest;renderSelfTest();document.querySelector("#runPhotoValidation").onclick=runPhotoValidation;renderPhotoValidation();document.querySelector("#finalizeApp").onclick=finalizeApplication;document.querySelector("#runCertification").onclick=runCertification;renderCertification();document.querySelector("#advanceCompletion").onclick=advanceAutomaticCompletion;document.querySelector("#repairIntegrity").onclick=()=>{repairStateIntegrity();renderIntegrity();render();renderQA()};renderIntegrity();
 document.querySelector("#searchCards").oninput=render;document.querySelector("#filterType").onchange=render;document.querySelector("#collectionUniverse").onchange=render;
 const bulkDialog=document.querySelector("#bulkDialog"),bulkPhotos=document.querySelector("#bulkPhotos");document.querySelector("#bulkAdd").onclick=()=>bulkDialog.showModal();
-document.querySelector("#saveBulk").onclick=async e=>{e.preventDefault();let fs=[...bulkPhotos.files];if(!fs.length)return;let btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="Guardando fotos…";let jobs=[];for(let i=0;i<fs.length;i++){let id=crypto.randomUUID(),blob=await resizeBlob(fs[i]);await photoPut(id,blob);let card={id,universe:document.querySelector("#bulkUniverse")?.value||"pokemon",name:"Carta por identificar",set:"",number:"",year:"",language:"",grading:"RAW",grade:"",value:0,purchase:null,quantity:1,purchaseDate:"",cert:"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:true,recognition:{score:0,source:"pending",at:new Date().toISOString()},createdAt:new Date().toISOString()};state.cards.push(card);jobs.push({card,blob});}save();render();storageStatus();btn.disabled=false;btn.textContent=old;bulkPhotos.value="";bulkDialog.close();let st=document.querySelector("#repairStatus");st.classList.remove("hidden");st.textContent=fs.length+" fotos guardadas. La identificación continuará sin bloquear la app.";for(const j of jobs)enqueueRecognition(j.card,j.blob)};
+document.querySelector("#saveBulk").onclick=async e=>{e.preventDefault();let fs=[...bulkPhotos.files];if(!fs.length)return;let btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent="Guardando fotos…";let jobs=[];for(let i=0;i<fs.length;i++){let id=crypto.randomUUID(),blob=await resizeBlob(fs[i]);await photoPut(id,blob);let card={id,universe:document.querySelector("#bulkUniverse")?.value||"pokemon",name:"Carta por identificar",set:"",number:"",year:"",language:"",grading:"RAW",grade:"",value:0,purchase:null,quantity:1,purchaseDate:"",cert:"",photoKey:id,photoURL:URL.createObjectURL(blob),icon:"🃏",draft:true,recognition:{score:0,source:"pending",at:new Date().toISOString()},createdAt:new Date().toISOString()};state.cards.push(card);jobs.push({card,blob});}save();render();try{autoMarketCoverage()}catch{}storageStatus();btn.disabled=false;btn.textContent=old;bulkPhotos.value="";bulkDialog.close();let st=document.querySelector("#repairStatus");st.classList.remove("hidden");st.textContent=fs.length+" fotos guardadas. La identificación continuará sin bloquear la app.";for(const j of jobs)enqueueRecognition(j.card,j.blob)};
 
 async function hydrateMarketFromStorage(){
   try{
