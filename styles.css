@@ -255,3 +255,5 @@ nav button{min-height:46px;line-height:1.05}
 #todaySimple .buyBody>small,#todaySimple .buyKicker,#todaySimple .buyNumbers span,#todaySimple .buyMeta,#todaySimple .simpleFoot,#todaySimple .coverageStrip span{color:#5d6678!important;opacity:1}
 #todaySimple .buyNumbers div{background:#f3f5f8;color:#101522}
 #todaySimple .buyButton.secondary{background:#fff;color:#101522!important;border-color:#cfd5df}
+
+#todaySimple .buyWhy{margin:8px 0 2px;padding:8px 10px;border-radius:10px;background:#fff4e5;color:#7a4b00!important;font-size:12px;font-weight:700;line-height:1.3}
