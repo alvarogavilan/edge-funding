@@ -471,7 +471,7 @@ async function turboMarketCoverage(rounds=6){
       await new Promise(r=>setTimeout(r,120));
     }
     const all=await marketSignalAll().catch(()=>[]),now=Date.now(),active=all.filter(x=>{const t=new Date(x.scannedAt||x.updated||0).getTime();return t&&now-t<=45*86400000});
-    state.marketScan=active.sort((a,b)=>(+b.score||0)-(+a.score||0)).slice(0,800);state.marketScanAt=new Date().toISOString();recordSignalSnapshot(state.marketScan);state.turboMarketLast={at:state.marketScanAt,rounds,pokemonRounds:pok,lorcanaRounds:lor,errors,active:active.length};state.turboMarketRunning=false;save();recordSignalSnapshot(state.marketScan);renderMarketScan();renderRadar();await refreshGlobalToday();try{window.CVTodaySimple?.render?.()}catch{}if(status)status.textContent="Turbo Radar listo · "+active.length+" señales activas";return state.turboMarketLast;
+    state.marketScan=active.sort((a,b)=>(+b.score||0)-(+a.score||0)).slice(0,800);state.marketScanAt=new Date().toISOString();recordSignalSnapshot(state.marketScan);state.turboMarketLast={at:state.marketScanAt,rounds,pokemonRounds:pok,lorcanaRounds:lor,errors,active:active.length};state.turboMarketRunning=false;save();renderMarketScan();renderRadar();await refreshGlobalToday();try{window.CVTodaySimple?.render?.()}catch{}if(status)status.textContent="Turbo Radar listo · "+active.length+" señales activas";return state.turboMarketLast;
   }catch(e){state.turboMarketRunning=false;save();if(status)status.textContent="Turbo Radar interrumpido; el progreso guardado se conserva.";throw e}
 }
 window.CVTurboMarket={run:turboMarketCoverage};
