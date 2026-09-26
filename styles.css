@@ -248,3 +248,10 @@ nav button{min-height:46px;line-height:1.05}
 .todayCoverage{display:flex;align-items:center;gap:10px;margin:2px 0 10px}.todayCoverage button{flex:0 0 auto;padding:11px 14px;border:0;border-radius:12px;background:#11182b;color:#fff;font-weight:900;font-size:11px}.todayCoverage span{font-size:11px;opacity:.65}.todayCoverage button:disabled{opacity:.45}@media(max-width:560px){.todayCoverage{align-items:stretch;flex-direction:column}.todayCoverage button{width:100%}}
 
 .coverageStrip{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:2px 0 9px}.coverageStrip div{padding:9px 8px;border:1px solid var(--line,#d8dde6);border-radius:12px;background:var(--card,#fff)}.coverageStrip span,.coverageStrip b{display:block}.coverageStrip span{font-size:9px;text-transform:uppercase;opacity:.55}.coverageStrip b{font-size:12px;margin-top:2px}@media(max-width:430px){.coverageStrip{gap:5px}.coverageStrip div{padding:8px 6px}.coverageStrip b{font-size:11px}}
+
+/* V71.10 iOS contrast hardening */
+#todaySimple .simpleSection,#todaySimple .buyTile,#todaySimple .coverageStrip>div{background:#fff;color:#101522}
+#todaySimple .buyBody h3,#todaySimple .buyNumbers b,#todaySimple .simpleTitle h3,#todaySimple .coverageStrip b{color:#101522!important}
+#todaySimple .buyBody>small,#todaySimple .buyKicker,#todaySimple .buyNumbers span,#todaySimple .buyMeta,#todaySimple .simpleFoot,#todaySimple .coverageStrip span{color:#5d6678!important;opacity:1}
+#todaySimple .buyNumbers div{background:#f3f5f8;color:#101522}
+#todaySimple .buyButton.secondary{background:#fff;color:#101522!important;border-color:#cfd5df}
