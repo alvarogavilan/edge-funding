@@ -15,7 +15,8 @@ function snapshotFromCard(c={},qty=1){
   popGrade:c.popGrade??null,popHigher:c.popHigher??null,popTotal:c.popTotal??null,popSource:c.popSource||"",popUrl:c.popUrl||"",popCheckedAt:c.popCheckedAt||"",
   marketPricing:c.marketPricing||null,gradedValuation:c.gradedValuation||null,conditionMarket:c.conditionMarket||null,
   buyOpportunityId:c.buyOpportunityId||"",buySource:c.buySource||"",buyVariant:c.buyVariant||"",buyLanguage:c.buyLanguage||"",
-  buyCondition:c.buyCondition||"",buySeller:c.buySeller||"",buySourceUrl:c.buySourceUrl||"",boughtAt:c.boughtAt||""
+  buyCondition:c.buyCondition||"",buySeller:c.buySeller||"",buySourceUrl:c.buySourceUrl||"",boughtAt:c.boughtAt||"",
+  purchaseThesis:c.purchaseThesis?JSON.parse(JSON.stringify(c.purchaseThesis)):null
  };
 }
 function migrateLegacySnapshots(){
@@ -194,6 +195,7 @@ function render(){
    '<div class="microNote"><b>Contabilidad:</b> '+result+(x.heldDays!=null?" · "+x.heldDays+" días en cartera":"")+'</div>'+
    (x.acquisitionNotes?'<div class="microNote">'+String(x.acquisitionNotes)+'</div>':"")+
    (x.rawMarketSnapshot?'<div class="microNote"><b>Snapshot RAW '+x.rawMarketSnapshot.checkedAt+':</b> tendencia '+EUR(x.rawMarketSnapshot.trend)+' · 30d '+EUR(x.rawMarketSnapshot.avg30)+' · 7d '+EUR(x.rawMarketSnapshot.avg7)+' · 1d '+EUR(x.rawMarketSnapshot.avg1)+' · no comparar directamente con el slab PSA 9.</div>':"")+
+   (x.purchaseThesis?'<div class="microNote"><b>Tesis de compra congelada:</b> entrada '+EUR(x.purchaseThesis.entryEUR)+' · salida conservadora '+(x.purchaseThesis.conservativeExitEUR==null?'sin dato':EUR(x.purchaseThesis.conservativeExitEUR))+' · edge '+(x.purchaseThesis.edgeEUR==null?'sin dato':EUR(x.purchaseThesis.edgeEUR))+' · ROI '+(x.purchaseThesis.roiPct==null?'sin dato':Number(x.purchaseThesis.roiPct).toFixed(1)+'%')+' · confianza '+String(x.purchaseThesis.evidenceConfidence?.label||'sin dato')+' · ventas 7/30/90d '+[x.purchaseThesis.sales7??'—',x.purchaseThesis.sales30??'—',x.purchaseThesis.sales90??'—'].join('/')+'</div>':"")+
    (x.archiveNotes?'<div class="microNote">'+String(x.archiveNotes)+'</div>':"")+
    '<div class="sealedActions">'+(x.marketUrl?'<a href="'+x.marketUrl+'" target="_blank" rel="noopener">Ficha mercado</a>':"")+'<button data-archive-watch="'+x.id+'">Volver a vigilar</button><button data-post-sale="'+x.id+'">Registrar control postventa</button></div></article>';
  }).join(""):'<div class="emptyState"><b>Sin resultados para estos filtros.</b><span>El Archivo completo sigue conservado.</span></div>');
