@@ -116,9 +116,9 @@ if(!state.gyaradosConditionClosureV749){
 }
 if(!state.quickSalePlanV7410){
   const plans={
-    "own-gyarados-ex-089-xy9-jp":{mode:"sell-fast",channel:"Cardmarket",listEUR:169.90,floorEUR:160,reason:"Undercut current GD 190 EUR while preserving meaningful margin over 119.45 EUR cost.",status:"LISTAR YA"},
-    "own-mewtwo-118-ec1-jp-1ed-holo":{mode:"sell-fast",channel:"Cardmarket",listEUR:169.90,floorEUR:140,reason:"PO copy; no direct PO comparable. Price materially below current EX-/GD asks to seek faster sale.",status:"LISTAR YA"},
-    "own-surfing-pikachu-mt-fuji-jr-1997":{mode:"sell-fast",channel:"Cardmarket",listEUR:279.90,floorEUR:225,reason:"PO with strong crease; rare V1 but no direct PO comparable. Price below general trend/active higher-condition asks to create liquidity.",status:"LISTAR YA"}
+    "own-gyarados-ex-089-xy9-jp":{mode:"sell-fast",channel:"Cardmarket",listEUR:179.90,floorEUR:169.90,reason:"Current GD comparable is 190 EUR. List just below it for a fast sale while preserving a meaningful net margin over 119.45 EUR cost.",status:"LISTAR YA"},
+    "own-mewtwo-118-ec1-jp-1ed-holo":{mode:"sell-fast",channel:"Cardmarket",listEUR:179.90,floorEUR:149.90,reason:"PO copy with heavy structural wear; no direct PO comparable. Price far below current EX-/GD asks to create liquidity without giving it away.",status:"LISTAR YA"},
+    "own-surfing-pikachu-mt-fuji-jr-1997":{mode:"sell-fast",channel:"Cardmarket",listEUR:279.90,floorEUR:229.90,reason:"PO with strong crease; scarce V1 and no direct PO comparable. Start near market trend, then reduce if needed for a fast sale.",status:"LISTAR YA"}
   };
   for(const c of state.cards||[]){const p=plans[c.id];if(p){c.sellPolicy=p;c.purpose="sell"}}
   state.quickSalePlanV7410=true;
