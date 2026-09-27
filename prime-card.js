@@ -23,6 +23,7 @@ function row(label,value,cls=""){return '<div class="qaRow"><span>'+E(label)+'</
 function open(id){
  const x=get(id);if(!x)return;
  const {q,liq,d,ev,missing,positive}=dossier(x),dlg=ensureDialog(),body=dlg.querySelector("#primeCardBody");
+ const conf=window.CVPrimeMarket?.evidenceConfidence?.(x)||{label:"NO VERIFICADA",score:0};
  const price=N(x.price),exit=q?.econ?.exit||0,edge=q?.econ?.edge||0,roi=q?.econ?.roi||0;
  const depth=d.prices?.length?d.prices.slice(0,8).map(EUR).join(" → "):"SIN DATO VERIFICADO";
  const last=N(x.lastSalePrice||ev.lastSaleEUR),lastDate=x.lastSaleDate||ev.lastSaleDate||"";
@@ -37,6 +38,7 @@ function open(id){
    '<div><span>Edge aprox.</span><b>'+EUR(edge)+'</b></div>'+
    '<div><span>ROI aprox.</span><b>'+roi.toFixed(1)+'%</b></div>'+
    '<div><span>Liquidez verificada</span><b>'+E(liq.label)+(liq.score==null?'':' · '+liq.score+'/100')+'</b></div>'+
+   '<div><span>Confianza evidencia</span><b>'+E(conf.label)+' · '+conf.score+'/100</b></div>'+
   '</div>'+
   '<div class="qaPanel"><b>Identidad ejecutable</b>'+
    row("Oferta exacta",exact,q?.ex?"ok":"warn")+
@@ -48,6 +50,7 @@ function open(id){
   '</div>'+
   '<div class="qaPanel"><b>Mercado y salida</b>'+
    row("Última venta real",last>0?EUR(last)+(lastDate?" · "+lastDate:""):"SIN DATO VERIFICADO")+
+   row("Mediana ventas reales",N(x.soldMedianEUR||ev.soldMedianEUR)>0?EUR(x.soldMedianEUR||ev.soldMedianEUR)+" · "+N(x.soldSample||ev.soldSample)+" comps":"SIN DATO VERIFICADO")+
    row("Ventas 7/30/90d",(x.sales7!=null||x.sales30!=null||x.sales90!=null)?(x.sales7??"—")+"/"+(x.sales30??"—")+"/"+(x.sales90??"—"):"SIN DATO VERIFICADO")+
    row("Profundidad",depth)+
    row("Gap 1º→2º",d.gap==null?"SIN DATO":d.gap.toFixed(1)+"%")+
