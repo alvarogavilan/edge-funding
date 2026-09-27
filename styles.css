@@ -333,3 +333,13 @@ nav button{min-height:46px;line-height:1.05}
 .decisionName small{font-weight:500;color:#8794ad;font-size:11px}
 .decisionPill{flex:0 0 auto;font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#1a2340;color:#c9d3ea;white-space:nowrap}
 .decisionPill.d-sell{background:#3a1520;color:#ffb4bd}.decisionPill.d-review{background:#2a2111;color:#ffd99a}.decisionPill.d-hold{background:#10231a;color:#9fe0b4}
+/* V84.9 · UX iPhone: objetivos táctiles ≥44px y texto legible en acciones */
+main button,dialog button,.buyButton,.sealedActions a,.sealedActions button,.miniActions button{min-height:44px}
+.sealedActions a,.sealedActions button,.miniActions button,.buyButton,.qaRow button{font-size:12px!important;line-height:1.15}
+.qaRow .buyButton{margin-top:6px}
+.watchDrawer{margin:10px 0;border:1px solid #1e2940;border-radius:14px;padding:4px 12px;background:#0b1122}
+.watchDrawer>summary{min-height:52px;display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+.watchDrawer>summary small{color:#8794ad;font-size:11px}
+.tileMoreGrid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:6px}
+#primeGradingDecision details,#primeValuationQuality details{margin-top:8px}
+#primeGradingDecision summary,#primeValuationQuality summary,#primeAttention summary,#archiveInsights summary{min-height:44px;display:flex;align-items:center;font-weight:800;cursor:pointer}
