@@ -46,7 +46,7 @@ function conservative(x){
 function evidenceConfidence(x){
  const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x);
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
- const signals=[ex,ee.sameMarket,ee.verified,ee.idOk,ee.fresh,d.units>=2,!stale,ee.soldSample>=3||ee.sales>=3];
+ const signals=[ex,ee.sameMarket,ee.verified,ee.idOk,ee.fresh,d.units>=2,!stale,x.integrityBlocked!==true,ee.soldSample>=3||ee.sales>=3];
  const n=signals.filter(Boolean).length;
  return {label:n>=6?"A":n>=5?"B":n>=3?"C":"NO VERIFICADA",score:Math.round(n/signals.length*100),checks:n,total:signals.length};
 }
@@ -62,7 +62,8 @@ function quality(x){
   ["Margen ≥ 40 €",econ.edge>=40],
   ["ROI ≥ 35%",econ.roi>=35],
   ["Precio ≥ 20 €",N(x.price)>=20],
-  ["Datos vigentes",!stale]
+  ["Datos vigentes",!stale],
+  ["Integridad estructural",x.integrityBlocked!==true]
  ];
  const passed=checks.filter(([,ok])=>ok).length;
  let label=passed===checks.length?"APTA PARA REVISIÓN DE COMPRA":passed>=5?"WATCH · FALTA EVIDENCIA":"NO COMPRAR / REVISAR";
