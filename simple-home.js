@@ -2,7 +2,11 @@
 const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},
 EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 function img(x){
- return x?.image||x?.referenceImage||x?.photoURL||x?.photo||"";
+ const direct=x?.image||x?.referenceImage||x?.photoURL||x?.photo;if(direct)return direct;
+ const rows=[...(state.marketScan||[]),...(state.marketCandidates||[]),...(state.globalRadar?.scored||[]).map(z=>z.x||z)].filter(Boolean);
+ const n=String(x?.name||"").trim().toLowerCase(),num=String(x?.number||"").replace(/\s/g,"").toLowerCase();
+ const hit=rows.find(r=>r.image&&String(r.name||"").trim().toLowerCase()===n&&(!num||String(r.number||"").replace(/\s/g,"").toLowerCase()===num));
+ return hit?.image||"";
 }
 function bestKnownOffer(x){
  const rows=[{price:N(x.price),seller:x.seller||"",url:x.url||"",source:x.shop||"Oferta actual"}];
