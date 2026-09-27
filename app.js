@@ -753,6 +753,7 @@ function modeledUpside(x){
 }
 function investmentGate(x){
   const p=investmentProfileFor(x),price=+x.price||0,up=modeledUpside(x),reasons=[];
+  if(marketUniverseOf(x)==="lorcana"&&String(x.currency||"USD").toUpperCase()!=="EUR")reasons.push("sin precio EUR verificable");
   if(price<p.min)reasons.push("precio demasiado bajo");
   if(price>p.max)reasons.push("precio por encima del rango");
   if(up<p.upside)reasons.push("beneficio potencial < "+money(p.upside,p.currency));
