@@ -48,9 +48,14 @@ function consistency(x){
  return {score:Math.round(Math.max(0,100-range*140)),range};
 }
 function conservative(x){
- const r=refs(x);if(!r.length)return {exit:0,edge:0,roi:0};
- const gross=Math.min(...r),exit=gross*.95,edge=exit-N(x.price),roi=N(x.price)>0?edge/N(x.price)*100:0;
- return {gross,exit,edge,roi};
+ const ev=x.marketEvidence||{},soldMedian=N(x.soldMedianEUR||ev.soldMedianEUR),soldSample=N(x.soldSample||ev.soldSample),
+  lastSale=N(x.lastSalePrice||ev.lastSaleEUR),currentExit=N(ev.currentExitEUR);
+ let gross=0,kind="none",haircut=0;
+ if(soldMedian>0&&soldSample>=3){gross=soldMedian;kind="closed-sale-median";haircut=.95}
+ else if(lastSale>0){gross=lastSale;kind="closed-sale-last";haircut=.90}
+ else if(currentExit>0){gross=currentExit;kind="active-exit-ask";haircut=.85}
+ const exit=gross*haircut,edge=exit-N(x.price),roi=N(x.price)>0?edge/N(x.price)*100:0;
+ return {gross,exit,edge,roi,kind,haircut,soldMedian,soldSample,lastSale,currentExit};
 }
 function evidenceConfidence(x){
  const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x);
@@ -68,6 +73,7 @@ function quality(x){
   ["Evidencia de salida",ee.ok],
   ["Identidad evidencia intacta",ee.idOk],
   ["Evidencia ≤24h",ee.fresh],
+  ["Salida económica basada en evidencia",econ.kind!=="none"],
   ["Margen ≥ 40 €",econ.edge>=40],
   ["ROI ≥ 35%",econ.roi>=35],
   ["Precio ≥ 20 €",N(x.price)>=20],
@@ -129,7 +135,7 @@ function render(){
    const gap=q.d.gap==null?"sin 2º nivel":q.d.gap.toFixed(1)+"%";
    const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence,supply=q.supply,abs=q.abs;
    return '<article class="microNote"><b>'+E(x.name)+'</b> · '+E(q.label)+'<br>'+
-    'Entrada '+EUR(x.price)+' · salida conservadora '+EUR(q.econ.exit)+' · edge '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
+    'Entrada '+EUR(x.price)+' · salida conservadora '+EUR(q.econ.exit)+' ('+E(q.econ.kind)+') · edge '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
     'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · absorción 30d '+(abs.rate==null?'sin dato':abs.rate.toFixed(0)+'% '+abs.label)+' · stock observado '+(abs.days==null?'sin dato':abs.days.toFixed(0)+' días al ritmo 30d')+' · evidencia '+conf.label+' '+conf.score+'/100 · supply/reprint '+(supply.verified?supply.risk.toUpperCase():'SIN EVIDENCIA')+' · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
