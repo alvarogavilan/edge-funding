@@ -35,9 +35,18 @@ function integrity(){
  for(const r of state.investmentLedger){if(!r.name||!r.date||num(r.qty)<=0)issues.push("Operación incompleta: "+(r.name||r.id));if(r.type==="sell"&&!r.assetKey)issues.push("Venta sin posición vinculada: "+r.name)}
  return [...new Set(issues)];
 }
+function saleSettled(r){
+ const s=String(r?.fulfillmentStatus||"").toLowerCase();
+ return r?.type!=="sell"||["paid","paid-confirmed","completed","settled"].includes(s);
+}
+function confirmSaleCash(id){
+ const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
+ if(!confirm("¿Confirmar que esta venta ya está cobrada y puede entrar en caja disponible?"))return;
+ r.fulfillmentStatus="paid-confirmed";r.updatedAt=new Date().toISOString();save();render();try{renderRebalance()}catch{}
+}
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
- sales=rows.filter(r=>r.type==="sell").reduce((a,r)=>a+(num(r.unitPrice)*num(r.qty||1)-num(r.shipping)-num(r.fees)),0),
+ sales=rows.filter(r=>r.type==="sell"&&saleSettled(r)).reduce((a,r)=>a+(num(r.unitPrice)*num(r.qty||1)-num(r.shipping)-num(r.fees)),0),
  costs=rows.filter(r=>r.type==="grading"||r.type==="fee").reduce((a,r)=>a+total(r),0),
  capital=rows.filter(r=>r.type==="capital").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0),
  withdrawals=rows.filter(r=>r.type==="withdrawal").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0);
