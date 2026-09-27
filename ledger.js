@@ -39,10 +39,21 @@ function saleSettled(r){
  const s=String(r?.fulfillmentStatus||"").toLowerCase();
  return r?.type!=="sell"||["paid","paid-confirmed","completed","settled"].includes(s);
 }
+function confirmShipment(id){
+ const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
+ if(String(r.fulfillmentStatus||"")!=="sold-awaiting-shipment")return;
+ if(!confirm("¿Confirmar que esta venta ya ha sido enviada? Pasará a COBRO PENDIENTE."))return;
+ r.fulfillmentStatus="sold-awaiting-payment";r.shippedAt=new Date().toISOString();r.updatedAt=new Date().toISOString();
+ const h=(state.saleHistory||[]).find(x=>x.id===id);if(h){h.fulfillmentStatus="sold-awaiting-payment";h.shippedAt=r.shippedAt}
+ save();render();try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
+}
 function confirmSaleCash(id){
  const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
+ if(String(r.fulfillmentStatus||"")==="sold-awaiting-shipment"){alert("Primero confirma el envío. La venta aún está en ENVÍO PENDIENTE.");return}
  if(!confirm("¿Confirmar que esta venta ya está cobrada y puede entrar en caja disponible?"))return;
- r.fulfillmentStatus="paid-confirmed";r.updatedAt=new Date().toISOString();save();render();try{renderRebalance()}catch{}try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
+ r.fulfillmentStatus="paid-confirmed";r.paidAt=new Date().toISOString();r.updatedAt=new Date().toISOString();
+ const h=(state.saleHistory||[]).find(x=>x.id===id);if(h){h.fulfillmentStatus="paid-confirmed";h.paidAt=r.paidAt}
+ save();render();try{renderRebalance()}catch{}try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
 }
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
@@ -58,8 +69,8 @@ function render(){
  const issues=integrity();
  box.innerHTML='<div class="stat"><b>'+eur(x.buys)+'</b><span>Compras registradas</span></div><div class="stat"><b>'+eur(x.sales)+'</b><span>Ventas netas</span></div><div class="stat"><b>'+eur(x.capital)+'</b><span>Capital aportado</span></div><div class="stat"><b>'+eur(x.costs+x.withdrawals)+'</b><span>Costes/retiradas</span></div><div class="stat"><b>'+eur(x.netCash)+'</b><span>Caja disponible</span></div><div class="stat"><b>'+issues.length+'</b><span>Alertas contables</span></div>';
  const rows=[...state.investmentLedger].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- list.innerHTML=rows.length?rows.map(r=>'<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste",capital:"Aportación",withdrawal:"Retirada"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.type==="sell"&&!saleSettled(r)?" · COBRO PENDIENTE · no entra en caja":"")+(r.basisUnknown?" · Coste base pendiente":"")+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+(r.type==="sell"&&!saleSettled(r)?'<button data-ledger-confirm="'+esc(r.id)+'">Confirmar cobro</button>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>').join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
- document.querySelectorAll("[data-ledger-edit]").forEach(b=>b.onclick=()=>open(b.dataset.ledgerEdit));document.querySelectorAll("[data-ledger-confirm]").forEach(b=>b.onclick=()=>confirmSaleCash(b.dataset.ledgerConfirm));
+ list.innerHTML=rows.length?rows.map(r=>{const fs=String(r.fulfillmentStatus||"");const saleState=r.type!=="sell"?"":fs==="sold-awaiting-shipment"?"ENVÍO PENDIENTE":fs==="sold-awaiting-payment"?"COBRO PENDIENTE":saleSettled(r)?"COBRADA":"PENDIENTE";return '<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste",capital:"Aportación",withdrawal:"Retirada"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+(saleState?" · "+saleState:"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.type==="sell"&&!saleSettled(r)?" · "+saleState+" · no entra en caja":"")+(r.basisUnknown?" · Coste base pendiente":"")+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+(r.type==="sell"&&fs==="sold-awaiting-shipment"?'<button data-ledger-shipped="'+esc(r.id)+'">Confirmar envío</button>':"")+(r.type==="sell"&&fs==="sold-awaiting-payment"?'<button data-ledger-confirm="'+esc(r.id)+'">Confirmar cobro</button>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>'}).join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
+ document.querySelectorAll("[data-ledger-edit]").forEach(b=>b.onclick=()=>open(b.dataset.ledgerEdit));document.querySelectorAll("[data-ledger-shipped]").forEach(b=>b.onclick=()=>confirmShipment(b.dataset.ledgerShipped));document.querySelectorAll("[data-ledger-confirm]").forEach(b=>b.onclick=()=>confirmSaleCash(b.dataset.ledgerConfirm));
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function open(id){
