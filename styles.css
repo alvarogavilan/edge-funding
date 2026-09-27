@@ -295,3 +295,15 @@ nav button{min-height:46px;line-height:1.05}
 .opsHero>b{font-size:12px;padding:7px 9px;border:1px solid currentColor;border-radius:999px}
 .opsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 12px}.opsItem{padding:11px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr auto;gap:4px 8px}.opsItem small{grid-column:1/-1;opacity:.72;line-height:1.3}.opsItem.ok>b{font-size:16px}.opsRules{display:flex;flex-direction:column;gap:5px;padding:11px 12px;margin-bottom:14px;border-left:3px solid rgba(255,255,255,.25);background:rgba(255,255,255,.025);font-size:12px;line-height:1.45}
 @media(max-width:620px){.opsGrid{grid-template-columns:1fr}.opsHero{padding:13px}.opsHero h2{font-size:19px}}
+
+/* V82 PRIME mobile opportunity dossier */
+.primeTape{margin-top:8px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);line-height:1.45}
+.primeCardDialog{width:min(94vw,680px);max-height:90vh;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:0;background:#0b1020;color:#eef3ff;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.primeCardDialog::backdrop{background:rgba(3,6,14,.78);backdrop-filter:blur(4px)}
+.primeCardDialog form{padding:14px;display:grid;gap:10px}
+.primeCardDialog .welcome,.primeCardDialog .qaPanel{margin:0}
+.primeCardDialog .statsGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.primeCardDialog .statsGrid>div{min-width:0}
+.primeCardDialog .qaRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+.primeCardDialog .qaRow span,.primeCardDialog .qaRow b{overflow-wrap:anywhere}
+@media(max-width:600px){.primeCardDialog{width:96vw;max-height:92vh}.primeCardDialog form{padding:10px}.primeCardDialog .statsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.primeCardDialog .qaRow{grid-template-columns:1fr}.primeCardDialog .qaRow>b{justify-self:start}}
