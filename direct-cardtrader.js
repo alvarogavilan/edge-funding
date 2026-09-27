@@ -32,13 +32,14 @@ async function blueprintsFor(exp){
  const rows=Array.isArray(j)?j:(j?.array||j?.results||j?.data||[]);
  cache.blueprints.set(exp.id,rows);return rows;
 }
-function candidateRows(){
+async function candidateRows(){
  const out=[];
  for(const u of ["pokemon","lorcana"]){
   const pack=state.autoMarketScans?.[u];
   for(const x of (Array.isArray(pack?.signals)?pack.signals:[]))out.push({...x,universe:u});
  }
  for(const x of (state.marketScan||[]))out.push(x);
+ try{const all=await window.CVAllMarketSignals?.();for(const x of (all||[]))out.push(x)}catch{}
  const seen=new Set();
  return out.filter(x=>x?.name&&x?.set&&x?.number).filter(x=>{
   const k=[x.universe,norm(x.name),norm(x.set),numKey(x.number)].join("|");
@@ -92,7 +93,7 @@ async function scan(){
  if(busy||!token())return {ok:false,reason:"no-token"};
  busy=true;
  try{
-  await bootstrap();const rows=candidateRows(),found=[],arbs=[],diag={candidates:rows.length,expansionExact:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,pokemon:0,lorcana:0};
+  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],diag={candidates:rows.length,expansionExact:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
    const setNorm=norm(c.set);
@@ -119,7 +120,7 @@ async function scan(){
    const langs=new Map();for(const o of local){const k=norm(o.language||"");if(k)langs.set(k,(langs.get(k)||0)+1)}
    if([...langs.values()].some(n=>n>=5))diag.languageDepth++;
    const calc=localArbitrageForCandidate(c,local);arbs.push(...calc);diag.economicPass+=calc.filter(x=>x.pass).length;
-   await sleep(80);
+   await sleep(120);
   }
   state.euOffers=Array.isArray(state.euOffers)?state.euOffers:[];
   state.euOffers=state.euOffers.filter(o=>!String(o.id||"").startsWith("ct-direct:")).concat(found);
