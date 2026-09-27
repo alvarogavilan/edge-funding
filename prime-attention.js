@@ -1,0 +1,42 @@
+(()=>{"use strict";
+const Q=s=>document.querySelector(s),N=v=>Number(v)||0,EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
+function ageDays(d){if(!d)return null;const t=new Date(d).getTime();return Number.isFinite(t)?Math.floor((Date.now()-t)/86400000):null}
+function items(){
+ const out=[];
+ for(const c of (state.cards||[])){
+  if(c.archivedSold)continue;
+  const conditionUnknown=!String(c.condition||c.grade||"").trim()||(c.grading==="RAW"&&["", "RAW"].includes(String(c.condition||c.grade||"").toUpperCase()));
+  const marketAt=c.marketPricing?.checkedAt||c.conditionMarket?.checkedAt||c.updatedAt||"";
+  const stale=ageDays(marketAt);
+  if(conditionUnknown&&N(c.value)>=20)out.push({kind:"condition",priority:90,name:c.name,text:"Cerrar condición antes de valorar/vender",cardId:c.id});
+  if(stale!=null&&stale>30&&N(c.value)>=20)out.push({kind:"stale",priority:70,name:c.name,text:"Valor de mercado con "+stale+" días",cardId:c.id});
+  if(c.purchase==null&&["investment","sell","reinvest"].includes(c.purpose||""))out.push({kind:"basis",priority:45,name:c.name,text:"Coste individual desconocido · ROI no disponible",cardId:c.id});
+  if(c.valuationStatus==="reference")out.push({kind:"reference",priority:85,name:c.name,text:"Valor solo de referencia · falta cierre",cardId:c.id});
+ }
+ for(const h of (state.saleHistory||[])){
+  const ledger=(state.investmentLedger||[]).find(x=>x.id===h.id);
+  const s=String(ledger?.fulfillmentStatus||h.fulfillmentStatus||"");
+  if(s==="sold-awaiting-shipment")out.push({kind:"shipment",priority:100,name:h.name,text:"Venta pendiente de envío · "+EUR(h.net),saleId:h.id});
+  else if(s==="sold-awaiting-payment")out.push({kind:"payment",priority:95,name:h.name,text:"Cobro pendiente · "+EUR(h.net),saleId:h.id});
+ }
+ for(const x of (state.manualOpportunities||[])){
+  if(x.approval==="VERIFY-LANGUAGE")out.push({kind:"opportunity",priority:80,name:x.name,text:"Oportunidad bloqueada · verificar idioma/estado",oppId:x.id});
+ }
+ return out.sort((a,b)=>b.priority-a.priority||a.name.localeCompare(b.name));
+}
+function render(){
+ const host=Q("#todaySimple");if(!host)return;
+ let box=Q("#primeAttention");
+ if(!box){box=document.createElement("section");box.id="primeAttention";box.className="qaPanel";host.prepend(box)}
+ const rows=items();
+ const high=rows.filter(x=>x.priority>=90).length;
+ box.innerHTML='<b>Bandeja PRIME · Atención</b>'+
+  '<div class="statsGrid"><div><span>Pendientes</span><b>'+rows.length+'</b></div><div><span>Prioridad alta</span><b>'+high+'</b></div></div>'+
+  (rows.length?rows.slice(0,12).map(x=>'<div class="qaRow"><span>'+x.name+'<small> · '+x.text+'</small></span><b>'+(x.priority>=90?"AHORA":x.priority>=70?"REVISAR":"CUANDO TOQUE")+'</b></div>').join(""):'<div class="qaRow"><span>Estado</span><b>Sin pendientes críticos</b></div>')+
+  '<small>No crea compras ni ventas. Solo concentra tareas que pueden provocar errores, pérdida de datos o decisiones con evidencia incompleta.</small>';
+}
+function run(){render()}
+setTimeout(run,180);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)run()});
+window.CVPrimeAttention={items,render,run};
+})();
