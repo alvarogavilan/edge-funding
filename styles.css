@@ -529,3 +529,8 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 .collectionPrimeValue{display:flex;flex-direction:column;margin:7px 0}.collectionPrimeValue b{font-size:22px}.collectionPrimeValue small{color:#9ba7bf}
 .collectionPrimeActions{display:flex;gap:8px;margin-top:10px}.collectionPrimeActions button{flex:1;min-height:42px}
 @media(max-width:560px){.collectionPrimeCard{grid-template-columns:92px 1fr;padding:12px}.collectionPrimeCard>img,.collectionPrimeNoImg{width:92px}.collectionPrimeBody h3{font-size:18px}}
+
+/* V91.6 · estado real del escáner */
+.primeScannerStatus{display:flex;flex-direction:column;gap:5px;margin:0 0 14px;padding:12px 14px;border:1px solid #2a3959;border-radius:16px;background:#10192b}
+.primeScannerStatus b{font-size:14px}.primeScannerStatus span{color:#a9b5cc;font-size:12px;line-height:1.45}
+.primeScannerStatus button{margin-top:6px;min-height:42px;font-weight:900}.primeScannerStatus.warn{border-color:#6d5222}
