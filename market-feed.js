@@ -195,7 +195,7 @@ function render(){
  const rows=L.slice().sort((a,b)=>(order[signal(a)?.zone]??4)-(order[signal(b)?.zone]??4)||b.priority-a.priority);
  box.innerHTML='<b>Mercado controlado · históricos propios</b>'+
   '<div class="statsGrid"><div><span>Zona baja</span><b>'+zones.BAJA+'</b></div><div><span>Zona alta</span><b>'+zones.ALTA+'</b></div><div><span>Vigilados</span><b>'+L.length+'</b></div><div><span>Histórico</span><b>'+(st.historyDays||0)+' días</b></div></div>'+
-  '<div class="microNote">'+(ui.msg?E(ui.msg)+' · ':'')+'Catálogo: '+(st.products?.pokemon||0)+' Pokémon · '+(st.products?.lorcana||0)+' Lorcana · precios hoy '+(st.pricesToday||0)+' · CardTrader '+(st.sources?.cardtrader?'activo':'sin token')+' · PSA '+(st.sources?.psa?'activo':'sin token')+(c.lastSync?' · sync '+new Date(c.lastSync).toLocaleString("es-ES"):'')+(c.lastError?' · ⚠️ '+E(c.lastError):'')+'</div>'+
+  '<div class="microNote">'+(ui.msg?E(ui.msg)+' · ':'')+'Catálogo: '+(st.products?.pokemon||0)+' Pokémon · '+(st.products?.lorcana||0)+' Lorcana · precios hoy '+(st.pricesToday||0)+' · D1 '+(st.writeBudget!=null?((st.writesToday||0).toLocaleString("es-ES")+'/'+(st.writeBudget||0).toLocaleString("es-ES")+' escrituras'):'sin dato')+' · CardTrader '+(st.sources?.cardtrader?'activo':'sin token')+' · PSA '+(st.sources?.psa?'activo':'sin token')+(c.lastSync?' · sync '+new Date(c.lastSync).toLocaleString("es-ES"):'')+(c.lastError?' · ⚠️ '+E(c.lastError):'')+'</div>'+
   '<div class="sealedActions primaryOnly"><button type="button" class="primaryAction" data-mf-sync="1"'+(ui.busy?' disabled':'')+'>'+(ui.busy?'Sincronizando…':'Sincronizar mercado')+'</button></div>'+
   rows.slice(0,60).map(row).join("")+
   linkingBox()+
@@ -207,6 +207,7 @@ function attentionItems(){
  const out=[],c=cfg();
  if(c.lastSync&&Date.now()-new Date(c.lastSync).getTime()>36*3600e3)out.push({kind:"market-stale",priority:70,name:"Mercado controlado",text:"Sin sincronizar desde hace más de 36 h"});
  if(c.lastError)out.push({kind:"market-error",priority:72,name:"Mercado controlado",text:"Error del recolector: "+c.lastError});
+ if(c.status?.writeBudgetRemaining!=null&&c.status.writeBudgetRemaining<10000)out.push({kind:"market-budget",priority:90,name:"Mercado controlado",text:"D1 cerca del presupuesto diario PRIME · quedan "+c.status.writeBudgetRemaining+" escrituras"});
  for(const a of linked()){
   const s=signal(a);
   if(s?.zone==="BAJA"&&!a.owned)out.push({kind:"market-low",priority:76,name:a.name,text:"Zona BAJA histórica (p"+s.rank+" "+s.rankWindow+"d · "+EUR(s.last)+") · revisar evidencia de compra"});
