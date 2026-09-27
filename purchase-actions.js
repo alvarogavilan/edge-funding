@@ -27,6 +27,7 @@ function addCardPurchase(src,row,qty=1,costs={shipping:0,fees:0}){
     id,universe:x.universe||row.universe||"pokemon",name:x.name||row.name,set:x.set||row.set||"",number:x.number||row.number||"",
     year:"",language,grading:"RAW",grade:condition,value,purchase,quantity:qty,purchaseDate:today(),purpose:"investment",
     cert:"",draft:false,identityVerifiedAt:new Date().toISOString(),identityVerifiedBy:"verified-opportunity",
+    primeIdentityKey:window.CVIdentity?.key?.({universe:x.universe||row.universe||"pokemon",name:x.name||row.name,set:x.set||row.set||"",number:x.number||row.number||"",offerLanguage:language,variant:row.meta?.variant||x.variant||"",condition,grading:"RAW",grade:condition})||"",
     marketPricing:{value,currency:"EUR",source:"Card Vault · salida conservadora verificada",url:row.source||row.buyUrl||"",checkedAt:today()},
     buySourceUrl:row.buyUrl||row.source||"",buySeller:row.meta?.seller||x.seller||"",buyVariant:row.meta?.variant||x.variant||"",
     purchaseShipping:N(costs.shipping),purchaseFees:N(costs.fees),landedCostUnit:purchase+(N(costs.shipping)+N(costs.fees))/Math.max(1,qty),
