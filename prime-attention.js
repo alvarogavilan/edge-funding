@@ -39,7 +39,7 @@ function render(){
  const high=rows.filter(x=>x.priority>=90).length;
  box.innerHTML='<b>Bandeja PRIME · Atención</b>'+
   '<div class="statsGrid"><div><span>Pendientes</span><b>'+rows.length+'</b></div><div><span>Prioridad alta</span><b>'+high+'</b></div></div>'+
-  (rows.length?rows.slice(0,12).map(x=>'<div class="qaRow"><span>'+x.name+'<small> · '+x.text+'</small></span><b>'+(x.priority>=90?"AHORA":x.priority>=70?"REVISAR":"CUANDO TOQUE")+'</b></div>').join(""):'<div class="qaRow"><span>Estado</span><b>Sin pendientes críticos</b></div>')+
+  (rows.length?rows.slice(0,12).map(x=>'<div class="qaRow"><span>'+x.name+'<small> · '+x.text+'</small>'+(x.oppId?'<button type="button" class="buyButton secondary" data-prime-evidence="'+x.oppId+'">Refrescar evidencia</button>':'')+'</span><b>'+(x.priority>=90?"AHORA":x.priority>=70?"REVISAR":"CUANDO TOQUE")+'</b></div>').join(""):'<div class="qaRow"><span>Estado</span><b>Sin pendientes críticos</b></div>')+
   '<small>No crea compras ni ventas. Solo concentra tareas que pueden provocar errores, pérdida de datos o decisiones con evidencia incompleta.</small>';
 }
 function run(){render()}
