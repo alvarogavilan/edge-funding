@@ -432,3 +432,8 @@ main button,dialog button,.buyButton,.sealedActions a,.sealedActions button,.min
 .simpleMoreGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .simpleMoreGrid button{min-height:54px;border-radius:14px;font-weight:800}
 #collector>.welcome{display:none!important}
+
+/* V87.6 · Hoy solo compra */
+body[data-active-tab="radar"] .hero{display:none!important}
+body[data-active-tab="radar"] #snapshot{display:none!important}
+body[data-active-tab="radar"] header{padding-bottom:8px!important}
