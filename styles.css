@@ -257,3 +257,16 @@ nav button{min-height:46px;line-height:1.05}
 #todaySimple .buyButton.secondary{background:#fff;color:#101522!important;border-color:#cfd5df}
 
 #todaySimple .buyWhy{margin:8px 0 2px;padding:8px 10px;border-radius:10px;background:#fff4e5;color:#7a4b00!important;font-size:12px;font-weight:700;line-height:1.3}
+
+/* Stable UX fix: explainable radar + PSA + sealed */
+#todaySimple .explainPrices{display:flex;flex-direction:column;gap:7px;padding:14px 16px;background:#f7f8fb;color:#101522}
+#todaySimple .explainPrices span{color:#525c6e;line-height:1.45;font-size:13px}
+.sealedDiscovery{padding:16px;border:1px solid #30394d;border-radius:16px;display:grid;gap:10px}
+.sealedDiscovery>span,.sealedDiscovery>small{line-height:1.45}
+.psaMarketRadar{margin:12px 0 18px}
+.psaRadarRow{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(127,127,127,.18)}
+.psaRadarRow img{width:58px;height:80px;object-fit:contain;border-radius:8px}
+.psaRadarRow>div{min-width:0;display:grid;gap:3px}
+.psaRadarRow>div span,.psaRadarRow>div small{font-size:12px;line-height:1.3}
+.psaRadarRow .buyButton{grid-column:1/-1;text-align:center}
+@media(max-width:600px){#portfolioCioPanel .sealedCard,#portfolioCio .sealedCard{grid-template-columns:1fr!important}#portfolioCioPanel .sealedMetrics,#portfolioCio .sealedMetrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}.portfolioCioCard,.cioCard{overflow:hidden;word-break:normal}.portfolioCioCard>*,.cioCard>*{min-width:0}}
