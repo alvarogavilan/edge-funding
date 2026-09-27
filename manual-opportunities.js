@@ -12,6 +12,18 @@ const tinkerId="lorcana-tinker-bell-giant-fairy-v2-20260927";
 const belleId="lorcana-belle-strange-special-v2-20260927";
 const simbaId="lorcana-simba-returned-king-v2-20260927";
 const artfulId="lorcana-mickey-artful-rogue-v2-20260927";
+const ladyId="pokemon-lady-forbidden-light-jp-100-20260927";
+if(!state.manualOpportunities.some(x=>x.id===ladyId)){
+ state.manualOpportunities.push({
+  id:ladyId,universe:"pokemon",name:"Lady",set:"Forbidden Light JP",number:"100",
+  variant:"Japanese Full Art",condition:"NM",shop:"Cardmarket",seller:"meshtolino",
+  price:44.99,trend:147.01,avg30:104.00,avg7:104.00,avg1:140.00,available:5,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Forbidden-Light-JP/Lady-V2",
+  checkedAt:"2026-09-27T17:35:00+02:00",expiresAt:"2026-09-28T17:35:00+02:00",
+  status:"POKÉMON TOP · 1 UNIDAD",approval:"BUY-ONE",
+  note:"Cardmarket: NM 44,99 €, trend 147,01 €, avg30/7 104 €. Solo 5 unidades disponibles; verificar oferta exacta antes de pagar."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===tinkerId)){
  state.manualOpportunities.push({
   id:tinkerId,universe:"lorcana",name:"Tinker Bell - Giant Fairy (V.2)",set:"The First Chapter",number:"216/204",
@@ -105,7 +117,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),netExit=N(x.trend)*.95,potential=netExit-N(x.price),isWatch=x.approval==="WATCH";const ps=positionSizing(x,c);
  if(x.approval==="BUY-SCALE"){ps.maxUnits=Math.min(3,N(x.sellerQty)||3);ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(ps.maxUnits,ps.affordable);ps.reason="Posición escalable: varias NM al mismo precio del mismo vendedor; verificar portes y disponibilidad."}
