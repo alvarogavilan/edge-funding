@@ -221,5 +221,6 @@ $("#sealedSearch").oninput=renderSealed;
 document.querySelectorAll('nav button[data-tab="sealed"],nav button[data-tab="rebalance"]').forEach(b=>b.addEventListener("click",()=>{renderSealed();renderRebalance()}));
 const sealedSection=$("#sealed");if(sealedSection&&!$("#sealedSourceGuide"))sealedSection.insertAdjacentHTML("beforeend",'<div id="sealedSourceGuide" class="qaPanel"></div>');
 sealedSourceGuide();renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
+window.CVSealedPrime={decision:sealedDecision,state:sealedPrimeState,absorption:sealedAbsorption,evidenceScore:sealedEvidenceScore,economics:sealedEconomics,render:renderSealed};
 try{renderExcellenceBenchmark()}catch{}
 })();
