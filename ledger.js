@@ -38,15 +38,17 @@ function integrity(){
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
  sales=rows.filter(r=>r.type==="sell").reduce((a,r)=>a+(num(r.unitPrice)*num(r.qty||1)-num(r.shipping)-num(r.fees)),0),
- costs=rows.filter(r=>r.type==="grading"||r.type==="fee").reduce((a,r)=>a+total(r),0);
- return {buys,sales,costs,netCash:sales-buys-costs};
+ costs=rows.filter(r=>r.type==="grading"||r.type==="fee").reduce((a,r)=>a+total(r),0),
+ capital=rows.filter(r=>r.type==="capital").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0),
+ withdrawals=rows.filter(r=>r.type==="withdrawal").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0);
+ return {buys,sales,costs,capital,withdrawals,netCash:sales+capital-buys-costs-withdrawals};
 }
 function render(){
  const box=$("#ledgerSummary"),list=$("#ledgerList");if(!box||!list)return;const x=stats();
  const issues=integrity();
- box.innerHTML='<div class="stat"><b>'+eur(x.buys)+'</b><span>Compras registradas</span></div><div class="stat"><b>'+eur(x.sales)+'</b><span>Ventas netas</span></div><div class="stat"><b>'+eur(x.costs)+'</b><span>Graduación/costes</span></div><div class="stat"><b>'+eur(x.netCash)+'</b><span>Flujo neto realizado</span></div><div class="stat"><b>'+issues.length+'</b><span>Alertas contables</span></div>';
+ box.innerHTML='<div class="stat"><b>'+eur(x.buys)+'</b><span>Compras registradas</span></div><div class="stat"><b>'+eur(x.sales)+'</b><span>Ventas netas</span></div><div class="stat"><b>'+eur(x.capital)+'</b><span>Capital aportado</span></div><div class="stat"><b>'+eur(x.costs+x.withdrawals)+'</b><span>Costes/retiradas</span></div><div class="stat"><b>'+eur(x.netCash)+'</b><span>Caja disponible</span></div><div class="stat"><b>'+issues.length+'</b><span>Alertas contables</span></div>';
  const rows=[...state.investmentLedger].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- list.innerHTML=rows.length?rows.map(r=>'<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.basisUnknown?" · Coste base pendiente":"")+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>').join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
+ list.innerHTML=rows.length?rows.map(r=>'<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste",capital:"Aportación",withdrawal:"Retirada"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.basisUnknown?" · Coste base pendiente":"")+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>').join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
  document.querySelectorAll("[data-ledger-edit]").forEach(b=>b.onclick=()=>open(b.dataset.ledgerEdit));
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
