@@ -144,7 +144,7 @@ function render(){
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
  const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
- box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),netExit=N(x.trend)*.95,potential=netExit-N(x.price),isWatch=x.approval==="WATCH";const ps=positionSizing(x,c);
+ box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),netExit=N(x.trend)*.95,potential=netExit-N(x.price),isWatch=x.approval==="WATCH",isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE",isOne=x.approval==="BUY-ONE";const ps=positionSizing(x,c);
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
  if(x.approval==="BUY-SCALE"){ps.maxUnits=Math.min(3,N(x.sellerQty)||3);ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(ps.maxUnits,ps.affordable);ps.reason="Posición escalable: varias NM al mismo precio del mismo vendedor; verificar portes y disponibilidad."}
  if(x.approval==="BUY-ONE"){ps.maxUnits=1;ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(1,ps.affordable);ps.reason="Una unidad máximo hasta verificar liquidez de salida y comparables recientes."}
