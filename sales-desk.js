@@ -42,7 +42,8 @@ function markSold(id){
   popGrade:c.popGrade??null,popHigher:c.popHigher??null,popTotal:c.popTotal??null,popSource:c.popSource||"",popUrl:c.popUrl||"",popCheckedAt:c.popCheckedAt||"",
   marketPricing:c.marketPricing||null,gradedValuation:c.gradedValuation||null,conditionMarket:c.conditionMarket||null,
   buyOpportunityId:c.buyOpportunityId||"",buySource:c.buySource||"",buyVariant:c.buyVariant||"",buyLanguage:c.buyLanguage||"",
-  buyCondition:c.buyCondition||"",buySeller:c.buySeller||"",buySourceUrl:c.buySourceUrl||"",boughtAt:c.boughtAt||""
+  buyCondition:c.buyCondition||"",buySeller:c.buySeller||"",buySourceUrl:c.buySourceUrl||"",boughtAt:c.boughtAt||"",
+  purchaseThesis:c.purchaseThesis?JSON.parse(JSON.stringify(c.purchaseThesis)):null
  };
  if(!state.saleHistory.some(h=>h.id===ledgerId))state.saleHistory.push({
   id:ledgerId,cardId:c.id,...snap,cardSnapshot:snap,qty:1,unitPrice:price,shipping,fees,net:price-shipping-fees,soldAt:date,channel:x.channel||"Cardmarket",
