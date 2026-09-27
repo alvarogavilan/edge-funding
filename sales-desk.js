@@ -2,9 +2,6 @@
 const Q=s=>document.querySelector(s),N=v=>Number(v)||0,EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"}),E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML};
 state.saleListings=Array.isArray(state.saleListings)?state.saleListings:[];
 const seed=[
- {id:"listing-gyarados-xy9",cardId:"own-gyarados-ex-089-xy9-jp",channel:"Cardmarket",price:169.90,floor:160,status:"active",condition:"GD",note:"GD · Japanese 1st Edition"},
- {id:"listing-mewtwo-ec1",cardId:"own-mewtwo-118-ec1-jp-1ed-holo",channel:"Cardmarket",price:149.90,floor:140,status:"active",condition:"PO",note:"PO · Japanese 1st Edition Holo"},
- {id:"listing-surfing-pikachu-v1",cardId:"own-surfing-pikachu-mt-fuji-jr-1997",channel:"Cardmarket",price:229.90,floor:149.90,status:"active",condition:"PO",note:"PO · Japanese Surfing Pikachu V1 / Mt. Fuji"},
  {id:"listing-charizard-obf228",cardId:"cha228",channel:"Cardmarket",price:44.90,floor:39.90,status:"active",condition:"PSA 8",note:"PSA 8 · slab original"},
  {id:"listing-charizard-svp074",cardId:"cha074",channel:"Cardmarket",price:44.90,floor:39.90,status:"active",condition:"PSA 9",note:"PSA 9 · slab original"},
  {id:"listing-vaporeon-pre149",cardId:"vap149",channel:"Cardmarket",price:229.90,floor:199.90,status:"active",condition:"PSA 9",note:"PSA 9 · slab original"}
