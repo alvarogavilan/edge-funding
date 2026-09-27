@@ -135,9 +135,7 @@ function render(){
    '<div><span>Oferta exacta</span><b>'+f.exact+'</b></div>'+
    '<div><span>Economía ≥ +40 € y ROI ≥35%</span><b>'+f.economic+'</b></div>'+
    '<div><span>Compra PRIME final</span><b>'+f.prime+'</b></div>'+
-  '</div><small>El catálogo puede contener decenas de miles de cartas, pero “Compra ya” exige una unidad realmente comprable ahora.</small></section>'+
-  (()=>{const rr=radarCandidates(),pk=rr.filter(x=>x.universe==="pokemon").slice(0,10),lc=rr.filter(x=>x.universe==="lorcana").slice(0,10);return '<section class="primeRadarMass"><div class="primeBuyGroupHead"><div><span>RADAR MASIVO</span><h3>Candidatos para verificar ahora</h3><small>No son compras aprobadas todavía. Sirven para que el motor no esconda el resto del mercado.</small></div><b>'+rr.length+'</b></div>'+
-   '<div class="primeRadarColumns"><div><h4>Pokémon · Top '+pk.length+'</h4>'+pk.map(radarCard).join("")+'</div><div><h4>Lorcana · Top '+lc.length+'</h4>'+lc.map(radarCard).join("")+'</div></div></section>'})()
+  '</div><small>El catálogo puede contener decenas de miles de cartas, pero “Compra ya” exige una unidad realmente comprable ahora. No se muestran candidatos, watches ni oportunidades sin aprobar.</small></section>'
 }
 function installGuard(){
  const api=window.CVTodaySimple;
@@ -151,5 +149,5 @@ setTimeout(()=>{installGuard();render()},700);
 setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
 document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
-window.CVSimpleHome={render,buys,euBuys,funnel,radarCandidates,installGuard,hydrateBuyImages};
+window.CVSimpleHome={render,buys,euBuys,funnel,installGuard,hydrateBuyImages};
 })();
