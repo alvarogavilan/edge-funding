@@ -28,6 +28,16 @@ function manualBuys(){
  description:[r.x.offerLanguage||r.x.language,r.x.variant,r.x.condition].filter(Boolean).join(" · "),
  exit:N(r.q.econ?.exit),edge:N(r.q.econ?.edge),roi:N(r.q.econ?.roi),exitKind:r.q.econ?.kind||"none",checkedAt:r.x.evidenceCheckedAt||r.x.checkedAt||"",units:r.x.approval==="BUY-SCALE"?Math.max(1,N(r.x.recommendedQty)||1):1}));
 }
+function euBuys(){
+ const rows=window.CVStrictOpportunity?.euRows?.()||[];
+ return rows.filter(r=>r.status==="buy"&&r.buyUrl).map(r=>({
+  id:r.purchaseKey||("eu:"+String(r.name||"")),
+  name:r.name,set:r.set||"",number:r.number||"",image:img(r),
+  price:N(r.price),seller:r.meta?.seller||"Vendedor verificado",url:r.buyUrl,source:"Oferta EUR exacta",
+  description:[r.meta?.language,r.meta?.variant,r.meta?.condition].filter(Boolean).join(" · "),
+  exit:N(r.target),edge:N(r.profit),roi:N(r.roi),exitKind:"closed-sale-median",checkedAt:"",units:1
+ }));
+}
 function sealedBuys(){
  return (state.sealedProducts||[]).map(p=>({p,d:window.CVSealedPrime?.decision?.(p)}))
  .filter(r=>r.d?.key==="buy")
@@ -37,7 +47,7 @@ function sealedBuys(){
  exit:N(r.d.prime?.exit),edge:N(r.d.prime?.edge),roi:N(r.d.prime?.roi),units:1}));
 }
 function buys(){
- return [...manualBuys(),...sealedBuys()].sort((a,b)=>(b.edge-a.edge)||(b.roi-a.roi));
+ return [...manualBuys(),...euBuys(),...sealedBuys()].sort((a,b)=>(b.edge-a.edge)||(b.roi-a.roi));
 }
 function funnel(){
  const all=(state.manualOpportunities||[]),quality=x=>window.CVPrimeMarket?.quality?.(x)||null;
@@ -113,7 +123,7 @@ function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let simple=document.querySelector("#primeSimpleHome");
  if(!simple){simple=document.createElement("section");simple.id="primeSimpleHome";host.prepend(simple)}
- const rows=buys(),cards=rows.filter(r=>r.id.startsWith("manual:")),products=rows.filter(r=>r.id.startsWith("sealed:")),f=funnel();
+ const rows=buys(),cards=rows.filter(r=>!r.id.startsWith("sealed:")),products=rows.filter(r=>r.id.startsWith("sealed:")),f=funnel();
  if(rows.some(r=>!r.image))setTimeout(()=>hydrateBuyImages().catch(()=>{}),50);
  const section=(title,subtitle,items)=>'<section class="primeBuyGroup"><div class="primeBuyGroupHead"><div><span>COMPRA YA</span><h3>'+E(title)+'</h3><small>'+E(subtitle)+'</small></div><b>'+items.length+'</b></div>'+
   (items.length?'<div class="primeBuyList">'+items.slice(0,10).map(card).join("")+'</div>':'<div class="primeNoBuy compact"><b>NINGUNA COMPRA VERIFICADA EN ESTE BLOQUE.</b><span>Se mantiene visible la categoría; no se mezcla con candidatos sin evidencia suficiente.</span></div>')+'</section>';
@@ -141,5 +151,5 @@ setTimeout(()=>{installGuard();render()},700);
 setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
 document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
-window.CVSimpleHome={render,buys,funnel,radarCandidates,installGuard,hydrateBuyImages};
+window.CVSimpleHome={render,buys,euBuys,funnel,radarCandidates,installGuard,hydrateBuyImages};
 })();
