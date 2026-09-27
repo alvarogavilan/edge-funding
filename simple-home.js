@@ -1,6 +1,11 @@
 (()=>{"use strict";
 const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},
 EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
+function idioma(v){
+ const k=String(v||"").trim().toLowerCase();
+ const map={italian:["🇮🇹","Italiano"],italiano:["🇮🇹","Italiano"],english:["🇬🇧","Inglés"],ingles:["🇬🇧","Inglés"],"inglés":["🇬🇧","Inglés"],spanish:["🇪🇸","Español"],espanol:["🇪🇸","Español"],"español":["🇪🇸","Español"],french:["🇫🇷","Francés"],frances:["🇫🇷","Francés"],"francés":["🇫🇷","Francés"],german:["🇩🇪","Alemán"],aleman:["🇩🇪","Alemán"],"alemán":["🇩🇪","Alemán"],japanese:["🇯🇵","Japonés"],japones:["🇯🇵","Japonés"],"japonés":["🇯🇵","Japonés"],portuguese:["🇵🇹","Portugués"],portugues:["🇵🇹","Portugués"],"portugués":["🇵🇹","Portugués"],korean:["🇰🇷","Coreano"],coreano:["🇰🇷","Coreano"]};
+ return map[k]||["🌐",v||"Idioma sin verificar"];
+}
 function img(x){
  const direct=x?.image||x?.referenceImage||x?.photoURL||x?.photo;if(direct)return direct;
  const rows=[...(state.marketScan||[]),...(state.marketCandidates||[]),...(state.globalRadar?.scored||[]).map(z=>z.x||z)].filter(Boolean);
@@ -93,7 +98,7 @@ function card(r,i){
   '<div class="primeBuyTop"><span class="primeBuyBadge">COMPRAR AHORA</span><strong class="primeBuyPrice">'+EUR(r.price)+'</strong></div>'+
   '<div class="primeBuyMain">'+
    (r.image?'<img class="primeBuyImage" src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeBuyImage primeBuyNoImage"><span class="autoImageLoader"></span><small>Cargando imagen automática…</small></div>')+
-   '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><div class="primeLanguageBadge">'+E((r.language||"IDIOMA SIN VERIFICAR").toUpperCase())+'</div><h3>'+E(r.name)+'</h3><small class="primeBuyMeta">'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
+   (()=>{const l=idioma(r.language);return '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><div class="primeLanguageBadge">'+E(l[0]+' '+l[1])+'</div><h3>'+E(r.name)+'</h3>'})()<small class="primeBuyMeta">'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
     '<div class="primeBuySeller"><span>Vendedor</span><b>'+E(r.seller)+'</b><small>'+E(r.source)+'</small></div>'+
    '</div>'+
   '</div>'+
