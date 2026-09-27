@@ -1330,7 +1330,7 @@ async function runMarketScan(mode="quick",universeOverride="",options={}){
     save();if(!silent){renderMarketScan();renderRadar();renderRotationPanel();refreshGlobalToday().catch(()=>{});snapshotMarketScan(mode);renderScanHistory();renderWatchSummary();if(st)st.textContent=signals.length+" señales activas · "+new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});renderQA();renderReadiness();}try{window.renderOpportunityEngine?.()}catch{} return signals;
   }catch(e){
     pushRuntimeError("market-scan",e?.message||e);
-    const fallback=(await activeMarketSignals(45,currentRadarUniverse()).catch(()=>({active:[]}))).active.sort((a,b)=>b.score-a.score).slice(0,400);
+    const fallback=(await activeMarketSignals(45,universeOverride||currentRadarUniverse()).catch(()=>({active:[]}))).active.sort((a,b)=>b.score-a.score).slice(0,400);
     if(fallback.length){
       state.marketScan=fallback;state.marketScanUniverse=currentRadarUniverse();save();renderMarketScan();renderRadar();
       if(st&&!silent)st.textContent="No se pudo refrescar ahora; mostrando "+fallback.length+" señales guardadas.";return fallback;
