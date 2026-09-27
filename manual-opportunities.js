@@ -53,7 +53,7 @@ if(!state.manualOpportunities.some(x=>x.id===tinkerId)){
  state.manualOpportunities.push({
   id:tinkerId,universe:"lorcana",name:"Tinker Bell - Giant Fairy (V.2)",set:"The First Chapter",number:"216/204",
   variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"TheBazaarTCG",
-  price:80.00,trend:254.47,avg30:242.97,avg7:251.99,available:121,sellerQty:5,
+  price:80.00,trend:141.96,avg30:146.31,avg7:166.99,avg1:109.99,available:121,sellerQty:5,
   url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Tinker-Bell-Giant-Fairy-V2",
   checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
   status:"TOP 1 · ESCALABLE · 5 NM A 80 €",approval:"BUY-SCALE",
@@ -64,7 +64,7 @@ if(!state.manualOpportunities.some(x=>x.id===belleId)){
  state.manualOpportunities.push({
   id:belleId,universe:"lorcana",name:"Belle - Strange but Special (V.2)",set:"The First Chapter",number:"214/204",
   variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"TheBazaarTCG",
-  price:85.00,trend:229.89,avg30:189.07,avg7:215.54,available:96,sellerQty:5,
+  price:85.00,trend:86.55,avg30:190.01,avg7:112.25,avg1:100.00,available:96,sellerQty:5,
   url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Belle-Strange-but-Special-V2",
   checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
   status:"TOP 3 · ESCALABLE · 5 NM A 85 €",approval:"BUY-SCALE",
@@ -75,7 +75,7 @@ if(!state.manualOpportunities.some(x=>x.id===simbaId)){
  state.manualOpportunities.push({
   id:simbaId,universe:"lorcana",name:"Simba - Returned King (V.2)",set:"The First Chapter",number:"215/204",
   variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"Vegas",
-  price:68.99,trend:165.83,avg30:170.31,avg7:167.53,available:94,sellerQty:1,
+  price:68.99,trend:148.50,avg30:118.18,avg7:156.56,avg1:65.00,available:94,sellerQty:1,
   url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Simba-Returned-King-V2",
   checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
   status:"TOP 4 · 1 UNIDAD",approval:"BUY-ONE",
@@ -86,7 +86,7 @@ if(!state.manualOpportunities.some(x=>x.id===artfulId)){
  state.manualOpportunities.push({
   id:artfulId,universe:"lorcana",name:"Mickey Mouse - Artful Rogue (V.2)",set:"The First Chapter",number:"210/204",
   variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"fantasymarket06",
-  price:50.00,trend:112.31,avg30:108.69,avg7:108.19,available:93,sellerQty:1,
+  price:50.00,trend:92.01,avg30:91.30,avg7:87.60,avg1:146.67,available:93,sellerQty:1,
   url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Mickey-Mouse-Artful-Rogue-V2",
   checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
   status:"TOP 5 · 1 UNIDAD",approval:"BUY-ONE",
@@ -123,8 +123,9 @@ if(!state.manualOpportunities.some(x=>x.id===id)){
  state.manualOpportunities.push({id,universe:"lorcana",name:"Donald Duck - Pie Slinger (V.2)",set:"Shimmering Skies",number:"214/204",variant:"Enchanted · V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"BKJ38",price:44.90,trend:116.36,avg30:76.69,avg7:101.80,avg1:138.18,available:47,url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Shimmering-Skies/Donald-Duck-Pie-Slinger-V2",checkedAt:"2026-09-27T14:20:00+02:00",expiresAt:"2026-09-28T14:20:00+02:00",status:"SECUNDARIA · PROFUNDIDAD NM CONFIRMADA",depthPrices:[44.9,45,45,45,49,50,50],depthNote:"Varias NM consecutivas entre 44,90 y 50 €; no depende de una sola oferta."});save();
 }
 function positionSizing(x,c){
- const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),available=N(x.available);
- const floor=Math.min(trend||Infinity,avg30||Infinity);
+ const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1),available=N(x.available);
+ const refs=[trend,avg30,avg7,avg1].filter(v=>v>0);
+ const floor=refs.length?Math.min(...refs):Infinity;
  const conservativeGross=isFinite(floor)?floor:0;
  const conservativeExit=conservativeGross*.95;
  const netEdge=conservativeExit>unit?conservativeExit-unit:0;
@@ -138,7 +139,8 @@ function positionSizing(x,c){
 }
 function cash(){try{return Math.max(0,window.investmentLedgerStats?.().netCash||0)}catch{return 0}}
 function top5Rank(x){
- const floor=Math.min(N(x.trend)||Infinity,N(x.avg30)||Infinity),entry=N(x.price);
+ const refs=[N(x.trend),N(x.avg30),N(x.avg7),N(x.avg1)].filter(v=>v>0),entry=N(x.price);
+ const floor=refs.length?Math.min(...refs):Infinity;
  return (isFinite(floor)?floor*.95:0)-entry;
 }
 function render(){
