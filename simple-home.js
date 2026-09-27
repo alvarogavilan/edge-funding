@@ -54,11 +54,28 @@ function card(r,i){
   (r.units>1?'<small class="primeBuyUnits">Máximo sugerido: '+r.units+' unidades por liquidez.</small>':'')+
  '</article>';
 }
+async function hydrateBuyImages(){
+ const rows=(state.manualOpportunities||[]).filter(x=>{
+  const q=window.CVPrimeMarket?.quality?.(x);
+  return q&&q.passed===q.total&&["BUY-ONE","BUY-SCALE"].includes(x.approval)&&!img(x);
+ }).slice(0,8);
+ let changed=false;
+ for(const x of rows){
+  try{
+   let url="";
+   if((x.universe||"pokemon")==="pokemon")url=await window.CVCatalogImages?.resolvePokemon?.(x)||"";
+   else if(x.universe==="lorcana")url=await window.CVCatalogImages?.resolveLorcana?.(x)||"";
+   if(url){x.image=url;x.imageSource="catalog-auto";changed=true}
+  }catch{}
+ }
+ if(changed){save();render()}
+}
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let simple=document.querySelector("#primeSimpleHome");
  if(!simple){simple=document.createElement("section");simple.id="primeSimpleHome";host.prepend(simple)}
  const rows=buys();
+ if(rows.some(r=>!r.image))setTimeout(()=>hydrateBuyImages().catch(()=>{}),50);
  simple.innerHTML='<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Solo aparecen compras que superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
  (rows.length?'<div class="primeBuyList">'+rows.slice(0,10).map(card).join("")+'</div>':
  '<div class="primeNoBuy"><b>HOY NO HAY NINGUNA COMPRA PRIME VERIFICADA.</b><span>No voy a rellenar esta pantalla con cartas dudosas. Cuando aparezca una, verás foto, precio, vendedor y enlace directo aquí.</span></div>');
@@ -75,5 +92,5 @@ setTimeout(()=>{installGuard();render()},700);
 setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
 document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
-window.CVSimpleHome={render,buys,installGuard};
+window.CVSimpleHome={render,buys,installGuard,hydrateBuyImages};
 })();
