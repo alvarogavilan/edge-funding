@@ -77,6 +77,13 @@
 <div class="row"><select name="availability"><option value="unknown">Disponibilidad desconocida</option><option value="stock">En stock</option><option value="low">Stock bajo</option><option value="soldout">Agotado</option></select><select name="printStatus"><option value="unknown">Estado impresión desconocido</option><option value="printing">En impresión</option><option value="discontinued">Descatalogado</option><option value="out">Agotado / fuera de impresión</option></select></div>
 <div class="row"><select name="liquidity"><option value="">Liquidez sin evaluar</option><option value="high">Alta</option><option value="medium">Media</option><option value="low">Baja</option></select><select name="reprintRisk"><option value="">Riesgo reedición sin evaluar</option><option value="low">Bajo</option><option value="medium">Medio</option><option value="high">Alto</option></select></div>
 <div class="row"><input name="trend30" type="number" step=".1" placeholder="Tendencia 30d %"><input name="trend90" type="number" step=".1" placeholder="Tendencia 90d %"></div>
+<details class="popDetails"><summary>Probabilidad de apertura · carta de valor alto</summary>
+<div class="row"><input name="packsPerProduct" type="number" min="1" step="1" placeholder="Sobres dentro del producto"><input name="pullThresholdEUR" type="number" min="1" step="5" value="50" placeholder="Umbral de carta €"></div>
+<div class="row"><input name="pullSamplePacks" type="number" min="1" step="1" placeholder="Sobres de la muestra"><input name="pullHitsAboveThreshold" type="number" min="0" step="1" placeholder="Hits ≥ umbral en muestra"></div>
+<input name="pullAvgHitValueEUR" type="number" min="0" step=".01" placeholder="Valor medio € de esos hits (opcional)">
+<input name="pullRateSourceUrl" type="url" placeholder="URL fuente de la muestra / pull rate">
+<small>Card Vault calcula P(≥1 hit) = 1 − (1 − p)^n. La tasa debe pertenecer al set/producto o a una muestra comparable; no se inventan odds.</small>
+</details>
 <input name="photoUrl" type="url" placeholder="URL foto clara del producto">
 <input name="sourceUrl" type="url" placeholder="URL fuente/precio/evidencia" required>
 <input name="buyUrl" type="url" placeholder="Enlace directo de compra" required>
