@@ -27,6 +27,18 @@ const simbaId="lorcana-simba-returned-king-v2-20260927";
 const artfulId="lorcana-mickey-artful-rogue-v2-20260927";
 const ladyId="pokemon-lady-forbidden-light-jp-100-20260927";
 const trumpeterId="lorcana-mickey-trumpeter-v2-20260927";
+const nurseId="pokemon-nurse-wcd04-ex145-20260927";
+if(!state.manualOpportunities.some(x=>x.id===nurseId)){
+ state.manualOpportunities.push({
+  id:nurseId,universe:"pokemon",name:"Pokémon Nurse",set:"WCD 2004",number:"EX 145",
+  variant:"World Championships Deck 2004",condition:"EX",shop:"Cardmarket",seller:"traptrixseur",
+  price:66.00,trend:600.00,avg30:600.00,avg7:600.00,avg1:600.00,available:5,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/WCD-2004/Pokemon-Nurse-WCD04EX-145",
+  checkedAt:"2026-09-27T17:55:00+02:00",expiresAt:"2026-09-28T17:55:00+02:00",
+  status:"WATCH ALTA PRIORIDAD · ANOMALÍA DE REFERENCIA",approval:"WATCH",
+  note:"Solo 5 unidades. Cardmarket muestra 600 € en tendencia y medias, pero la señal es demasiado extrema para asumir liquidez/valor real. EX observada a 66 €; requiere ventas cerradas o contraste externo antes de aprobar."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===trumpeterId)){
  state.manualOpportunities.push({
   id:trumpeterId,universe:"lorcana",name:"Mickey Mouse - Trumpeter (V.2)",set:"Into the Inklands",number:"",
@@ -146,7 +158,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
