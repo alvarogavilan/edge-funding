@@ -125,12 +125,26 @@ function renderLearning(rows){
  const medianHold=sorted.length?sorted[Math.floor(sorted.length/2)]:null,groups={};
  for(const x of known){const k=(x.universe||"pokemon")+" · "+(x.grading||"RAW");const g=groups[k]||(groups[k]={n:0,sum:0});g.n++;g.sum+=x.result/N(x.basis)*100}
  const eligible=Object.entries(groups).filter(([,g])=>g.n>=2).sort((a,b)=>(b[1].sum/b[1].n)-(a[1].sum/a[1].n));
+ const tracked=rows.map(x=>{
+  const checks=(Array.isArray(x.postSaleChecks)?x.postSaleChecks:[]).filter(p=>p.exactComparable&&N(p.priceEUR)>0);
+  if(!checks.length||!(N(x.unitPrice)>0))return null;
+  const avg=checks.reduce((s,p)=>s+N(p.priceEUR),0)/checks.length;
+  return (avg-N(x.unitPrice))/N(x.unitPrice)*100;
+ }).filter(v=>v!=null).sort((a,b)=>a-b);
+ const medianAfter=tracked.length?tracked[Math.floor(tracked.length/2)]:null;
+ let timing='Muestra insuficiente';
+ if(tracked.length>=3&&medianAfter!=null){
+  timing=medianAfter>=15?'Mercado posterior claramente superior a nuestras ventas':medianAfter<=-15?'Ventas por encima del mercado posterior':'Timing posterior razonablemente estable';
+ }
  box.innerHTML='<b>Learning Engine · resultados cerrados</b>'+
   '<div class="qaRow"><span>Tasa positiva</span><b>'+((wins/known.length)*100).toFixed(1)+'%</b></div>'+
   '<div class="qaRow"><span>ROI medio realizado</span><b>'+(avgRoi>=0?'+':'')+avgRoi.toFixed(1)+'%</b></div>'+
   '<div class="qaRow"><span>Tiempo mediano en cartera</span><b>'+(medianHold==null?'Sin dato':medianHold+' días')+'</b></div>'+
   '<div class="qaRow"><span>Mejor segmento con ≥2 ventas</span><b>'+(eligible.length?eligible[0][0]+' · '+(eligible[0][1].sum/eligible[0][1].n).toFixed(1)+'% ROI':'Aún sin muestra')+'</b></div>'+
-  '<small>Estas métricas son descriptivas. No cambian el motor de compra hasta acumular una muestra suficiente y estable.</small>';
+  '<div class="qaRow"><span>Ventas con seguimiento posterior</span><b>'+tracked.length+'</b></div>'+
+  '<div class="qaRow"><span>Mediana mercado posterior vs venta</span><b>'+(tracked.length>=3?(medianAfter>=0?'+':'')+medianAfter.toFixed(1)+'%':'Necesita ≥3')+'</b></div>'+
+  '<div class="qaRow"><span>Timing de salida</span><b>'+timing+'</b></div>'+
+  '<small>Estas métricas son descriptivas. El seguimiento posterior exige comparables exactos y no cambia el motor de compra con muestras pequeñas.</small>';
 }
 function render(){
  const box=Q("#archiveList"),sum=Q("#archiveSummary");if(!box||!sum)return;
