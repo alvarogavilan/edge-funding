@@ -55,6 +55,8 @@ async function sync(force=false){
    const s=await api("/api/signals?ids="+encodeURIComponent(part));for(const [k,v] of Object.entries(s.signals||{}))state.marketSignals[k]={...v,at:new Date().toISOString()};
    const o=await api("/api/offers?ids="+encodeURIComponent(part));for(const [k,v] of Object.entries(o.offers||{}))if(v)state.marketOffers[k]=v;
   }
+  const arb=await api("/api/arbitrage?limit=60&min_edge=40&min_roi=35").catch(()=>({results:[]}));
+  state.crossMarketArbitrage=Array.isArray(arb.results)?arb.results:[];
   c.status=await api("/api/status");c.lastSync=new Date().toISOString();c.lastError="";ui.msg="";
  }catch(e){c.lastError=String(e.message||e);ui.msg="Error: "+c.lastError}
  ui.busy=false;save();render();try{window.CVPrimeAttention?.render?.()}catch{}
