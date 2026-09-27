@@ -1,5 +1,18 @@
 (()=>{const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 state.manualOpportunities=Array.isArray(state.manualOpportunities)?state.manualOpportunities:[];
+if(!state.languageAwareV777){
+  for(const x of state.manualOpportunities){
+    if(x.universe==="lorcana" && ["BUY-SCALE","BUY-ONE"].includes(x.approval||"")){
+      x.offerLanguage=x.offerLanguage||"PENDIENTE";
+      x.languageCheckRequired=true;
+      x.preLanguageApproval=x.approval;
+      x.approval="VERIFY-LANGUAGE";
+      x.status="VERIFICAR IDIOMA + ESTADO ANTES DE COMPRAR";
+      x.note=((x.note||"")+" · No comparar mínimos de un idioma con referencias de salida de otro idioma.").trim();
+    }
+  }
+  state.languageAwareV777=true;save();
+}
 state.rejectedManualOpportunities=[
  {name:"Peter Pan - Pirate's Bane (V.2)",reason:"Margen absoluto conservador insuficiente para política +50 €",price:31,trend:49.32,avg30:37.57},
  {name:"Sisu - Divine Water Dragon (V.2)",reason:"Margen absoluto conservador insuficiente para política +50 €",price:30,trend:44.56,avg30:47.18}
@@ -132,9 +145,10 @@ function render(){
  const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),netExit=N(x.trend)*.95,potential=netExit-N(x.price),isWatch=x.approval==="WATCH";const ps=positionSizing(x,c);
+ if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
  if(x.approval==="BUY-SCALE"){ps.maxUnits=Math.min(3,N(x.sellerQty)||3);ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(ps.maxUnits,ps.affordable);ps.reason="Posición escalable: varias NM al mismo precio del mismo vendedor; verificar portes y disponibilidad."}
  if(x.approval==="BUY-ONE"){ps.maxUnits=1;ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(1,ps.affordable);ps.reason="Una unidad máximo hasta verificar liquidez de salida y comparables recientes."}
- return '<article class="buyTile"><div class="buyNoPhoto">'+E(x.universe.toUpperCase())+'<br>'+E(isWatch?"WATCH":isScale?"ESCALABLE":isOne?"1 UNIDAD":"PRIORIDAD")+'</div><div class="buyBody"><div class="buyKicker">'+E(stale?"REVERIFICAR PRECIO":x.status)+'</div><h3>'+E(x.name)+'</h3><small>'+E([x.set,x.number,x.variant,x.condition].filter(Boolean).join(" · "))+'</small><div class="buyNumbers"><div><span>Oferta observada</span><b>'+EUR(x.price)+'</b></div><div><span>Tendencia</span><b>'+EUR(x.trend)+'</b></div><div><span>Media 30 días</span><b>'+EUR(x.avg30)+'</b></div><div><span>Potencial neto aprox.</span><b>'+EUR(potential)+'</b></div></div><div class="buyWhy">Cardmarket: '+E(x.available)+' disponibles · vendedor observado '+E(x.seller)+' · '+(isWatch?'precio extremadamente anómalo; confirmar que sea producto completo y sellado antes de considerar compra.':'la tendencia no garantiza una reventa futura.')+'</div><div class="buyWhy"><b>Tamaño de posición:</b> caja actual permite '+ps.affordable+' unidad(es); límite de riesgo '+ps.maxUnits+'; recomendación actual '+ps.recommended+'. '+E(ps.reason)+'</div><div class="buyWhy">'+(c>=x.price?'✓ CABE EN CAJA · quedarían '+EUR(c-x.price):'Caja registrada '+EUR(c)+' · faltan '+EUR(x.price-c))+(isWatch?' · NO APROBADA TODAVÍA':'')+'</div><a class="buyButton '+(isWatch?'secondary':'')+'" href="'+E(x.url)+'" target="_blank" rel="noopener">'+(isWatch?'ABRIR Y VERIFICAR ANOMALÍA':'ABRIR FICHA · BUSCAR '+E(x.seller)+' A '+EUR(x.price))+'</a></div></article>'}).join("");
+ return '<article class="buyTile"><div class="buyNoPhoto">'+E(x.universe.toUpperCase())+'<br>'+E(isWatch?"WATCH":isLang?"VERIFICAR IDIOMA":isScale?"ESCALABLE":isOne?"1 UNIDAD":"PRIORIDAD")+'</div><div class="buyBody"><div class="buyKicker">'+E(stale?"REVERIFICAR PRECIO":x.status)+'</div><h3>'+E(x.name)+'</h3><small>'+E([x.set,x.number,x.variant,x.condition].filter(Boolean).join(" · "))+'</small><div class="buyNumbers"><div><span>Oferta observada</span><b>'+EUR(x.price)+'</b></div><div><span>Tendencia</span><b>'+EUR(x.trend)+'</b></div><div><span>Media 30 días</span><b>'+EUR(x.avg30)+'</b></div><div><span>Potencial neto aprox.</span><b>'+EUR(potential)+'</b></div></div><div class="buyWhy">Cardmarket: '+E(x.available)+' disponibles · vendedor observado '+E(x.seller)+' · '+(isWatch?'precio extremadamente anómalo; confirmar que sea producto completo y sellado antes de considerar compra.':'la tendencia no garantiza una reventa futura.')+'</div><div class="buyWhy"><b>Tamaño de posición:</b> caja actual permite '+ps.affordable+' unidad(es); límite de riesgo '+ps.maxUnits+'; recomendación actual '+ps.recommended+'. '+E(ps.reason)+'</div><div class="buyWhy">'+(c>=x.price?'✓ CABE EN CAJA · quedarían '+EUR(c-x.price):'Caja registrada '+EUR(c)+' · faltan '+EUR(x.price-c))+(isWatch?' · NO APROBADA TODAVÍA':'')+'</div><a class="buyButton '+(isWatch?'secondary':'')+'" href="'+E(x.url)+'" target="_blank" rel="noopener">'+(isWatch?'ABRIR Y VERIFICAR ANOMALÍA':'ABRIR FICHA · BUSCAR '+E(x.seller)+' A '+EUR(x.price))+'</a></div></article>'}).join("");
 }
 window.CVManualOpportunities={render};setTimeout(render,50);document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
 })();
