@@ -1,5 +1,5 @@
 (()=>{const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
-function settled(r){const s=String(r?.fulfillmentStatus||"").toLowerCase();return ["paid","paid-confirmed","completed","settled"].includes(s)}
+function settled(r){return window.CVLedgerWorkflow?.saleSettled?.(r)===true&&window.CVLedgerWorkflow?.saleReconciled?.(r)!==false}
 function realizedCash(){return (state.investmentLedger||[]).filter(r=>r.type==="sell"&&settled(r)).reduce((a,r)=>a+Math.max(0,N(r.unitPrice)*N(r.qty||1)-N(r.shipping)-N(r.fees)),0)}
 function candidates(){const cards=(state.cards||[]).filter(c=>!c.archivedSold&&!["no_sell","personal"].includes(c.purpose||"investment")).map(c=>{const r=window.CVPortfolioCIO?.review?.(c);return {type:"source",id:c.id,name:c.name,value:N(c.value),action:r?.action||"MANTENER",concentration:r?.concentration||0}});return {cards}}
 function realDestinations(cash){
