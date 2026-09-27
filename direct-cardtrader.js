@@ -40,7 +40,8 @@ function candidateRows(){
  return out.filter(x=>x?.name&&x?.set&&x?.number).filter(x=>{
   const k=[x.universe,norm(x.name),norm(x.set),numKey(x.number)].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
- }).sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,60);
+ }).filter(x=>{const p=Number(x.price)||0,c=String(x.currency||"EUR").toUpperCase();return !p||(c==="EUR"&&p>=20&&p<=300)})
+ .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,140);
 }
 function pctMedian(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]}
 function localArbitrageForCandidate(c,offers){
@@ -97,7 +98,9 @@ async function scan(){
    const nk=numKey(c.number),nn=norm(String(c.name).replace(/ · Foil$/i,""));
    const exact=bps.filter(b=>{
     const fp=b.fixed_properties||{},bn=numKey(fp.collector_number||fp.pokemon_number||fp.lorcana_number||fp.number||"");
-    return norm(b.name)===nn&&(!nk||bn===nk);
+    const nameOk=norm(b.name)===nn||norm([b.name,b.version].filter(Boolean).join(" "))===nn;
+    const numOk=!nk||bn===nk;
+    return nameOk&&numOk;
    });
    if(exact.length!==1)continue;
    const bp=exact[0];
