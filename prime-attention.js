@@ -21,6 +21,13 @@ function items(){
  }
  for(const x of (state.manualOpportunities||[])){
   if(x.approval==="VERIFY-LANGUAGE")out.push({kind:"opportunity",priority:80,name:x.name,text:"Oportunidad bloqueada · verificar idioma/estado",oppId:x.id});
+  const at=x.evidenceCheckedAt||x.marketEvidence?.at;
+  if(at){
+   const age=(Date.now()-new Date(at).getTime())/36e5;
+   if(Number.isFinite(age)&&age>24)out.push({kind:"evidence-expired",priority:98,name:x.name,text:"Evidencia PRIME caducada · "+age.toFixed(1)+" h",oppId:x.id});
+   else if(Number.isFinite(age)&&age>=20)out.push({kind:"evidence-expiring",priority:88,name:x.name,text:"Evidencia PRIME vence pronto · "+age.toFixed(1)+" h",oppId:x.id});
+  }
+  if(x.integrityBlocked)out.push({kind:"integrity",priority:99,name:x.name,text:"Integrity Guard · "+(x.integrityIssues||[]).join(" · "),oppId:x.id});
  }
  return out.sort((a,b)=>b.priority-a.priority||a.name.localeCompare(b.name));
 }
