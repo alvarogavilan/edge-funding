@@ -502,3 +502,15 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 .primeBuyNoImage small{font-size:9px!important;line-height:1.25;text-align:center;color:#6b7280!important}
 .autoImageLoader{width:20px;height:20px;border:2px solid #d5dde5;border-top-color:#0b6b3a;border-radius:50%;animation:cvSpin .8s linear infinite}
 @keyframes cvSpin{to{transform:rotate(360deg)}}
+
+/* V90.1 · Compra separada + radar masivo visible */
+.primeBuyGroup{margin:0 0 20px}.primeBuyGroupHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin:10px 0}
+.primeBuyGroupHead span{font-size:10px;font-weight:900;letter-spacing:.1em;opacity:.6}.primeBuyGroupHead h3{margin:2px 0;font-size:22px}.primeBuyGroupHead small{opacity:.65}
+.primeBuyGroupHead>b{min-width:34px;text-align:center;padding:7px 9px;border-radius:999px;background:#11182b}
+.primeNoBuy.compact{padding:16px}.primeFunnel{margin:20px 0;padding:14px;border:1px solid rgba(140,160,210,.18);border-radius:16px;background:rgba(255,255,255,.025)}
+.primeRadarMass{margin:22px 0}.primeRadarColumns{display:grid;grid-template-columns:1fr 1fr;gap:14px}.primeRadarColumns>div>h4{font-size:15px;margin:0 0 8px}
+.primeRadarCandidate{display:grid;grid-template-columns:54px minmax(0,1fr);gap:10px;padding:10px;margin:0 0 8px;border:1px solid rgba(140,160,210,.18);border-radius:13px;background:rgba(15,22,40,.72)}
+.primeRadarCandidate img,.primeRadarNoImage{width:54px;height:76px;object-fit:cover;border-radius:7px;background:#11182b}.primeRadarNoImage{display:grid;place-items:center;font-size:9px;font-weight:900;opacity:.65}
+.primeRadarCandidate h4{margin:2px 0;font-size:14px}.primeRadarCandidate small,.primeRadarCandidate span,.primeRadarCandidate p{display:block;font-size:10px;line-height:1.35;opacity:.72}.primeRadarCandidate p{margin:5px 0}.primeRadarCandidate b{display:block;font-size:11px}
+.primeRadarCandidate a{display:inline-flex;align-items:center;min-height:40px;margin-top:7px;padding:0 10px;border-radius:9px;background:#11182b;color:#fff;text-decoration:none;font-size:10px;font-weight:900}
+@media(max-width:650px){.primeRadarColumns{grid-template-columns:1fr}.primeBuyGroupHead{align-items:flex-start}.primeRadarCandidate{grid-template-columns:48px minmax(0,1fr)}.primeRadarCandidate img,.primeRadarNoImage{width:48px;height:68px}}
