@@ -25,7 +25,7 @@ function manualBuys(){
  .filter(r=>r.q&&r.q.passed===r.q.total&&["BUY-ONE","BUY-SCALE"].includes(r.x.approval))
  .map(r=>({id:"manual:"+r.x.id,name:r.x.name,set:r.x.set||"",number:r.x.number||"",image:img(r.x),
  price:N(r.best.price),seller:r.best.seller||"Vendedor verificado",url:r.best.url||"",source:r.best.source||r.x.shop||"Mercado verificado",
- description:[r.x.offerLanguage||r.x.language,r.x.variant,r.x.condition].filter(Boolean).join(" · "),
+ language:r.x.offerLanguage||r.x.language||"",description:[r.x.variant,r.x.condition].filter(Boolean).join(" · "),
  exit:N(r.q.econ?.exit),edge:N(r.q.econ?.edge),roi:N(r.q.econ?.roi),exitKind:r.q.econ?.kind||"none",checkedAt:r.x.evidenceCheckedAt||r.x.checkedAt||"",units:r.x.approval==="BUY-SCALE"?Math.max(1,N(r.x.recommendedQty)||1):1}));
 }
 function euBuys(){
@@ -34,7 +34,7 @@ function euBuys(){
   id:r.purchaseKey||("eu:"+String(r.name||"")),
   name:r.name,set:r.set||"",number:r.number||"",image:img(r),
   price:N(r.price),seller:r.meta?.seller||"Vendedor verificado",url:r.buyUrl,source:"Oferta EUR exacta",
-  description:[r.meta?.language,r.meta?.variant,r.meta?.condition].filter(Boolean).join(" · "),
+  language:r.meta?.language||"",description:[r.meta?.variant,r.meta?.condition].filter(Boolean).join(" · "),
   exit:N(r.target),edge:N(r.profit),roi:N(r.roi),exitKind:"closed-sale-median",checkedAt:"",units:1
  }));
 }
@@ -43,7 +43,7 @@ function sealedBuys(){
  .filter(r=>r.d?.key==="buy")
  .map(r=>({id:"sealed:"+r.p.id,name:r.p.name,set:r.p.set||"",number:"",image:img(r.p),
  price:N(r.d.prime?.cost),seller:r.d.prime?.seller||r.p.seller||"Tienda verificada",url:r.p.buyUrl||"",source:"Sellado PRIME",
- description:[r.p.productType,r.p.language].filter(Boolean).join(" · "),
+ language:r.p.language||"",description:[r.p.productType].filter(Boolean).join(" · "),
  exit:N(r.d.prime?.exit),edge:N(r.d.prime?.edge),roi:N(r.d.prime?.roi),units:1}));
 }
 function buys(){
@@ -93,7 +93,7 @@ function card(r,i){
   '<div class="primeBuyTop"><span class="primeBuyBadge">COMPRAR AHORA</span><strong class="primeBuyPrice">'+EUR(r.price)+'</strong></div>'+
   '<div class="primeBuyMain">'+
    (r.image?'<img class="primeBuyImage" src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeBuyImage primeBuyNoImage"><span class="autoImageLoader"></span><small>Cargando imagen automática…</small></div>')+
-   '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><h3>'+E(r.name)+'</h3><small class="primeBuyMeta">'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
+   '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><div class="primeLanguageBadge">'+E((r.language||"IDIOMA SIN VERIFICAR").toUpperCase())+'</div><h3>'+E(r.name)+'</h3><small class="primeBuyMeta">'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
     '<div class="primeBuySeller"><span>Vendedor</span><b>'+E(r.seller)+'</b><small>'+E(r.source)+'</small></div>'+
    '</div>'+
   '</div>'+
