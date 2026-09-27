@@ -114,7 +114,7 @@ function card(r,i){
    '</div>'+
   '</div>'+
   '<div class="primeBuyEconomics"><span>Salida prudente '+EUR(r.exit)+'</span><span>Margen aprox. +'+EUR(r.edge)+' · ROI '+r.roi.toFixed(1)+'%</span></div>'+
-  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida basada en mercado activo; no es una venta cerrada":"Salida respaldada por ventas verificadas")+(r.checkedAt?" · "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
+  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida basada en mercado activo; no es una venta cerrada":r.exitKind==="cross-market-net"?"Salida conservadora neta cruzando mercados y profundidad del mismo idioma":"Salida respaldada por ventas verificadas")+(r.checkedAt?" · "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
   (r.url?'<a class="primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+E((/cardmarket/i.test(r.url)?"CARDMARKET":"COMPRAR")+' · '+r.seller.toUpperCase()+' · '+EUR(r.price))+'</a>':'<button class="primeBuyLink" disabled>SIN ENLACE EJECUTABLE</button>')+
   (r.units>1?'<small class="primeBuyUnits">Máximo sugerido: '+r.units+' unidades por liquidez.</small>':'')+
  '</article>';
