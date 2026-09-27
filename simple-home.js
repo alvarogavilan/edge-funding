@@ -55,8 +55,17 @@ function render(){
  (rows.length?'<div class="primeBuyList">'+rows.slice(0,10).map(card).join("")+'</div>':
  '<div class="primeNoBuy"><b>HOY NO HAY NINGUNA COMPRA PRIME VERIFICADA.</b><span>No voy a rellenar esta pantalla con cartas dudosas. Cuando aparezca una, verás foto, precio, vendedor y enlace directo aquí.</span></div>');
 }
-setTimeout(render,700);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(render,100)});
-document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]'))setTimeout(render,100)});
-window.CVSimpleHome={render,buys};
+function installGuard(){
+ const api=window.CVTodaySimple;
+ if(api?.render&&!api.__simpleHomeWrapped){
+  const base=api.render.bind(api);
+  api.render=function(){const out=base();setTimeout(render,0);return out};
+  api.__simpleHomeWrapped=true;
+ }
+}
+setTimeout(()=>{installGuard();render()},700);
+setTimeout(installGuard,1400);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
+document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
+window.CVSimpleHome={render,buys,installGuard};
 })();
