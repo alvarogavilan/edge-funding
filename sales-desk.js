@@ -20,15 +20,38 @@ function markSold(id){
  const raw=prompt("Precio real vendido (€):",String(x.price));if(raw==null)return;const price=N(String(raw).replace(",","."));
  if(!(price>0))return;
  const feeRaw=prompt("Comisión/gastos totales (€):",(price*.05).toFixed(2));if(feeRaw==null)return;const fees=Math.max(0,N(String(feeRaw).replace(",",".")));
+ const shipRaw=prompt("Coste de envío que pagas tú (€):","0");if(shipRaw==null)return;const shipping=Math.max(0,N(String(shipRaw).replace(",",".")));
+ const saleOrder=(prompt("Número de pedido / referencia (opcional):","")||"").trim();
+ const saleNotes=(prompt("Notas de la venta (opcional):","")||"").trim();
  const date=new Date().toISOString().slice(0,10);
  const ledgerId="sale-"+x.id+"-"+date;
  if(!Array.isArray(state.investmentLedger))state.investmentLedger=[];
  if(!state.investmentLedger.some(r=>r.id===ledgerId))state.investmentLedger.push({
-  id:ledgerId,type:"sell",assetType:"card",assetKey:"card:"+c.id,name:c.name+(c.grade?(" · PSA "+c.grade):""),date,qty:1,unitPrice:price,shipping:0,fees,sourceUrl:"",notes:"Venta Cardmarket registrada desde Sales Desk · pendiente de cobro confirmado",basisUnknown:c.purchase==null,fulfillmentStatus:"sold-awaiting-payment",updatedAt:new Date().toISOString()
+  id:ledgerId,type:"sell",assetType:"card",assetKey:"card:"+c.id,name:c.name+(c.grade?(" · PSA "+c.grade):""),date,qty:1,unitPrice:price,shipping,fees,sourceUrl:"",notes:"Venta Cardmarket registrada desde Sales Desk · envío pendiente",basisUnknown:c.purchase==null,fulfillmentStatus:"sold-awaiting-shipment",updatedAt:new Date().toISOString()
+ });
+ state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
+ const snap={
+  universe:c.universe||"pokemon",name:c.name||"",set:c.set||"",number:c.number||"",year:c.year||"",language:c.language||"",
+  variant:c.buyVariant||c.variant||"",condition:c.buyCondition||c.condition||c.grade||"",grading:c.grading||"RAW",grade:c.grade||"",cert:c.cert||"",
+  referenceImage:c.referenceImage||"",photoKey:c.photoKey||"",quantity:1,purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",
+  purchaseShipping:c.purchaseShipping??0,purchaseFees:c.purchaseFees??0,landedCostUnit:c.landedCostUnit??null,
+  seller:c.buySeller||c.seller||"",purchaseUrl:c.buySourceUrl||c.marketPricing?.url||"",marketUrl:c.marketPricing?.url||c.buySourceUrl||"",
+  saleDescription:c.saleDescription||"",description:c.description||"",notes:c.notes||"",purpose:c.purpose||"",
+  acquisitionSource:c.acquisitionSource||"",acquisitionType:c.acquisitionType||"",acquisitionNotes:c.acquisitionNotes||"",
+  parentProductCostEUR:c.parentProductCostEUR??null,parentProductCostApprox:!!c.parentProductCostApprox,
+  popGrade:c.popGrade??null,popHigher:c.popHigher??null,popTotal:c.popTotal??null,popSource:c.popSource||"",popUrl:c.popUrl||"",popCheckedAt:c.popCheckedAt||"",
+  marketPricing:c.marketPricing||null,gradedValuation:c.gradedValuation||null,conditionMarket:c.conditionMarket||null,
+  buyOpportunityId:c.buyOpportunityId||"",buySource:c.buySource||"",buyVariant:c.buyVariant||"",buyLanguage:c.buyLanguage||"",
+  buyCondition:c.buyCondition||"",buySeller:c.buySeller||"",buySourceUrl:c.buySourceUrl||"",boughtAt:c.boughtAt||""
+ };
+ if(!state.saleHistory.some(h=>h.id===ledgerId))state.saleHistory.push({
+  id:ledgerId,cardId:c.id,...snap,cardSnapshot:snap,qty:1,unitPrice:price,shipping,fees,net:price-shipping-fees,soldAt:date,channel:x.channel||"Cardmarket",
+  saleOrder,saleNotes,fulfillmentStatus:"sold-awaiting-shipment",basisUnknown:c.purchase==null,archiveSnapshotAt:new Date().toISOString()
  });
  x.status="sold";x.soldPrice=price;x.soldFees=fees;x.soldAt=date;x.updatedAt=new Date().toISOString();
- c.archivedSold=true;c.soldAt=date;c.soldPrice=price;c.soldFees=fees;
- save();render();try{window.renderInvestmentLedger?.();window.CVReinvestmentCommittee?.render?.();window.CVFinalOps?.render?.()}catch{}
+ c.archivedSold=true;c.soldAt=date;c.soldPrice=price;c.soldFees=fees;c.soldShipping=shipping;
+ save();render();try{window.renderInvestmentLedger?.();window.CVSalesHistory?.render?.();window.CVArchive?.render?.();window.CVReinvestmentCommittee?.render?.();window.CVFinalOps?.render?.()}catch{}
+ alert("Venta registrada · ENVÍO PENDIENTE. No entra en caja hasta confirmar envío y después cobro.");
 }
 function editPrice(id){
  const x=state.saleListings.find(z=>z.id===id);if(!x)return;
