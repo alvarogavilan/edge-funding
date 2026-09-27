@@ -807,10 +807,7 @@ function cardmarketProductLink(x){
   return "https://www.cardmarket.com/es/"+game+"/Products/Search?searchString="+encodeURIComponent(q);
 }
 
-function psa10BuyLink(x){
-  const q=[x.name,x.set,x.number?("#"+x.number):"","PSA 10"].filter(Boolean).join(" ");
-  return "https://www.ebay.es/sch/i.html?_nkw="+encodeURIComponent(q)+"&_sacat=0&LH_BIN=1";
-}
+function psa10BuyLink(x){const offers=(state.gradedOffers||[]).filter(o=>/^PSA 10$/i.test(o.grade||"")&&!/ebay\./i.test(o.url||"")&&norm(o.name)===norm(x.name)&&(!x.set||!o.set||norm(o.set)===norm(x.set))&&(!x.number||!o.number||norm(o.number)===norm(x.number))).sort((a,b)=>(+a.total||Infinity)-(+b.total||Infinity));return offers[0]?.url||""}
 function psa10Comparable(x){
   return marketValueFor(x.name,"PSA","10",x.set||"",marketUniverseOf(x));
 }
