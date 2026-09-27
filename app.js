@@ -2082,4 +2082,5 @@ async function migrateLegacyMarketUniverse(){
   state.marketScannedIds={};
   await refreshMarketFreshness();
 }
+window.CVRenderCollection=render;
 openDB().then(async()=>{try{await navigator.storage?.persist?.()}catch{}await migrateLegacyMarketUniverse();await archiveFootballUniverseData(); for(const x of state.cards){if(x.photo&&!x.photoKey&&x.photo.startsWith("data:")){try{let blob=await (await fetch(x.photo)).blob();x.photoKey=x.id;await photoPut(x.id,blob);delete x.photo}catch{}}}save();await hydratePhotos();await hydrateMarketFromStorage();storageStatus()}).catch(e=>{state.bootInfo={at:new Date().toISOString(),radarLoaded:false,radarCount:0,error:String(e?.message||e||"IndexedDB")};save();renderBootStatus();document.querySelector("#readyText").textContent="Error al abrir almacenamiento local. No cargues cartas hasta recargar la app."});
