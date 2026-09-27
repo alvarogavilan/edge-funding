@@ -30,6 +30,26 @@ if(!state.salesLegacyPauseV870){
 }
 save();
 
+function reconcileUserConfirmedListings(){
+ const truth={
+  "listing-gyarados-xy9":{cardId:"own-gyarados-ex-089-xy9-jp",price:169.90,condition:"GD"},
+  "listing-mewtwo-ec1":{cardId:"own-mewtwo-118-ec1-jp-1ed-holo",price:149.90,condition:"PO"},
+  "listing-surfing-pikachu-v1":{cardId:"own-surfing-pikachu-mt-fuji-jr-1997",price:229.90,condition:"PO"}
+ };
+ let changed=false;
+ for(const [id,t] of Object.entries(truth)){
+  const x=(state.saleListings||[]).find(r=>r.id===id);if(!x)continue;
+  if(x.userConfirmed&&x.status!=="sold"&&x.status!=="archived"){
+   if(x.status!=="active"){x.status="active";changed=true}
+   if(!x.channel){x.channel="Cardmarket";changed=true}
+   if(!x.condition){x.condition=t.condition;changed=true}
+   if(!N(x.price)){x.price=t.price;changed=true}
+   x.pauseReason="";
+  }
+ }
+ if(changed)save();
+}
+reconcileUserConfirmedListings();
 function card(id){return (state.cards||[]).find(c=>c.id===id)}
 function active(){return state.saleListings.filter(x=>x.status==="active"&&card(x.cardId)&&!card(x.cardId).archivedSold)}
 function pol(){return window.CVPrimeExitPricing?.policy?.()||{feePct:5,sellShipping:0}}
