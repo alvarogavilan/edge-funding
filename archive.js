@@ -147,7 +147,7 @@ function render(){
    (x.acquisitionNotes?'<div class="microNote">'+String(x.acquisitionNotes)+'</div>':"")+
    (x.rawMarketSnapshot?'<div class="microNote"><b>Snapshot RAW '+x.rawMarketSnapshot.checkedAt+':</b> tendencia '+EUR(x.rawMarketSnapshot.trend)+' · 30d '+EUR(x.rawMarketSnapshot.avg30)+' · 7d '+EUR(x.rawMarketSnapshot.avg7)+' · 1d '+EUR(x.rawMarketSnapshot.avg1)+' · no comparar directamente con el slab PSA 9.</div>':"")+
    (x.archiveNotes?'<div class="microNote">'+String(x.archiveNotes)+'</div>':"")+
-   '<div class="sealedActions">'+(x.marketUrl?'<a href="'+x.marketUrl+'" target="_blank" rel="noopener">Ficha mercado</a>':"")+'<button data-archive-watch="'+x.id+'">Volver a vigilar</button></div></article>';
+   '<div class="sealedActions">'+(x.marketUrl?'<a href="'+x.marketUrl+'" target="_blank" rel="noopener">Ficha mercado</a>':"")+'<button data-archive-watch="'+x.id+'">Volver a vigilar</button><button data-post-sale="'+x.id+'">Registrar control postventa</button></div></article>';
  }).join(""):'<div class="emptyState"><b>El archivo está vacío.</b><span>Cuando vendas una carta aparecerá aquí permanentemente.</span></div>';
  document.querySelectorAll("[data-archive-watch]").forEach(b=>b.onclick=()=>watchAgain(b.dataset.archiveWatch));
  const ex=Q("#archiveExport");if(ex)ex.onclick=exportCsv;
