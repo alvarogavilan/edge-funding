@@ -288,3 +288,10 @@ nav button{min-height:46px;line-height:1.05}
 .pullOdds{margin:9px 0;padding:10px 12px;border-radius:12px;background:#10261a;border:1px solid #2e6a45;display:grid;gap:4px}.pullOdds.pending{background:#211b10;border-color:#5a4a2c}.pullOdds b{font-size:12px}.pullOdds span,.pullOdds small,.pullOdds a{font-size:10px;line-height:1.35}.pullOdds a{font-weight:800}
 
 .pullOdds.rarity{background:#142039;border-color:#405f8d}.pullOdds.rarity b{color:#dce8ff}
+
+.opsHero{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px;margin:12px 0;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.035)}
+.opsHero.ready{border-color:rgba(85,210,140,.35)}.opsHero.warn{border-color:rgba(255,190,80,.38)}
+.opsHero span{font-size:11px;letter-spacing:.08em;opacity:.72}.opsHero h2{margin:5px 0 4px;font-size:21px}.opsHero p{margin:0;font-size:13px;opacity:.82;line-height:1.4}
+.opsHero>b{font-size:12px;padding:7px 9px;border:1px solid currentColor;border-radius:999px}
+.opsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 12px}.opsItem{padding:11px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:1fr auto;gap:4px 8px}.opsItem small{grid-column:1/-1;opacity:.72;line-height:1.3}.opsItem.ok>b{font-size:16px}.opsRules{display:flex;flex-direction:column;gap:5px;padding:11px 12px;margin-bottom:14px;border-left:3px solid rgba(255,255,255,.25);background:rgba(255,255,255,.025);font-size:12px;line-height:1.45}
+@media(max-width:620px){.opsGrid{grid-template-columns:1fr}.opsHero{padding:13px}.opsHero h2{font-size:19px}}
