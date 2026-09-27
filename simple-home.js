@@ -43,6 +43,16 @@ function euBuys(){
   exit:N(r.target),edge:N(r.profit),roi:N(r.roi),exitKind:"closed-sale-median",checkedAt:"",units:1
  }));
 }
+function arbitrageBuys(){
+ const rows=window.CVStrictOpportunity?.arbitrageRows?.()||[];
+ return rows.filter(r=>r.status==="buy"&&r.buyUrl).map(r=>({
+  id:r.purchaseKey,name:r.name,set:r.set||"",number:r.number||"",image:img(r),price:N(r.price),
+  seller:r.meta?.seller||r.meta?.entryShop||"Vendedor verificado",url:r.buyUrl,
+  source:(r.meta?.entryShop||"Mercado admitido")+" → vender en Cardmarket",
+  language:r.meta?.language||"",description:[r.meta?.variant,r.meta?.condition].filter(Boolean).join(" · "),
+  exit:N(r.target),edge:N(r.profit),roi:N(r.roi),exitKind:"cross-market-net",checkedAt:"",units:1
+ }));
+}
 function sealedBuys(){
  return (state.sealedProducts||[]).map(p=>({p,d:window.CVSealedPrime?.decision?.(p)}))
  .filter(r=>r.d?.key==="buy")
@@ -52,7 +62,7 @@ function sealedBuys(){
  exit:N(r.d.prime?.exit),edge:N(r.d.prime?.edge),roi:N(r.d.prime?.roi),units:1}));
 }
 function buys(){
- return [...manualBuys(),...euBuys(),...sealedBuys()].sort((a,b)=>(b.edge-a.edge)||(b.roi-a.roi));
+ return [...manualBuys(),...arbitrageBuys(),...euBuys(),...sealedBuys()].sort((a,b)=>(b.edge-a.edge)||(b.roi-a.roi));
 }
 function funnel(){
  const all=(state.manualOpportunities||[]),quality=x=>window.CVPrimeMarket?.quality?.(x)||null;
@@ -155,5 +165,5 @@ setTimeout(()=>{installGuard();render()},700);
 setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
 document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
-window.CVSimpleHome={render,buys,euBuys,funnel,installGuard,hydrateBuyImages};
+window.CVSimpleHome={render,buys,euBuys,arbitrageBuys,funnel,installGuard,hydrateBuyImages};
 })();
