@@ -49,6 +49,19 @@ if(!state.valuationReferenceMigrationV744){
   for(const c of state.cards||[])if(refs.has(c.id))c.valuationStatus="reference";
   state.valuationReferenceMigrationV744=true;
 }
+if(!state.purchaseEvidenceMigrationV746){
+  const rows={
+    "own-mewtwo-118-ec1-jp-1ed-holo":{purchase:50,condition:"PO",purchaseSource:"Cardmarket",purchaseEvidence:"Cardmarket order screenshot",purchaseEvidenceDate:"2025-11-04",provenance:"Cardmarket purchase · original confirmed by owner",identityVerifiedBy:"user",authenticityStatus:"owner-confirmed-original"},
+    "own-surfing-pikachu-mt-fuji-jr-1997":{purchase:100,condition:"PO",purchaseSource:"Cardmarket",purchaseEvidence:"Cardmarket order screenshot",purchaseEvidenceDate:"2025-11-09",provenance:"Cardmarket purchase · original confirmed by owner",identityVerifiedBy:"user",authenticityStatus:"owner-confirmed-original"},
+    "own-gyarados-ex-089-xy9-jp":{purchase:119.45,condition:"GD",purchaseSource:"Cardmarket",purchaseEvidence:"Cardmarket order screenshot",purchaseEvidenceDate:"2025-11-13",provenance:"Cardmarket purchase · original confirmed by owner",identityVerifiedBy:"user",authenticityStatus:"owner-confirmed-original"}
+  };
+  for(const c of state.cards||[]){const u=rows[c.id];if(!u)continue;Object.assign(c,u);
+    if(c.id==="own-surfing-pikachu-mt-fuji-jr-1997")c.notes="Carta propia fotografiada frontal + reverso · Surfing Pikachu No.025 Mt. Fuji / JR Stamp Rally · comprada en Cardmarket por 100,00 € · condición PO (Poor) declarada por el vendedor · fuerte pliegue horizontal visible en frontal y reverso · autenticidad/originalidad confirmada por el propietario · no candidata a PSA por rentabilidad.";
+    if(c.id==="own-mewtwo-118-ec1-jp-1ed-holo")c.notes="Carta propia fotografiada · Japanese e-Card Mewtwo 118/128 Holo 1st Edition · comprada en Cardmarket por 50,00 € · condición PO (Poor) declarada por el vendedor · autenticidad/originalidad confirmada por el propietario · valor actual debe ajustarse a condición; falta reverso detallado.";
+    if(c.id==="own-gyarados-ex-089-xy9-jp")c.notes="Carta propia fotografiada frontal + reverso · XY9 089/080 UR · comprada en Cardmarket por 119,45 € · condición GD (Good) declarada por el vendedor · autenticidad/originalidad confirmada por el propietario · pieza de alto valor; referencia de mercado pendiente de ajuste fino por condición.";
+  }
+  state.purchaseEvidenceMigrationV746=true;
+}
 const soldEevee=state.cards.find(c=>c.id==="eev174");if(soldEevee&&!soldEevee.sale1304093225Applied){const q=Math.max(1,+soldEevee.quantity||1);if(q>1)soldEevee.quantity=q-1;else soldEevee.archivedSold=true;soldEevee.sale1304093225Applied=true;soldEevee.soldAt="2026-09-27";soldEevee.soldPrice=60;}const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
