@@ -792,12 +792,12 @@ function topBuyRank(x){
   return {x,d,fresh,data,eligible,rank,gate,historyOk,pokemonEvidence,investability,reasons:[...new Set(reasons)].slice(0,4)};
 }
 function cardmarketProductLink(x){
-  const key=(marketUniverseOf(x)+"|"+norm(x.name)+"|"+norm(x.set)).toLowerCase();
+  const key=(marketUniverseOf(x)+"|"+norm(x.name)+"|"+norm(x.number||"")+"|"+norm(x.set)).toLowerCase();
   const known=[
-    [/pokemon\|eevee.*188.*twilight masquerade/,"https://www.cardmarket.com/es/Pokemon/Products/Singles/Twilight-Masquerade/Eevee-V2-TWM188"],
-    [/pokemon\|charmander.*168.*151/,"https://www.cardmarket.com/es/Pokemon/Products/Singles/151/Charmander-V2-MEW168"],
-    [/pokemon\|magikarp.*203.*paldea evolved/,"https://www.cardmarket.com/en/Pokemon/Products/Singles/Paldea-Evolved/Magikarp-V2-PAL203"],
-    [/pokemon\|pikachu ex.*238.*surging sparks/,"https://www.cardmarket.com/en/Pokemon/Products/Singles/Surging-Sparks/Pikachu-ex-V3-SSP238"],
+    [/pokemon\\|eevee\\|188.*\\|twilight masquerade/,"https://www.cardmarket.com/es/Pokemon/Products/Singles/Twilight-Masquerade/Eevee-V2-TWM188"],
+    [/pokemon\\|charmander\\|168.*\\|151/,"https://www.cardmarket.com/es/Pokemon/Products/Singles/151/Charmander-V2-MEW168"],
+    [/pokemon\\|magikarp\\|203.*\\|paldea evolved/,"https://www.cardmarket.com/en/Pokemon/Products/Singles/Paldea-Evolved/Magikarp-V2-PAL203"],
+    [/pokemon\\|pikachu ex\\|238.*\\|surging sparks/,"https://www.cardmarket.com/en/Pokemon/Products/Singles/Surging-Sparks/Pikachu-ex-V3-SSP238"],
     [/lorcana\|aladdin heroic outlaw.*first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Aladdin-Heroic-Outlaw-V2"],
     [/lorcana\|genie on the job.*first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Genie-On-the-Job-V2"],
     [/lorcana\|elsa spirit of winter.*first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2"]
