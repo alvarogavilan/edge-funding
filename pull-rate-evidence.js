@@ -1,0 +1,12 @@
+(()=>{
+const norm=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const records=[
+ {universe:"lorcana",set:"Wilds Unknown",metric:"enchanted",samplePacks:1056,hits:15,boxes:44,sourceLabel:"The Deck Box · muestra pública",sourceUrl:"https://www.reddit.com/r/Lorcana/comments/1t72kwy/wilds_unknown_set_opening_stats/",confidence:"empirical-community",notes:"44 booster boxes / 1056 packs; 15 Enchanted. No implica independencia entre sobres."},
+ {universe:"lorcana",set:"Attack of the Vine",metric:"enchanted",samplePacks:1056,hits:11,boxes:44,sourceLabel:"The Deck Box · muestra pública",sourceUrl:"https://www.reddit.com/r/Lorcana/comments/1uyxqa9/attack_of_the_vine_set_opening_stats/",confidence:"empirical-community",notes:"44 booster boxes / 1056 packs; 11 Enchanted. La autora advierte que una caja/case no garantiza Enchanted."},
+ {universe:"lorcana",set:"Winterspell",metric:"enchanted",samplePacks:1056,hits:4,boxes:44,sourceLabel:"The Deck Box · muestra pública",sourceUrl:"https://www.reddit.com/r/Lorcana/comments/1r31t6z/winterspell_set_opening_stats/",confidence:"empirical-community",notes:"44 booster boxes / 1056 packs; 4 Enchanted. La propia fuente lo trata como posible outlier."}
+];
+function find(universe,set){const u=norm(universe),s=norm(set);return records.filter(r=>norm(r.universe)===u&&(norm(r.set)===s||s.includes(norm(r.set))||norm(r.set).includes(s)))}
+function estimate(record,packs){const n=Number(packs)||0,p=record&&record.samplePacks?record.hits/record.samplePacks:0;if(!record||!n||!p)return null;return {perPack:p,atLeastOneApprox:1-Math.pow(1-p,n),expectedHits:n*p,independenceAssumption:true}}
+function officialPackCount(product){const u=norm(product?.universe),t=norm(product?.productType),set=norm(product?.set);if(u==="lorcana"){if(/booster box|display/.test(t))return {packs:24,source:"Ravensburger official product pages"};if(/trove/.test(t))return {packs:8,source:"Ravensburger official product pages"};if(/prerelease/.test(t))return {packs:6,source:"Ravensburger prerelease pages"}}if(u==="pokemon"){if(/booster box|display/.test(t))return {packs:36,source:"Pokémon official product showcase"};if(/etb|elite trainer box/.test(t)&&(/journey together|destined rivals/.test(set)))return {packs:9,source:"Pokémon official product showcase"}}return null}
+window.CVPullRateEvidence={records,find,estimate,officialPackCount};
+})();
