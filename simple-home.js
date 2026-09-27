@@ -48,6 +48,36 @@ function funnel(){
  const watch=audited.filter(r=>r.x.approval==="WATCH"||r.q.passed<r.q.total).length;
  return {total:all.length,exact,economic,prime,watch};
 }
+function radarCandidates(){
+ const seen=new Set(),out=[];
+ const add=(x,universe)=>{
+  if(!x||!x.name)return;
+  const key=(universe+"|"+String(x.name).toLowerCase()+"|"+String(x.number||"").toLowerCase());
+  if(seen.has(key))return;seen.add(key);
+  const price=N(x.price||x.marketPrice||x.value||x.trend||x.avg30),score=N(x.score||x.opportunityScore||x.confidence);
+  if(price>0&&price<20)return;
+  const game=universe==="lorcana"?"Lorcana":"Pokemon";
+  out.push({universe,name:x.name,set:x.set||x.setName||x.expansion_name||"",number:x.number||"",price,score,
+   image:x.image||x.referenceImage||"",url:"https://www.cardmarket.com/es/"+game+"/Products/Search?searchString="+encodeURIComponent(x.name),
+   reason:x.why||x.reason||"Señal automática detectada; falta verificar oferta exacta, idioma, variante, condición y salida antes de elevar a Compra ya."});
+ };
+ for(const universe of ["pokemon","lorcana"]){
+  const pack=state.autoMarketScans?.[universe],rows=Array.isArray(pack?.signals)?pack.signals:[];
+  rows.forEach(x=>add(x,universe));
+ }
+ for(const x of (state.marketScan||[]))add(x,x.universe==="lorcana"?"lorcana":"pokemon");
+ for(const x of (state.marketCandidates||[]))add(x,x.universe==="lorcana"?"lorcana":"pokemon");
+ return out.sort((a,b)=>(b.score-a.score)||(b.price-a.price));
+}
+function radarCard(r,i){
+ return '<article class="primeRadarCandidate">'+
+  (r.image?'<img src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeRadarNoImage">RADAR</div>')+
+  '<div><small>#'+(i+1)+' · '+E(r.universe==="lorcana"?"LORCANA":"POKÉMON")+(r.score?' · señal '+r.score:'')+'</small>'+
+  '<h4>'+E(r.name)+'</h4><span>'+E([r.number,r.set].filter(Boolean).join(" · "))+'</span>'+
+  '<p>'+E(r.reason)+'</p>'+
+  (r.price?'<b>Referencia observada '+EUR(r.price)+'</b>':'<b>Precio ejecutable pendiente</b>')+
+  '<a href="'+E(r.url)+'" target="_blank" rel="noopener">VERIFICAR EN CARDMARKET</a></div></article>';
+}
 function card(r,i){
  return '<article class="primeBuySimple">'+
   '<div class="primeBuyTop"><span class="primeBuyBadge">COMPRAR AHORA</span><strong class="primeBuyPrice">'+EUR(r.price)+'</strong></div>'+
@@ -95,7 +125,9 @@ function render(){
    '<div><span>Oferta exacta</span><b>'+f.exact+'</b></div>'+
    '<div><span>Economía ≥ +40 € y ROI ≥35%</span><b>'+f.economic+'</b></div>'+
    '<div><span>Compra PRIME final</span><b>'+f.prime+'</b></div>'+
-  '</div><small>El catálogo puede contener decenas de miles de cartas, pero “Compra ya” exige una unidad realmente comprable ahora. Las demás deben permanecer en Radar hasta que exista oferta y salida verificables.</small></section>';
+  '</div><small>El catálogo puede contener decenas de miles de cartas, pero “Compra ya” exige una unidad realmente comprable ahora.</small></section>'+
+  (()=>{const rr=radarCandidates(),pk=rr.filter(x=>x.universe==="pokemon").slice(0,10),lc=rr.filter(x=>x.universe==="lorcana").slice(0,10);return '<section class="primeRadarMass"><div class="primeBuyGroupHead"><div><span>RADAR MASIVO</span><h3>Candidatos para verificar ahora</h3><small>No son compras aprobadas todavía. Sirven para que el motor no esconda el resto del mercado.</small></div><b>'+rr.length+'</b></div>'+
+   '<div class="primeRadarColumns"><div><h4>Pokémon · Top '+pk.length+'</h4>'+pk.map(radarCard).join("")+'</div><div><h4>Lorcana · Top '+lc.length+'</h4>'+lc.map(radarCard).join("")+'</div></div></section>'})()
 }
 function installGuard(){
  const api=window.CVTodaySimple;
@@ -109,5 +141,5 @@ setTimeout(()=>{installGuard();render()},700);
 setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
 document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
-window.CVSimpleHome={render,buys,funnel,installGuard,hydrateBuyImages};
+window.CVSimpleHome={render,buys,funnel,radarCandidates,installGuard,hydrateBuyImages};
 })();
