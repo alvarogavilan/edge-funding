@@ -249,7 +249,7 @@ if(!state.manualOpportunities.some(x=>x.id===id)){
  state.manualOpportunities.push({id,universe:"lorcana",name:"Donald Duck - Pie Slinger (V.2)",set:"Shimmering Skies",number:"214/204",variant:"Enchanted · V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"BKJ38",price:44.90,trend:116.36,avg30:76.69,avg7:101.80,avg1:138.18,available:47,url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Shimmering-Skies/Donald-Duck-Pie-Slinger-V2",checkedAt:"2026-09-27T14:20:00+02:00",expiresAt:"2026-09-28T14:20:00+02:00",status:"SECUNDARIA · PROFUNDIDAD NM CONFIRMADA",depthPrices:[44.9,45,45,45,49,50,50],depthNote:"Varias NM consecutivas entre 44,90 y 50 €; no depende de una sola oferta."});save();
 }
 function positionSizing(x,c){
- const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1),available=N(x.available);
+ const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1);
  const refs=[trend,avg30,avg7,avg1].filter(v=>v>0);
  const floor=refs.length?Math.min(...refs):Infinity;
  const conservativeGross=isFinite(floor)?floor:0;
@@ -257,11 +257,13 @@ function positionSizing(x,c){
  const netEdge=conservativeExit>unit?conservativeExit-unit:0;
  const roi=unit>0?netEdge/unit*100:0;
  const passes=unit>=20&&netEdge>=40&&roi>=35;
- let maxUnits=passes?1:0,reason=passes?"1 unidad por defecto":"No supera simultáneamente +40 € netos aprox. y ROI 35% con la referencia más conservadora.";
- if(passes&&roi>=50&&available>=20){maxUnits=2;reason="2 unidades máximo: descuento fuerte, sujeto a verificar idioma, estado y profundidad real.";}
- if(passes&&roi>=80&&available>=40){maxUnits=3;reason="3 unidades solo con varias ofertas equivalentes verificadas y aceptando concentración.";}
- const strategicRecommended=maxUnits;
- return {conservativeGross,conservativeExit,netEdge,roi,passes,maxUnits,recommended:strategicRecommended,reason};
+ const depth=Array.isArray(x.depthPrices)?x.depthPrices.filter(v=>N(v)>0).length:0;
+ const sales30=x.sales30==null?null:N(x.sales30),sellerQty=N(x.sellerQty);
+ const exactExit=x.exitEvidenceVerified===true&&x.sameMarketComparableVerified===true;
+ let maxUnits=passes?1:0,reason=passes?"1 unidad por defecto. Escalar requiere liquidez y profundidad verificadas.":"No supera simultáneamente +40 € netos aprox. y ROI 35% con la referencia más conservadora.";
+ if(passes&&exactExit&&sales30!=null&&sales30>=3&&depth>=2&&sellerQty>=2){maxUnits=2;reason="2 unidades máximo: margen + salida exacta + ≥3 ventas/30d + ≥2 niveles de profundidad.";}
+ if(passes&&exactExit&&sales30!=null&&sales30>=6&&depth>=3&&sellerQty>=3&&roi>=50){maxUnits=3;reason="3 unidades máximo: liquidez fuerte verificada, ≥6 ventas/30d, ≥3 niveles de profundidad y ROI ≥50%.";}
+ return {conservativeGross,conservativeExit,netEdge,roi,passes,maxUnits,recommended:maxUnits,reason,depth,sales30,exactExit};
 }
 function cash(){try{return Math.max(0,window.investmentLedgerStats?.().netCash||0)}catch{return 0}}
 function top5Rank(x){
@@ -276,7 +278,11 @@ function render(){
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
- if(x.approval==="BUY-SCALE"&&ps.passes){ps.maxUnits=Math.min(3,N(x.sellerQty)||3);ps.recommended=ps.maxUnits;ps.reason="Posición escalable: varias NM al mismo precio del mismo vendedor; verificar portes y disponibilidad."}
+ if(x.approval==="BUY-SCALE"&&ps.passes){
+   const allowed=Math.min(ps.maxUnits,N(x.sellerQty)||1);
+   ps.maxUnits=allowed;ps.recommended=allowed;
+   if(allowed<2)ps.reason="BUY-SCALE bloqueado a 1 unidad hasta tener ventas/30d y profundidad verificadas.";
+ }
  if(x.approval==="BUY-ONE"&&ps.passes){ps.maxUnits=1;ps.recommended=1;ps.reason="Una unidad máximo hasta verificar liquidez de salida y comparables recientes."}
  return '<article class="buyTile"><div class="buyNoPhoto">'+E(x.universe.toUpperCase())+'<br>'+E(isWatch?"WATCH":isLang?"VERIFICAR IDIOMA":isScale?"ESCALABLE":isOne?"1 UNIDAD":"PRIORIDAD")+'</div><div class="buyBody"><div class="buyKicker">'+E(stale?"REVERIFICAR PRECIO":x.status)+'</div><h3>'+E(x.name)+'</h3><small>'+E([x.set,x.number,x.variant,x.condition].filter(Boolean).join(" · "))+'</small><div class="buyNumbers"><div><span>Oferta observada</span><b>'+EUR(x.price)+'</b></div><div><span>Tendencia</span><b>'+EUR(x.trend)+'</b></div><div><span>Media 30 días</span><b>'+EUR(x.avg30)+'</b></div><div><span>Potencial neto aprox.</span><b>'+EUR(potential)+'</b></div></div><div class="buyWhy primeTape"><b>Terminal:</b> última venta '+(x.lastSalePrice?EUR(x.lastSalePrice)+(x.lastSaleDate?' · '+E(x.lastSaleDate):''):'SIN DATO VERIFICADO')+
  ' · mediana ventas '+(x.soldMedianEUR?EUR(x.soldMedianEUR)+' · '+E(x.soldSample||0)+' comps':'SIN DATO VERIFICADO')+
