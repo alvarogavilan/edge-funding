@@ -1,5 +1,9 @@
 (()=>{const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 state.manualOpportunities=Array.isArray(state.manualOpportunities)?state.manualOpportunities:[];
+state.rejectedManualOpportunities=[
+ {name:"Peter Pan - Pirate's Bane (V.2)",reason:"Margen absoluto conservador insuficiente para política +50 €",price:31,trend:49.32,avg30:37.57},
+ {name:"Sisu - Divine Water Dragon (V.2)",reason:"Margen absoluto conservador insuficiente para política +50 €",price:30,trend:44.56,avg30:47.18}
+];
 const id="lorcana-donald-pie-slinger-v2-20260927";
 const caravanId="pokemon-ex-sandstorm-caravan-20260927";
 const auroraId="lorcana-aurora-dreaming-guardian-v2-20260927";
@@ -9,8 +13,8 @@ if(!state.manualOpportunities.some(x=>x.id===auroraId)){
   variant:"Enchanted / V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"TheBazaarTCG",
   price:70.00,trend:143.52,avg30:157.04,avg7:140.07,avg1:249.00,available:116,
   sellerQty:5,url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Aurora-Dreaming-Guardian-V2",
-  checkedAt:"2026-09-27T16:35:00+02:00",expiresAt:"2026-09-28T16:35:00+02:00",
-  status:"PRIORIDAD ESCALABLE · 5 NM A 70 €",approval:"BUY-SCALE",
+  checkedAt:"2026-09-27T16:42:00+02:00",expiresAt:"2026-09-28T16:42:00+02:00",
+  status:"PRIORIDAD ESCALABLE · 5 NM A 70 € · PROFUNDIDAD CONFIRMADA",approval:"BUY-SCALE",
   note:"Mismo vendedor ofrece 5 NM a 70 €. Media 30d 157,04 €, 7d 140,07 €. Verificar precio/portes antes de pagar."
  });save();
 }
@@ -18,7 +22,7 @@ if(!state.manualOpportunities.some(x=>x.id===caravanId)){
  state.manualOpportunities.push({id:caravanId,universe:"pokemon",name:"EX Sandstorm: Caravan Theme Deck",set:"EX Sandstorm",number:"",variant:"Sealed Theme Deck",condition:"SEALED",shop:"Cardmarket",seller:"halver93",price:15.00,backupPrice:50.00,trend:119.43,avg30:65.15,avg7:65.15,avg1:100.00,available:9,url:"https://www.cardmarket.com/en/Pokemon/Products/Theme-Decks/EX-Sandstorm-Caravan-Theme-Deck",checkedAt:"2026-09-27T16:25:00+02:00",expiresAt:"2026-09-28T16:25:00+02:00",status:"ANOMALÍA · VERIFICAR SELLADO Y CONTENIDO",approval:"WATCH"});save();
 }
 if(!state.manualOpportunities.some(x=>x.id===id)){
- state.manualOpportunities.push({id,universe:"lorcana",name:"Donald Duck - Pie Slinger (V.2)",set:"Shimmering Skies",number:"214/204",variant:"Enchanted · V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"BKJ38",price:44.90,trend:116.36,avg30:76.69,avg7:101.80,avg1:138.18,available:47,url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Shimmering-Skies/Donald-Duck-Pie-Slinger-V2",checkedAt:"2026-09-27T14:20:00+02:00",expiresAt:"2026-09-28T14:20:00+02:00",status:"PRIORIDAD · VERIFICAR OFERTA ANTES DE PAGAR",depthPrices:[43,44.5,44.9,45,45,49,50],depthNote:"Varias NM consecutivas entre 43 y 50 €; no depende de una sola oferta."});save();
+ state.manualOpportunities.push({id,universe:"lorcana",name:"Donald Duck - Pie Slinger (V.2)",set:"Shimmering Skies",number:"214/204",variant:"Enchanted · V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"BKJ38",price:44.90,trend:116.36,avg30:76.69,avg7:101.80,avg1:138.18,available:47,url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Shimmering-Skies/Donald-Duck-Pie-Slinger-V2",checkedAt:"2026-09-27T14:20:00+02:00",expiresAt:"2026-09-28T14:20:00+02:00",status:"PRIORIDAD · PROFUNDIDAD NM CONFIRMADA",depthPrices:[44.9,45,45,45,49,50,50],depthNote:"Varias NM consecutivas entre 44,90 y 50 €; no depende de una sola oferta."});save();
 }
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),available=N(x.available);
