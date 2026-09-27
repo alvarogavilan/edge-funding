@@ -41,15 +41,18 @@ function buys(){
 }
 function card(r,i){
  return '<article class="primeBuySimple">'+
-  '<div class="primeBuyRank">#'+(i+1)+'</div>'+
-  (r.image?'<img class="primeBuyImage" src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeBuyImage primeBuyNoImage">SIN FOTO</div>')+
-  '<div class="primeBuyInfo"><h3>'+E(r.name)+'</h3><small>'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
-  '<div class="primeBuyMetrics"><div><span>Comprar</span><b>'+EUR(r.price)+'</b></div><div><span>Salida prudente</span><b>'+EUR(r.exit)+'</b></div><div><span>Margen</span><b>+'+EUR(r.edge)+'</b></div></div>'+
-  '<div class="primeBuySeller"><b>'+E(r.seller)+'</b><span>'+E(r.source)+'</span></div>'+
-  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida prudente basada en profundidad de mercado activa · no venta cerrada":"Salida respaldada por evidencia de ventas")+(r.checkedAt?" · verificado "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
-  (r.url?'<a class="primaryAction primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">ABRIR MEJOR OFERTA VERIFICADA · '+EUR(r.price)+'</a>':'<button class="primaryAction" disabled>SIN ENLACE EJECUTABLE</button>')+
-  (r.units>1?'<small>Compra recomendada: '+r.units+' unidades máximo según liquidez verificada.</small>':'')+
-  '</div></article>';
+  '<div class="primeBuyTop"><span class="primeBuyBadge">COMPRAR AHORA</span><strong class="primeBuyPrice">'+EUR(r.price)+'</strong></div>'+
+  '<div class="primeBuyMain">'+
+   (r.image?'<img class="primeBuyImage" src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeBuyImage primeBuyNoImage">IMAGEN PENDIENTE</div>')+
+   '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><h3>'+E(r.name)+'</h3><small class="primeBuyMeta">'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
+    '<div class="primeBuySeller"><span>Vendedor</span><b>'+E(r.seller)+'</b><small>'+E(r.source)+'</small></div>'+
+   '</div>'+
+  '</div>'+
+  '<div class="primeBuyEconomics"><span>Salida prudente '+EUR(r.exit)+'</span><span>Margen aprox. +'+EUR(r.edge)+' · ROI '+r.roi.toFixed(1)+'%</span></div>'+
+  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida basada en mercado activo; no es una venta cerrada":"Salida respaldada por ventas verificadas")+(r.checkedAt?" · "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
+  (r.url?'<a class="primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">IR A COMPRAR · '+EUR(r.price)+'</a>':'<button class="primeBuyLink" disabled>SIN ENLACE EJECUTABLE</button>')+
+  (r.units>1?'<small class="primeBuyUnits">Máximo sugerido: '+r.units+' unidades por liquidez.</small>':'')+
+ '</article>';
 }
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
