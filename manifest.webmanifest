@@ -6,10 +6,15 @@
   "orientation": "portrait",
   "background_color": "#080c18",
   "theme_color": "#080c18",
-  "description": "Colección, inversión y radar local-first para Pokémon y Disney Lorcana: RAW, PSA y productos sellados.",
+  "description": "Card Vault PRIME · Pokémon y Disney Lorcana · inversión, colección, ventas y mercado con política de coste externo 0 €.",
   "id": "./",
   "categories": [
     "finance",
     "utilities"
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser"
   ]
 }
