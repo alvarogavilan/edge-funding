@@ -105,6 +105,19 @@ const hoohId="pokemon-hooh-ex-xy9-088-20260927";
 const espeonId="pokemon-espeon-v-eevee-heroes-081-20260927";
 const arielId="lorcana-ariel-sonic-warrior-220-it-20260927";
 const belleMysticId="lorcana-belle-accomplished-mystic-226-it-20260927";
+const beastGraciousId="lorcana-beast-gracious-prince-224-20260927";
+if(!state.manualOpportunities.some(x=>x.id===beastGraciousId)){
+ state.manualOpportunities.push({
+  id:beastGraciousId,universe:"lorcana",name:"Beast - Gracious Prince",set:"Fabled",number:"224/242",
+  variant:"Enchanted · Holofoil · idioma exacto pendiente",condition:"NM",shop:"Cardmarket",seller:"Davidev1974",
+  price:137.96,trend:257.53,avg30:175.02,avg7:218.63,avg1:205.00,available:46,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Beast-Gracious-Prince-V2",
+  checkedAt:"2026-09-27T19:50:00+02:00",expiresAt:"2026-09-28T19:50:00+02:00",
+  status:"WATCH ALTA PRIORIDAD · CONFIRMAR IDIOMA",approval:"WATCH",
+  offerLanguage:"PENDIENTE",languageCheckRequired:true,
+  note:"Cardmarket: Davidev1974 NM ~137,96 €. TCGGraph: francés NM low 119,67 €, mediana 219,90 € con 15+ ofertas; japonés NM low ~137,62 €. La oferta concreta puede ser japonesa, así que NO comprar hasta confirmar idioma."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===belleMysticId)){
  state.manualOpportunities.push({
   id:belleMysticId,universe:"lorcana",name:"Belle - Accomplished Mystic",set:"Fabled",number:"226/242",
