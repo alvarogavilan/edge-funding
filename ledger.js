@@ -1,6 +1,9 @@
 (()=>{
 const $=s=>document.querySelector(s), num=v=>Number(v)||0, eur=v=>new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"}).format(num(v));
 if(!Array.isArray(state.investmentLedger))state.investmentLedger=[];
+if(!state.investmentLedger.some(r=>r.id==="sale-cardmarket-1304093225")){
+ state.investmentLedger.push({id:"sale-cardmarket-1304093225",type:"sell",assetType:"card",assetKey:"card:eev174",name:"Eevee ex #174 · PSA 9",date:"2026-09-27",qty:1,unitPrice:60,shipping:0,fees:0,sourceUrl:"",notes:"Cardmarket Sale #1304093225 · precio bruto del activo 60,00 € · coste de adquisición no registrado",basisUnknown:true,updatedAt:"2026-09-27T00:00:00.000Z"});save();
+}
 function assetOptions(){
  const out=['<option value="">Sin vincular</option>'];
  (state.cards||[]).forEach(c=>out.push('<option value="card:'+esc(c.id)+'">Carta · '+esc(c.name)+'</option>'));
@@ -9,25 +12,26 @@ function assetOptions(){
 }
 function assetLedger(key){return state.investmentLedger.filter(r=>r.assetKey===key)}
 function assetAccounting(key,currentUnitValue=0){
- const rows=assetLedger(key).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")),lots=[];let realized=0,extra=0,soldNet=0;
+ const rows=assetLedger(key).slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")),lots=[];let realized=0,extra=0,soldNet=0,unknownBasis=false;
  for(const r of rows){
   const q=num(r.qty||1),unit=num(r.unitPrice),ship=num(r.shipping),fees=num(r.fees);
   if(r.type==="buy"){lots.push({qty:q,unitCost:(unit*q+ship+fees)/q});continue}
   if(r.type==="sell"){
    let need=q,cost=0;
    while(need>0&&lots.length){const lot=lots[0],take=Math.min(need,lot.qty);cost+=take*lot.unitCost;lot.qty-=take;need-=take;if(lot.qty<=1e-9)lots.shift()}
-   const proceeds=unit*q-ship-fees;soldNet+=proceeds;realized+=proceeds-cost;
+   if(need>0||r.basisUnknown)unknownBasis=true;
+   const proceeds=unit*q-ship-fees;soldNet+=proceeds;if(!unknownBasis)realized+=proceeds-cost;
   } else if(r.type==="grading"||r.type==="fee") extra+=unit*q+ship+fees;
  }
  const held=lots.reduce((a,l)=>a+l.qty,0),basis=lots.reduce((a,l)=>a+l.qty*l.unitCost,0)+extra,current=held*num(currentUnitValue),latent=current-basis;
- return {held,basis,avgCost:held?basis/held:0,current,latent,realized,soldNet};
+ return {held,basis,avgCost:held?basis/held:0,current,latent,realized:unknownBasis?null:realized,realizedKnown:!unknownBasis,soldNet};
 }
 let editId=null;
 function total(r){const gross=num(r.unitPrice)*num(r.qty||1);return gross+num(r.shipping)+num(r.fees)}
 function integrity(){
  const issues=[];
  const keys=[...new Set(state.investmentLedger.map(r=>r.assetKey).filter(Boolean))];
- for(const key of keys){let held=0;for(const r of state.investmentLedger.filter(x=>x.assetKey===key).sort((a,b)=>(a.date||"").localeCompare(b.date||""))){if(r.type==="buy")held+=num(r.qty||1);if(r.type==="sell"){held-=num(r.qty||1);if(held<-1e-9){issues.push("Venta supera unidades compradas: "+r.name);held=0}}}}
+ for(const key of keys){let held=0;for(const r of state.investmentLedger.filter(x=>x.assetKey===key).sort((a,b)=>(a.date||"").localeCompare(b.date||""))){if(r.type==="buy")held+=num(r.qty||1);if(r.type==="sell"){held-=num(r.qty||1);if(held<-1e-9){if(!r.basisUnknown)issues.push("Venta supera unidades compradas: "+r.name);held=0}}}}
  for(const r of state.investmentLedger){if(!r.name||!r.date||num(r.qty)<=0)issues.push("Operación incompleta: "+(r.name||r.id));if(r.type==="sell"&&!r.assetKey)issues.push("Venta sin posición vinculada: "+r.name)}
  return [...new Set(issues)];
 }
@@ -42,7 +46,7 @@ function render(){
  const issues=integrity();
  box.innerHTML='<div class="stat"><b>'+eur(x.buys)+'</b><span>Compras registradas</span></div><div class="stat"><b>'+eur(x.sales)+'</b><span>Ventas netas</span></div><div class="stat"><b>'+eur(x.costs)+'</b><span>Graduación/costes</span></div><div class="stat"><b>'+eur(x.netCash)+'</b><span>Flujo neto realizado</span></div><div class="stat"><b>'+issues.length+'</b><span>Alertas contables</span></div>';
  const rows=[...state.investmentLedger].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- list.innerHTML=rows.length?rows.map(r=>'<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>').join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
+ list.innerHTML=rows.length?rows.map(r=>'<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.basisUnknown?" · Coste base pendiente":"")+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>').join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
  document.querySelectorAll("[data-ledger-edit]").forEach(b=>b.onclick=()=>open(b.dataset.ledgerEdit));
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
