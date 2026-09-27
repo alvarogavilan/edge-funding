@@ -23,7 +23,7 @@ if(!state.userConfirmedListingsV881){
 
 if(!state.salesLegacyPauseV870){
  const legacyIds=new Set(["listing-gyarados-xy9","listing-mewtwo-ec1","listing-surfing-pikachu-v1"]);
- for(const x of state.saleListings||[])if(legacyIds.has(x.id)&&x.status==="active"&&!x.exitEvidence?.at){
+ for(const x of state.saleListings||[])if(legacyIds.has(x.id)&&x.status==="active"&&!x.exitEvidence?.at&&!x.userConfirmed){
   x.status="paused";x.pauseReason="Pausado V87.0: precio heredado sin evidencia PRIME actual";x.updatedAt=new Date().toISOString();
  }
  state.salesLegacyPauseV870=true;save();
