@@ -3,7 +3,7 @@ const KEY="cv_cardtrader_token",BASE="https://api.cardtrader.com/api/v2";
 const norm=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 const numKey=v=>{const m=String(v||"").match(/[A-Za-z]*\d+/);return m?m[0].replace(/^0+(?=\d)/,"").toLowerCase():""};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-let busy=false,cache={games:null,expansions:null,blueprints:new Map()};
+let busy=false,cache={games:null,expansions:null,blueprints:new Map(),usdEur:null};
 function token(){return localStorage.getItem(KEY)||""}
 function setToken(v){v=String(v||"").trim();if(v)localStorage.setItem(KEY,v);else localStorage.removeItem(KEY);return !!v}
 async function ct(path){
@@ -17,6 +17,9 @@ async function verify(){try{await ct("/info");return {ok:true}}catch(e){return {
 async function bootstrap(){
  if(!cache.games)cache.games=await ct("/games");
  if(!cache.expansions)cache.expansions=await ct("/expansions");
+ if(!cache.usdEur){
+  try{const r=await fetch("https://api.frankfurter.app/latest?from=USD&to=EUR");const j=await r.json();cache.usdEur=Number(j?.rates?.EUR)||null}catch{}
+ }
  return cache;
 }
 function gameId(universe){
@@ -40,7 +43,7 @@ function candidateRows(){
  return out.filter(x=>x?.name&&x?.set&&x?.number).filter(x=>{
   const k=[x.universe,norm(x.name),norm(x.set),numKey(x.number)].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
- }).filter(x=>{const p=Number(x.price)||0,c=String(x.currency||"EUR").toUpperCase();return !p||(c==="EUR"&&p>=20&&p<=300)})
+ }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||(eur>=20&&eur<=300)})
  .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,140);
 }
 function pctMedian(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]}
@@ -57,9 +60,10 @@ function localArbitrageForCandidate(c,offers){
   if(rows.length<5)continue;
   const entry=rows[0],sameMedian=pctMedian(rows.map(x=>Number(x.total)).filter(x=>x>0));
   const refCurrency=String(c.currency||"EUR").toUpperCase();
-  const cardmarketRef=refCurrency==="EUR"?Number(c.price||c.avg30||c.trend||0):0;
-  if(!(cardmarketRef>0)||!(sameMedian>0))continue;
-  const grossExit=Math.min(cardmarketRef,sameMedian);
+  const rawRef=Number(c.price||c.avg30||c.trend||0);
+  const marketRefEUR=refCurrency==="USD"&&cache.usdEur?rawRef*cache.usdEur:rawRef;
+  if(!(marketRefEUR>0)||!(sameMedian>0))continue;
+  const grossExit=Math.min(marketRefEUR,sameMedian);
   const prudentGross=grossExit*.88,netExit=prudentGross*.95-3;
   const edge=netExit-Number(entry.total),roi=Number(entry.total)>0?edge/Number(entry.total)*100:0;
   const spread=grossExit>0?(grossExit-Number(entry.total))/grossExit*100:0;
@@ -88,12 +92,13 @@ async function scan(){
  if(busy||!token())return {ok:false,reason:"no-token"};
  busy=true;
  try{
-  await bootstrap();const rows=candidateRows(),found=[],arbs=[];
+  await bootstrap();const rows=candidateRows(),found=[],arbs=[],diag={candidates:rows.length,expansionExact:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
    const setNorm=norm(c.set);
    const exps=(cache.expansions||[]).filter(e=>e.game_id===gid&&(norm(e.name)===setNorm||norm(e.name).includes(setNorm)||setNorm.includes(norm(e.name))));
    if(exps.length!==1)continue;
+   diag.expansionExact++;
    const bps=await blueprintsFor(exps[0]);
    const nk=numKey(c.number),nn=norm(String(c.name).replace(/ · Foil$/i,""));
    const exact=bps.filter(b=>{
@@ -103,18 +108,23 @@ async function scan(){
     return nameOk&&numOk;
    });
    if(exact.length!==1)continue;
+   diag.blueprintExact++;
+   diag[c.universe==="lorcana"?"lorcana":"pokemon"]++;
    const bp=exact[0];
    let j;try{j=await ct("/marketplace/products?blueprint_id="+bp.id)}catch(e){if(String(e.message).includes("429")){await sleep(600);continue}throw e}
    const products=Array.isArray(j)?j:(j?.[String(bp.id)]||j?.array||j?.results||[]);
    const local=[];
    for(const p of products||[]){const o=parseOffer(p,bp,c);if(o&&/near mint|mint/i.test(o.condition)&&!p.graded){found.push(o);local.push(o)}}
-   arbs.push(...localArbitrageForCandidate(c,local));
+   if(local.length)diag.withOffers++;
+   const langs=new Map();for(const o of local){const k=norm(o.language||"");if(k)langs.set(k,(langs.get(k)||0)+1)}
+   if([...langs.values()].some(n=>n>=5))diag.languageDepth++;
+   const calc=localArbitrageForCandidate(c,local);arbs.push(...calc);diag.economicPass+=calc.filter(x=>x.pass).length;
    await sleep(80);
   }
   state.euOffers=Array.isArray(state.euOffers)?state.euOffers:[];
   state.euOffers=state.euOffers.filter(o=>!String(o.id||"").startsWith("ct-direct:")).concat(found);
   state.crossMarketArbitrageLocal=arbs.filter(x=>x.pass).sort((a,b)=>b.edge-a.edge||b.roi-a.roi);
-  state.cardTraderDirect={at:new Date().toISOString(),offers:found.length,approved:state.crossMarketArbitrageLocal.length,scanned:rows.length,status:"ok"};save();
+  state.cardTraderDirect={at:new Date().toISOString(),offers:found.length,approved:state.crossMarketArbitrageLocal.length,scanned:rows.length,usdEur:cache.usdEur,diagnostics:diag,status:"ok"};save();
   try{window.renderOpportunityEngine?.()}catch{}try{window.CVSimpleHome?.render?.()}catch{}
   return {ok:true,offers:found.length,approved:state.crossMarketArbitrageLocal.length,scanned:rows.length};
  }catch(e){
