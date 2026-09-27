@@ -489,3 +489,10 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 }
 /* V88.4 · imagen automática manda en colección */
 .catalogThumb small{background:rgba(8,20,34,.82)!important;color:#fff!important}
+
+/* V88.6 · revisión de precio de anuncios activos */
+.listingReview{margin-top:9px;padding-top:9px;border-top:1px solid rgba(143,227,179,.24)}
+.listingReview>b,.listingReview>span,.listingReview>small{display:block}
+.listingReview>b{font-size:11px;color:#ffd166;letter-spacing:.05em}
+.listingReview>span{margin-top:2px;font-size:12px;color:#e8edf5}
+.listingReview>small{margin-top:2px;font-size:9px;opacity:.65}
