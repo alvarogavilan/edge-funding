@@ -10,9 +10,18 @@ function exactOffer(x){
   String(x.variant||"").trim()&&String(x.condition||"").trim()&&lang&&!/pendiente|unknown|desconoc/i.test(lang)&&x.languageVerified===true);
 }
 function exitEvidence(x){
- const r=refs(x),sameMarket=x.exitEvidenceVerified===true||x.sameMarketComparableVerified===true;
- const sales=N(x.sales30||x.recentSalesCount);
- return {ok: sameMarket&&(sales>0||r.length>=2),sameMarket,sales,refs:r.length};
+ const r=refs(x),sameMarket=x.sameMarketComparableVerified===true;
+ const sales=N(x.sales30||x.recentSalesCount),lastSale=N(x.lastSalePrice||x.marketEvidence?.lastSaleEUR),currentExit=N(x.marketEvidence?.currentExitEUR);
+ const verified=x.exitEvidenceVerified===true||sales>0||lastSale>0||currentExit>0;
+ return {ok:sameMarket&&verified,sameMarket,sales,lastSale,currentExit,refs:r.length,verified};
+}
+function liquidityBand(x){
+ const s7=x.sales7==null?null:N(x.sales7),s30=x.sales30==null?null:N(x.sales30),s90=x.sales90==null?null:N(x.sales90);
+ if(s7==null&&s30==null&&s90==null)return {label:"SIN DATO VERIFICADO",score:null};
+ const base=s30!=null?s30:(s7!=null?s7*4:(s90||0)/3);
+ const score=Math.round(Math.max(0,Math.min(100,base*8)));
+ const label=base>=8?"ALTA":base>=3?"MEDIA":base>0?"BAJA":"SIN VENTAS VERIFICADAS";
+ return {label,score};
 }
 function depth(x){
  const p=(Array.isArray(x.depthPrices)?x.depthPrices:[]).map(N).filter(v=>v>0).sort((a,b)=>a-b);
@@ -77,11 +86,13 @@ function render(){
  const exact=audited.filter(z=>z.q.ex).length,same=audited.filter(z=>z.q.ee.sameMarket).length;
  const deep=audited.filter(z=>z.q.d.units>=2).length,anoms=audited.filter(z=>z.q.c.range!=null&&z.q.c.range>.45).length;
  const best=audited.filter(z=>z.q.passed===z.q.total).sort((a,b)=>b.q.econ.edge-a.q.econ.edge).slice(0,5);
+ const soldEvidence=audited.filter(z=>z.q.ee.verified).length;
  box.innerHTML='<b>Card Vault PRIME · Calidad de mercado</b>'+
   '<div class="statsGrid">'+
    '<div><span>Ofertas auditadas</span><b>'+rows.length+'</b></div>'+
    '<div><span>Oferta exacta completa</span><b>'+exact+'</b></div>'+
    '<div><span>Comparable mismo mercado</span><b>'+same+'</b></div>'+
+   '<div><span>Salida verificada</span><b>'+soldEvidence+'</b></div>'+
    '<div><span>Profundidad ≥2 niveles</span><b>'+deep+'</b></div>'+
    '<div><span>Anomalías de referencia</span><b>'+anoms+'</b></div>'+
    '<div><span>BUY tras gate PRIME</span><b>'+buy.length+'</b></div>'+
@@ -92,15 +103,15 @@ function render(){
   ).join(""):'<div class="qaRow"><span>Compras con evidencia completa</span><b>0 · correcto si no existen</b></div>')+
   '<details><summary>Ver auditoría de oportunidades</summary>'+audited.slice(0,30).map(({x,q})=>{
    const gap=q.d.gap==null?"sin 2º nivel":q.d.gap.toFixed(1)+"%";
-   const cons=q.c.score==null?"sin muestra":q.c.score+"/100";
+   const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x);
    return '<article class="microNote"><b>'+E(x.name)+'</b> · '+E(q.label)+'<br>'+
     'Entrada '+EUR(x.price)+' · salida conservadora '+EUR(q.econ.exit)+' · edge '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
-    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · consistencia referencias '+cons+'<br>'+
+    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · consistencia referencias '+cons+'<br>'+
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
 }
 function run(){harden();render()}
-window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency};
+window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency,liquidityBand};
 setTimeout(run,100);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)run()});
 })();
