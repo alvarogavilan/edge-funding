@@ -11,6 +11,8 @@ function sell(cardId){
  const rawFees=prompt("Comisiones totales de esta venta (€):","0");if(rawFees==null)return;const fees=Math.max(0,N(String(rawFees).replace(",",".")));
  const rawShip=prompt("Coste de envío que pagas tú (€):","0");if(rawShip==null)return;const shipping=Math.max(0,N(String(rawShip).replace(",",".")));
  const channel=(prompt("Canal de venta:","Cardmarket")||"").trim()||"Sin especificar";
+ const saleOrder=(prompt("Número de pedido / referencia (opcional):","")||"").trim();
+ const saleNotes=(prompt("Notas de la venta (opcional):","")||"").trim();
  if(!confirm("Registrar venta de "+qty+" × "+c.name+" a "+price.toLocaleString("es-ES",{style:"currency",currency:"EUR"})+" por unidad?"))return;
  state.investmentLedger=Array.isArray(state.investmentLedger)?state.investmentLedger:[];
  const id="sale-card-"+c.id+"-"+Date.now();
@@ -20,12 +22,22 @@ function sell(cardId){
   fulfillmentStatus:"sold-awaiting-payment",basisUnknown:c.purchase==null,updatedAt:new Date().toISOString()
  });
  state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
+ const snap={
+  universe:c.universe||"pokemon",name:c.name||"",set:c.set||"",number:c.number||"",year:c.year||"",language:c.language||"",
+  variant:c.buyVariant||c.variant||"",condition:c.buyCondition||c.condition||c.grade||"",grading:c.grading||"RAW",grade:c.grade||"",cert:c.cert||"",
+  referenceImage:c.referenceImage||"",photoKey:c.photoKey||"",quantity:qty,purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",
+  seller:c.buySeller||c.seller||"",purchaseUrl:c.buySourceUrl||c.marketPricing?.url||"",marketUrl:c.marketPricing?.url||c.buySourceUrl||"",
+  saleDescription:c.saleDescription||"",description:c.description||"",notes:c.notes||"",purpose:c.purpose||"",
+  acquisitionSource:c.acquisitionSource||"",acquisitionType:c.acquisitionType||"",acquisitionNotes:c.acquisitionNotes||"",
+  parentProductCostEUR:c.parentProductCostEUR??null,parentProductCostApprox:!!c.parentProductCostApprox,
+  popGrade:c.popGrade??null,popHigher:c.popHigher??null,popTotal:c.popTotal??null,popSource:c.popSource||"",popUrl:c.popUrl||"",popCheckedAt:c.popCheckedAt||"",
+  marketPricing:c.marketPricing||null,gradedValuation:c.gradedValuation||null,conditionMarket:c.conditionMarket||null,
+  buyOpportunityId:c.buyOpportunityId||"",buySource:c.buySource||"",buyVariant:c.buyVariant||"",buyLanguage:c.buyLanguage||"",
+  buyCondition:c.buyCondition||"",buySeller:c.buySeller||"",buySourceUrl:c.buySourceUrl||"",boughtAt:c.boughtAt||""
+ };
  state.saleHistory.push({
-  id,cardId:c.id,universe:c.universe||"pokemon",name:c.name,set:c.set||"",number:c.number||"",language:c.language||"",grade:c.grade||"",cert:c.cert||"",
-  grading:c.grading||"RAW",variant:c.buyVariant||c.variant||"",referenceImage:c.referenceImage||"",qty,unitPrice:price,shipping,fees,net:price*qty-shipping-fees,soldAt:today(),channel,
-  fulfillmentStatus:"sold-awaiting-payment",purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",saleDescription:c.saleDescription||"",
-  acquisitionSource:c.acquisitionSource||"",acquisitionType:c.acquisitionType||"",acquisitionNotes:c.acquisitionNotes||"",parentProductCostEUR:c.parentProductCostEUR??null,
-  marketUrl:c.marketPricing?.url||c.buySourceUrl||"",archiveSnapshotAt:new Date().toISOString()
+  id,cardId:c.id,...snap,cardSnapshot:snap,qty,unitPrice:price,shipping,fees,net:price*qty-shipping-fees,soldAt:today(),channel,saleOrder,saleNotes,
+  fulfillmentStatus:"sold-awaiting-payment",basisUnknown:c.purchase==null,archiveSnapshotAt:new Date().toISOString()
  });
  if(qty>=held){
   c.archivedSold=true;c.soldAt=today();c.soldPrice=price;c.soldQty=qty;c.soldFees=fees;c.soldShipping=shipping;
