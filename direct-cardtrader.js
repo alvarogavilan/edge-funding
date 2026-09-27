@@ -42,6 +42,38 @@ function candidateRows(){
   if(seen.has(k))return false;seen.add(k);return true;
  }).sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,60);
 }
+function pctMedian(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]}
+function localArbitrageForCandidate(c,offers){
+ const out=[],groups=new Map();
+ for(const o of offers){
+  if(!o||!/near mint|mint/i.test(String(o.condition||""))||!(Number(o.total)>0)||!o.language)continue;
+  const k=norm(o.language);
+  if(!groups.has(k))groups.set(k,[]);
+  groups.get(k).push(o);
+ }
+ for(const rows of groups.values()){
+  rows.sort((a,b)=>Number(a.total)-Number(b.total));
+  if(rows.length<5)continue;
+  const entry=rows[0],sameMedian=pctMedian(rows.map(x=>Number(x.total)).filter(x=>x>0));
+  const refCurrency=String(c.currency||"EUR").toUpperCase();
+  const cardmarketRef=refCurrency==="EUR"?Number(c.price||c.avg30||c.trend||0):0;
+  if(!(cardmarketRef>0)||!(sameMedian>0))continue;
+  const grossExit=Math.min(cardmarketRef,sameMedian);
+  const prudentGross=grossExit*.88,netExit=prudentGross*.95-3;
+  const edge=netExit-Number(entry.total),roi=Number(entry.total)>0?edge/Number(entry.total)*100:0;
+  const spread=grossExit>0?(grossExit-Number(entry.total))/grossExit*100:0;
+  const pass=Number(entry.total)>=20&&Number(entry.total)<=250&&edge>=40&&roi>=35&&spread>=25;
+  out.push({
+   product_id:"local:"+String(entry.externalId||entry.id||c.id||c.name),universe:c.universe||"pokemon",name:c.name,set_name:c.set||"",number:c.number||"",
+   image:c.image||"",blueprint_id:String(entry.externalId||"").replace(/^ct:/,""),lang:entry.language||"",condition:entry.condition||"Near Mint",
+   finish:entry.variant||"",price_eur:Number(entry.total),seller:entry.seller||"",url:entry.url||"",fetched_at:entry.checkedAt||new Date().toISOString(),
+   exit_gross:Math.round(grossExit*100)/100,exit_net:Math.round(netExit*100)/100,edge:Math.round(edge*100)/100,roi:Math.round(roi*10)/10,
+   spread:Math.round(spread*10)/10,pass,evidence_refs:4,same_language_offers:rows.length,same_language_median:Math.round(sameMedian*100)/100,
+   exit_basis:"mínimo entre referencia Cardmarket actual y mediana CardTrader del mismo idioma"
+  });
+ }
+ return out;
+}
 function parseOffer(p,bp,c){
  const ph=p.properties_hash||{},lang=Object.entries(ph).find(([k])=>/language$/i.test(k))?.[1]||"";
  const condition=ph.condition||"",price=(p.price?.cents||0)/100,currency=p.price?.currency||"EUR";
@@ -55,7 +87,7 @@ async function scan(){
  if(busy||!token())return {ok:false,reason:"no-token"};
  busy=true;
  try{
-  await bootstrap();const rows=candidateRows(),found=[];
+  await bootstrap();const rows=candidateRows(),found=[],arbs=[];
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
    const setNorm=norm(c.set);
@@ -71,14 +103,17 @@ async function scan(){
    const bp=exact[0];
    let j;try{j=await ct("/marketplace/products?blueprint_id="+bp.id)}catch(e){if(String(e.message).includes("429")){await sleep(600);continue}throw e}
    const products=Array.isArray(j)?j:(j?.[String(bp.id)]||j?.array||j?.results||[]);
-   for(const p of products||[]){const o=parseOffer(p,bp,c);if(o&&/near mint|mint/i.test(o.condition)&&!p.graded)found.push(o)}
+   const local=[];
+   for(const p of products||[]){const o=parseOffer(p,bp,c);if(o&&/near mint|mint/i.test(o.condition)&&!p.graded){found.push(o);local.push(o)}}
+   arbs.push(...localArbitrageForCandidate(c,local));
    await sleep(80);
   }
   state.euOffers=Array.isArray(state.euOffers)?state.euOffers:[];
   state.euOffers=state.euOffers.filter(o=>!String(o.id||"").startsWith("ct-direct:")).concat(found);
-  state.cardTraderDirect={at:new Date().toISOString(),offers:found.length,status:"ok"};save();
+  state.crossMarketArbitrageLocal=arbs.filter(x=>x.pass).sort((a,b)=>b.edge-a.edge||b.roi-a.roi);
+  state.cardTraderDirect={at:new Date().toISOString(),offers:found.length,approved:state.crossMarketArbitrageLocal.length,scanned:rows.length,status:"ok"};save();
   try{window.renderOpportunityEngine?.()}catch{}try{window.CVSimpleHome?.render?.()}catch{}
-  return {ok:true,offers:found.length};
+  return {ok:true,offers:found.length,approved:state.crossMarketArbitrageLocal.length,scanned:rows.length};
  }catch(e){
   state.cardTraderDirect={at:new Date().toISOString(),offers:0,status:"error",error:String(e.message||e)};save();
   return {ok:false,error:String(e.message||e)};
