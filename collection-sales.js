@@ -18,8 +18,8 @@ function sell(cardId){
  const id="sale-card-"+c.id+"-"+Date.now();
  state.investmentLedger.push({
   id,type:"sell",assetType:"card",assetKey:"card:"+c.id,name:c.name,date:today(),qty,unitPrice:price,
-  shipping,fees,sourceUrl:"",notes:"Venta registrada desde Mi colección · pendiente de cobro confirmado",
-  fulfillmentStatus:"sold-awaiting-payment",basisUnknown:c.purchase==null,updatedAt:new Date().toISOString()
+  shipping,fees,sourceUrl:"",notes:"Venta registrada desde Mi colección · envío pendiente · después cobro pendiente",
+  fulfillmentStatus:"sold-awaiting-shipment",basisUnknown:c.purchase==null,updatedAt:new Date().toISOString()
  });
  state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
  const snap={
@@ -37,7 +37,7 @@ function sell(cardId){
  };
  state.saleHistory.push({
   id,cardId:c.id,...snap,cardSnapshot:snap,qty,unitPrice:price,shipping,fees,net:price*qty-shipping-fees,soldAt:today(),channel,saleOrder,saleNotes,
-  fulfillmentStatus:"sold-awaiting-payment",basisUnknown:c.purchase==null,archiveSnapshotAt:new Date().toISOString()
+  fulfillmentStatus:"sold-awaiting-shipment",basisUnknown:c.purchase==null,archiveSnapshotAt:new Date().toISOString()
  });
  if(qty>=held){
   c.archivedSold=true;c.soldAt=today();c.soldPrice=price;c.soldQty=qty;c.soldFees=fees;c.soldShipping=shipping;
@@ -50,7 +50,7 @@ function sell(cardId){
  try{window.renderInvestmentLedger?.()}catch{}
  try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
  try{window.CVFinalOps?.render?.()}catch{}
- alert("Venta registrada. No entra en caja hasta que confirmes el cobro.");
+ alert("Venta registrada · ENVÍO PENDIENTE. No entra en caja hasta confirmar envío y después confirmar el cobro.");
 }
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-cv-sell]");if(!b)return;
