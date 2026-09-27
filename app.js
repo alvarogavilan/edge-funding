@@ -133,6 +133,19 @@ if(!state.eeveeSaleReinvestmentV751){
   if(e){e.archivedSold=true;e.soldAt="2026-09-27";e.soldPrice=60;e.saleChannel="Cardmarket";e.saleOrder="1304093225";e.fulfillmentStatus="sold-awaiting-shipment";e.reinvestable=true;e.notes=((e.notes||"")+" · Vendida en Cardmarket por 60,00 € · Sale #1304093225 · envío pendiente 28/09/2026 · capital reservado para reinversión.").trim()}
   state.eeveeSaleReinvestmentV751=true;
 }
+if(!state.eeveeSuperPremiumProvenanceV752){
+  const e=state.cards.find(c=>c.id==="eev174");
+  if(e){
+    e.acquisitionSource="Prismatic Evolutions Super-Premium Collection";
+    e.parentProductCostEUR=120;
+    e.parentProductCostApprox=true;
+    e.costBasisAllocationStatus="pending";
+    e.purchase=null;
+    e.acquisitionNotes="Promo incluida en Prismatic Evolutions Super-Premium Collection. Producto completo costó aproximadamente 120 €. Incluía 15 sobres, playmat, 65 fundas y caja/deck box de Eevee. Parte de los accesorios se vendieron posteriormente; coste específico de la promo no asignado.";
+    e.notes=((e.notes||"")+" · Procedencia corregida: promo incluida en Prismatic Evolutions Super-Premium Collection (~120 € el producto completo), no salida de un sobre. Coste individual pendiente de reparto.").trim();
+  }
+  state.eeveeSuperPremiumProvenanceV752=true;
+}
 const soldEevee=state.cards.find(c=>c.id==="eev174");if(soldEevee&&!soldEevee.sale1304093225Applied){const q=Math.max(1,+soldEevee.quantity||1);if(q>1)soldEevee.quantity=q-1;else soldEevee.archivedSold=true;soldEevee.sale1304093225Applied=true;soldEevee.soldAt="2026-09-27";soldEevee.soldPrice=60;}const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
