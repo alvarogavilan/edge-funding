@@ -48,6 +48,16 @@ if(!state.profitFloorV775){
   for(const c of imported)if(!state.cards.some(x=>x.id===c.id||same(x,c)))state.cards.push(c);
   state.userCollectionImportVintage20260927={at:new Date().toISOString(),count:imported.length,pricing:"EUR market references; high-value copies condition-pending"};
 }
+/* V90.5 · reparación de colección: una carta propia no desaparece por un flag archivedSold huérfano. */
+{
+ const sales=Array.isArray(state.saleHistory)?state.saleHistory:[];
+ for(const c of state.cards||[]){
+  if(!c?.archivedSold)continue;
+  const soldRecord=sales.some(h=>h.cardId===c.id);
+  const legacySale=!!(c.soldAt&&Number(c.soldPrice)>0);
+  if(!soldRecord&&!legacySale)c.archivedSold=false;
+ }
+}
 if(!state.conditionMarketV876){
   const g=(state.cards||[]).find(c=>c.id==="own-gyarados-ex-089-xy9-jp");
   if(g){
