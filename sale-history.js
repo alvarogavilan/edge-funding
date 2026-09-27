@@ -1,6 +1,6 @@
 (()=>{"use strict";
 const Q=s=>document.querySelector(s),N=v=>Number(v)||0,EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
-function statusFor(h){const r=(state.investmentLedger||[]).find(x=>x.id===h.id);const s=String(r?.fulfillmentStatus||h.fulfillmentStatus||"");return ["paid","paid-confirmed","completed","settled"].includes(s)?"COBRADA":"COBRO PENDIENTE"}
+function statusFor(h){const r=(state.investmentLedger||[]).find(x=>x.id===h.id);const s=String(r?.fulfillmentStatus||h.fulfillmentStatus||"");if(["paid","paid-confirmed","completed","settled"].includes(s))return "COBRADA";if(s==="sold-awaiting-shipment")return "ENVÍO PENDIENTE";if(s==="sold-awaiting-payment")return "COBRO PENDIENTE";return "VENDIDA / PENDIENTE"}
 function render(){
  const box=Q("#saleHistoryPanel");if(!box)return;
  const rows=[...(state.saleHistory||[])].sort((a,b)=>(b.soldAt||"").localeCompare(a.soldAt||""));
