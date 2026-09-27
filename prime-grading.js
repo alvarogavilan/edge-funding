@@ -21,7 +21,7 @@ function fromCard(c){
 }
 function render(){
  const host=document.querySelector("#gradingEconomicsResult");if(!host)return;
- const sel=document.querySelector("#psaOwnedCard"),id=sel?.value;
+ const sel=document.querySelector("#psaCollectionCard"),id=sel?.value;
  const c=(state.cards||[]).find(x=>x.id===id);
  if(!c)return;
  const r=fromCard(c);
@@ -35,6 +35,6 @@ function render(){
   '<small>PSA 10 nunca es el caso base. Si PSA 9 no sostiene la operación, una expectativa de PSA 10 requiere evidencia específica de pregrade; si no existe, queda bloqueada.</small>';
  document.querySelector("#primeGradingDecision")?.remove();host.after(extra);
 }
-document.addEventListener("click",e=>{if(e.target.closest("#calculateGradingEconomics"))setTimeout(render,20)});
+document.addEventListener("click",e=>{if(e.target.closest("#calculateGradingEconomics"))setTimeout(render,20)});document.addEventListener("change",e=>{if(e.target?.matches?.("#psaCollectionCard"))setTimeout(render,20)});
 window.CVPrimeGrading={evaluate,fromCard,render};
 })();
