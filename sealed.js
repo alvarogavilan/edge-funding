@@ -2,16 +2,23 @@
    Local-first. No inventa precios ni rentabilidad: solo calcula con datos introducidos y URLs de evidencia. */
 (function(){
 "use strict";
+const num=v=>Number.isFinite(+v)?+v:0;
 if(!Array.isArray(state.sealedProducts))state.sealedProducts=[];
 if(!state.sealedSnapshots||typeof state.sealedSnapshots!=="object"||Array.isArray(state.sealedSnapshots))state.sealedSnapshots={};
-if(!state.sealedPolicy||typeof state.sealedPolicy!=="object")state.sealedPolicy={minPriceEUR:40,maxPriceEUR:250,minUpsideEUR:50,chaseThresholdEUR:50};if(!(num(state.sealedPolicy.chaseThresholdEUR)>0))state.sealedPolicy.chaseThresholdEUR=50;if(!state.sealedPolicyMigrationV742){if(num(state.sealedPolicy.minPriceEUR)===40)state.sealedPolicy.minPriceEUR=20;state.sealedPolicyMigrationV742=true;}
+if(!state.sealedPolicy||typeof state.sealedPolicy!=="object")state.sealedPolicy={minPriceEUR:20,maxPriceEUR:250,minUpsideEUR:40,minRoiPct:35,chaseThresholdEUR:50};
+if(!(num(state.sealedPolicy.chaseThresholdEUR)>0))state.sealedPolicy.chaseThresholdEUR=50;
+if(!state.sealedPolicyMigrationV742){if(num(state.sealedPolicy.minPriceEUR)===40)state.sealedPolicy.minPriceEUR=20;state.sealedPolicyMigrationV742=true;}
+if(!state.sealedPolicyMigrationV786){
+ if(num(state.sealedPolicy.minUpsideEUR)===50)state.sealedPolicy.minUpsideEUR=40;
+ if(!(num(state.sealedPolicy.minRoiPct)>0))state.sealedPolicy.minRoiPct=35;
+ state.sealedPolicyMigrationV786=true;
+}
 for(const c of state.cards||[])if(!c.purpose)c.purpose="investment";
 save();
 
 let sealedEditId=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const num=v=>Number.isFinite(+v)?+v:0;
 const pct=v=>Number.isFinite(+v)?(+v).toFixed(1)+"%":"—";
 const purposeLabels={no_sell:"NO vender",personal:"Colección personal",investment:"Inversión",psa:"Para PSA",sell:"Para vender",reinvest:"Para reinvertir"};
 const purposeOptions=Object.entries(purposeLabels).map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("");
@@ -60,10 +67,11 @@ function sealedDecision(p){
   const e=sealedEvidenceScore(p),x=sealedEconomics(p),policy=state.sealedPolicy;
   if(!p.sourceUrl||!p.buyUrl||!window.CVMarket?.admittedShop?.(p.buyUrl)?.ok||x.cost<=0||e<55)return {key:"avoid",label:"NO COMPRAR",why:"Evidencia insuficiente, precio incompleto o enlace de compra fuera de tiendas admitidas."};
   if(p.reprintRisk==="high")return {key:"avoid",label:"NO COMPRAR",why:"Riesgo de reedición alto registrado."};
+  if(!p.language||p.languageVerified!==true)return {key:"watch",label:"VIGILAR",why:"Falta confirmar que la oferta y la referencia de salida corresponden al mismo idioma/mercado."};
   if(x.baseProfit==null)return {key:"watch",label:"VIGILAR",why:"Falta escenario base respaldado por datos."};
   const inBand=x.cost>=num(policy.minPriceEUR)&&x.cost<=num(policy.maxPriceEUR);
-  if(e>=80&&x.baseProfit>=num(policy.minUpsideEUR)&&inBand&&p.liquidity!=="low")
-    return {key:"buy",label:"COMPRA YA",why:"Cumple tus filtros de precio, margen absoluto y calidad de evidencia."};
+  if(e>=80&&x.baseProfit>=num(policy.minUpsideEUR)&&x.basePct>=num(policy.minRoiPct)&&inBand&&p.liquidity!=="low")
+    return {key:"buy",label:"COMPRA YA",why:"Cumple precio, margen absoluto, ROI, idioma/mercado y calidad de evidencia."};
   return {key:"watch",label:"VIGILAR",why:!inBand?"Fuera del rango de compra configurado.":"Aún no supera todos tus filtros de compra."};
 }
 function confidence(p){const e=sealedEvidenceScore(p);return e>=85?"Alta":e>=65?"Media":"Baja"}
@@ -81,7 +89,7 @@ function productCard(p,rank){
     '<div class="sealedMetrics"><div><span>Precio total</span><b>'+euro(x.cost)+'</b></div><div><span>Escenario base</span><b>'+(x.base?euro(x.base):"Sin dato")+'</b></div><div><span>Potencial base</span><b>'+(x.baseProfit==null?"Sin dato":(x.baseProfit>=0?"+":"")+euro(x.baseProfit))+'</b></div><div><span>Confianza datos</span><b>'+confidence(p)+' · '+ev+'/100</b></div><div><span>Liquidez</span><b>'+esc(p.liquidity||"Sin evaluar")+'</b></div><div><span>Riesgo reedición</span><b>'+esc(p.reprintRisk||"Sin evaluar")+'</b></div></div>'+
     '<div class="evidenceLine">'+esc(d.why)+(trend?' · '+esc(trend):'')+(premium!=null?' · Prima MSRP '+pct(premium):'')+(age!=null?' · Edad '+age.toFixed(1)+' años':'')+'</div>'+
     (pm.verified&&pm.kind==="value"?'<div class="pullOdds"><b>'+pct(pm.atLeastOne*100)+' aprox. de ≥1 carta valorada en '+euro(pm.threshold)+' o más</b><span>'+pct(pm.perPack*100)+' por sobre · '+pm.packs+' sobres/producto · muestra '+pm.hits+'/'+pm.sample+' · cálculo empírico</span>'+(pm.partialEV!=null?'<small>EV parcial de cartas ≥ '+euro(pm.threshold)+': '+euro(pm.partialEV)+'; no incluye el resto del contenido.</small>':'')+'<small>La probabilidad del producto supone independencia entre sobres salvo que exista evidencia específica de caja.</small><a href="'+esc(pm.sourceUrl)+'" target="_blank" rel="noopener">Fuente de tasa</a></div>':pm.verified&&pm.kind==="rarity"?'<div class="pullOdds rarity"><b>'+pct(pm.atLeastOne*100)+' aprox. de ≥1 '+esc(pm.metric)+' en '+pm.packs+' sobres</b><span>'+pct(pm.perPack*100)+' por sobre · muestra '+pm.hits+'/'+pm.sample+' · '+esc(pm.sourceLabel||"muestra pública")+'</span><small>Esto mide rareza premium, NO probabilidad de una carta ≥ '+euro(num(p.pullThresholdEUR)||num(state.sealedPolicy.chaseThresholdEUR)||50)+'. Además, la estimación de caja supone independencia y puede desviarse por colación.</small><a href="'+esc(pm.sourceUrl)+'" target="_blank" rel="noopener">Ver muestra</a></div>':'<div class="pullOdds pending"><b>Probabilidad de carta ≥ '+euro(num(p.pullThresholdEUR)||num(state.sealedPolicy.chaseThresholdEUR)||50)+': pendiente de evidencia</b><span>No se inventa una tasa de apertura. Hace falta muestra del set/producto y fuente verificable.</span></div>')+
-    '<div class="evidenceLine">Estado: '+esc(p.printStatus||"unknown")+' · Stock: '+esc(p.availability||"unknown")+(p.seller?' · Vendedor: '+esc(p.seller):'')+'</div>'+
+    '<div class="evidenceLine">Idioma/mercado: '+esc(p.language||"sin verificar")+(p.languageVerified===true?' · ✓ referencia del mismo idioma':' · ⚠ pendiente de equivalencia')+' · Estado: '+esc(p.printStatus||"unknown")+' · Stock: '+esc(p.availability||"unknown")+(p.seller?' · Vendedor: '+esc(p.seller):'')+'</div>'+
     (p.notes?'<div class="evidenceLine">'+esc(p.notes)+'</div>':'')+
     '<div class="sealedActions">'+
       (p.buyUrl?'<a href="'+esc(p.buyUrl)+'" target="_blank" rel="noopener">Comprar / oferta</a>':'')+
@@ -109,7 +117,7 @@ function renderSealed(){
     '<div><span>No comprar</span><b>'+dec.filter(x=>x.key==="avoid").length+'</b></div>';
   const policy=state.sealedPolicy;
   const best=ranked.find(p=>sealedDecision(p).key==="buy");
-  const buy=$("#sealedBuyNow");if(buy)buy.innerHTML='<div class="investmentProfile"><div><b>Perfil sellado</b><span>Rango y beneficio absoluto mínimo. Se guarda localmente.</span></div><div class="investmentInputs"><label>Mínimo €<input id="sealedMin" type="number" min="0" step="5" value="'+num(policy.minPriceEUR)+'"></label><label>Máximo €<input id="sealedMax" type="number" min="0" step="10" value="'+num(policy.maxPriceEUR)+'"></label><label>Potencial mínimo €<input id="sealedUpside" type="number" min="0" step="10" value="'+num(policy.minUpsideEUR)+'"></label></div><small>“Compra ya” exige además evidencia ≥80/100, liquidez no baja y riesgo de reedición no alto.</small></div>'+
+  const buy=$("#sealedBuyNow");if(buy)buy.innerHTML='<div class="investmentProfile"><div><b>Perfil sellado</b><span>Rango y beneficio absoluto mínimo. Se guarda localmente.</span></div><div class="investmentInputs"><label>Mínimo €<input id="sealedMin" type="number" min="0" step="5" value="'+num(policy.minPriceEUR)+'"></label><label>Máximo €<input id="sealedMax" type="number" min="0" step="10" value="'+num(policy.maxPriceEUR)+'"></label><label>Potencial mínimo €<input id="sealedUpside" type="number" min="0" step="10" value="'+num(policy.minUpsideEUR)+'"></label><label>ROI mínimo %<input id="sealedRoi" type="number" min="0" step="5" value="'+num(policy.minRoiPct)+'"></label></div><small>“Compra ya” exige además mismo idioma/mercado verificado, evidencia ≥80/100, liquidez no baja y riesgo de reedición no alto.</small></div>'+
     '<div class="sectionHead"><h3>Compra ya</h3></div>'+(best?productCard(best,1):'<div class="empty">NO COMPRAR: no hay ahora mismo ningún producto registrado que supere todos los filtros con evidencia suficiente.</div>');
   const top=$("#sealedTop10");if(top)top.innerHTML=ranked.length?ranked.slice(0,10).map((p,i)=>productCard(p,i+1)).join(""):'<div class="sealedDiscovery"><b>Radar sellado listo · faltan ofertas verificadas</b><span>No invento precios. Usa estos accesos para localizar producto exacto y, al registrar precio + URL, entrará automáticamente en el ranking.</span><div class="sealedActions"><a href="https://www.cardmarket.com/es/Pokemon/Products/Sealed-Products" target="_blank" rel="noopener">Pokémon sellado · Cardmarket</a><a href="https://www.cardmarket.com/es/Lorcana/Products/Sealed-Products" target="_blank" rel="noopener">Lorcana sellado · Cardmarket</a></div><small>Prioridad de análisis: booster boxes · ETB / Trainer Box · blísteres/colecciones Pokémon · booster displays · Illumineer\'s Trove · gift sets Lorcana.</small></div>';
   const list=$("#sealedList");if(list)list.innerHTML=rows.length?rows.map(p=>productCard(p)).join(""):'<div class="empty">Todavía no hay ofertas selladas verificadas guardadas. El radar superior ya permite buscarlas sin presentar datos ficticios.</div>';
@@ -117,17 +125,17 @@ function renderSealed(){
 }
 function bindSealedActions(){
   document.querySelectorAll("[data-edit-sealed]").forEach(b=>b.onclick=()=>openSealed(b.dataset.editSealed));
-  ["sealedMin","sealedMax","sealedUpside"].forEach(id=>{const el=$("#"+id);if(el)el.onchange=()=>{state.sealedPolicy.minPriceEUR=num($("#sealedMin")?.value);state.sealedPolicy.maxPriceEUR=num($("#sealedMax")?.value);state.sealedPolicy.minUpsideEUR=num($("#sealedUpside")?.value);save();renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}}});
+  ["sealedMin","sealedMax","sealedUpside","sealedRoi"].forEach(id=>{const el=$("#"+id);if(el)el.onchange=()=>{state.sealedPolicy.minPriceEUR=num($("#sealedMin")?.value);state.sealedPolicy.maxPriceEUR=num($("#sealedMax")?.value);state.sealedPolicy.minUpsideEUR=num($("#sealedUpside")?.value);state.sealedPolicy.minRoiPct=num($("#sealedRoi")?.value)||35;save();renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}}});
 }
 function openSealed(id){
   sealedEditId=id||null;const dlg=$("#sealedDialog"),form=$("#sealedForm"),del=$("#sealedDelete");form.reset();
   const p=state.sealedProducts.find(x=>x.id===id);
-  if(p)for(const [k,v] of Object.entries(p)){const el=form.elements.namedItem(k);if(el&&v!=null)el.value=v}
+  if(p)for(const [k,v] of Object.entries(p)){const el=form.elements.namedItem(k);if(el&&v!=null){if(el.type==="checkbox")el.checked=!!v;else el.value=v}}
   del.classList.toggle("hidden",!p);dlg.showModal();
 }
 function saveSealed(e){
   e.preventDefault();const f=new FormData($("#sealedForm")),id=sealedEditId||crypto.randomUUID(),old=state.sealedProducts.find(x=>x.id===id)||{};
-  const p={...old,id,universe:f.get("universe")==="lorcana"?"lorcana":"pokemon",name:String(f.get("name")||"").trim(),set:String(f.get("set")||"").trim(),productType:String(f.get("productType")||"Otro"),releaseDate:String(f.get("releaseDate")||""),msrp:num(f.get("msrp")),currentPrice:num(f.get("currentPrice")),shipping:num(f.get("shipping")),recentLow:num(f.get("recentLow")),averagePrice:num(f.get("averagePrice")),targetLow:num(f.get("targetLow")),targetBase:num(f.get("targetBase")),targetHigh:num(f.get("targetHigh")),availability:String(f.get("availability")||"unknown"),printStatus:String(f.get("printStatus")||"unknown"),liquidity:String(f.get("liquidity")||""),reprintRisk:String(f.get("reprintRisk")||""),trend30:f.get("trend30")===""?"":num(f.get("trend30")),trend90:f.get("trend90")===""?"":num(f.get("trend90")),packsPerProduct:num(f.get("packsPerProduct")),pullThresholdEUR:num(f.get("pullThresholdEUR"))||num(state.sealedPolicy.chaseThresholdEUR)||50,pullSamplePacks:num(f.get("pullSamplePacks")),pullHitsAboveThreshold:num(f.get("pullHitsAboveThreshold")),pullAvgHitValueEUR:num(f.get("pullAvgHitValueEUR")),pullRateSourceUrl:String(f.get("pullRateSourceUrl")||"").trim(),photoUrl:String(f.get("photoUrl")||"").trim(),sourceUrl:String(f.get("sourceUrl")||"").trim(),buyUrl:String(f.get("buyUrl")||"").trim(),seller:String(f.get("seller")||"").trim(),notes:String(f.get("notes")||"").trim(),updatedAt:new Date().toISOString()};
+  const p={...old,id,universe:f.get("universe")==="lorcana"?"lorcana":"pokemon",name:String(f.get("name")||"").trim(),set:String(f.get("set")||"").trim(),productType:String(f.get("productType")||"Otro"),language:String(f.get("language")||"").trim(),languageVerified:f.get("languageVerified")==="on",releaseDate:String(f.get("releaseDate")||""),msrp:num(f.get("msrp")),currentPrice:num(f.get("currentPrice")),shipping:num(f.get("shipping")),recentLow:num(f.get("recentLow")),averagePrice:num(f.get("averagePrice")),targetLow:num(f.get("targetLow")),targetBase:num(f.get("targetBase")),targetHigh:num(f.get("targetHigh")),availability:String(f.get("availability")||"unknown"),printStatus:String(f.get("printStatus")||"unknown"),liquidity:String(f.get("liquidity")||""),reprintRisk:String(f.get("reprintRisk")||""),trend30:f.get("trend30")===""?"":num(f.get("trend30")),trend90:f.get("trend90")===""?"":num(f.get("trend90")),packsPerProduct:num(f.get("packsPerProduct")),pullThresholdEUR:num(f.get("pullThresholdEUR"))||num(state.sealedPolicy.chaseThresholdEUR)||50,pullSamplePacks:num(f.get("pullSamplePacks")),pullHitsAboveThreshold:num(f.get("pullHitsAboveThreshold")),pullAvgHitValueEUR:num(f.get("pullAvgHitValueEUR")),pullRateSourceUrl:String(f.get("pullRateSourceUrl")||"").trim(),photoUrl:String(f.get("photoUrl")||"").trim(),sourceUrl:String(f.get("sourceUrl")||"").trim(),buyUrl:String(f.get("buyUrl")||"").trim(),seller:String(f.get("seller")||"").trim(),notes:String(f.get("notes")||"").trim(),updatedAt:new Date().toISOString()};
   if(!p.name||!p.currentPrice||!p.sourceUrl||!p.buyUrl){alert("Nombre, precio actual, fuente y enlace de compra son obligatorios.");return}if(!window.CVMarket?.admittedShop?.(p.buyUrl)?.ok){alert("El enlace de compra debe pertenecer a una tienda admitida: Cardmarket, CardTrader o Metropolis Center.");return}
   if(sealedEditId)state.sealedProducts=state.sealedProducts.map(x=>x.id===id?p:x);else state.sealedProducts.push(p);
   recordSealedSnapshot(p);save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
