@@ -146,6 +146,41 @@ if(!state.eeveeSuperPremiumProvenanceV752){
   }
   state.eeveeSuperPremiumProvenanceV752=true;
 }
+if(!state.prismaticSPCSharedProvenanceV753){
+  const parent={name:"Prismatic Evolutions Super-Premium Collection",costEUR:120,costApprox:true,contentsNote:"15 sobres + promo Eevee ex + playmat + 65 fundas + caja/accesorio Eevee; parte de accesorios vendida posteriormente"};
+  const promo=state.cards.find(c=>c.id==="eev174");
+  if(promo){
+    promo.acquisitionSource=parent.name;
+    promo.parentProductCostEUR=parent.costEUR;
+    promo.parentProductCostApprox=true;
+    promo.costBasisAllocationStatus="pending";
+    promo.purchase=null;
+    promo.acquisitionType="included-promo";
+    promo.acquisitionNotes="Promo incluida directamente en la Super-Premium Collection de Evoluciones Prismáticas (~120 € el producto completo). Coste individual no asignado.";
+  }
+  const pulledEevee=state.cards.find(c=>c.id==="own-eevee-ex-075-pre-es");
+  if(pulledEevee){
+    pulledEevee.acquisitionSource=parent.name;
+    pulledEevee.parentProductCostEUR=parent.costEUR;
+    pulledEevee.parentProductCostApprox=true;
+    pulledEevee.costBasisAllocationStatus="pending";
+    pulledEevee.purchase=null;
+    pulledEevee.acquisitionType="booster-pull";
+    pulledEevee.acquisitionNotes="Obtenida en uno de los 15 sobres de la misma Super-Premium Collection de Evoluciones Prismáticas. Coste individual no asignado.";
+  }
+  const vap=state.cards.find(c=>c.id==="vap149");
+  if(vap){
+    vap.acquisitionSource=parent.name;
+    vap.parentProductCostEUR=parent.costEUR;
+    vap.parentProductCostApprox=true;
+    vap.costBasisAllocationStatus="pending";
+    vap.purchase=null;
+    vap.acquisitionType="booster-pull";
+    vap.acquisitionNotes="Obtenida en uno de los 15 sobres de la misma Super-Premium Collection de Evoluciones Prismáticas. Coste individual no asignado.";
+  }
+  state.prismaticSPCParentProduct=parent;
+  state.prismaticSPCSharedProvenanceV753=true;
+}
 const soldEevee=state.cards.find(c=>c.id==="eev174");if(soldEevee&&!soldEevee.sale1304093225Applied){const q=Math.max(1,+soldEevee.quantity||1);if(q>1)soldEevee.quantity=q-1;else soldEevee.archivedSold=true;soldEevee.sale1304093225Applied=true;soldEevee.soldAt="2026-09-27";soldEevee.soldPrice=60;}const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
