@@ -2,7 +2,7 @@
 const $=s=>document.querySelector(s), num=v=>Number(v)||0, eur=v=>new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"}).format(num(v));
 if(!Array.isArray(state.investmentLedger))state.investmentLedger=[];
 if(!state.investmentLedger.some(r=>r.id==="sale-cardmarket-1304093225")){
- state.investmentLedger.push({id:"sale-cardmarket-1304093225",type:"sell",assetType:"card",assetKey:"card:eev174",name:"Eevee ex #174 · PSA 9",date:"2026-09-27",qty:1,unitPrice:60,shipping:0,fees:0,sourceUrl:"",notes:"Cardmarket Sale #1304093225 · precio bruto del activo 60,00 € · coste de adquisición no registrado · envío pendiente para 2026-09-28 · capital reservado para reinversión",basisUnknown:true,fulfillmentStatus:"sold-awaiting-shipment",reinvestable:true,updatedAt:"2026-09-27T00:00:00.000Z"});save();
+ state.investmentLedger.push({id:"sale-cardmarket-1304093225",type:"sell",assetType:"card",assetKey:"card:eev174",name:"Eevee ex #174 · PSA 9",date:"2026-09-27",qty:1,unitPrice:60,shipping:0,fees:0,sourceUrl:"",notes:"Cardmarket Sale #1304093225 · precio bruto del activo 60,00 € · promo procedente de Prismatic Evolutions Super-Premium Collection (~120 € producto completo) · coste individual de la promo pendiente de reparto entre contenido/accesorios · envío pendiente para 2026-09-28 · capital reservado para reinversión",basisUnknown:true,fulfillmentStatus:"sold-awaiting-shipment",reinvestable:true,updatedAt:"2026-09-27T00:00:00.000Z"});save();
 }
 function assetOptions(){
  const out=['<option value="">Sin vincular</option>'];
