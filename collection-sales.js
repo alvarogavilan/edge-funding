@@ -33,7 +33,7 @@ function sell(cardId){
  save();
  try{window.CVRenderCollection?.()}catch{}
  try{window.renderInvestmentLedger?.()}catch{}
- try{window.CVSalesHistory?.render?.()}catch{}
+ try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
  try{window.CVFinalOps?.render?.()}catch{}
  alert("Venta registrada. No entra en caja hasta que confirmes el cobro.");
 }
