@@ -43,7 +43,7 @@ function card(r,i){
  return '<article class="primeBuySimple">'+
   '<div class="primeBuyTop"><span class="primeBuyBadge">COMPRAR AHORA</span><strong class="primeBuyPrice">'+EUR(r.price)+'</strong></div>'+
   '<div class="primeBuyMain">'+
-   (r.image?'<img class="primeBuyImage" src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeBuyImage primeBuyNoImage">IMAGEN PENDIENTE</div>')+
+   (r.image?'<img class="primeBuyImage" src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeBuyImage primeBuyNoImage"><span class="autoImageLoader"></span><small>Cargando imagen automática…</small></div>')+
    '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><h3>'+E(r.name)+'</h3><small class="primeBuyMeta">'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
     '<div class="primeBuySeller"><span>Vendedor</span><b>'+E(r.seller)+'</b><small>'+E(r.source)+'</small></div>'+
    '</div>'+
