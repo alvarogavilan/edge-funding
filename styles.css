@@ -286,3 +286,5 @@ nav button{min-height:46px;line-height:1.05}
 
 /* V73.2 sealed pull odds */
 .pullOdds{margin:9px 0;padding:10px 12px;border-radius:12px;background:#10261a;border:1px solid #2e6a45;display:grid;gap:4px}.pullOdds.pending{background:#211b10;border-color:#5a4a2c}.pullOdds b{font-size:12px}.pullOdds span,.pullOdds small,.pullOdds a{font-size:10px;line-height:1.35}.pullOdds a{font-weight:800}
+
+.pullOdds.rarity{background:#142039;border-color:#405f8d}.pullOdds.rarity b{color:#dce8ff}
