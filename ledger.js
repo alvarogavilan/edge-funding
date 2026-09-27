@@ -49,8 +49,9 @@ function stats(){
  sales=rows.filter(r=>r.type==="sell"&&saleSettled(r)).reduce((a,r)=>a+(num(r.unitPrice)*num(r.qty||1)-num(r.shipping)-num(r.fees)),0),
  costs=rows.filter(r=>r.type==="grading"||r.type==="fee").reduce((a,r)=>a+total(r),0),
  capital=rows.filter(r=>r.type==="capital").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0),
- withdrawals=rows.filter(r=>r.type==="withdrawal").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0);
- return {buys,sales,costs,capital,withdrawals,netCash:sales+capital-buys-costs-withdrawals};
+ withdrawals=rows.filter(r=>r.type==="withdrawal").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0),
+ cashBuys=rows.filter(r=>r.type==="buy"&&r.cashImpact!==false).reduce((a,r)=>a+total(r),0);
+ return {buys,sales,costs,capital,withdrawals,cashBuys,netCash:sales+capital-cashBuys-costs-withdrawals};
 }
 function render(){
  const box=$("#ledgerSummary"),list=$("#ledgerList");if(!box||!list)return;const x=stats();
