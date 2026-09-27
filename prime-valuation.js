@@ -25,7 +25,7 @@ function stats(){
  return {rows,sums,total:rows.reduce((a,r)=>a+r.value,0)};
 }
 function apply(){
- const s=stats();for(const r of s.rows){r.c.primeValuationTier=r.t.tier;r.c.primeValuationReason=r.t.reason}save();render();return s;
+ const s=stats();for(const r of s.rows){r.c.primeValuationTier=r.t.tier;r.c.primeValuationReason=r.t.reason}save();render();try{window.CVPrimeAttention?.render?.()}catch{}return s;
 }
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
@@ -42,7 +42,7 @@ function render(){
   '<small>A exige identidad, condición/grado, fuente trazable y valor ≤7 días. B admite evidencia trazable ≤30 días. C y Referencia no deben tratarse como valor firme para decisiones de venta/reinversión.</small>'+
   (s.rows.filter(r=>["C","REF"].includes(r.t.tier)&&r.value>=20).slice(0,8).map(r=>'<div class="qaRow"><span>'+r.c.name+'<small> · '+r.t.reason+'</small></span><b>'+EUR(r.value)+'</b></div>').join(""));
 }
-setTimeout(apply,280);
+setTimeout(apply,120);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)apply()});
 window.CVPrimeValuation={tier,stats,apply,render};
 })();
