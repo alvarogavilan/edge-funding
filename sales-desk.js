@@ -10,6 +10,13 @@ const seed=[
  {id:"listing-vaporeon-pre149",cardId:"vap149",channel:"Cardmarket",price:229.90,floor:199.90,status:"active",condition:"PSA 9",note:"PSA 9 · slab original"}
 ];
 for(const x of seed)if(!state.saleListings.some(y=>y.id===x.id))state.saleListings.push({...x,listedAt:"2026-09-27",updatedAt:new Date().toISOString()});
+if(!state.salesLegacyPauseV870){
+ const legacyIds=new Set(["listing-gyarados-xy9","listing-mewtwo-ec1","listing-surfing-pikachu-v1"]);
+ for(const x of state.saleListings||[])if(legacyIds.has(x.id)&&x.status==="active"&&!x.exitEvidence?.at){
+  x.status="paused";x.pauseReason="Pausado V87.0: precio heredado sin evidencia PRIME actual";x.updatedAt=new Date().toISOString();
+ }
+ state.salesLegacyPauseV870=true;save();
+}
 save();
 
 function card(id){return (state.cards||[]).find(c=>c.id===id)}
