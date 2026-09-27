@@ -134,7 +134,7 @@ function render(){
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
 }
-function run(){harden();render()}
+function run(){harden();render();try{window.renderOpportunityEngine?.()}catch{}try{window.CVTodaySimple?.render?.()}catch{}try{window.CVReinvestmentCommittee?.render?.()}catch{}try{window.CVFinalOps?.render?.()}catch{}}
 window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency,liquidityBand,evidenceConfidence,absorption};
 setTimeout(run,100);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)run()});
