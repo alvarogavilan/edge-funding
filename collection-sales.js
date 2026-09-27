@@ -21,7 +21,7 @@ function sell(cardId){
  });
  state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
  state.saleHistory.push({
-  id,cardId:c.id,name:c.name,set:c.set||"",number:c.number||"",language:c.language||"",grade:c.grade||"",cert:c.cert||"",
+  id,cardId:c.id,universe:c.universe||"pokemon",name:c.name,set:c.set||"",number:c.number||"",language:c.language||"",grade:c.grade||"",cert:c.cert||"",
   grading:c.grading||"RAW",variant:c.buyVariant||c.variant||"",referenceImage:c.referenceImage||"",qty,unitPrice:price,shipping,fees,net:price*qty-shipping-fees,soldAt:today(),channel,
   fulfillmentStatus:"sold-awaiting-payment",purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",saleDescription:c.saleDescription||"",
   acquisitionSource:c.acquisitionSource||"",acquisitionType:c.acquisitionType||"",acquisitionNotes:c.acquisitionNotes||"",parentProductCostEUR:c.parentProductCostEUR??null,
