@@ -1,5 +1,20 @@
 (()=>{const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 state.manualOpportunities=Array.isArray(state.manualOpportunities)?state.manualOpportunities:[];
+if(!state.stitchAuditV787){
+ const rock=state.manualOpportunities.find(x=>x.id==="lorcana-stitch-rock-star-promo-v2-20260927");
+ if(rock){
+  rock.approval="WATCH";
+  rock.status="NO COMPRAR POR AHORA · IMPRESIÓN/REFERENCIA EN CONFLICTO";
+  rock.note=((rock.note||"")+" · Contraste externo: la referencia ~278 € corresponde a Store Championship; la versión estándar/promo comparable ronda ~85–99 €. No tratar 95 € como arbitraje hasta aislar ventas de esta impresión exacta.").trim();
+ }
+ const surfer=state.manualOpportunities.find(x=>x.id==="lorcana-stitch-carefree-surfer-v2-20260927");
+ if(surfer){
+  surfer.approval="VERIFY-LANGUAGE";
+  surfer.status="VERIFICAR IDIOMA EXACTO · POSIBLE OPORTUNIDAD REAL";
+  surfer.note=((surfer.note||"")+" · TCGGraph #206 muestra ventas realizadas recientes aprox. 190–275 €, pero mínimos NM por idioma observados: francés 95 €, japonés 100 €, alemán 139,94 €; inglés aparece más alto. La oferta 75 € debe identificarse por idioma antes de aprobar.").trim();
+ }
+ state.stitchAuditV787=true;save();
+}
 if(!state.variantAuditV785){
  const lady=state.manualOpportunities.find(x=>x.id==="pokemon-lady-forbidden-light-jp-100-20260927");
  if(lady){
