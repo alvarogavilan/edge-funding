@@ -273,6 +273,18 @@ if(!state.prismaticSPCSharedProvenanceV753){
   state.prismaticSPCParentProduct=parent;
   state.prismaticSPCSharedProvenanceV753=true;
 }
+/* V91.0 · imágenes vintage exactas: no admitir reimpresiones con mismo nombre/número. */
+{
+ const exactImages={
+  "own-hitmonlee-106-jp-fossil-psa5":"https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0511/users/e9f856a2ec12f2a846115d263d6a1bc6928e6c87/i-img977x1200-1730593480kv0niq7.jpg",
+  "own-surfing-pikachu-mt-fuji-jr-1997":"https://cdn-vault.fanaticscollect.com/2026/3/6/wr12/large/v2783490_20260306155210986M_1.jpg"
+ };
+ for(const c of state.cards||[])if(exactImages[c.id]){
+  c.referenceImage=exactImages[c.id];
+  c.referenceImageIdentityExact=true;
+  c.referenceImageSource="exact-identity-web-reference";
+ }
+}
 const soldEevee=state.cards.find(c=>c.id==="eev174");if(soldEevee&&!soldEevee.sale1304093225Applied){const q=Math.max(1,+soldEevee.quantity||1);if(q>1)soldEevee.quantity=q-1;else soldEevee.archivedSold=true;soldEevee.sale1304093225Applied=true;soldEevee.soldAt="2026-09-27";soldEevee.soldPrice=60;}const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
