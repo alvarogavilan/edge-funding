@@ -4,11 +4,23 @@ EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 function img(x){
  return x?.image||x?.referenceImage||x?.photoURL||x?.photo||"";
 }
+function bestKnownOffer(x){
+ const rows=[{price:N(x.price),seller:x.seller||"",url:x.url||"",source:x.shop||"Oferta actual"}];
+ for(const o of (state.euOffers||[])){
+  let same=false;try{same=window.CVIdentity?.same?.(x,o)===true}catch{}
+  if(!same)continue;
+  const price=N(o.total||o.price),url=String(o.url||""),seller=o.seller||o.shop||"";
+  if(!(price>0)||!/^https?:\/\//i.test(url))continue;
+  const admitted=window.CVMarket?.admittedShop?.(url);if(admitted&&admitted.ok===false)continue;
+  rows.push({price,seller,url,source:o.shop||admitted?.name||"Oferta EUR verificada"});
+ }
+ return rows.filter(r=>r.price>0&&r.url).sort((a,b)=>a.price-b.price)[0]||null;
+}
 function manualBuys(){
- return (state.manualOpportunities||[]).map(x=>({kind:"card",x,q:window.CVPrimeMarket?.quality?.(x)}))
+ return (state.manualOpportunities||[]).map(x=>{const best=bestKnownOffer(x);if(!best)return null;const candidate={...x,price:best.price,seller:best.seller,url:best.url};const q=window.CVPrimeMarket?.quality?.(candidate);return {kind:"card",x,candidate,q,best}}).filter(Boolean)
  .filter(r=>r.q&&r.q.passed===r.q.total&&["BUY-ONE","BUY-SCALE"].includes(r.x.approval))
  .map(r=>({id:"manual:"+r.x.id,name:r.x.name,set:r.x.set||"",number:r.x.number||"",image:img(r.x),
- price:N(r.x.price),seller:r.x.seller||"Vendedor verificado",url:r.x.url||"",source:r.x.shop||r.x.evidenceSource||"Mercado verificado",
+ price:N(r.best.price),seller:r.best.seller||"Vendedor verificado",url:r.best.url||"",source:r.best.source||r.x.shop||"Mercado verificado",
  description:[r.x.offerLanguage||r.x.language,r.x.variant,r.x.condition].filter(Boolean).join(" · "),
  exit:N(r.q.econ?.exit),edge:N(r.q.econ?.edge),roi:N(r.q.econ?.roi),units:r.x.approval==="BUY-SCALE"?Math.max(1,N(r.x.recommendedQty)||1):1}));
 }
