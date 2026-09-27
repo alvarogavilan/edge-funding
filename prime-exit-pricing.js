@@ -65,6 +65,8 @@ function calc(x,c){
  let rotation="SIN DATO VERIFICADO";
  if(ev.sales30!=null)rotation=N(ev.sales30)>=8?"ALTA":N(ev.sales30)>=3?"MEDIA":N(ev.sales30)>0?"BAJA":"SIN VENTAS 30D";
  const depth=Array.isArray(ev.depthPrices)?ev.depthPrices.length:0;
+ const ladder=Array.isArray(ev.depthPrices)?ev.depthPrices.map(N).filter(v=>v>0):[];
+ const position=ladder.length&&N(x.price)>0?{rank:ladder.filter(v=>v<N(x.price)).length+1,of:ladder.length+1}:null;
  const executable=idOk&&fresh&&!!(ev.source&&ev.url)&&marketAnchor>0;
  const alerts=[];
  if(breakEven!=null&&N(x.price)>0&&N(x.price)<breakEven-0.005)alerts.push({level:"high",text:"Precio publicado por debajo del floor económico (break-even "+EUR(breakEven)+")"});
@@ -76,7 +78,7 @@ function calc(x,c){
  if(marketAnchor>0&&targetFloor!=null&&marketAnchor<targetFloor)alerts.push({level:"mid",text:"Comparable actual "+EUR(marketAnchor)+" por debajo del objetivo: no rebajar para perseguirlo"});
  if(executable&&N(x.price)>marketAnchor*1.15)alerts.push({level:"info",text:"Publicado >15% sobre el comparable más bajo · rotación lenta probable"});
  return {idOk,fresh,age,landed,minProfit,feePct:pol.feePct,sellShipping:pol.sellShipping,breakEven,targetFloor,neededGross,marketAnchor,floor,ask,net,profit,roi,
-  listedPrice:N(x.price),listedNet,listedProfit,listedRoi,rotation,executable,alerts,
+  listedPrice:N(x.price),position,listedNet,listedProfit,listedRoi,rotation,executable,alerts,
   soldMedian:N(ev.soldMedianEUR)||null,soldSample:N(ev.soldSample),sales30:ev.sales30??null,sellers:ev.sellers??null,depth,lowestAsk:N(ev.lowestAskEUR)||null,source:ev.source||"",url:ev.url||"",evidenceAt:ev.at||""};
 }
 function renderOne(x,c){

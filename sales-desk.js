@@ -92,6 +92,7 @@ function render(){
    '<div class="qaRow"><span>Comparable más bajo</span><b>'+opt(px.lowestAsk)+'</b></div>'+
    '<div class="qaRow"><span>Mediana ventas reales</span><b>'+(px.soldMedian?EUR(px.soldMedian)+' · '+px.soldSample+' comps':'SIN DATO')+'</b></div>'+
    '<div class="qaRow"><span>Ventas 30d · vendedores · profundidad</span><b>'+(px.sales30??'—')+' · '+(px.sellers??'—')+' · '+px.depth+' niveles</b></div>'+
+   '<div class="qaRow"><span>Posición de tu anuncio</span><b>'+(px.position?'nº '+px.position.rank+' de '+px.position.of+' comparables':'SIN ESCALERA')+'</b></div>'+
    '<div class="qaRow"><span>Mínimo interno</span><b>'+EUR(x.floor)+'</b></div>'+
    '<div class="qaRow"><span>Comisión · envío</span><b>'+px.feePct+'% · '+EUR(px.sellShipping)+'</b></div>'+
    (px.url?'<a href="'+E(px.url)+'" target="_blank" rel="noopener">Abrir evidencia</a>':'')+
