@@ -13,6 +13,9 @@ function desk(id){
  if(!source||!url){alert("Hace falta fuente y URL verificable.");return}
  const lastSaleEUR=numOrNull(prompt("Última venta REAL comparable (€), si existe:",""));
  const lastSaleDate=(prompt("Fecha última venta YYYY-MM-DD, si existe:","")||"").trim();
+ const soldRaw=(prompt("Precios de ventas REALES comparables recientes separados por ; (ej. 95;99.90;105). Vacío = sin muestra:","")||"").trim();
+ const soldPrices=soldRaw?soldRaw.split(";").map(v=>N(v.replace(",","."))).filter(v=>v>0).sort((a,b)=>a-b):[];
+ const soldMedian=soldPrices.length?(soldPrices.length%2?soldPrices[(soldPrices.length-1)/2]:(soldPrices[soldPrices.length/2-1]+soldPrices[soldPrices.length/2])/2):null;
  const sales7=intOrNull(prompt("Ventas reales comparables en 7 días. Vacío = sin dato:",""));
  const sales30=intOrNull(prompt("Ventas reales comparables en 30 días. Vacío = sin dato:",""));
  const sales90=intOrNull(prompt("Ventas reales comparables en 90 días. Vacío = sin dato:",""));
@@ -23,6 +26,7 @@ function desk(id){
  const currentExitEUR=numOrNull(prompt("Precio de salida comparable actual (€), si está verificado:",""));
  x.marketEvidence={
   at:new Date().toISOString(),source,url,exactComparable:true,lastSaleEUR:lastSaleEUR>0?lastSaleEUR:null,lastSaleDate,
+  soldPrices,soldMedianEUR:soldMedian,soldSample:soldPrices.length,
   sales7,sales30,sales90,currentSellers,currentQty,depthPrices,currentExitEUR:currentExitEUR>0?currentExitEUR:null,
   language:x.offerLanguage||x.language||"",variant:x.variant||"",condition:x.condition||"",grading:x.grading||"",grade:x.grade||""
  };
@@ -31,8 +35,9 @@ function desk(id){
  if(currentQty!=null)x.available=currentQty;
  x.sales7=sales7;x.sales30=sales30;x.sales90=sales90;
  x.lastSalePrice=lastSaleEUR>0?lastSaleEUR:null;x.lastSaleDate=lastSaleDate;
+ x.soldMedianEUR=soldMedian;x.soldSample=soldPrices.length;
  x.sameMarketComparableVerified=true;
- x.exitEvidenceVerified=!!((lastSaleEUR>0)||(sales30!=null&&sales30>0)||(currentExitEUR>0));
+ x.exitEvidenceVerified=!!((lastSaleEUR>0)||(soldPrices.length>0)||(sales30!=null&&sales30>0)||(currentExitEUR>0));
  x.evidenceSource=source;x.evidenceUrl=url;x.evidenceCheckedAt=new Date().toISOString();
  save();
  try{window.CVPrimeMarket?.run?.()}catch{}
