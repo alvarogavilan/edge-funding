@@ -24,6 +24,7 @@ function open(id){
  const x=get(id);if(!x)return;
  const {q,liq,d,ev,missing,positive}=dossier(x),dlg=ensureDialog(),body=dlg.querySelector("#primeCardBody");
  const conf=window.CVPrimeMarket?.evidenceConfidence?.(x)||{label:"NO VERIFICADA",score:0};
+ const abs=window.CVPrimeMarket?.absorption?.(x)||{rate:null,days:null,label:"SIN DATO"};
  const supply=window.CVSupplyRisk?.stateOf?.(x)||{risk:"unknown",status:"unknown",verified:false,age:Infinity};
  const history=Array.isArray(x.marketEvidenceHistory)?x.marketEvidenceHistory:[];
  const sources=[ev,...history].map(z=>String(z?.source||"").trim()).filter(Boolean);
@@ -56,6 +57,8 @@ function open(id){
    row("Última venta real",last>0?EUR(last)+(lastDate?" · "+lastDate:""):"SIN DATO VERIFICADO")+
    row("Mediana ventas reales",N(x.soldMedianEUR||ev.soldMedianEUR)>0?EUR(x.soldMedianEUR||ev.soldMedianEUR)+" · "+N(x.soldSample||ev.soldSample)+" comps":"SIN DATO VERIFICADO")+
    row("Ventas 7/30/90d",(x.sales7!=null||x.sales30!=null||x.sales90!=null)?(x.sales7??"—")+"/"+(x.sales30??"—")+"/"+(x.sales90??"—"):"SIN DATO VERIFICADO")+
+   row("Absorción 30d",abs.rate==null?"SIN DATO":abs.rate.toFixed(0)+"% · "+abs.label)+
+   row("Cobertura stock",abs.days==null?"SIN DATO":abs.days.toFixed(0)+" días al ritmo 30d")+
    row("Profundidad",depth)+
    row("Gap 1º→2º",d.gap==null?"SIN DATO":d.gap.toFixed(1)+"%")+
    row("Disponible comparable",x.available!=null?String(x.available):"SIN DATO")+
