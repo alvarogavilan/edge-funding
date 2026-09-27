@@ -79,9 +79,29 @@ function watchAgain(id){
  save();render();try{window.CVRenderCollection?.()}catch{}
  alert("Añadida a Seguimiento. Card Vault volverá a vigilar esta carta.");
 }
+function renderLearning(rows){
+ const box=Q("#archiveInsights");if(!box)return;
+ const known=rows.filter(x=>x.result!=null&&N(x.basis)>0);
+ if(known.length<3){
+  box.innerHTML='<b>Learning Engine · aprendiendo</b><div class="qaRow"><span>Ventas con coste conocido</span><b>'+known.length+'/3 mínimas</b></div><small>No ajusta recomendaciones todavía. Espera una muestra mínima para evitar sobreajuste.</small>';
+  return;
+ }
+ const rois=known.map(x=>x.result/N(x.basis)*100),wins=known.filter(x=>x.result>0).length;
+ const avgRoi=rois.reduce((a,b)=>a+b,0)/rois.length,sorted=known.map(x=>x.heldDays).filter(x=>x!=null).sort((a,b)=>a-b);
+ const medianHold=sorted.length?sorted[Math.floor(sorted.length/2)]:null;
+ const groups={};
+ for(const x of known){const k=(x.universe||"pokemon")+" · "+(x.grading||"RAW");const g=groups[k]||(groups[k]={n:0,sum:0});g.n++;g.sum+=x.result/N(x.basis)*100}
+ const eligible=Object.entries(groups).filter(([,g])=>g.n>=2).sort((a,b)=>(b[1].sum/b[1].n)-(a[1].sum/a[1].n));
+ box.innerHTML='<b>Learning Engine · resultados cerrados</b>'+
+  '<div class="qaRow"><span>Tasa positiva</span><b>'+((wins/known.length)*100).toFixed(1)+'%</b></div>'+
+  '<div class="qaRow"><span>ROI medio realizado</span><b>'+(avgRoi>=0?'+':'')+avgRoi.toFixed(1)+'%</b></div>'+
+  '<div class="qaRow"><span>Tiempo mediano en cartera</span><b>'+(medianHold==null?'Sin dato':medianHold+' días')+'</b></div>'+
+  '<div class="qaRow"><span>Mejor segmento con ≥2 ventas</span><b>'+(eligible.length?eligible[0][0]+' · '+(eligible[0][1].sum/eligible[0][1].n).toFixed(1)+'% ROI':'Aún sin muestra')+'</b></div>'+
+  '<small>Estas métricas son descriptivas. No cambian el motor de compra hasta acumular una muestra suficiente y estable.</small>';
+}
 function render(){
  const box=Q("#archiveList"),sum=Q("#archiveSummary");if(!box||!sum)return;
- const rows=records(),s=summary(rows);
+ const rows=records(),s=summary(rows);renderLearning(rows);
  sum.innerHTML='<div><span>Cartas vendidas</span><b>'+s.count+'</b></div><div><span>Ventas archivadas</span><b>'+s.records+'</b></div><div><span>Bruto histórico</span><b>'+EUR(s.gross)+'</b></div><div><span>Neto histórico</span><b>'+EUR(s.net)+'</b></div><div><span>Resultado conocido</span><b>'+(s.known?(s.pnl>=0?"+":"")+EUR(s.pnl):"Coste pendiente")+'</b></div><div><span>Cobros pendientes</span><b>'+EUR(s.pending)+'</b></div><div><span>PSA / RAW</span><b>'+s.psa+' / '+s.raw+'</b></div><div><span>Pokémon / Lorcana</span><b>'+s.pokemon+' / '+s.lorcana+'</b></div><div><span>Mejor salida</span><b>'+(s.best?EUR(s.best.unitPrice):"—")+'</b></div>';
  box.innerHTML=rows.length?rows.map(x=>{
   const detail=[x.number,x.set,x.language,x.grading,x.grade,x.cert?("Cert. "+x.cert):""].filter(Boolean).join(" · ");
