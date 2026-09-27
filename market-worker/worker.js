@@ -18,7 +18,7 @@ const LORCAST = "https://api.lorcast.com/v0";
 const CT = "https://api.cardtrader.com/api/v2";
 const PSA = "https://api.psacard.com/publicapi";
 const FX = "https://api.frankfurter.app/latest?from=USD&to=EUR";
-const WRITE_BUDGET = 90000; // D1 gratis: 100.000 filas escritas/día
+const WRITE_BUDGET = 70000; // margen PRIME bajo D1 Free (100.000 filas/día); nunca intenta apurar el límite
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS products(id TEXT PRIMARY KEY, universe TEXT, source TEXT, ext_id TEXT, name TEXT, set_id TEXT, set_name TEXT, number TEXT, rarity TEXT, image TEXT, tcgplayer_id INTEGER, url TEXT, updated_at TEXT)`,
@@ -389,6 +389,7 @@ async function handle(req, env) {
       products: { pokemon: await c("SELECT COUNT(*) n FROM products WHERE universe='pokemon'"), lorcana: await c("SELECT COUNT(*) n FROM products WHERE universe='lorcana'") },
       pricesToday: await c(`SELECT COUNT(*) n FROM prices WHERE day='${d}'`), priceRows: await c("SELECT COUNT(*) n FROM prices"),
       historyDays: await c("SELECT COUNT(DISTINCT day) n FROM prices"), firstDay: (await env.DB.prepare("SELECT MIN(day) d FROM prices").first())?.d || null,
+      writesToday: await writesToday(env), writeBudget: WRITE_BUDGET, writeBudgetRemaining: Math.max(0, WRITE_BUDGET - await writesToday(env)),
       tracked: await c("SELECT COUNT(*) n FROM tracked"), offersToday: await c(`SELECT COUNT(*) n FROM offers WHERE day='${d}'`),
       ctBlueprints: await c("SELECT COUNT(*) n FROM ct_blueprints"), writesToday: await writesToday(env), fx: await fxToday(env),
       lastRuns: (await env.DB.prepare("SELECT at,phase,n,ms,error FROM runs ORDER BY id DESC LIMIT 12").all()).results
