@@ -514,3 +514,6 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 .primeRadarCandidate h4{margin:2px 0;font-size:14px}.primeRadarCandidate small,.primeRadarCandidate span,.primeRadarCandidate p{display:block;font-size:10px;line-height:1.35;opacity:.72}.primeRadarCandidate p{margin:5px 0}.primeRadarCandidate b{display:block;font-size:11px}
 .primeRadarCandidate a{display:inline-flex;align-items:center;min-height:40px;margin-top:7px;padding:0 10px;border-radius:9px;background:#11182b;color:#fff;text-decoration:none;font-size:10px;font-weight:900}
 @media(max-width:650px){.primeRadarColumns{grid-template-columns:1fr}.primeBuyGroupHead{align-items:flex-start}.primeRadarCandidate{grid-template-columns:48px minmax(0,1fr)}.primeRadarCandidate img,.primeRadarNoImage{width:48px;height:68px}}
+
+/* V90.3 · idioma de compra visible */
+.primeLanguageBadge{display:inline-flex;align-items:center;min-height:26px;margin:0 0 6px;padding:4px 8px;border-radius:999px;background:#eef2ff;border:1px solid #cfd8ea;color:#24324a;font-size:10px;font-weight:900;letter-spacing:.08em}
