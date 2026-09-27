@@ -24,6 +24,7 @@ function open(id){
  const x=get(id);if(!x)return;
  const {q,liq,d,ev,missing,positive}=dossier(x),dlg=ensureDialog(),body=dlg.querySelector("#primeCardBody");
  const conf=window.CVPrimeMarket?.evidenceConfidence?.(x)||{label:"NO VERIFICADA",score:0};
+ const supply=window.CVSupplyRisk?.stateOf?.(x)||{risk:"unknown",status:"unknown",verified:false,age:Infinity};
  const history=Array.isArray(x.marketEvidenceHistory)?x.marketEvidenceHistory:[];
  const sources=[ev,...history].map(z=>String(z?.source||"").trim()).filter(Boolean);
  const uniqueSources=[...new Set(sources.map(s=>s.toLowerCase()))].length;
@@ -59,6 +60,8 @@ function open(id){
    row("Gap 1º→2º",d.gap==null?"SIN DATO":d.gap.toFixed(1)+"%")+
    row("Disponible comparable",x.available!=null?String(x.available):"SIN DATO")+
    row("Fuente evidencia",ev.source||x.evidenceSource||"SIN DATO VERIFICADO")+
+   row("Supply / impresión",supply.verified?String(supply.status).toUpperCase():"SIN EVIDENCIA")+
+   row("Riesgo reedición",supply.verified?String(supply.risk).toUpperCase():"SIN EVIDENCIA")+
    row("Identidad evidencia",q?.ee?.idOk?"INTACTA":"NO COINCIDE / SIN SELLO")+
    row("Edad evidencia",Number.isFinite(q?.ee?.age)?q.ee.age.toFixed(1)+" h":"SIN DATO")+
    row("Vigencia",q?.ee?.fresh?"≤24 h · VÁLIDA":"CADUCADA / SIN DATO")+
