@@ -17,7 +17,7 @@ function ensureEeveeArchive(){
    acquisitionType:card.acquisitionType||"included-promo",
    acquisitionNotes:card.acquisitionNotes||"Promo incluida en la Super-Premium Collection de Evoluciones Prismáticas (~120 € el producto completo). Coste individual no asignado.",
    referenceImage:card.referenceImage||"https://images.pokemontcg.io/svp/174_hires.png",
-   marketUrl:"https://www.cardmarket.com/es/Pokemon/Products/Singles/SV-Black-Star-Promos/Eevee-ex-SVP174",
+   marketUrl:"https://www.cardmarket.com/es/Pokemon/Products/Singles/SV-Black-Star-Promos/Eevee-ex-SVP174",rawMarketSnapshot:{checkedAt:"2026-09-27",trend:16.56,avg30:18.78,avg7:20.37,avg1:17.24,currency:"EUR",scope:"RAW only · no comparable directamente con PSA 9"},
    archiveNotes:"Venta real Cardmarket. No se calcula ROI porque el coste individual de esta carta no fue asignado dentro del producto completo."
   });
   save();
@@ -76,7 +76,7 @@ function render(){
    '<div class="microNote"><b>Procedencia:</b> '+String(origin||"Sin documentar")+(x.parentProductCostEUR?" · producto origen ~"+EUR(x.parentProductCostEUR):"")+'</div>'+
    '<div class="microNote"><b>Contabilidad:</b> '+result+'</div>'+
    (x.acquisitionNotes?'<div class="microNote">'+String(x.acquisitionNotes)+'</div>':"")+
-   (x.archiveNotes?'<div class="microNote">'+String(x.archiveNotes)+'</div>':"")+
+   (x.rawMarketSnapshot?'<div class="microNote"><b>Snapshot RAW '+x.rawMarketSnapshot.checkedAt+':</b> tendencia '+EUR(x.rawMarketSnapshot.trend)+' · 30d '+EUR(x.rawMarketSnapshot.avg30)+' · 7d '+EUR(x.rawMarketSnapshot.avg7)+' · 1d '+EUR(x.rawMarketSnapshot.avg1)+' · no comparar directamente con el slab PSA 9.</div>':"")+(x.archiveNotes?'<div class="microNote">'+String(x.archiveNotes)+'</div>':"")+
    '<div class="sealedActions">'+(x.marketUrl?'<a href="'+x.marketUrl+'" target="_blank" rel="noopener">Ficha mercado</a>':"")+'<button data-archive-watch="'+x.id+'">Volver a vigilar</button></div></article>'
  }).join(""):'<div class="emptyState"><b>El archivo está vacío.</b><span>Cuando vendas una carta aparecerá aquí permanentemente.</span></div>';
  document.querySelectorAll("[data-archive-watch]").forEach(b=>b.onclick=()=>watchAgain(b.dataset.archiveWatch));
