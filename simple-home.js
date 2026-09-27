@@ -26,7 +26,7 @@ function manualBuys(){
  .map(r=>({id:"manual:"+r.x.id,name:r.x.name,set:r.x.set||"",number:r.x.number||"",image:img(r.x),
  price:N(r.best.price),seller:r.best.seller||"Vendedor verificado",url:r.best.url||"",source:r.best.source||r.x.shop||"Mercado verificado",
  description:[r.x.offerLanguage||r.x.language,r.x.variant,r.x.condition].filter(Boolean).join(" · "),
- exit:N(r.q.econ?.exit),edge:N(r.q.econ?.edge),roi:N(r.q.econ?.roi),exitKind:r.q.econ?.kind||"none",units:r.x.approval==="BUY-SCALE"?Math.max(1,N(r.x.recommendedQty)||1):1}));
+ exit:N(r.q.econ?.exit),edge:N(r.q.econ?.edge),roi:N(r.q.econ?.roi),exitKind:r.q.econ?.kind||"none",checkedAt:r.x.evidenceCheckedAt||r.x.checkedAt||"",units:r.x.approval==="BUY-SCALE"?Math.max(1,N(r.x.recommendedQty)||1):1}));
 }
 function sealedBuys(){
  return (state.sealedProducts||[]).map(p=>({p,d:window.CVSealedPrime?.decision?.(p)}))
@@ -46,7 +46,7 @@ function card(r,i){
   '<div class="primeBuyInfo"><h3>'+E(r.name)+'</h3><small>'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
   '<div class="primeBuyMetrics"><div><span>Comprar</span><b>'+EUR(r.price)+'</b></div><div><span>Salida prudente</span><b>'+EUR(r.exit)+'</b></div><div><span>Margen</span><b>+'+EUR(r.edge)+'</b></div></div>'+
   '<div class="primeBuySeller"><b>'+E(r.seller)+'</b><span>'+E(r.source)+'</span></div>'+
-  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida prudente basada en profundidad de mercado activa · no venta cerrada":"Salida respaldada por evidencia de ventas")+'</small>'+
+  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida prudente basada en profundidad de mercado activa · no venta cerrada":"Salida respaldada por evidencia de ventas")+(r.checkedAt?" · verificado "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
   (r.url?'<a class="primaryAction primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">ABRIR MEJOR OFERTA VERIFICADA · '+EUR(r.price)+'</a>':'<button class="primaryAction" disabled>SIN ENLACE EJECUTABLE</button>')+
   (r.units>1?'<small>Compra recomendada: '+r.units+' unidades máximo según liquidez verificada.</small>':'')+
   '</div></article>';
