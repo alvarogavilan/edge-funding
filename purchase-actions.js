@@ -99,6 +99,9 @@ function buy(key){
   if(src.kind==="manual"&&src.row.approval==="BUY-SCALE"){
     const raw=prompt("¿Cuántas unidades has comprado?","1");if(raw==null)return;qty=Math.max(1,Math.floor(N(raw)||1));
   }
+  const guard=window.CVConflictGuard?.purchaseCheck?.(key);
+  if(guard?.block){alert("Compra bloqueada por Conflict Guard: "+guard.reason);return}
+  if(guard?.maxQty!=null&&qty>guard.maxQty){alert("BUY-SCALE limitado: máximo autorizado restante "+guard.maxQty+" unidad(es). No se registran "+qty+".");return}
   if(!confirm("Registrar "+qty+" × "+row.name+" a "+N(row.price).toLocaleString("es-ES",{style:"currency",currency:"EUR"})+" como compra realizada?"))return;
   const shipRaw=prompt("Portes totales reales de esta compra (€):","0");if(shipRaw==null)return;
   const feeRaw=prompt("Comisiones/otros costes de compra (€):","0");if(feeRaw==null)return;

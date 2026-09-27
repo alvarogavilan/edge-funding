@@ -45,6 +45,7 @@ function items(){
   if(p.primeEvidence?.identityKey&&window.CVPrimeSealedEvidence?.key?.(p)&&p.primeEvidence.identityKey!==window.CVPrimeSealedEvidence.key(p))
    out.push({kind:"sealed-identity",priority:99,name:p.name,text:"Sellado · evidencia no coincide con identidad actual",sealedId:p.id});
  }
+ try{for(const k of (window.CVConflictGuard?.detect?.()||[]))out.push({kind:"conflict-"+k.kind,priority:k.priority,name:k.name,text:"Conflicto · "+k.text})}catch{}
  return out.sort((a,b)=>b.priority-a.priority||a.name.localeCompare(b.name));
 }
 function render(){

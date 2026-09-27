@@ -22,7 +22,7 @@ function markSold(id){
  if(!(price>0))return;
  const feeRaw=prompt("Comisión/gastos totales (€):",(price*pol().feePct/100).toFixed(2));if(feeRaw==null)return;const fees=Math.max(0,N(String(feeRaw).replace(",",".")));
  const shipRaw=prompt("Coste de envío que pagas tú (€):","0");if(shipRaw==null)return;const shipping=Math.max(0,N(String(shipRaw).replace(",",".")));
- const saleOrder=(prompt("Número de pedido / referencia (opcional):","")||"").trim();
+ const saleOrder=(prompt("Número de pedido / referencia (opcional):","")||"").trim();{const dup=window.CVConflictGuard?.saleOrderTaken?.(saleOrder);if(dup){alert("El pedido #"+saleOrder+" ya está registrado ("+(dup.name||dup.id)+"). Venta NO registrada para evitar duplicado.");return}}
  const saleNotes=(prompt("Notas de la venta (opcional):","")||"").trim();
  const date=new Date().toISOString().slice(0,10);
  const ledgerId="sale-"+x.id+"-"+date;

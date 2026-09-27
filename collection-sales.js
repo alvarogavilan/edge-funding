@@ -11,7 +11,7 @@ function sell(cardId){
  const rawFees=prompt("Comisiones totales de esta venta (€):","0");if(rawFees==null)return;const fees=Math.max(0,N(String(rawFees).replace(",",".")));
  const rawShip=prompt("Coste de envío que pagas tú (€):","0");if(rawShip==null)return;const shipping=Math.max(0,N(String(rawShip).replace(",",".")));
  const channel=(prompt("Canal de venta:","Cardmarket")||"").trim()||"Sin especificar";
- const saleOrder=(prompt("Número de pedido / referencia (opcional):","")||"").trim();
+ const saleOrder=(prompt("Número de pedido / referencia (opcional):","")||"").trim();{const dup=window.CVConflictGuard?.saleOrderTaken?.(saleOrder);if(dup){alert("El pedido #"+saleOrder+" ya está registrado ("+(dup.name||dup.id)+"). Venta NO registrada para evitar duplicado.");return}}
  const saleNotes=(prompt("Notas de la venta (opcional):","")||"").trim();
  if(!confirm("Registrar venta de "+qty+" × "+c.name+" a "+price.toLocaleString("es-ES",{style:"currency",currency:"EUR"})+" por unidad?"))return;
  state.investmentLedger=Array.isArray(state.investmentLedger)?state.investmentLedger:[];
