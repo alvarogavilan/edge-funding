@@ -12,6 +12,7 @@ function items(){
   if(stale!=null&&stale>30&&N(c.value)>=20)out.push({kind:"stale",priority:70,name:c.name,text:"Valor de mercado con "+stale+" días",cardId:c.id});
   if(c.purchase==null&&["investment","sell","reinvest"].includes(c.purpose||""))out.push({kind:"basis",priority:45,name:c.name,text:"Coste individual desconocido · ROI no disponible",cardId:c.id});
   if(c.valuationStatus==="reference")out.push({kind:"reference",priority:85,name:c.name,text:"Valor solo de referencia · falta cierre",cardId:c.id});
+  if(c.primeValuationTier==="C"&&N(c.value)>=20)out.push({kind:"valuation-c",priority:82,name:c.name,text:"Valoración PRIME C · "+(c.primeValuationReason||"evidencia incompleta"),cardId:c.id});
  }
  for(const h of (state.saleHistory||[])){
   const ledger=(state.investmentLedger||[]).find(x=>x.id===h.id);
