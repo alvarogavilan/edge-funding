@@ -24,6 +24,9 @@ function open(id){
  const x=get(id);if(!x)return;
  const {q,liq,d,ev,missing,positive}=dossier(x),dlg=ensureDialog(),body=dlg.querySelector("#primeCardBody");
  const conf=window.CVPrimeMarket?.evidenceConfidence?.(x)||{label:"NO VERIFICADA",score:0};
+ const history=Array.isArray(x.marketEvidenceHistory)?x.marketEvidenceHistory:[];
+ const sources=[ev,...history].map(z=>String(z?.source||"").trim()).filter(Boolean);
+ const uniqueSources=[...new Set(sources.map(s=>s.toLowerCase()))].length;
  const price=N(x.price),exit=q?.econ?.exit||0,edge=q?.econ?.edge||0,roi=q?.econ?.roi||0;
  const depth=d.prices?.length?d.prices.slice(0,8).map(EUR).join(" → "):"SIN DATO VERIFICADO";
  const last=N(x.lastSalePrice||ev.lastSaleEUR),lastDate=x.lastSaleDate||ev.lastSaleDate||"";
@@ -59,6 +62,8 @@ function open(id){
    row("Identidad evidencia",q?.ee?.idOk?"INTACTA":"NO COINCIDE / SIN SELLO")+
    row("Edad evidencia",Number.isFinite(q?.ee?.age)?q.ee.age.toFixed(1)+" h":"SIN DATO")+
    row("Vigencia",q?.ee?.fresh?"≤24 h · VÁLIDA":"CADUCADA / SIN DATO")+
+   row("Historial evidencia",String(history.length+1)+" snapshot(s)")+
+   row("Fuentes distintas",String(uniqueSources))+
   '</div>'+
   '<div class="qaPanel"><b>Gate PRIME</b>'+
    row("Cumple",q?q.passed+"/"+q.total:"SIN EVALUAR")+
