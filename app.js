@@ -33,7 +33,6 @@ if(!state.userCollectionImport20260927){
 if(!state.userCollectionImportVintage20260927){
   const imported=[
     {id:"own-hitmonlee-106-jp-fossil-psa5",universe:"pokemon",name:"Hitmonlee",number:"106",set:"Japanese Mystery of the Fossils",year:"1997",language:"Japonés",grading:"PSA",grade:"5",cert:"57688397",value:21.86,purchase:null,quantity:1,purchaseDate:"",purpose:"investment",draft:false,variant:"Holo",marketPricing:{value:21.86,currency:"EUR",source:"Setlot PSA 5 · 24.93 USD convertido con referencia ECB 25/09/2026",url:"https://app.setlot.com/catalog/pokemon/japanese-mystery-of-the-fossils/hitmonlee-106",checkedAt:"2026-09-27"},notes:"Carta propia fotografiada · PSA 5 EX · etiqueta 1997 P.M. Japanese Fossil Hitmonlee-Holo #106 · cert 57688397 visible. Certificado fotografiado; verificación PSA online pendiente de consulta directa."},
-    {id:"own-ancient-mew-2000-international",valuationStatus:"reference",universe:"pokemon",name:"Ancient Mew",number:"",set:"Promos / International Movie Promo",year:"2000",language:"Internacional",grading:"RAW",grade:"",value:107.75,purchase:null,quantity:1,purchaseDate:"",purpose:"investment",draft:false,variant:"International Print · Cosmos Holo · ©1999-2000 Wizards",marketPricing:{value:107.75,currency:"EUR",source:"Cardmarket · tendencia",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Promos/Ancient-Mew-PR11",checkedAt:"2026-09-27",avg30:91.15,avg7:94.05},notes:"Carta propia fotografiada frontal + reverso. Copyright visible compatible con la versión internacional 2000: ©1995,96,98,99 Nintendo, Creatures, GAMEFREAK · ©1999-2000 Wizards. Valor de mercado de referencia; condición exacta pendiente de inspección física."},
     {id:"own-toxtricity-089-m2-jp",universe:"pokemon",name:"Toxtricity",number:"089/080",set:"Inferno X",year:"2025",language:"Japonés",grading:"RAW",grade:"",value:1.17,purchase:null,quantity:1,purchaseDate:"",purpose:"collection",draft:false,variant:"Art Rare",marketPricing:{value:1.17,currency:"EUR",source:"Cardmarket · tendencia",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Inferno-X/Toxtricity-V2-m2089",checkedAt:"2026-09-27",avg30:1.18,avg7:1.15},notes:"Carta propia fotografiada frontal + reverso · m2 089/080 AR. No es una posición prioritaria de inversión por su bajo valor absoluto."},
     {id:"own-gyarados-ex-089-xy9-jp",valuationStatus:"reference",universe:"pokemon",name:"Gyarados EX",number:"089/080",set:"Rage of the Broken Heavens",year:"2015",language:"Japonés",grading:"RAW",grade:"",value:509.76,purchase:null,quantity:1,purchaseDate:"",purpose:"investment",draft:false,variant:"UR / Secret",marketPricing:{value:509.76,currency:"EUR",source:"Cardmarket · tendencia",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Rage-of-the-Broken-Heavens/Gyarados-EX-V3",checkedAt:"2026-09-27",avg30:274.17,avg7:535.49},notes:"Carta propia fotografiada frontal + reverso · XY9 089/080 UR. Pieza de alto valor. 509,76 € es referencia de mercado, NO valoración definitiva del ejemplar; condición debe revisarse fuera del toploader antes de vender o graduar."},
     {id:"own-machamp-gx-154-bus-es",universe:"pokemon",name:"Machamp GX",number:"154/147",set:"Sombras Ardientes",year:"2017",language:"Español",grading:"RAW",grade:"",value:15.35,purchase:null,quantity:1,purchaseDate:"",purpose:"investment",draft:false,variant:"Secret Rainbow Rare",marketPricing:{value:15.35,currency:"EUR",source:"Cardmarket · tendencia",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Burning-Shadows/Machamp-GX-V3-BUS154",checkedAt:"2026-09-27",avg30:15.81,avg7:17.43},notes:"Carta propia fotografiada · Secret Rainbow Rare. Estado exacto pendiente de reverso."},
@@ -70,6 +69,25 @@ if(!state.conditionMarketMigrationV747){
   };
   for(const c of state.cards||[]){const u=byId[c.id];if(u)Object.assign(c,u)}
   state.conditionMarketMigrationV747=true;
+}
+if(!state.mewRemovalAndMewtwoConditionV748){
+  state.cards=(state.cards||[]).filter(c=>c.id!=="own-ancient-mew-2000-international");
+  const m=state.cards.find(c=>c.id==="own-mewtwo-118-ec1-jp-1ed-holo");
+  if(m){
+    m.condition="PO";
+    m.valuationStatus="reference";
+    m.psaCandidate=false;
+    m.conditionAssessment={
+      at:"2026-09-27",
+      source:"owner photos",
+      front:"visible structural crease/damage, especially lower-left corner; surface wear",
+      back:"strong lower-right crease/abrasion, top vertical creases, edge whitening/wear",
+      conclusion:"PO (Poor) consistent with Cardmarket purchase condition",
+      grading:"PSA not recommended for investment"
+    };
+    m.notes="Carta propia fotografiada frontal + reverso · Japanese e-Card Mewtwo 118/128 Holo 1st Edition · comprada en Cardmarket por 50,00 € · condición PO (Poor) confirmada por fotos y por el vendedor. Daño estructural visible: pliegue fuerte en esquina inferior izquierda frontal, gran crease/abrasión en esquina inferior derecha del reverso, varias líneas verticales/creases en borde superior y desgaste general de bordes. Autenticidad/originalidad confirmada por el propietario. No candidata a PSA por rentabilidad. Valor de mercado PO pendiente de comparable directo.";
+  }
+  state.mewRemovalAndMewtwoConditionV748=true;
 }
 const soldEevee=state.cards.find(c=>c.id==="eev174");if(soldEevee&&!soldEevee.sale1304093225Applied){const q=Math.max(1,+soldEevee.quantity||1);if(q>1)soldEevee.quantity=q-1;else soldEevee.archivedSold=true;soldEevee.sale1304093225Applied=true;soldEevee.soldAt="2026-09-27";soldEevee.soldPrice=60;}const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
