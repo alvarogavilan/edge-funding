@@ -10,6 +10,7 @@ function sell(cardId){
  const price=N(String(rawPrice).replace(",","."));if(!(price>0))return;
  const rawFees=prompt("Comisiones totales de esta venta (€):","0");if(rawFees==null)return;const fees=Math.max(0,N(String(rawFees).replace(",",".")));
  const rawShip=prompt("Coste de envío que pagas tú (€):","0");if(rawShip==null)return;const shipping=Math.max(0,N(String(rawShip).replace(",",".")));
+ const channel=(prompt("Canal de venta:","Cardmarket")||"").trim()||"Sin especificar";
  if(!confirm("Registrar venta de "+qty+" × "+c.name+" a "+price.toLocaleString("es-ES",{style:"currency",currency:"EUR"})+" por unidad?"))return;
  state.investmentLedger=Array.isArray(state.investmentLedger)?state.investmentLedger:[];
  const id="sale-card-"+c.id+"-"+Date.now();
@@ -20,9 +21,11 @@ function sell(cardId){
  });
  state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
  state.saleHistory.push({
-  id,cardId:c.id,name:c.name,set:c.set||"",number:c.number||"",language:c.language||"",grade:c.grade||"",
-  grading:c.grading||"RAW",qty,unitPrice:price,shipping,fees,net:price*qty-shipping-fees,soldAt:today(),
-  fulfillmentStatus:"sold-awaiting-payment",purchase:c.purchase??null,saleDescription:c.saleDescription||""
+  id,cardId:c.id,name:c.name,set:c.set||"",number:c.number||"",language:c.language||"",grade:c.grade||"",cert:c.cert||"",
+  grading:c.grading||"RAW",variant:c.buyVariant||c.variant||"",referenceImage:c.referenceImage||"",qty,unitPrice:price,shipping,fees,net:price*qty-shipping-fees,soldAt:today(),channel,
+  fulfillmentStatus:"sold-awaiting-payment",purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",saleDescription:c.saleDescription||"",
+  acquisitionSource:c.acquisitionSource||"",acquisitionType:c.acquisitionType||"",acquisitionNotes:c.acquisitionNotes||"",parentProductCostEUR:c.parentProductCostEUR??null,
+  marketUrl:c.marketPricing?.url||c.buySourceUrl||"",archiveSnapshotAt:new Date().toISOString()
  });
  if(qty>=held){
   c.archivedSold=true;c.soldAt=today();c.soldPrice=price;c.soldQty=qty;c.soldFees=fees;c.soldShipping=shipping;
