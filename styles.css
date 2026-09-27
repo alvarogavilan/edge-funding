@@ -456,3 +456,8 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 .primeBuyEvidence{margin:4px 0 8px!important;font-size:10px!important;opacity:.72!important}
 .warningText{color:#f0b84f!important}
 @media(max-width:520px){.masterSetPrime{grid-template-columns:68px minmax(0,1fr)}.masterSetCover{width:68px}.masterSetStats{grid-template-columns:1fr}.masterSetHead{display:block}}
+
+/* V88.1 · anuncios activos ≠ valoración */
+.activeListing{margin:0 0 10px;padding:10px 12px;border:1px solid rgba(96,220,160,.35);border-radius:12px;background:rgba(38,120,86,.12)}
+.activeListing span,.activeListing small{display:block}.activeListing span{font-size:9px;font-weight:800;letter-spacing:.08em;color:#8fe3b3}.activeListing b{display:block;font-size:22px;margin:2px 0}.activeListing small{font-size:10px;opacity:.72}
+.saleListingNote{font-size:10px;line-height:1.35;margin:8px 0;opacity:.72}
