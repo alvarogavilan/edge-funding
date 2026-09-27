@@ -56,6 +56,9 @@ function open(id){
    row("Gap 1º→2º",d.gap==null?"SIN DATO":d.gap.toFixed(1)+"%")+
    row("Disponible comparable",x.available!=null?String(x.available):"SIN DATO")+
    row("Fuente evidencia",ev.source||x.evidenceSource||"SIN DATO VERIFICADO")+
+   row("Identidad evidencia",q?.ee?.idOk?"INTACTA":"NO COINCIDE / SIN SELLO")+
+   row("Edad evidencia",Number.isFinite(q?.ee?.age)?q.ee.age.toFixed(1)+" h":"SIN DATO")+
+   row("Vigencia",q?.ee?.fresh?"≤24 h · VÁLIDA":"CADUCADA / SIN DATO")+
   '</div>'+
   '<div class="qaPanel"><b>Gate PRIME</b>'+
    row("Cumple",q?q.passed+"/"+q.total:"SIN EVALUAR")+
