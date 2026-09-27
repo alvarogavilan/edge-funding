@@ -59,6 +59,7 @@ function evaluate(c,ctx){
   else why.push("Sin disparador de venta verificado");
  }
  else {label="REVIEW";strength="datos insuficientes";why.push("Falta: "+missing.join(", "))}
+ try{const ms=window.CVMarketFeed?.signal?.({ref:c});if(ms&&ms.zone&&ms.zone!=="INSUFICIENTE")why.push("Histórico propio: zona "+ms.zone+" (p"+ms.rank+" "+ms.rankWindow+"d) · solo contexto")}catch{}
  if(label!=="REVIEW"&&missing.length)why.push("Pendiente: "+missing.join(", "));
  return {c,label,strength,why,missing,bucket:b,basis,latent,conc,supply,listing,px,exitExec,exitProfit,exitRoi,liquidity:px?.rotation||"SIN DATO VERIFICADO",stale:b.bucket==="STALE"};
 }

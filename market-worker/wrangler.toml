@@ -1,0 +1,18 @@
+# Card Vault · Market Collector (opcional: solo si despliegas con wrangler desde un ordenador)
+name = "cardvault-market"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[triggers]
+crons = ["*/2 * * * *"]
+
+[vars]
+ALLOWED_ORIGIN = "https://alvarogavilan.github.io"
+BATCH = "30"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cardvault-market"
+database_id = "PEGA_AQUI_EL_ID_DE_TU_D1"
+
+# Secretos (no se escriben aquí):  CV_KEY  ·  CARDTRADER_TOKEN  ·  PSA_TOKEN
