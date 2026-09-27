@@ -25,12 +25,16 @@ function desk(id){
  const depthPrices=depthRaw?depthRaw.split(/[,;\s]+/).map(v=>N(v.replace(",","."))).filter(v=>v>0):[];
  const currentExitEUR=numOrNull(prompt("Precio de salida comparable actual (€), si está verificado:",""));
  const identityKey=window.CVIdentity?.key?.(x)||"";
- x.marketEvidence={
+ const evidence={
   at:new Date().toISOString(),identityKey,source,url,exactComparable:true,lastSaleEUR:lastSaleEUR>0?lastSaleEUR:null,lastSaleDate,
   soldPrices,soldMedianEUR:soldMedian,soldSample:soldPrices.length,
   sales7,sales30,sales90,currentSellers,currentQty,depthPrices,currentExitEUR:currentExitEUR>0?currentExitEUR:null,
   language:x.offerLanguage||x.language||"",variant:x.variant||"",condition:x.condition||"",grading:x.grading||"",grade:x.grade||""
  };
+ x.marketEvidenceHistory=Array.isArray(x.marketEvidenceHistory)?x.marketEvidenceHistory:[];
+ if(x.marketEvidence?.at)x.marketEvidenceHistory.push({...x.marketEvidence,replacedAt:evidence.at});
+ x.marketEvidenceHistory=x.marketEvidenceHistory.slice(-20);
+ x.marketEvidence=evidence;
  if(depthPrices.length)x.depthPrices=depthPrices;
  if(currentSellers!=null)x.currentSellers=currentSellers;
  if(currentQty!=null)x.available=currentQty;
