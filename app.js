@@ -88,11 +88,11 @@ if(!state.mewtwoPricingCorrectionV880){
     m.purchase=50;m.grade="PO";m.condition="PO";m.conditionVerified=true;m.conditionVerifiedBy="photos";
     m.valuationStatus="reference";
     m.marketContext={exactCardFloorEUR:279.99,floorCondition:"EX- / pequeña doblez",source:"Cardmarket",sourceUrl:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Base-Expansion-Pack/Mewtwo-V2-EC1118",checkedAt:"2026-09-27",note:"No es comparable PO; solo contexto del mercado exacto."};
-    m.previousSaleRecommendation={priceEUR:149.90,status:"withdrawn",reason:"Precio heredado sin comparable PO exacto; retirado V88.0"};
+    m.previousSaleRecommendation={priceEUR:149.90,status:"active-user-listing",reason:"Precio publicado actualmente por el usuario en Cardmarket; no equivale a valoración PO validada."};
     m.notes=(m.notes||"")+" · V88.0: recomendación anterior 149,90 € RETIRADA. Cardmarket exacto empieza en 279,99 € con copia EX-; no asignar valor PO sin comparable PO.";
   }
   for(const x of (state.saleListings||[]))if(x.id==="listing-mewtwo-ec1"){
-    x.status="retracted";x.pauseReason="RECOMENDACIÓN RETIRADA · sin comparable PO exacto";x.updatedAt=new Date().toISOString();
+    x.status="active";x.pauseReason="";x.userConfirmed=true;x.price=149.90;x.updatedAt=new Date().toISOString();
   }
   state.mewtwoPricingCorrectionV880=true;save();
 }
