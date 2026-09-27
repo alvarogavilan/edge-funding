@@ -61,8 +61,7 @@ function sealedDecision(p){
 function confidence(p){const e=sealedEvidenceScore(p);return e>=85?"Alta":e>=65?"Media":"Baja"}
 function universeName(u){return u==="lorcana"?"Lorcana":"Pokémon"}
 function ageYears(date){if(!date)return null;const t=new Date(date).getTime();if(!Number.isFinite(t))return null;return Math.max(0,(Date.now()-t)/31557600000)}
-function cardmarketHub(p){return p.universe==="lorcana"?"https://www.cardmarket.com/es/Lorcana/Products":"https://www.cardmarket.com/es/Pokemon/Products/Sealed-Products"}
-function ebaySearch(p){return "https://www.ebay.es/sch/i.html?_nkw="+encodeURIComponent((p.name||"")+" "+(p.set||"")+" sealed")}
+function cardmarketHub(p){return p.universe==="lorcana"?"https://www.cardmarket.com/es/Lorcana/Products/Sealed-Products":"https://www.cardmarket.com/es/Pokemon/Products/Sealed-Products"}
 function productCard(p,rank){
   const d=sealedDecision(p),x=sealedEconomics(p),ev=sealedEvidenceScore(p),age=ageYears(p.releaseDate);
   const premium=num(p.msrp)>0?((num(p.currentPrice)-num(p.msrp))/num(p.msrp)*100):null;
@@ -78,7 +77,7 @@ function productCard(p,rank){
     '<div class="sealedActions">'+
       (p.buyUrl?'<a href="'+esc(p.buyUrl)+'" target="_blank" rel="noopener">Comprar / oferta</a>':'')+
       (p.sourceUrl?'<a href="'+esc(p.sourceUrl)+'" target="_blank" rel="noopener">Ver evidencia</a>':'')+
-      '<a href="'+cardmarketHub(p)+'" target="_blank" rel="noopener">Cardmarket</a><a href="'+ebaySearch(p)+'" target="_blank" rel="noopener">eBay exacto</a>'+
+      '<a href="'+cardmarketHub(p)+'" target="_blank" rel="noopener">Cardmarket sellado</a>'+
       '<button type="button" data-edit-sealed="'+esc(p.id)+'">Editar</button></div></div></article>';
 }
 function filteredProducts(){
