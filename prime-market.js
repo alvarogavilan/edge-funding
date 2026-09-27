@@ -12,8 +12,9 @@ function exactOffer(x){
 function exitEvidence(x){
  const r=refs(x),sameMarket=x.sameMarketComparableVerified===true;
  const sales=N(x.sales30||x.recentSalesCount),lastSale=N(x.lastSalePrice||x.marketEvidence?.lastSaleEUR),currentExit=N(x.marketEvidence?.currentExitEUR);
- const verified=x.exitEvidenceVerified===true||sales>0||lastSale>0||currentExit>0;
- return {ok:sameMarket&&verified,sameMarket,sales,lastSale,currentExit,refs:r.length,verified};
+ const soldMedian=N(x.soldMedianEUR||x.marketEvidence?.soldMedianEUR),soldSample=N(x.soldSample||x.marketEvidence?.soldSample);
+ const verified=x.exitEvidenceVerified===true||sales>0||lastSale>0||soldMedian>0||currentExit>0;
+ return {ok:sameMarket&&verified,sameMarket,sales,lastSale,soldMedian,soldSample,currentExit,refs:r.length,verified};
 }
 function liquidityBand(x){
  const s7=x.sales7==null?null:N(x.sales7),s30=x.sales30==null?null:N(x.sales30),s90=x.sales90==null?null:N(x.sales90);
@@ -40,6 +41,13 @@ function conservative(x){
  const gross=Math.min(...r),exit=gross*.95,edge=exit-N(x.price),roi=N(x.price)>0?edge/N(x.price)*100:0;
  return {gross,exit,edge,roi};
 }
+function evidenceConfidence(x){
+ const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x);
+ const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
+ const signals=[ex,ee.sameMarket,ee.verified,d.units>=2,!stale,ee.soldSample>=3||ee.sales>=3];
+ const n=signals.filter(Boolean).length;
+ return {label:n>=6?"A":n>=5?"B":n>=3?"C":"NO VERIFICADA",score:Math.round(n/signals.length*100),checks:n,total:signals.length};
+}
 function quality(x){
  const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x),c=consistency(x),econ=conservative(x);
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
@@ -54,7 +62,7 @@ function quality(x){
  ];
  const passed=checks.filter(([,ok])=>ok).length;
  let label=passed===checks.length?"APTA PARA REVISIÓN DE COMPRA":passed>=5?"WATCH · FALTA EVIDENCIA":"NO COMPRAR / REVISAR";
- return {checks,passed,total:checks.length,label,ex,ee,d,c,econ,stale};
+ return {checks,passed,total:checks.length,label,ex,ee,d,c,econ,stale,confidence:evidenceConfidence(x)};
 }
 function harden(){
  let changed=false;
@@ -103,15 +111,15 @@ function render(){
   ).join(""):'<div class="qaRow"><span>Compras con evidencia completa</span><b>0 · correcto si no existen</b></div>')+
   '<details><summary>Ver auditoría de oportunidades</summary>'+audited.slice(0,30).map(({x,q})=>{
    const gap=q.d.gap==null?"sin 2º nivel":q.d.gap.toFixed(1)+"%";
-   const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x);
+   const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence;
    return '<article class="microNote"><b>'+E(x.name)+'</b> · '+E(q.label)+'<br>'+
     'Entrada '+EUR(x.price)+' · salida conservadora '+EUR(q.econ.exit)+' · edge '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
-    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · consistencia referencias '+cons+'<br>'+
+    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · evidencia '+conf.label+' '+conf.score+'/100 · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
 }
 function run(){harden();render()}
-window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency,liquidityBand};
+window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency,liquidityBand,evidenceConfidence};
 setTimeout(run,100);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)run()});
 })();
