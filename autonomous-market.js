@@ -18,6 +18,9 @@ async function cycle(reason="open"){
     state.autonomousMarketRuntime.lastError=(state.autonomousMarketRuntime.lastError?state.autonomousMarketRuntime.lastError+" · ":"")+universe+": "+String(e?.message||e);
    }
   }
+  if(window.CVCardTraderDirect?.hasToken?.()){
+   try{result.cardtrader=await window.CVCardTraderDirect.scan()}catch(e){result.cardtrader={ok:false,error:String(e?.message||e)}}
+  }
   state.autonomousMarketRuntime={...(state.autonomousMarketRuntime||{}),running:false,lastRun:new Date().toISOString(),reason,counts:result};
   save();
   try{window.renderOpportunityEngine?.()}catch{}
