@@ -48,6 +48,16 @@ if(!state.userCollectionImportVintage20260927){
   for(const c of imported)if(!state.cards.some(x=>x.id===c.id||same(x,c)))state.cards.push(c);
   state.userCollectionImportVintage20260927={at:new Date().toISOString(),count:imported.length,pricing:"EUR market references; high-value copies condition-pending"};
 }
+if(!state.conditionMarketV876){
+  const g=(state.cards||[]).find(c=>c.id==="own-gyarados-ex-089-xy9-jp");
+  if(g){
+    g.valuationStatus="condition-reference";
+    g.condition="GD";g.grade="GD";
+    g.conditionMarket={matched:true,condition:"GD",askEUR:190,source:"Cardmarket · oferta activa misma impresión/condición",seller:"CardsRealm",sourceUrl:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Rage-of-the-Broken-Heavens/Gyarados-EX-V3",checkedAt:"2026-09-27"};
+    g.notes=(g.notes||"")+" · V87.6: oferta activa comparable GD a 190 €; no es venta cerrada.";
+  }
+  state.conditionMarketV876=true;save();
+}
 if(!state.collectionFactsV872){
   const facts={
     "own-gyarados-ex-089-xy9-jp":{purchase:119.45,grade:"GD",condition:"GD",conditionVerified:true,conditionVerifiedBy:"photos"},
