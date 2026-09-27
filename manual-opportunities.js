@@ -8,6 +8,54 @@ const id="lorcana-donald-pie-slinger-v2-20260927";
 const caravanId="pokemon-ex-sandstorm-caravan-20260927";
 const auroraId="lorcana-aurora-dreaming-guardian-v2-20260927";
 const mickeyId="lorcana-mickey-wayward-v2-20260927";
+const tinkerId="lorcana-tinker-bell-giant-fairy-v2-20260927";
+const belleId="lorcana-belle-strange-special-v2-20260927";
+const simbaId="lorcana-simba-returned-king-v2-20260927";
+const artfulId="lorcana-mickey-artful-rogue-v2-20260927";
+if(!state.manualOpportunities.some(x=>x.id===tinkerId)){
+ state.manualOpportunities.push({
+  id:tinkerId,universe:"lorcana",name:"Tinker Bell - Giant Fairy (V.2)",set:"The First Chapter",number:"216/204",
+  variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"TheBazaarTCG",
+  price:80.00,trend:254.47,avg30:242.97,avg7:251.99,available:121,sellerQty:5,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Tinker-Bell-Giant-Fairy-V2",
+  checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
+  status:"TOP 1 · ESCALABLE · 5 NM A 80 €",approval:"BUY-SCALE",
+  note:"Referencia fresca TCGGraph: trend 254,47 €, avg30 242,97 €, avg7 251,99 €. Cardmarket directo: 5 NM a 80 €."
+ });save();
+}
+if(!state.manualOpportunities.some(x=>x.id===belleId)){
+ state.manualOpportunities.push({
+  id:belleId,universe:"lorcana",name:"Belle - Strange but Special (V.2)",set:"The First Chapter",number:"214/204",
+  variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"TheBazaarTCG",
+  price:85.00,trend:229.89,avg30:189.07,avg7:215.54,available:96,sellerQty:5,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Belle-Strange-but-Special-V2",
+  checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
+  status:"TOP 3 · ESCALABLE · 5 NM A 85 €",approval:"BUY-SCALE",
+  note:"Referencia fresca TCGGraph: trend 229,89 €, avg30 189,07 €, avg7 215,54 €. Cardmarket directo: 5 NM a 85 €."
+ });save();
+}
+if(!state.manualOpportunities.some(x=>x.id===simbaId)){
+ state.manualOpportunities.push({
+  id:simbaId,universe:"lorcana",name:"Simba - Returned King (V.2)",set:"The First Chapter",number:"215/204",
+  variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"Vegas",
+  price:68.99,trend:165.83,avg30:170.31,avg7:167.53,available:94,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Simba-Returned-King-V2",
+  checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
+  status:"TOP 4 · 1 UNIDAD",approval:"BUY-ONE",
+  note:"Referencia fresca TCGGraph: trend 165,83 €, avg30 170,31 €, avg7 167,53 €. Cardmarket directo: NM 68,99 €."
+ });save();
+}
+if(!state.manualOpportunities.some(x=>x.id===artfulId)){
+ state.manualOpportunities.push({
+  id:artfulId,universe:"lorcana",name:"Mickey Mouse - Artful Rogue (V.2)",set:"The First Chapter",number:"210/204",
+  variant:"Enchanted · Foil",condition:"NM",shop:"Cardmarket",seller:"fantasymarket06",
+  price:50.00,trend:112.31,avg30:108.69,avg7:108.19,available:93,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Mickey-Mouse-Artful-Rogue-V2",
+  checkedAt:"2026-09-27T17:28:00+02:00",expiresAt:"2026-09-28T17:28:00+02:00",
+  status:"TOP 5 · 1 UNIDAD",approval:"BUY-ONE",
+  note:"Referencia fresca TCGGraph: trend 112,31 €, avg30 108,69 €, avg7 108,19 €. Cardmarket directo: NM 50 €."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===mickeyId)){
  state.manualOpportunities.push({
   id:mickeyId,universe:"lorcana",name:"Mickey Mouse - Wayward Sorcerer (V.2)",set:"The First Chapter",number:"",
@@ -35,7 +83,7 @@ if(!state.manualOpportunities.some(x=>x.id===caravanId)){
  state.manualOpportunities.push({id:caravanId,universe:"pokemon",name:"EX Sandstorm: Caravan Theme Deck",set:"EX Sandstorm",number:"",variant:"Sealed Theme Deck",condition:"SEALED",shop:"Cardmarket",seller:"halver93",price:15.00,backupPrice:50.00,trend:119.43,avg30:65.15,avg7:65.15,avg1:100.00,available:9,url:"https://www.cardmarket.com/en/Pokemon/Products/Theme-Decks/EX-Sandstorm-Caravan-Theme-Deck",checkedAt:"2026-09-27T16:25:00+02:00",expiresAt:"2026-09-28T16:25:00+02:00",status:"ANOMALÍA · VERIFICAR SELLADO Y CONTENIDO",approval:"WATCH"});save();
 }
 if(!state.manualOpportunities.some(x=>x.id===id)){
- state.manualOpportunities.push({id,universe:"lorcana",name:"Donald Duck - Pie Slinger (V.2)",set:"Shimmering Skies",number:"214/204",variant:"Enchanted · V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"BKJ38",price:44.90,trend:116.36,avg30:76.69,avg7:101.80,avg1:138.18,available:47,url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Shimmering-Skies/Donald-Duck-Pie-Slinger-V2",checkedAt:"2026-09-27T14:20:00+02:00",expiresAt:"2026-09-28T14:20:00+02:00",status:"PRIORIDAD · PROFUNDIDAD NM CONFIRMADA",depthPrices:[44.9,45,45,45,49,50,50],depthNote:"Varias NM consecutivas entre 44,90 y 50 €; no depende de una sola oferta."});save();
+ state.manualOpportunities.push({id,universe:"lorcana",name:"Donald Duck - Pie Slinger (V.2)",set:"Shimmering Skies",number:"214/204",variant:"Enchanted · V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"BKJ38",price:44.90,trend:116.36,avg30:76.69,avg7:101.80,avg1:138.18,available:47,url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Shimmering-Skies/Donald-Duck-Pie-Slinger-V2",checkedAt:"2026-09-27T14:20:00+02:00",expiresAt:"2026-09-28T14:20:00+02:00",status:"SECUNDARIA · PROFUNDIDAD NM CONFIRMADA",depthPrices:[44.9,45,45,45,49,50,50],depthNote:"Varias NM consecutivas entre 44,90 y 50 €; no depende de una sola oferta."});save();
 }
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),available=N(x.available);
@@ -50,10 +98,14 @@ function positionSizing(x,c){
  return {conservativeExit,grossEdge,roi,maxUnits,affordable,recommended:Math.max(0,Math.min(maxUnits,affordable)),reason};
 }
 function cash(){try{return Math.max(0,window.investmentLedgerStats?.().netCash||0)}catch{return 0}}
+function top5Rank(x){
+ const avg=N(x.avg30),entry=N(x.price),netExit=avg*.95,netPotential=netExit-entry;
+ return netPotential;
+}
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[id,auroraId,mickeyId,caravanId].includes(z.id));
+ const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),netExit=N(x.trend)*.95,potential=netExit-N(x.price),isWatch=x.approval==="WATCH";const ps=positionSizing(x,c);
  if(x.approval==="BUY-SCALE"){ps.maxUnits=Math.min(3,N(x.sellerQty)||3);ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(ps.maxUnits,ps.affordable);ps.reason="Posición escalable: varias NM al mismo precio del mismo vendedor; verificar portes y disponibilidad."}
