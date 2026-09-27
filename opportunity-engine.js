@@ -14,7 +14,7 @@ function strictManualRows(){
  });
 }
 function backendArbitrageRows(){
- return (state.crossMarketArbitrage||[]).map(r=>({
+ return [...(state.crossMarketArbitrage||[]),...(state.crossMarketArbitrageLocal||[])].map(r=>({
   purchaseKey:"arb-worker:"+r.product_id+":"+String(r.seller||""),
   sourceType:"arbitrage-worker",universe:r.universe||"pokemon",set:r.set_name||"",number:r.number||"",
   kind:"Arbitraje CardTrader → Cardmarket",name:r.name,price:N(r.price_eur),target:N(r.exit_net),profit:N(r.edge),roi:N(r.roi),
