@@ -12,7 +12,7 @@
 
    Plan gratuito: cron cada 2 min, lotes pequeños (≤ BATCH subpeticiones), presupuesto diario de escrituras D1. */
 
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const TCGDEX = "https://api.tcgdex.net/v2/en";
 const LORCAST = "https://api.lorcast.com/v0";
 const CT = "https://api.cardtrader.com/api/v2";
