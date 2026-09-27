@@ -31,15 +31,39 @@ function addCheck(id){
   exactComparable:true,language:snap.language||"",variant:snap.variant||"",condition:snap.condition||"",grading:snap.grading||"",grade:snap.grade||"",
   deltaVsSalePct:delta});
  h.postSaleChecks=h.postSaleChecks.slice(-24);
+ applyRebuyWatch(h);
  save();try{window.CVArchive?.render?.()}catch{}
  alert("Control postventa guardado con evidencia exacta.");
+}
+function outcome(h){
+ const a=(Array.isArray(h.postSaleChecks)?h.postSaleChecks:[]).filter(x=>x.exactComparable&&N(x.priceEUR)>0);
+ if(!a.length)return {label:"Sin seguimiento posterior",delta:null,rebuy:false};
+ const sale=N(h.unitPrice),prices=a.map(x=>N(x.priceEUR)),avg=prices.reduce((s,v)=>s+v,0)/prices.length,delta=sale>0?(avg-sale)/sale*100:null;
+ let label="Mercado posterior estable";
+ if(delta!=null&&delta>=20)label="Mercado posterior claramente por encima de la venta";
+ else if(delta!=null&&delta<=-20)label="Venta por encima del mercado posterior";
+ else if(delta!=null&&delta>=7)label="Mercado posterior moderadamente por encima";
+ else if(delta!=null&&delta<=-7)label="Mercado posterior moderadamente por debajo";
+ const latest=a[a.length-1],edge=sale-N(latest.priceEUR),roi=N(latest.priceEUR)>0?edge/N(latest.priceEUR)*100:0;
+ const rebuy=a.length>=1&&edge>=40&&roi>=35;
+ return {label,delta,avg,rebuy,latest,checks:a.length};
+}
+function applyRebuyWatch(h){
+ const o=outcome(h);if(!o.rebuy)return false;
+ state.watch=Array.isArray(state.watch)?state.watch:[];
+ if(state.watch.some(w=>w.rebuyArchiveId===h.id))return false;
+ const s=h.cardSnapshot||h;
+ state.watch.push({name:h.name||s.name||"",target:N(o.latest.priceEUR),rebuyArchiveId:h.id,source:"Archivo · recompra WATCH",
+  set:s.set||"",number:s.number||"",language:s.language||"",grading:s.grading||"",grade:s.grade||"",variant:s.variant||"",condition:s.condition||"",
+  note:"Solo WATCH. Mercado comparable exacto volvió a una zona al menos 40 € y 35% por debajo del precio de venta; exige oferta ejecutable completa antes de cualquier compra."});
+ save();return true;
 }
 function latest(h){const a=Array.isArray(h.postSaleChecks)?h.postSaleChecks:[];return a.length?a[a.length-1]:null}
 function inject(){
  for(const h of (state.saleHistory||[])){
   const el=document.querySelector('[data-post-sale="'+CSS.escape(h.id)+'"]');if(!el||el.dataset.bound==="1")continue;
   el.dataset.bound="1";el.onclick=e=>{e.preventDefault();e.stopPropagation();addCheck(h.id)};
-  const p=latest(h);if(!p)continue;
+  const p=latest(h),o=outcome(h);if(!p)continue;
   const sale=N(h.unitPrice),d=sale>0?(N(p.priceEUR)-sale)/sale*100:null;
   const row=document.createElement("div");row.className="microNote";
   let velocity="Velocidad: sin evidencia";
@@ -47,6 +71,7 @@ function inject(){
   row.innerHTML="<b>Postventa:</b> mercado comparable "+EUR(p.priceEUR)+(d==null?"":" · "+(d>=0?"+":"")+d.toFixed(1)+"% vs venta")+
     " · "+velocity+(p.lastSaleEUR?" · última venta real "+EUR(p.lastSaleEUR)+(p.lastSaleDate?" ("+p.lastSaleDate+")":""):"")+
     (p.currentSellers!=null?" · "+p.currentSellers+" vendedor(es)":"")+
+    " · <b>"+o.label+"</b>"+(o.rebuy?" · RECOMPRA WATCH":"")+
     ' · <a href="'+p.url+'" target="_blank" rel="noopener">'+String(p.source||"Fuente")+"</a>";
   el.closest(".sealedActions")?.before(row);
  }
@@ -54,5 +79,5 @@ function inject(){
 const obs=new MutationObserver(()=>inject());
 function start(){inject();const host=document.querySelector("#archiveList");if(host)obs.observe(host,{childList:true,subtree:true})}
 document.addEventListener("DOMContentLoaded",start);setTimeout(start,150);
-window.CVPostSale={addCheck,inject};
+window.CVPostSale={addCheck,inject,outcome,applyRebuyWatch};
 })();
