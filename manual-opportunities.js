@@ -104,6 +104,19 @@ const stitchRockId="lorcana-stitch-rock-star-promo-v2-20260927";
 const hoohId="pokemon-hooh-ex-xy9-088-20260927";
 const espeonId="pokemon-espeon-v-eevee-heroes-081-20260927";
 const arielId="lorcana-ariel-sonic-warrior-220-it-20260927";
+const belleMysticId="lorcana-belle-accomplished-mystic-226-it-20260927";
+if(!state.manualOpportunities.some(x=>x.id===belleMysticId)){
+ state.manualOpportunities.push({
+  id:belleMysticId,universe:"lorcana",name:"Belle - Accomplished Mystic",set:"Fabled",number:"226/242",
+  variant:"Enchanted · Holofoil · Italian",condition:"NM",shop:"Cardmarket",seller:"Retfird",
+  price:150.00,trend:261.59,avg30:241.29,avg7:239.88,avg1:280.00,available:65,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Belle-Accomplished-Mystic-V2",
+  checkedAt:"2026-09-27T19:05:00+02:00",expiresAt:"2026-09-28T19:05:00+02:00",
+  status:"COMPRAR AHORA · ITALIAN NM · 1 UNIDAD",approval:"BUY-ONE",
+  offerLanguage:"Italian",languageVerified:true,
+  note:"Oferta concreta Cardmarket: Retfird, NM, 150 €. TCGGraph por idioma: italiano low/NM 150 €, median ask 249,95 €, 7+ ofertas. Ventas realizadas recientes del producto: 230–300 € en varias fechas; idiomas mezclados. Retfird ~99–100% evaluaciones positivas. Una unidad: solo una copia observada a 150 €."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===arielId)){
  state.manualOpportunities.push({
   id:arielId,universe:"lorcana",name:"Ariel - Sonic Warrior",set:"Ursula's Return",number:"220/204",
@@ -246,7 +259,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
