@@ -365,16 +365,31 @@ async function hydratePhotos(){for(const x of state.cards){if(x.photoKey&&!x.pho
 function langCodeForCard(c){const s=String(c.language||"").toLowerCase();return s.includes("jap")?"ja":s.includes("espa")?"es":s.includes("fran")?"fr":s.includes("alem")||s.includes("germ")?"de":s.includes("ital")?"it":"en"}
 function cardNumHead(v){return String(v||"").split("/")[0].replace(/^0+(?=\d)/,"").trim()}
 async function resolvePokemonCatalogImage(c){
- const langs=[langCodeForCard(c),"en"].filter((v,i,a)=>a.indexOf(v)===i),want=cardNumHead(c.number),name=norm(c.name);
+ const langs=[langCodeForCard(c),"en"].filter((v,i,a)=>a.indexOf(v)===i),want=cardNumHead(c.number),name=norm(c.name),setName=norm(c.set);
  for(const lang of langs){
   const list=await tcgdexList(lang).catch(()=>[]);if(!list.length)continue;
-  let matches=list.filter(r=>cardNumHead(r.localId||r.printed_number||r.number)===want);
-  const byName=matches.filter(r=>norm(r.name)===name||norm(r.name).includes(name)||name.includes(norm(r.name)));
-  if(byName.length===1)matches=byName;
-  if(matches.length!==1)continue;
-  const d=await tcgdexCard(lang,matches[0].id).catch(()=>null);
-  const img=d?.image?(d.image+"/high.webp"):(d?.images?.[0]?.large||d?.images?.[0]?.small||"");
-  if(img)return img;
+  let candidates=list.filter(r=>{
+   const rn=norm(r.name),num=cardNumHead(r.localId||r.printed_number||r.number);
+   const nameOk=rn===name||rn.includes(name)||name.includes(rn);
+   const numOk=!want||num===want;
+   return nameOk&&numOk;
+  }).slice(0,12);
+  if(!candidates.length)continue;
+  const scored=[];
+  for(const s of candidates){
+   const d=await tcgdexCard(lang,s.id).catch(()=>null);if(!d)continue;
+   const dn=norm(d.name||s.name),ds=norm(d.set?.name||d.set?.id||""),num=cardNumHead(d.localId||d.printed_number||d.number||s.localId);
+   let score=0;
+   if(dn===name)score+=6;else if(dn.includes(name)||name.includes(dn))score+=3;
+   if(want&&num===want)score+=4;
+   if(setName&&ds){if(ds===setName)score+=7;else if(ds.includes(setName)||setName.includes(ds))score+=4}
+   const image=d.image?(d.image+"/high.webp"):(d.images?.[0]?.large||d.images?.[0]?.small||s.image||"");
+   if(image)score+=1;
+   scored.push({score,image});
+  }
+  scored.sort((a,b)=>b.score-a.score);
+  if(scored[0]?.image&&scored[0].score>=8)return scored[0].image;
+  const direct=candidates.find(s=>s.image)?.image;if(direct&&candidates.length===1)return direct;
  }
  return "";
 }
