@@ -14,12 +14,13 @@ save();
 
 function card(id){return (state.cards||[]).find(c=>c.id===id)}
 function active(){return state.saleListings.filter(x=>x.status==="active"&&card(x.cardId)&&!card(x.cardId).archivedSold)}
-function expectedNet(x){return N(x.price)*.95}
+function pol(){return window.CVPrimeExitPricing?.policy?.()||{feePct:5,sellShipping:0}}
+function expectedNet(x){const p=pol();return N(x.price)*(1-p.feePct/100)-N(p.sellShipping)}
 function markSold(id){
  const x=state.saleListings.find(z=>z.id===id),c=x&&card(x.cardId);if(!x||!c)return;
  const raw=prompt("Precio real vendido (€):",String(x.price));if(raw==null)return;const price=N(String(raw).replace(",","."));
  if(!(price>0))return;
- const feeRaw=prompt("Comisión/gastos totales (€):",(price*.05).toFixed(2));if(feeRaw==null)return;const fees=Math.max(0,N(String(feeRaw).replace(",",".")));
+ const feeRaw=prompt("Comisión/gastos totales (€):",(price*pol().feePct/100).toFixed(2));if(feeRaw==null)return;const fees=Math.max(0,N(String(feeRaw).replace(",",".")));
  const shipRaw=prompt("Coste de envío que pagas tú (€):","0");if(shipRaw==null)return;const shipping=Math.max(0,N(String(shipRaw).replace(",",".")));
  const saleOrder=(prompt("Número de pedido / referencia (opcional):","")||"").trim();
  const saleNotes=(prompt("Notas de la venta (opcional):","")||"").trim();
@@ -27,7 +28,7 @@ function markSold(id){
  const ledgerId="sale-"+x.id+"-"+date;
  if(!Array.isArray(state.investmentLedger))state.investmentLedger=[];
  if(!state.investmentLedger.some(r=>r.id===ledgerId))state.investmentLedger.push({
-  id:ledgerId,type:"sell",assetType:"card",assetKey:"card:"+c.id,name:c.name+(c.grade?(" · PSA "+c.grade):""),date,qty:1,unitPrice:price,shipping,fees,sourceUrl:"",notes:"Venta Cardmarket registrada desde Sales Desk · envío pendiente",basisUnknown:c.purchase==null,fulfillmentStatus:"sold-awaiting-shipment",updatedAt:new Date().toISOString()
+  id:ledgerId,type:"sell",assetType:"card",assetKey:"card:"+c.id,name:c.name+(String(c.grading||"RAW").toUpperCase()!=="RAW"&&c.grade?(" · "+String(c.grading).toUpperCase()+" "+c.grade):""),date,qty:1,unitPrice:price,shipping,fees,sourceUrl:"",notes:"Venta Cardmarket registrada desde Sales Desk · envío pendiente",basisUnknown:c.purchase==null,fulfillmentStatus:"sold-awaiting-shipment",updatedAt:new Date().toISOString()
  });
  state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
  const snap={
@@ -68,11 +69,37 @@ function addCapital(){
  save();render();try{window.renderInvestmentLedger?.();window.CVReinvestmentCommittee?.render?.();window.CVFinalOps?.render?.();window.CVTodaySimple?.render?.();window.CVManualOpportunities?.render?.()}catch{}
 }
 function render(){
- const b=Q("#salesDeskPanel");if(!b)return;const rows=active(),gross=rows.reduce((a,x)=>a+N(x.price),0),net=rows.reduce((a,x)=>a+expectedNet(x),0);
- b.innerHTML='<div class="sectionHead"><h3>Ventas activas</h3><div class="miniActions"><button id="addCapitalNow">+ Añadir capital</button><span class="microNote">Cardmarket · caja esperada</span></div></div>'+
- '<div class="statsGrid"><div><span>Anuncios activos</span><b>'+rows.length+'</b></div><div><span>Bruto si venden todos</span><b>'+EUR(gross)+'</b></div><div><span>Neto aprox. 5%</span><b>'+EUR(net)+'</b></div></div>'+
- (rows.length?rows.map(x=>{const c=card(x.cardId),basis=c?.landedCostUnit??c?.purchase,margin=basis!=null?expectedNet(x)-N(basis):null,px=window.CVPrimeExitPricing?.calc?.(x,c);return '<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+E(x.condition||"")+'</span><h4>'+E(c?.name||x.cardId)+'</h4><small>'+E(x.channel)+' · '+E(x.note||"")+'</small></div><div class="sealedNumbers"><b>'+EUR(x.price)+'</b><span>neto ≈ '+EUR(expectedNet(x))+'</span></div></div><div class="microNote">Mínimo interno '+EUR(x.floor)+(margin==null?"":" · margen neto vs coste aterrizado ≈ "+EUR(margin))+'</div>'+(px?'<div class="microNote"><b>PRIME salida:</b> '+(px.executable?'evidencia válida':'SIN EVIDENCIA EJECUTABLE')+' · suelo '+EUR(px.floor)+' · referencia '+(px.marketAnchor?EUR(px.marketAnchor):'sin dato')+' · precio sugerido '+EUR(px.ask)+' · rotación '+E(px.rotation)+(px.profit==null?'':' · beneficio neto aprox. '+EUR(px.profit))+'</div>':'')+'<div class="sealedActions"><button data-sale-evidence="'+E(x.id)+'">Evidencia salida</button><button data-sale-edit="'+E(x.id)+'">Cambiar precio</button><button data-sale-sold="'+E(x.id)+'">Marcar vendida</button><button data-sale-pause="'+E(x.id)+'">Pausar</button></div></article>'}).join(""):'<div class="emptyState"><b>No hay anuncios activos.</b><span>Cuando marques una venta, sale de la colección activa pero NO entra en caja hasta confirmar el cobro en Operaciones.</span></div>')+
- '<small>Los importes “neto aprox.” descuentan 5% como referencia. Al marcar una venta puedes introducir comisión/gastos reales.</small>';
+ const b=Q("#salesDeskPanel");if(!b)return;const rows=active(),gross=rows.reduce((a,x)=>a+N(x.price),0),net=rows.reduce((a,x)=>a+expectedNet(x),0),P=pol();
+ const opt=v=>v==null?'SIN DATO':EUR(v),sg=v=>v==null?'SIN DATO':(v>=0?'+':'')+EUR(v);
+ const pxs=rows.map(x=>({x,c:card(x.cardId),px:window.CVPrimeExitPricing?.calc?.(x,card(x.cardId))||null}));
+ const below=pxs.filter(r=>r.px&&r.px.alerts.some(a=>a.level==="high")).length;
+ b.innerHTML='<div class="sectionHead"><h3>Ventas activas · Sales Desk PRIME</h3><div class="miniActions"><button id="addCapitalNow">+ Añadir capital</button><button type="button" data-sale-policy="1">Comisión '+P.feePct+'% · envío '+EUR(P.sellShipping)+'</button></div></div>'+
+ '<div class="statsGrid"><div><span>Anuncios activos</span><b>'+rows.length+'</b></div><div><span>Bruto si venden todos</span><b>'+EUR(gross)+'</b></div><div><span>Neto tras comisión/envío</span><b>'+EUR(net)+'</b></div><div><span>Alertas de precio</span><b>'+below+'</b></div></div>'+
+ (rows.length?pxs.map(({x,c,px})=>{
+  const al=px?px.alerts:[],hi=al.some(a=>a.level==="high");
+  const ev=px?(px.executable?'EJECUTABLE · '+E(px.source)+' · '+Math.floor(px.age)+' h':(px.evidenceAt?(px.idOk?'CADUCADA':'IDENTIDAD DISTINTA'):'SIN EVIDENCIA')):'—';
+  return '<article class="sealedCard'+(hi?' priceAlert':'')+'"><div class="sealedMain"><div><span class="pill">'+E(x.condition||"")+'</span><h4>'+E(c?.name||x.cardId)+'</h4><small>'+E(x.channel)+' · '+E(x.note||"")+'</small></div><div class="sealedNumbers"><b>'+EUR(x.price)+'</b><span>neto '+EUR(expectedNet(x))+(px&&px.listedProfit!=null?' · '+sg(px.listedProfit):'')+'</span></div></div>'+
+  al.map(a=>'<div class="microNote alert-'+a.level+'">'+(a.level==="high"?'⛔ ':a.level==="mid"?'⚠️ ':'ℹ️ ')+E(a.text)+'</div>').join("")+
+  (px?'<div class="exitGrid">'+
+   '<div><span>Coste aterrizado</span><b>'+opt(px.landed)+'</b></div>'+
+   '<div><span>Break-even</span><b>'+opt(px.breakEven)+'</b></div>'+
+   '<div><span>Objetivo +'+EUR(px.minProfit)+'</span><b>'+opt(px.targetFloor)+'</b></div>'+
+   '<div><span>Precio sugerido</span><b>'+EUR(px.ask)+'</b></div>'+
+   '<div><span>Beneficio neto sugerido</span><b>'+sg(px.profit)+(px.roi==null?'':' · '+px.roi.toFixed(0)+'%')+'</b></div>'+
+   '<div><span>Rotación</span><b>'+E(px.rotation)+'</b></div>'+
+  '</div>'+
+  '<details class="exitDetails"><summary>Evidencia de salida · '+ev+'</summary>'+
+   '<div class="qaRow"><span>Comparable más bajo</span><b>'+opt(px.lowestAsk)+'</b></div>'+
+   '<div class="qaRow"><span>Mediana ventas reales</span><b>'+(px.soldMedian?EUR(px.soldMedian)+' · '+px.soldSample+' comps':'SIN DATO')+'</b></div>'+
+   '<div class="qaRow"><span>Ventas 30d · vendedores · profundidad</span><b>'+(px.sales30??'—')+' · '+(px.sellers??'—')+' · '+px.depth+' niveles</b></div>'+
+   '<div class="qaRow"><span>Mínimo interno</span><b>'+EUR(x.floor)+'</b></div>'+
+   '<div class="qaRow"><span>Comisión · envío</span><b>'+px.feePct+'% · '+EUR(px.sellShipping)+'</b></div>'+
+   (px.url?'<a href="'+E(px.url)+'" target="_blank" rel="noopener">Abrir evidencia</a>':'')+
+   '<small>El precio sugerido nunca se aplica solo: cambia el anuncio real en Cardmarket y después actualiza aquí.</small>'+
+  '</details>':'')+
+  '<div class="sealedActions primaryOnly"><button class="primaryAction" data-sale-sold="'+E(x.id)+'">Marcar vendida</button></div>'+
+  '<details class="moreActions"><summary>Más acciones</summary><div class="sealedActions"><button data-sale-evidence="'+E(x.id)+'">Evidencia salida</button><button data-sale-edit="'+E(x.id)+'">Cambiar precio</button><button data-sale-pause="'+E(x.id)+'">Pausar</button></div></details></article>'}).join(""):'<div class="emptyState"><b>No hay anuncios activos.</b><span>Cuando marques una venta, sale de la colección activa pero NO entra en caja hasta confirmar el cobro en Operaciones.</span></div>')+
+ '<small>Neto = precio × (1 − comisión) − envío configurado. Break-even = coste aterrizado recuperado; objetivo = break-even + beneficio mínimo de la política. Sin coste conocido no hay floor ni ROI.</small>';
  Q("#addCapitalNow")?.addEventListener("click",addCapital);
  b.querySelectorAll("[data-sale-edit]").forEach(el=>el.onclick=()=>editPrice(el.dataset.saleEdit));
  b.querySelectorAll("[data-sale-sold]").forEach(el=>el.onclick=()=>markSold(el.dataset.saleSold));

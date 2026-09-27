@@ -307,3 +307,21 @@ nav button{min-height:46px;line-height:1.05}
 .primeCardDialog .qaRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
 .primeCardDialog .qaRow span,.primeCardDialog .qaRow b{overflow-wrap:anywhere}
 @media(max-width:600px){.primeCardDialog{width:96vw;max-height:92vh}.primeCardDialog form{padding:10px}.primeCardDialog .statsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.primeCardDialog .qaRow{grid-template-columns:1fr}.primeCardDialog .qaRow>b{justify-self:start}}
+
+/* V84 PRIME · Sales Desk terminal */
+.priceAlert{border-color:#7a2a35!important;box-shadow:0 0 0 1px #7a2a35 inset}
+.microNote.alert-high{color:#ffb4bd;background:#2a1117;border-radius:9px;padding:7px 9px;margin:6px 0;font-size:11px;font-weight:800}
+.microNote.alert-mid{color:#ffd99a;background:#2a2111;border-radius:9px;padding:7px 9px;margin:6px 0;font-size:11px}
+.microNote.alert-info{color:#aebbd6;margin:4px 0;font-size:10px}
+.exitGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}
+.exitGrid>div{background:#0d1426;border:1px solid #1e2940;border-radius:10px;padding:7px 9px;min-width:0}
+.exitGrid span{display:block;font-size:10px;color:#8794ad}
+.exitGrid b{display:block;font-size:13px;overflow-wrap:anywhere}
+.exitDetails,.moreActions{margin-top:8px;font-size:12px}
+.exitDetails summary,.moreActions summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:#c9d3ea;font-weight:800;font-size:12px}
+.exitDetails a{display:inline-flex;min-height:44px;align-items:center}
+.sealedActions.primaryOnly button{flex:1 1 100%;min-height:46px;font-size:14px}
+#salesDeskPanel .sealedCard{display:block}
+#salesDeskPanel .sealedMain{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+#salesDeskPanel .sealedNumbers{text-align:right}
+#salesDeskPanel .sealedNumbers span{display:block;font-size:11px;color:#9fb0cf}
