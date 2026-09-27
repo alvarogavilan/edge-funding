@@ -365,3 +365,24 @@ main button,dialog button,.buyButton,.sealedActions a,.sealedActions button,.min
 .mfCand{display:grid!important;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center;width:100%;text-align:left;margin:6px 0;padding:6px 8px!important;background:#0d1426!important;border:1px solid #1e2940!important}
 .mfCand img{width:44px;height:60px;object-fit:cover;border-radius:4px}.mfCand span{display:flex;flex-direction:column;font-size:12px}.mfCand small{color:#8794ad;font-size:10px}
 .linkish{background:none!important;color:#9fb0cf!important;text-decoration:underline;font-size:12px!important}
+
+/* V87.0 · UX ejecutivo: portada solo compras */
+#radar #operationalStatus{display:none!important}
+#todaySimple>#primeSimpleHome~*{display:none!important}
+#primeSimpleHome{display:block!important;margin:0;padding:0}
+.primeHomeHeader{padding:18px 4px 12px}
+.primeHomeHeader>span{font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.65}
+.primeHomeHeader h2{font-size:30px;line-height:1.05;margin:4px 0 8px}
+.primeHomeHeader p{margin:0;opacity:.75;line-height:1.4}
+.primeBuyList{display:grid;gap:14px}
+.primeBuySimple{display:grid;grid-template-columns:28px 92px 1fr;gap:12px;align-items:start;padding:14px;border:1px solid rgba(140,160,210,.24);border-radius:18px;background:rgba(15,22,40,.92)}
+.primeBuyRank{font-weight:800;opacity:.5;padding-top:4px}
+.primeBuyImage{width:92px;aspect-ratio:2.5/3.5;object-fit:cover;border-radius:10px;background:#11182b}
+.primeBuyNoImage{display:grid;place-items:center;font-size:10px;opacity:.6}
+.primeBuyInfo h3{margin:0 0 4px;font-size:20px}.primeBuyInfo small{display:block;opacity:.7;line-height:1.35}
+.primeBuyMetrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}.primeBuyMetrics div{padding:8px;border-radius:10px;background:rgba(255,255,255,.04)}.primeBuyMetrics span{display:block;font-size:10px;opacity:.65}.primeBuyMetrics b{display:block;margin-top:2px;font-size:15px}
+.primeBuySeller{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:9px 0}.primeBuySeller span{font-size:11px;opacity:.65}
+.primeBuyLink{display:block;text-align:center;text-decoration:none;margin-top:8px}
+.primeNoBuy{padding:24px 18px;border:1px solid rgba(140,160,210,.24);border-radius:18px;background:rgba(15,22,40,.92)}.primeNoBuy b,.primeNoBuy span{display:block}.primeNoBuy span{margin-top:8px;opacity:.72;line-height:1.45}
+.unvaluedPrice{display:block;max-width:170px;font-size:14px;line-height:1.2;color:#f0b84f;text-align:right}.card .marketRef{max-width:180px}
+@media(max-width:520px){.primeBuySimple{grid-template-columns:24px 78px 1fr;padding:12px;gap:9px}.primeBuyImage{width:78px}.primeBuyMetrics{grid-template-columns:1fr}.primeHomeHeader h2{font-size:27px}}
