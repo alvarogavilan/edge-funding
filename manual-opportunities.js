@@ -23,6 +23,15 @@ if(!state.languageAwareV777){
   }
   state.languageAwareV777=true;save();
 }
+for(const x of state.manualOpportunities){
+ if(x.universe==="lorcana"&&["BUY-SCALE","BUY-ONE"].includes(x.approval||"")&&x.languageVerified!==true){
+  x.offerLanguage=x.offerLanguage||"PENDIENTE";
+  x.languageCheckRequired=true;
+  x.preLanguageApproval=x.preLanguageApproval||x.approval;
+  x.approval="VERIFY-LANGUAGE";
+  x.status="VERIFICAR IDIOMA + ESTADO ANTES DE COMPRAR";
+ }
+}
 state.rejectedManualOpportunities=[
  {name:"Peter Pan - Pirate's Bane (V.2)",reason:"Margen absoluto conservador insuficiente para política +50 €",price:31,trend:49.32,avg30:37.57},
  {name:"Sisu - Divine Water Dragon (V.2)",reason:"Margen absoluto conservador insuficiente para política +50 €",price:30,trend:44.56,avg30:47.18}
@@ -38,6 +47,8 @@ const artfulId="lorcana-mickey-artful-rogue-v2-20260927";
 const ladyId="pokemon-lady-forbidden-light-jp-100-20260927";
 const trumpeterId="lorcana-mickey-trumpeter-v2-20260927";
 const nurseId="pokemon-nurse-wcd04-ex145-20260927";
+const stitchSurferId="lorcana-stitch-carefree-surfer-v2-20260927";
+const stitchRockId="lorcana-stitch-rock-star-promo-v2-20260927";
 if(!state.manualOpportunities.some(x=>x.id===nurseId)){
  state.manualOpportunities.push({
   id:nurseId,universe:"pokemon",name:"Pokémon Nurse",set:"WCD 2004",number:"EX 145",
@@ -168,7 +179,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
