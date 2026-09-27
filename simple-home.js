@@ -39,6 +39,15 @@ function sealedBuys(){
 function buys(){
  return [...manualBuys(),...sealedBuys()].sort((a,b)=>(b.edge-a.edge)||(b.roi-a.roi));
 }
+function funnel(){
+ const all=(state.manualOpportunities||[]),quality=x=>window.CVPrimeMarket?.quality?.(x)||null;
+ const audited=all.map(x=>({x,q:quality(x)})).filter(r=>r.q);
+ const exact=audited.filter(r=>r.q.ex).length;
+ const economic=audited.filter(r=>r.q.econ?.edge>=40&&r.q.econ?.roi>=35&&N(r.x.price)>=20).length;
+ const prime=audited.filter(r=>r.q.passed===r.q.total&&["BUY-ONE","BUY-SCALE"].includes(r.x.approval)).length;
+ const watch=audited.filter(r=>r.x.approval==="WATCH"||r.q.passed<r.q.total).length;
+ return {total:all.length,exact,economic,prime,watch};
+}
 function card(r,i){
  return '<article class="primeBuySimple">'+
   '<div class="primeBuyTop"><span class="primeBuyBadge">COMPRAR AHORA</span><strong class="primeBuyPrice">'+EUR(r.price)+'</strong></div>'+
@@ -74,11 +83,19 @@ function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let simple=document.querySelector("#primeSimpleHome");
  if(!simple){simple=document.createElement("section");simple.id="primeSimpleHome";host.prepend(simple)}
- const rows=buys();
+ const rows=buys(),cards=rows.filter(r=>r.id.startsWith("manual:")),products=rows.filter(r=>r.id.startsWith("sealed:")),f=funnel();
  if(rows.some(r=>!r.image))setTimeout(()=>hydrateBuyImages().catch(()=>{}),50);
- simple.innerHTML='<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Solo aparecen compras que superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
- (rows.length?'<div class="primeBuyList">'+rows.slice(0,10).map(card).join("")+'</div>':
- '<div class="primeNoBuy"><b>HOY NO HAY NINGUNA COMPRA PRIME VERIFICADA.</b><span>No voy a rellenar esta pantalla con cartas dudosas. Cuando aparezca una, verás foto, precio, vendedor y enlace directo aquí.</span></div>');
+ const section=(title,subtitle,items)=>'<section class="primeBuyGroup"><div class="primeBuyGroupHead"><div><span>COMPRA YA</span><h3>'+E(title)+'</h3><small>'+E(subtitle)+'</small></div><b>'+items.length+'</b></div>'+
+  (items.length?'<div class="primeBuyList">'+items.slice(0,10).map(card).join("")+'</div>':'<div class="primeNoBuy compact"><b>NINGUNA COMPRA VERIFICADA EN ESTE BLOQUE.</b><span>Se mantiene visible la categoría; no se mezcla con candidatos sin evidencia suficiente.</span></div>')+'</section>';
+ simple.innerHTML='<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Compras ejecutables separadas por tipo. Solo entran si superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
+  section("CARTAS","Pokémon y Lorcana · cartas individuales RAW o graduadas",cards)+
+  section("SETS / OTROS PRODUCTOS","ETB, booster boxes, colecciones, blísteres, troves y demás sellado",products)+
+  '<section class="primeFunnel"><div class="primeBuyGroupHead"><div><span>COBERTURA</span><h3>Por qué no aparecen miles como “Compra ya”</h3></div></div><div class="statsGrid">'+
+   '<div><span>Oportunidades auditadas</span><b>'+f.total+'</b></div>'+
+   '<div><span>Oferta exacta</span><b>'+f.exact+'</b></div>'+
+   '<div><span>Economía ≥ +40 € y ROI ≥35%</span><b>'+f.economic+'</b></div>'+
+   '<div><span>Compra PRIME final</span><b>'+f.prime+'</b></div>'+
+  '</div><small>El catálogo puede contener decenas de miles de cartas, pero “Compra ya” exige una unidad realmente comprable ahora. Las demás deben permanecer en Radar hasta que exista oferta y salida verificables.</small></section>';
 }
 function installGuard(){
  const api=window.CVTodaySimple;
@@ -92,5 +109,5 @@ setTimeout(()=>{installGuard();render()},700);
 setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
 document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
-window.CVSimpleHome={render,buys,installGuard,hydrateBuyImages};
+window.CVSimpleHome={render,buys,funnel,installGuard,hydrateBuyImages};
 })();
