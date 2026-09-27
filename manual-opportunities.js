@@ -1,5 +1,15 @@
 (()=>{const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 state.manualOpportunities=Array.isArray(state.manualOpportunities)?state.manualOpportunities:[];
+if(!state.variantAuditV783){
+ const t=state.manualOpportunities.find(x=>x.id==="lorcana-mickey-trumpeter-v2-20260927");
+ if(t){
+  t.variant="Foil / V.2 · 182/204 · NO Enchanted";
+  t.approval="WATCH";
+  t.status="DESCARTAR POR AHORA · VARIANTE/PRECIO ANÓMALO";
+  t.note=((t.note||"")+" · Contraste externo: la versión foil 182/204 cotiza muy por debajo de 50 €; no usar las métricas anómalas de esta ficha como señal de compra.").trim();
+ }
+ state.variantAuditV783=true;save();
+}
 if(!state.languageAwareV777){
   for(const x of state.manualOpportunities){
     if(x.universe==="lorcana" && ["BUY-SCALE","BUY-ONE"].includes(x.approval||"")){
