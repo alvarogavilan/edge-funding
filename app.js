@@ -798,9 +798,9 @@ function cardmarketProductLink(x){
     [/pokemon\\|charmander\\|168.*\\|151/,"https://www.cardmarket.com/es/Pokemon/Products/Singles/151/Charmander-V2-MEW168"],
     [/pokemon\\|magikarp\\|203.*\\|paldea evolved/,"https://www.cardmarket.com/en/Pokemon/Products/Singles/Paldea-Evolved/Magikarp-V2-PAL203"],
     [/pokemon\\|pikachu ex\\|238.*\\|surging sparks/,"https://www.cardmarket.com/en/Pokemon/Products/Singles/Surging-Sparks/Pikachu-ex-V3-SSP238"],
-    [/lorcana\|aladdin heroic outlaw.*first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Aladdin-Heroic-Outlaw-V2"],
-    [/lorcana\|genie on the job.*first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Genie-On-the-Job-V2"],
-    [/lorcana\|elsa spirit of winter.*first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2"]
+    [/lorcana\\|aladdin heroic outlaw\\|211.*\\|the first chapter|lorcana\\|aladdin heroic outlaw\\|211.*\\|first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Aladdin-Heroic-Outlaw-V2"],
+    [/lorcana\\|genie on the job\\|209.*\\|the first chapter|lorcana\\|genie on the job\\|209.*\\|first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Genie-On-the-Job-V2"],
+    [/lorcana\\|elsa spirit of winter\\|207.*\\|the first chapter|lorcana\\|elsa spirit of winter\\|207.*\\|first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2"]
   ];
   for(const [re,url] of known)if(re.test(key))return url;
   const game=marketUniverseOf(x)==="lorcana"?"Lorcana":"Pokemon",q=[String(x.name||"").replace(/ · Foil$/i,""),x.set||"",x.number?("#"+x.number):""].filter(Boolean).join(" ");
