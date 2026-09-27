@@ -6,7 +6,7 @@ function snapshotFromCard(c={},qty=1){
  return {
   universe:c.universe||"pokemon",name:c.name||"",set:c.set||"",number:c.number||"",year:c.year||"",language:c.language||"",
   variant:c.buyVariant||c.variant||"",condition:c.buyCondition||c.condition||c.grade||"",grading:c.grading||"RAW",grade:c.grade||"",cert:c.cert||"",
-  referenceImage:c.referenceImage||"",photoKey:c.photoKey||"",quantity:qty,purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",
+  referenceImage:c.referenceImage||"",photoKey:c.photoKey||"",quantity:qty,purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",purchaseShipping:c.purchaseShipping??0,purchaseFees:c.purchaseFees??0,landedCostUnit:c.landedCostUnit??null,
   seller:c.buySeller||c.seller||"",purchaseUrl:c.buySourceUrl||c.marketPricing?.url||"",marketUrl:c.marketPricing?.url||c.buySourceUrl||"",
   saleDescription:c.saleDescription||"",description:c.description||"",notes:c.notes||"",purpose:c.purpose||"",
   acquisitionSource:c.acquisitionSource||"",acquisitionType:c.acquisitionType||"",acquisitionNotes:c.acquisitionNotes||"",
@@ -72,7 +72,7 @@ function records(){
  ensureEeveeArchive();migrateLegacySnapshots();
  return [...state.saleHistory].map(h=>{
   const s=h.cardSnapshot||{};
-  const purchase=h.purchase??s.purchase??null,basis=purchase==null?null:N(purchase)*N(h.qty||1);
+  const purchase=h.purchase??s.purchase??null,landed=h.landedCostUnit??s.landedCostUnit??null,basis=landed!=null?N(landed)*N(h.qty||1):(purchase==null?null:N(purchase)*N(h.qty||1));
   const net=N(h.net)||N(h.unitPrice)*N(h.qty||1)-N(h.shipping)-N(h.fees);
   return {...s,...h,cardSnapshot:s,purchase,basis,net,result:basis==null?null:net-basis,payment:paymentStatus(h),workflow:workflowLabel(h),
    heldDays:holdDays(h),ledgerStatus:(state.investmentLedger||[]).find(r=>r.id===h.id)?.fulfillmentStatus||h.fulfillmentStatus||""};
@@ -87,14 +87,14 @@ function summary(rows){
  return {count:rows.reduce((a,x)=>a+N(x.qty||1),0),records:rows.length,gross,net,known:known.length,pnl,pending,psa,raw,pokemon,lorcana,best};
 }
 function csv(rows){
- const cols=["Fecha venta","Nombre","Universo","Set","Número","Año","Idioma","Variante","Condición","Graduación","Nota","Certificado","Cantidad","Precio unidad","Bruto","Comisiones","Envío","Neto","Coste unidad","Coste base","Beneficio","ROI %","Días en cartera","Canal","Pedido","Estado cobro","Workflow","Vendedor compra","Procedencia","Tipo procedencia","Producto origen coste","Coste producto aproximado","Fecha compra","URL compra","URL mercado","Población grado","Población superior","Población total","Fuente población","Descripción venta","Descripción","Notas carta","Notas venta","Snapshot mercado RAW","Histórico posterior"];
+ const cols=["Fecha venta","Nombre","Universo","Set","Número","Año","Idioma","Variante","Condición","Graduación","Nota","Certificado","Cantidad","Precio unidad","Bruto","Comisiones","Envío","Neto","Coste compra","Portes compra","Comisiones compra","Coste aterrizado ud","Coste base","Beneficio","ROI %","Días en cartera","Canal","Pedido","Estado cobro","Workflow","Vendedor compra","Procedencia","Tipo procedencia","Producto origen coste","Coste producto aproximado","Fecha compra","URL compra","URL mercado","Población grado","Población superior","Población total","Fuente población","Descripción venta","Descripción","Notas carta","Notas venta","Snapshot mercado RAW","Histórico posterior"];
  const quote=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
  const lines=[cols.map(quote).join(",")];
  for(const x of rows){
   const roi=x.result!=null&&N(x.basis)>0?x.result/N(x.basis)*100:null;
   lines.push([
    x.soldAt,x.name,x.universe,x.set,x.number,x.year,x.language,x.variant,x.condition,x.grading,x.grade,x.cert,x.qty,x.unitPrice,
-   N(x.unitPrice)*N(x.qty||1),x.fees,x.shipping,x.net,x.purchase,x.basis,x.result,roi,x.heldDays,x.channel,x.saleOrder,x.payment,x.workflow,
+   N(x.unitPrice)*N(x.qty||1),x.fees,x.shipping,x.net,x.purchase,x.purchaseShipping,x.purchaseFees,x.landedCostUnit,x.basis,x.result,roi,x.heldDays,x.channel,x.saleOrder,x.payment,x.workflow,
    x.buySeller||x.seller,x.acquisitionSource,x.acquisitionType,x.parentProductCostEUR,x.parentProductCostApprox?"sí":"",x.purchaseDate,
    x.purchaseUrl||x.buySourceUrl,x.marketUrl,x.popGrade,x.popHigher,x.popTotal,x.popSource,x.saleDescription,x.description,x.notes,x.saleNotes,
    x.rawMarketSnapshot?JSON.stringify(x.rawMarketSnapshot):"",Array.isArray(x.postSaleChecks)?JSON.stringify(x.postSaleChecks):""
