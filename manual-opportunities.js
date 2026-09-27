@@ -1,5 +1,32 @@
 (()=>{const N=v=>Number(v)||0,E=v=>{const d=document.createElement("div");d.textContent=String(v??"");return d.innerHTML},EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 state.manualOpportunities=Array.isArray(state.manualOpportunities)?state.manualOpportunities:[];
+if(!state.sameLanguageAuditV788){
+ const ids=[
+  "lorcana-tinker-bell-giant-fairy-v2-20260927",
+  "lorcana-aurora-dreaming-guardian-v2-20260927",
+  "lorcana-belle-strange-special-v2-20260927",
+  "lorcana-simba-returned-king-v2-20260927",
+  "lorcana-mickey-artful-rogue-v2-20260927",
+  "lorcana-mickey-wayward-v2-20260927"
+ ];
+ const notes={
+  "lorcana-tinker-bell-giant-fairy-v2-20260927":"Mismo idioma: JP 80→mediana 90; FR 89,94→122; EN 170→189,98; DE 178→180. Ninguno deja ≈+40 € netos.",
+  "lorcana-aurora-dreaming-guardian-v2-20260927":"Mismo idioma: FR 79,99→mediana 100; JP 82→82; DE 94,95→110. No supera +40 € netos.",
+  "lorcana-belle-strange-special-v2-20260927":"Mismo idioma: FR NM 79→mediana 120; DE 100→130; JP 119,99→140; EN 189,99→199. No supera +40 € netos.",
+  "lorcana-simba-returned-king-v2-20260927":"Mismo idioma: JP 69→104,39; DE NM 90→124,99; FR 89→127,48; EN NM 200→225. No supera +40 € netos.",
+  "lorcana-mickey-artful-rogue-v2-20260927":"Mismo idioma: FR 50→74; DE 89→99,90; EN NM 140→145; JP 120→130. No supera +40 € netos.",
+  "lorcana-mickey-wayward-v2-20260927":"Mismo idioma: FR NM 85→mediana 120; DE 170→230; EN 300→389,98. El mejor margen porcentual no cumple de forma conservadora el filtro actual tras costes."
+ };
+ for(const id of ids){
+  const x=state.manualOpportunities.find(o=>o.id===id);
+  if(x){
+   x.approval="WATCH";
+   x.status="NO COMPRAR AHORA · AUDITORÍA MISMO IDIOMA";
+   x.note=((x.note||"")+" · "+notes[id]).trim();
+  }
+ }
+ state.sameLanguageAuditV788=true;save();
+}
 if(!state.stitchAuditV787){
  const rock=state.manualOpportunities.find(x=>x.id==="lorcana-stitch-rock-star-promo-v2-20260927");
  if(rock){
