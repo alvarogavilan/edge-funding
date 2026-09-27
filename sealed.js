@@ -52,6 +52,19 @@ function derivedSealedTrend(p,days){
   const prior=[...rows].reverse().find(x=>new Date(x.day+"T00:00:00Z").getTime()<=cutoff);
   return prior&&num(prior.price)>0?(num(now.price)-num(prior.price))/num(prior.price)*100:null;
 }
+function sealedIdentityKey(p){
+ const n=v=>String(v??"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ");
+ return [n(p.universe),n(p.name),n(p.set),n(p.productType),n(p.language)].join("|");
+}
+function sealedPrimeState(p){
+ const ev=p.primeEvidence||{},idOk=!!(ev.identityKey&&ev.identityKey===sealedIdentityKey(p));
+ const at=new Date(ev.at||0).getTime(),age=Number.isFinite(at)?(Date.now()-at)/36e5:Infinity,fresh=age<=24;
+ const seller=String(ev.seller||p.seller||"").trim(),exact=ev.exactComparable===true;
+ const refs=[num(ev.exitComparableEUR),num(ev.soldMedianEUR)].filter(v=>v>0),exit=refs.length?Math.min(...refs):0;
+ const cost=num(p.currentPrice)+num(p.shipping),edge=exit>0?exit-cost:0,roi=cost>0?edge/cost*100:0;
+ const verified=!!(idOk&&fresh&&exact&&seller&&ev.source&&ev.url&&exit>0);
+ return {ev,idOk,fresh,age,seller,exact,exit,cost,edge,roi,verified};
+}
 function sealedEconomics(p){
   const cost=num(p.currentPrice)+num(p.shipping),base=num(p.targetBase),low=num(p.targetLow),high=num(p.targetHigh);
   return {cost,base,low,high,baseProfit:base>0?base-cost:null,basePct:base>0&&cost>0?(base-cost)/cost*100:null};
@@ -64,15 +77,17 @@ function sealedPullMath(p){
   return {verified:false,packs,sample,hits,threshold,packCountSource:inferred?.source||""};
 }
 function sealedDecision(p){
-  const e=sealedEvidenceScore(p),x=sealedEconomics(p),policy=state.sealedPolicy;
-  if(!p.sourceUrl||!p.buyUrl||!window.CVMarket?.admittedShop?.(p.buyUrl)?.ok||x.cost<=0||e<55)return {key:"avoid",label:"NO COMPRAR",why:"Evidencia insuficiente, precio incompleto o enlace de compra fuera de tiendas admitidas."};
-  if(p.reprintRisk==="high")return {key:"avoid",label:"NO COMPRAR",why:"Riesgo de reedición alto registrado."};
-  if(!p.language||p.languageVerified!==true)return {key:"watch",label:"VIGILAR",why:"Falta confirmar que la oferta y la referencia de salida corresponden al mismo idioma/mercado."};
-  if(x.baseProfit==null)return {key:"watch",label:"VIGILAR",why:"Falta escenario base respaldado por datos."};
+  const e=sealedEvidenceScore(p),x=sealedEconomics(p),policy=state.sealedPolicy,prime=sealedPrimeState(p);
+  if(!p.sourceUrl||!p.buyUrl||!window.CVMarket?.admittedShop?.(p.buyUrl)?.ok||x.cost<=0||e<55)return {key:"avoid",label:"NO COMPRAR",why:"Evidencia insuficiente, precio incompleto o enlace de compra fuera de tiendas admitidas.",prime};
+  if(p.reprintRisk==="high")return {key:"avoid",label:"NO COMPRAR",why:"Riesgo de reedición alto registrado.",prime};
+  if(!p.language||p.languageVerified!==true)return {key:"watch",label:"VIGILAR",why:"Falta confirmar idioma/mercado exactos.",prime};
+  if(!prime.idOk)return {key:"watch",label:"VIGILAR",why:"La evidencia PRIME no corresponde a la identidad actual del producto.",prime};
+  if(!prime.fresh)return {key:"watch",label:"VIGILAR",why:"Evidencia PRIME ausente o caducada (>24 h).",prime};
+  if(!prime.verified)return {key:"watch",label:"VIGILAR",why:"Falta vendedor y salida comparable verificable.",prime};
   const inBand=x.cost>=num(policy.minPriceEUR)&&x.cost<=num(policy.maxPriceEUR);
-  if(e>=80&&x.baseProfit>=num(policy.minUpsideEUR)&&x.basePct>=num(policy.minRoiPct)&&inBand&&p.liquidity!=="low")
-    return {key:"buy",label:"COMPRA YA",why:"Cumple precio, margen absoluto, ROI, idioma/mercado y calidad de evidencia."};
-  return {key:"watch",label:"VIGILAR",why:!inBand?"Fuera del rango de compra configurado.":"Aún no supera todos tus filtros de compra."};
+  if(prime.edge>=num(policy.minUpsideEUR)&&prime.roi>=num(policy.minRoiPct)&&inBand&&p.liquidity!=="low")
+    return {key:"buy",label:"COMPRA YA",why:"Gate PRIME sellado superado: oferta exacta, identidad, vendedor, salida, frescura, margen y ROI.",prime};
+  return {key:"watch",label:"VIGILAR",why:!inBand?"Fuera del rango configurado.":"La salida verificada no supera margen/ROI mínimos.",prime};
 }
 function confidence(p){const e=sealedEvidenceScore(p);return e>=85?"Alta":e>=65?"Media":"Baja"}
 function universeName(u){return u==="lorcana"?"Lorcana":"Pokémon"}
@@ -95,7 +110,7 @@ function productCard(p,rank){
       (p.buyUrl?'<a href="'+esc(p.buyUrl)+'" target="_blank" rel="noopener">Comprar / oferta</a>':'')+
       (p.sourceUrl?'<a href="'+esc(p.sourceUrl)+'" target="_blank" rel="noopener">Ver evidencia</a>':'')+
       '<a href="'+cardmarketHub(p)+'" target="_blank" rel="noopener">Cardmarket sellado</a>'+
-      '<button type="button" data-edit-sealed="'+esc(p.id)+'">Editar</button></div></div></article>';
+      '<button type="button" data-prime-sealed="'+esc(p.id)+'">EVIDENCIA PRIME</button><button type="button" data-edit-sealed="'+esc(p.id)+'">Editar</button></div></div></article>';
 }
 function filteredProducts(){
   const u=$("#sealedUniverse")?.value||"",d=$("#sealedDecision")?.value||"",q=($("#sealedSearch")?.value||"").trim().toLowerCase();
