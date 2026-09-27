@@ -30,6 +30,19 @@ function items(){
   }
   if(x.integrityBlocked)out.push({kind:"integrity",priority:99,name:x.name,text:"Integrity Guard · "+(x.integrityIssues||[]).join(" · "),oppId:x.id});
  }
+ for(const p of (state.sealedProducts||[])){
+  if(!(N(p.currentPrice)>=20)||!p.buyUrl)continue;
+  const at=p.primeEvidence?.at;
+  if(!at){
+   out.push({kind:"sealed-evidence-missing",priority:72,name:p.name,text:"Sellado · falta evidencia PRIME ejecutable",sealedId:p.id});
+   continue;
+  }
+  const age=(Date.now()-new Date(at).getTime())/36e5;
+  if(Number.isFinite(age)&&age>24)out.push({kind:"sealed-evidence-expired",priority:98,name:p.name,text:"Sellado · evidencia PRIME caducada · "+age.toFixed(1)+" h",sealedId:p.id});
+  else if(Number.isFinite(age)&&age>=20)out.push({kind:"sealed-evidence-expiring",priority:88,name:p.name,text:"Sellado · evidencia PRIME vence pronto · "+age.toFixed(1)+" h",sealedId:p.id});
+  if(p.primeEvidence?.identityKey&&window.CVPrimeSealedEvidence?.key?.(p)&&p.primeEvidence.identityKey!==window.CVPrimeSealedEvidence.key(p))
+   out.push({kind:"sealed-identity",priority:99,name:p.name,text:"Sellado · evidencia no coincide con identidad actual",sealedId:p.id});
+ }
  return out.sort((a,b)=>b.priority-a.priority||a.name.localeCompare(b.name));
 }
 function render(){
@@ -40,7 +53,7 @@ function render(){
  const high=rows.filter(x=>x.priority>=90).length;
  box.innerHTML='<b>Bandeja PRIME · Atención</b>'+
   '<div class="statsGrid"><div><span>Pendientes</span><b>'+rows.length+'</b></div><div><span>Prioridad alta</span><b>'+high+'</b></div></div>'+
-  (rows.length?rows.slice(0,12).map(x=>'<div class="qaRow"><span>'+x.name+'<small> · '+x.text+'</small>'+(x.oppId?'<button type="button" class="buyButton secondary" data-prime-evidence="'+x.oppId+'">Refrescar evidencia</button>':'')+'</span><b>'+(x.priority>=90?"AHORA":x.priority>=70?"REVISAR":"CUANDO TOQUE")+'</b></div>').join(""):'<div class="qaRow"><span>Estado</span><b>Sin pendientes críticos</b></div>')+
+  (rows.length?rows.slice(0,12).map(x=>'<div class="qaRow"><span>'+x.name+'<small> · '+x.text+'</small>'+(x.oppId?'<button type="button" class="buyButton secondary" data-prime-evidence="'+x.oppId+'">Refrescar evidencia</button>':'')+(x.sealedId?'<button type="button" class="buyButton secondary" data-prime-sealed="'+x.sealedId+'">Refrescar sellado</button>':'')+'</span><b>'+(x.priority>=90?"AHORA":x.priority>=70?"REVISAR":"CUANDO TOQUE")+'</b></div>').join(""):'<div class="qaRow"><span>Estado</span><b>Sin pendientes críticos</b></div>')+
   '<small>No crea compras ni ventas. Solo concentra tareas que pueden provocar errores, pérdida de datos o decisiones con evidencia incompleta.</small>';
 }
 function run(){render()}
