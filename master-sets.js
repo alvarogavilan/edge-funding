@@ -43,5 +43,5 @@ function render(){
  }).join(""):'<div class="emptyState"><b>Aún no hay sets.</b><span>Añade cartas a Mi colección y aparecerán aquí automáticamente.</span></div>';
  document.querySelectorAll("[data-master-set]").forEach(x=>x.onchange=()=>{state.collectorTools.masterTargets[x.dataset.masterSet]=N(x.value);save();render()});
 }
-window.renderMasterSets=render;render();
+window.renderMasterSets=render;render();setTimeout(render,2200);document.addEventListener("click",e=>{if(e.target.closest('[data-tab="collector"]')||e.target.closest('[data-simple-tab]'))setTimeout(render,150)});
 })();
