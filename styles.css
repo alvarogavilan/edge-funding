@@ -270,3 +270,14 @@ nav button{min-height:46px;line-height:1.05}
 .psaRadarRow>div span,.psaRadarRow>div small{font-size:12px;line-height:1.3}
 .psaRadarRow .buyButton{grid-column:1/-1;text-align:center}
 @media(max-width:600px){#portfolioCioPanel .sealedCard,#portfolioCio .sealedCard{grid-template-columns:1fr!important}#portfolioCioPanel .sealedMetrics,#portfolioCio .sealedMetrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}.portfolioCioCard,.cioCard{overflow:hidden;word-break:normal}.portfolioCioCard>*,.cioCard>*{min-width:0}}
+
+/* V72.3 mobile reinvest + truthful purchase actions */
+.buyButton.disabled{display:flex;align-items:center;justify-content:center;opacity:.55;pointer-events:none;cursor:default;background:#eef0f4!important;color:#5f6878!important;border:1px solid #d6dae2}
+#reinvestmentCommitteePanel{overflow:hidden}
+#reinvestmentCommitteePanel .sectionHead,#reinvestmentCommitteePanel .heroDecision,#reinvestmentCommitteePanel .qaRow{min-width:0}
+#reinvestmentCommitteePanel .qaRow{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:12px;align-items:start}
+#reinvestmentCommitteePanel .qaRow span{min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}
+#reinvestmentCommitteePanel .qaRow>b{white-space:nowrap}
+#reinvestmentCommitteePanel .heroDecision{display:grid;gap:6px}
+#reinvestmentCommitteePanel .heroDecision small{line-height:1.45}
+@media(max-width:600px){#reinvestmentCommitteePanel .sectionHead{display:grid!important;gap:4px}#reinvestmentCommitteePanel .qaRow{grid-template-columns:1fr!important}#reinvestmentCommitteePanel .qaRow>b{justify-self:start}.dualSimpleLinks{grid-template-columns:1fr!important}.buyNumbers{grid-template-columns:repeat(2,minmax(0,1fr))!important}.buyNumbers>div{min-width:0}.buyNumbers span,.buyNumbers b{overflow-wrap:anywhere}}
