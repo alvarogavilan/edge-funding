@@ -89,6 +89,31 @@ if(!state.mewRemovalAndMewtwoConditionV748){
   }
   state.mewRemovalAndMewtwoConditionV748=true;
 }
+if(!state.gyaradosConditionClosureV749){
+  const g=state.cards.find(c=>c.id==="own-gyarados-ex-089-xy9-jp");
+  if(g){
+    g.condition="GD";
+    g.conditionDetail="GD+ / EX- visual";
+    g.psaCandidate=false;
+    g.purpose="investment";
+    g.valuationStatus="condition-reference";
+    g.conditionAssessment={
+      at:"2026-09-27",
+      source:"owner photos",
+      front:"good overall eye appeal; light edge/corner wear on gold border; no major crease visible",
+      back:"light whitening/edge wear and small corner wear; no major structural crease visible",
+      conclusion:"GD high-end, visually close to EX-",
+      grading:"RAW hold preferred; PSA not priority"
+    };
+    g.sellPolicy={
+      mode:"hold",
+      minimumAskEUR:180,
+      rationale:"Do not sell for a small gain; current condition-matched reference around 190 EUR. Review again before listing."
+    };
+    g.notes="Carta propia fotografiada frontal + reverso · XY9 089/080 UR · comprada en Cardmarket por 119,45 € · condición GD declarada por el vendedor y confirmada por fotos. Visualmente GD+ / cerca de EX-: buena presencia general, desgaste ligero de bordes/esquinas y sin pliegues estructurales fuertes visibles. Autenticidad/originalidad confirmada por el propietario. Mantener RAW; PSA no prioritario. No vender por margen pequeño; referencia interna de salida mínima 180 € salvo nueva evidencia.";
+  }
+  state.gyaradosConditionClosureV749=true;
+}
 const soldEevee=state.cards.find(c=>c.id==="eev174");if(soldEevee&&!soldEevee.sale1304093225Applied){const q=Math.max(1,+soldEevee.quantity||1);if(q>1)soldEevee.quantity=q-1;else soldEevee.archivedSold=true;soldEevee.sale1304093225Applied=true;soldEevee.soldAt="2026-09-27";soldEevee.soldPrice=60;}const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
