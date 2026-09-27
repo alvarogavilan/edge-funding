@@ -9,7 +9,7 @@ function setEvidence(id,data){
  x.marketEvidenceHistory=x.marketEvidenceHistory.slice(-20);
  x.marketEvidence={at:now,identityKey:seal(x),source:data.source,url:data.sourceUrl,currentExitEUR:data.currentExitEUR,currentQty:data.currentQty,
   evidenceType:"active-same-language-market",note:data.note};
- x.evidenceCheckedAt=now;
+ x.evidenceCheckedAt=now;x.checkedAt=now;x.expiresAt="2026-09-28T22:25:00+02:00";
  x.sameMarketComparableVerified=true;
  x.exitEvidenceVerified=true;
  x.depthPrices=data.depthPrices||[];
