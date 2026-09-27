@@ -368,7 +368,7 @@ main button,dialog button,.buyButton,.sealedActions a,.sealedActions button,.min
 
 /* V87.0 · UX ejecutivo: portada solo compras */
 #radar #operationalStatus{display:none!important}
-#todaySimple>#primeSimpleHome~*{display:none!important}
+#todaySimple>:not(#primeSimpleHome){display:none!important}
 #primeSimpleHome{display:block!important;margin:0;padding:0}
 .primeHomeHeader{padding:18px 4px 12px}
 .primeHomeHeader>span{font-size:12px;font-weight:800;letter-spacing:.12em;opacity:.65}
@@ -386,3 +386,6 @@ main button,dialog button,.buyButton,.sealedActions a,.sealedActions button,.min
 .primeNoBuy{padding:24px 18px;border:1px solid rgba(140,160,210,.24);border-radius:18px;background:rgba(15,22,40,.92)}.primeNoBuy b,.primeNoBuy span{display:block}.primeNoBuy span{margin-top:8px;opacity:.72;line-height:1.45}
 .unvaluedPrice{display:block;max-width:170px;font-size:14px;line-height:1.2;color:#f0b84f;text-align:right}.card .marketRef{max-width:180px}
 @media(max-width:520px){.primeBuySimple{grid-template-columns:24px 78px 1fr;padding:12px;gap:9px}.primeBuyImage{width:78px}.primeBuyMetrics{grid-template-columns:1fr}.primeHomeHeader h2{font-size:27px}}
+
+.photoMissing{width:100%;height:100%;min-height:116px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:11px;font-weight:800;letter-spacing:.04em;opacity:.68;background:rgba(255,255,255,.035);border-radius:12px}
+.photoMissing small{font-size:9px;font-weight:600;opacity:.7;margin-top:5px}
