@@ -133,6 +133,9 @@ function renderLearning(rows){
   const avg=checks.reduce((s,p)=>s+N(p.priceEUR),0)/checks.length;
   return (avg-N(x.unitPrice))/N(x.unitPrice)*100;
  }).filter(v=>v!=null).sort((a,b)=>a-b);
+ const thesisRows=rows.filter(x=>x.purchaseThesis&&x.result!=null&&N(x.basis)>0&&x.purchaseThesis.edgeEUR!=null);
+ const thesisDelta=thesisRows.map(x=>N(x.result)-N(x.purchaseThesis.edgeEUR));
+ const thesisBias=thesisDelta.length?thesisDelta.reduce((a,b)=>a+b,0)/thesisDelta.length:null;
  const medianAfter=tracked.length?tracked[Math.floor(tracked.length/2)]:null;
  let timing='Muestra insuficiente';
  if(tracked.length>=3&&medianAfter!=null){
@@ -146,7 +149,9 @@ function renderLearning(rows){
   '<div class="qaRow"><span>Ventas con seguimiento posterior</span><b>'+tracked.length+'</b></div>'+
   '<div class="qaRow"><span>Mediana mercado posterior vs venta</span><b>'+(tracked.length>=3?(medianAfter>=0?'+':'')+medianAfter.toFixed(1)+'%':'Necesita ≥3')+'</b></div>'+
   '<div class="qaRow"><span>Timing de salida</span><b>'+timing+'</b></div>'+
-  '<small>Estas métricas son descriptivas. El seguimiento posterior exige comparables exactos y no cambia el motor de compra con muestras pequeñas.</small>';
+  '<div class="qaRow"><span>Tesis compradas con resultado</span><b>'+thesisRows.length+'</b></div>'+
+  '<div class="qaRow"><span>Sesgo edge esperado vs realizado</span><b>'+(thesisRows.length>=3?((thesisBias>=0?'+':'')+EUR(thesisBias)):'Necesita ≥3')+'</b></div>'+
+  '<small>Estas métricas son descriptivas. Un sesgo negativo significa que el edge esperado fue demasiado optimista de media; uno positivo, conservador. No cambia reglas automáticamente con muestras pequeñas.</small>';
 }
 function ensureArchiveFilters(){
  const list=Q("#archiveList");if(!list)return;
