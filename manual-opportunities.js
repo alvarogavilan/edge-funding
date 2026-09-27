@@ -125,26 +125,28 @@ if(!state.manualOpportunities.some(x=>x.id===id)){
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),available=N(x.available);
  const floor=Math.min(trend||Infinity,avg30||Infinity);
- const conservativeExit=isFinite(floor)?floor:0;
- const grossEdge=conservativeExit>unit?conservativeExit-unit:0;
- const roi=unit>0?grossEdge/unit*100:0;
- let maxUnits=1,reason="1 unidad por defecto";
- if(unit>=20&&roi>=50&&available>=20){maxUnits=2;reason="2 unidades máximo: descuento fuerte, pero aún sin evidencia de profundidad por tramos";}
- if(unit>=20&&roi>=80&&available>=40){maxUnits=3;reason="3 unidades solo si verificas varias ofertas equivalentes y aceptas concentración";}
+ const conservativeGross=isFinite(floor)?floor:0;
+ const conservativeExit=conservativeGross*.95;
+ const netEdge=conservativeExit>unit?conservativeExit-unit:0;
+ const roi=unit>0?netEdge/unit*100:0;
+ const passes=unit>=20&&netEdge>=40&&roi>=35;
+ let maxUnits=passes?1:0,reason=passes?"1 unidad por defecto":"No supera simultáneamente +40 € netos aprox. y ROI 35% con la referencia más conservadora.";
+ if(passes&&roi>=50&&available>=20){maxUnits=2;reason="2 unidades máximo: descuento fuerte, sujeto a verificar idioma, estado y profundidad real.";}
+ if(passes&&roi>=80&&available>=40){maxUnits=3;reason="3 unidades solo con varias ofertas equivalentes verificadas y aceptando concentración.";}
  const affordable=unit>0?Math.floor(c/unit):0;
- return {conservativeExit,grossEdge,roi,maxUnits,affordable,recommended:Math.max(0,Math.min(maxUnits,affordable)),reason};
+ return {conservativeGross,conservativeExit,netEdge,roi,passes,maxUnits,affordable,recommended:Math.max(0,Math.min(maxUnits,affordable)),reason};
 }
 function cash(){try{return Math.max(0,window.investmentLedgerStats?.().netCash||0)}catch{return 0}}
 function top5Rank(x){
- const avg=N(x.avg30),entry=N(x.price),netExit=avg*.95,netPotential=netExit-entry;
- return netPotential;
+ const floor=Math.min(N(x.trend)||Infinity,N(x.avg30)||Infinity),entry=N(x.price);
+ return (isFinite(floor)?floor*.95:0)-entry;
 }
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
  const rows=state.manualOpportunities.filter(z=>[tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
- box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),netExit=N(x.trend)*.95,potential=netExit-N(x.price),isWatch=x.approval==="WATCH",isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE",isOne=x.approval==="BUY-ONE";const ps=positionSizing(x,c);
+ box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
  if(x.approval==="BUY-SCALE"){ps.maxUnits=Math.min(3,N(x.sellerQty)||3);ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(ps.maxUnits,ps.affordable);ps.reason="Posición escalable: varias NM al mismo precio del mismo vendedor; verificar portes y disponibilidad."}
  if(x.approval==="BUY-ONE"){ps.maxUnits=1;ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(1,ps.affordable);ps.reason="Una unidad máximo hasta verificar liquidez de salida y comparables recientes."}
