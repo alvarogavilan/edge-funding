@@ -276,8 +276,10 @@ if(!state.prismaticSPCSharedProvenanceV753){
 /* V91.0 · imágenes vintage exactas: no admitir reimpresiones con mismo nombre/número. */
 {
  const exactImages={
-  "own-hitmonlee-106-jp-fossil-psa5":"https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0511/users/e9f856a2ec12f2a846115d263d6a1bc6928e6c87/i-img977x1200-1730593480kv0niq7.jpg",
-  "own-surfing-pikachu-mt-fuji-jr-1997":"https://cdn-vault.fanaticscollect.com/2026/3/6/wr12/large/v2783490_20260306155210986M_1.jpg"
+  "own-hitmonlee-106-jp-fossil-psa5":"https://cdn.pooka.app/card/ja-mystery-of-the-fossils-39.png",
+  "own-gyarados-ex-089-xy9-jp":"https://cdn.pooka.app/card/ja-xy9-89.png",
+  "own-mewtwo-118-ec1-jp-1ed-holo":"https://cdn.pooka.app/card/ja-base-expansion-pack-118.png",
+  "own-surfing-pikachu-mt-fuji-jr-1997":"https://i.ebayimg.com/images/g/LI4AAeSwQdFo2OZ3/s-l960.jpg"
  };
  for(const c of state.cards||[])if(exactImages[c.id]){
   c.referenceImage=exactImages[c.id];
