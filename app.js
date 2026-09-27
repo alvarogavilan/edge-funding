@@ -566,8 +566,9 @@ async function indexFullCatalog(){
     state.catalogMeta.lorcana={count:lcount,sets:sets.length,at:new Date().toISOString()};save();await refreshCatalogBrowser(true);
     st.textContent="Índice local: "+prows.length.toLocaleString("es-ES")+" Pokémon + "+lcount.toLocaleString("es-ES")+" Lorcana. Precio/señal se enriquece aparte.";
   }catch(e){pushRuntimeError("catalog-index",e?.message||e);st.textContent="Indexado interrumpido. Lo ya guardado se conserva; puedes reintentar."}
-  btn.disabled=false;
+  if(btn)btn.disabled=false;
 }
+window.CVRunMarketScan=runMarketScan;
 let lorcastSetsCache=null;
 async function lorcastSets(){
   if(lorcastSetsCache)return lorcastSetsCache;
@@ -1313,25 +1314,27 @@ async function continueCoverage(blocks=5){
   }catch(e){st.textContent="Cobertura interrumpida tras "+completed+" bloques. Puedes continuar después."}
   btn.disabled=false;document.querySelector("#deepScanMarket").disabled=false;
 }
-async function runMarketScan(mode="quick"){
+async function runMarketScan(mode="quick",universeOverride="",options={}){
+  const silent=!!options.silent;
   const btn=mode==="wide"?document.querySelector("#deepScanMarket"):document.querySelector("#scanMarket"),st=document.querySelector("#marketScanState");
-  btn.disabled=true;st.textContent=mode==="wide"?"Preparando escaneo amplio…":"Actualizando radar…";
+  if(btn)btn.disabled=true;if(st&&!silent)st.textContent=mode==="wide"?"Preparando escaneo amplio…":"Actualizando radar…";
   try{
-    const universe=currentRadarUniverse(),cards=await fetchMarketUniverse(mode,universe);
-    st.textContent="Analizando "+cards.length+" elementos de "+universeLabel(universe)+"…";renderCoverage();
+    const universe=universeOverride||currentRadarUniverse(),cards=await fetchMarketUniverse(mode,universe);
+    if(st&&!silent)st.textContent="Analizando "+cards.length+" elementos de "+universeLabel(universe)+"…";if(!silent)renderCoverage();
     const signals=universe==="pokemon"?cards.map(c=>c?.pricing?buildMarketSignal(c):c).filter(x=>x&&Number.isFinite(+x.score)&&(+x.price||0)>0):cards.filter(Boolean);
     if(!signals.length)throw new Error("La fuente no devolvió señales utilizables en esta pasada");
-    state.marketScan=signals;state.marketScanAt=new Date().toISOString();state.marketScanMode=mode;state.marketScanUniverse=universe;
+    const scanAt=new Date().toISOString();
+    if(silent){state.autoMarketScans=state.autoMarketScans||{};state.autoMarketScans[universe]={at:scanAt,mode,signals:signals.slice(0,400)};}
+    else{state.marketScan=signals;state.marketScanAt=scanAt;state.marketScanMode=mode;state.marketScanUniverse=universe;}
     recordSignalSnapshot(signals);const alerts=evaluateOpportunityAlerts(signals);state.alertHistory.push({at:state.marketScanAt,count:alerts.length,ids:alerts.map(a=>a.id)});state.alertHistory=state.alertHistory.slice(-30);
-    save();renderMarketScan();renderRadar();renderRotationPanel();refreshGlobalToday().catch(()=>{});snapshotMarketScan(mode);renderScanHistory();renderWatchSummary();
-    st.textContent=signals.length+" señales activas · "+new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});renderQA();renderReadiness();
+    save();if(!silent){renderMarketScan();renderRadar();renderRotationPanel();refreshGlobalToday().catch(()=>{});snapshotMarketScan(mode);renderScanHistory();renderWatchSummary();if(st)st.textContent=signals.length+" señales activas · "+new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});renderQA();renderReadiness();}try{window.renderOpportunityEngine?.()}catch{} return signals;
   }catch(e){
     pushRuntimeError("market-scan",e?.message||e);
     const fallback=(await activeMarketSignals(45,currentRadarUniverse()).catch(()=>({active:[]}))).active.sort((a,b)=>b.score-a.score).slice(0,400);
     if(fallback.length){
       state.marketScan=fallback;state.marketScanUniverse=currentRadarUniverse();save();renderMarketScan();renderRadar();
-      st.textContent="No se pudo refrescar ahora; mostrando "+fallback.length+" señales guardadas.";
-    }else st.textContent="No se pudo refrescar y no hay señales guardadas para este universo.";
+      if(st&&!silent)st.textContent="No se pudo refrescar ahora; mostrando "+fallback.length+" señales guardadas.";return fallback;
+    }else if(st&&!silent)st.textContent="No se pudo refrescar y no hay señales guardadas para este universo.";
   }
   btn.disabled=false;
 }
