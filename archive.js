@@ -1,5 +1,6 @@
 (()=>{"use strict";
 const Q=s=>document.querySelector(s),N=v=>Number(v)||0,EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
+let archiveFilter={q:"",universe:"",grading:"",payment:"",sort:"date-desc"};
 state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
 
 function snapshotFromCard(c={},qty=1){
@@ -146,11 +147,44 @@ function renderLearning(rows){
   '<div class="qaRow"><span>Timing de salida</span><b>'+timing+'</b></div>'+
   '<small>Estas métricas son descriptivas. El seguimiento posterior exige comparables exactos y no cambia el motor de compra con muestras pequeñas.</small>';
 }
+function ensureArchiveFilters(){
+ const list=Q("#archiveList");if(!list)return;
+ let box=Q("#archiveFilters");if(box)return;
+ box=document.createElement("div");box.id="archiveFilters";box.className="searchRow";
+ box.innerHTML='<input id="archiveSearch" placeholder="Buscar nombre, set, número, certificado o pedido">'+
+  '<select id="archiveUniverse"><option value="">Pokémon + Lorcana</option><option value="pokemon">Pokémon</option><option value="lorcana">Lorcana</option></select>'+
+  '<select id="archiveGrading"><option value="">RAW + graduadas</option><option value="RAW">RAW</option><option value="PSA">PSA</option><option value="BGS">BGS</option><option value="CGC">CGC</option></select>'+
+  '<select id="archivePayment"><option value="">Todos los cobros</option><option value="COBRADA">Cobradas</option><option value="PENDIENTE">Pendientes</option></select>'+
+  '<select id="archiveSort"><option value="date-desc">Más recientes</option><option value="date-asc">Más antiguas</option><option value="price-desc">Mayor venta</option><option value="price-asc">Menor venta</option><option value="net-desc">Mayor neto</option></select>';
+ list.before(box);
+ const rerender=()=>{archiveFilter={
+  q:(Q("#archiveSearch")?.value||"").trim().toLowerCase(),
+  universe:Q("#archiveUniverse")?.value||"",grading:Q("#archiveGrading")?.value||"",
+  payment:Q("#archivePayment")?.value||"",sort:Q("#archiveSort")?.value||"date-desc"
+ };render()};
+ ["#archiveSearch","#archiveUniverse","#archiveGrading","#archivePayment","#archiveSort"].forEach(s=>Q(s)?.addEventListener(s==="#archiveSearch"?"input":"change",rerender));
+}
+function filteredRows(rows){
+ let out=rows.filter(x=>{
+  const hay=[x.name,x.set,x.number,x.cert,x.saleOrder,x.channel,x.language,x.variant].join(" ").toLowerCase();
+  return (!archiveFilter.q||hay.includes(archiveFilter.q))&&
+   (!archiveFilter.universe||String(x.universe||"pokemon").toLowerCase()===archiveFilter.universe)&&
+   (!archiveFilter.grading||String(x.grading||"RAW").toUpperCase()===archiveFilter.grading)&&
+   (!archiveFilter.payment||x.payment===archiveFilter.payment);
+ });
+ if(archiveFilter.sort==="date-asc")out.sort((a,b)=>(a.soldAt||"").localeCompare(b.soldAt||""));
+ else if(archiveFilter.sort==="price-desc")out.sort((a,b)=>N(b.unitPrice)-N(a.unitPrice));
+ else if(archiveFilter.sort==="price-asc")out.sort((a,b)=>N(a.unitPrice)-N(b.unitPrice));
+ else if(archiveFilter.sort==="net-desc")out.sort((a,b)=>N(b.net)-N(a.net));
+ else out.sort((a,b)=>(b.soldAt||"").localeCompare(a.soldAt||""));
+ return out;
+}
 function render(){
  const box=Q("#archiveList"),sum=Q("#archiveSummary");if(!box||!sum)return;
- const rows=records(),s=summary(rows);renderLearning(rows);
+ ensureArchiveFilters();
+ const allRows=records(),rows=filteredRows(allRows),s=summary(allRows);renderLearning(allRows);
  sum.innerHTML='<div><span>Cartas vendidas</span><b>'+s.count+'</b></div><div><span>Ventas archivadas</span><b>'+s.records+'</b></div><div><span>Bruto histórico</span><b>'+EUR(s.gross)+'</b></div><div><span>Neto histórico</span><b>'+EUR(s.net)+'</b></div><div><span>Resultado conocido</span><b>'+(s.known?(s.pnl>=0?"+":"")+EUR(s.pnl):"Coste pendiente")+'</b></div><div><span>Cobros pendientes</span><b>'+EUR(s.pending)+'</b></div><div><span>PSA / RAW</span><b>'+s.psa+' / '+s.raw+'</b></div><div><span>Pokémon / Lorcana</span><b>'+s.pokemon+' / '+s.lorcana+'</b></div><div><span>Mejor salida</span><b>'+(s.best?EUR(s.best.unitPrice):"—")+'</b></div>';
- box.innerHTML=rows.length?rows.map(x=>{
+ box.innerHTML=(rows.length?'<div class="microNote"><b>'+rows.length+'</b> expediente(s) visibles de '+allRows.length+'</div>':"")+ (rows.length?rows.map(x=>{
   const detail=[x.number,x.set,x.language,x.variant,x.condition,x.grading,x.grade,x.cert?("Cert. "+x.cert):""].filter(Boolean).join(" · ");
   const origin=[x.acquisitionSource,x.acquisitionType].filter(Boolean).join(" · ");
   const result=x.result==null?"ROI no calculado · coste individual desconocido":("Resultado "+(x.result>=0?"+":"")+EUR(x.result)+" · ROI "+(x.basis>0?(x.result/x.basis*100).toFixed(1)+"%":"—"));
@@ -162,7 +196,7 @@ function render(){
    (x.rawMarketSnapshot?'<div class="microNote"><b>Snapshot RAW '+x.rawMarketSnapshot.checkedAt+':</b> tendencia '+EUR(x.rawMarketSnapshot.trend)+' · 30d '+EUR(x.rawMarketSnapshot.avg30)+' · 7d '+EUR(x.rawMarketSnapshot.avg7)+' · 1d '+EUR(x.rawMarketSnapshot.avg1)+' · no comparar directamente con el slab PSA 9.</div>':"")+
    (x.archiveNotes?'<div class="microNote">'+String(x.archiveNotes)+'</div>':"")+
    '<div class="sealedActions">'+(x.marketUrl?'<a href="'+x.marketUrl+'" target="_blank" rel="noopener">Ficha mercado</a>':"")+'<button data-archive-watch="'+x.id+'">Volver a vigilar</button><button data-post-sale="'+x.id+'">Registrar control postventa</button></div></article>';
- }).join(""):'<div class="emptyState"><b>El archivo está vacío.</b><span>Cuando vendas una carta aparecerá aquí permanentemente.</span></div>';
+ }).join(""):'<div class="emptyState"><b>Sin resultados para estos filtros.</b><span>El Archivo completo sigue conservado.</span></div>');
  document.querySelectorAll("[data-archive-watch]").forEach(b=>b.onclick=()=>watchAgain(b.dataset.archiveWatch));
  const ex=Q("#archiveExport");if(ex)ex.onclick=exportCsv;
 }
