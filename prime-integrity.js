@@ -36,7 +36,11 @@ function run(){
   if(!opps.some(r=>r.id===x.id)){x.integrityIssues=[];x.integrityBlocked=false}
  }
  state.primeIntegrity={at:new Date().toISOString(),issues:all.slice(0,100)};
- save();render();return all;
+ save();render();
+ try{window.CVPrimeMarket?.run?.()}catch{}
+ try{window.CVManualOpportunities?.render?.()}catch{}
+ try{window.CVPrimeAttention?.render?.()}catch{}
+ return all;
 }
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
