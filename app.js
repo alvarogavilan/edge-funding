@@ -1427,9 +1427,14 @@ function populatePSACollectionPicker(){
   renderCollectionPSADecision();
   renderPSAPriorityQueue();
 }
+function psaEvidenceForCard(c){
+  const p9=marketValueFor(c.name,"PSA","9",c.set||"",cardUniverse(c));
+  const p10=marketValueFor(c.name,"PSA","10",c.set||"",cardUniverse(c));
+  return {p9,p10,ready:!!(p9&&p10),count9:p9?.count||0,count10:p10?.count||0};
+}
 function psaPriorityScore(c){
   if((c.grading||"RAW")!=="RAW"||!(+c.value>0)||c.archivedSold)return null;
-  const raw=+c.value||0,hasBack=/reverso/i.test(c.notes||"")&&!/pendiente de reverso/i.test(c.notes||""),purpose=c.purpose||"collection";
+  const raw=+c.value||0,hasBack=/reverso/i.test(c.notes||"")&&!/pendiente de reverso/i.test(c.notes||""),purpose=c.purpose||"collection",evidence=psaEvidenceForCard(c);
   let score=0,reasons=[];
   if(raw>=40){score+=35;reasons.push("RAW con valor relevante")}
   else if(raw>=20){score+=25;reasons.push("RAW de valor medio")}
@@ -1440,20 +1445,25 @@ function psaPriorityScore(c){
   if(/secret|rainbow|illustration rare|full art|ultra rare|special illustration/i.test(c.notes||"")){score+=12;reasons.push("rareza/arte premium")}
   if(/eevee|charizard|venusaur|pikachu|mew|umbreon|gengar|rayquaza|lugia|gardevoir|lapras/i.test(c.name||"")){score+=8;reasons.push("personaje con demanda")}
   if(c.marketPricing?.avg7&&c.marketPricing?.avg30&&+c.marketPricing.avg7>+c.marketPricing.avg30){score+=5;reasons.push("mercado reciente firme")}
+  if(evidence.ready){score+=10;reasons.push("PSA 9 y 10 con ventas comparables")}
+  else if(evidence.p9||evidence.p10){score+=4;reasons.push("evidencia PSA parcial")}
   if(hasBack){score+=3}
   const last=(state.pregradeHistory||[]).filter(x=>x.cardId===c.id).at(-1);
   if(last){score+=Math.min(12,Math.max(0,(last.overall-80)*.8));reasons.push("ya tiene pregrado")}
   const missing=[];
   if(!last)missing.push("pregrado");
   if(!hasBack)missing.push("reverso");
-  return {c,score:Math.round(score),reasons,missing,last,raw};
+  if(!evidence.p9)missing.push("ventas PSA 9");
+  if(!evidence.p10)missing.push("ventas PSA 10");
+  return {c,score:Math.round(score),reasons,missing,last,raw,evidence};
 }
 function renderPSAPriorityQueue(){
   const box=document.querySelector("#psaPriorityQueue");if(!box)return;
   const rows=activeCards().map(psaPriorityScore).filter(Boolean).sort((a,b)=>b.score-a.score||b.raw-a.raw).slice(0,8);
-  box.innerHTML='<h3>Prioridad para estudiar PSA</h3><p class="muted">Esto ordena qué cartas merece la pena revisar primero. No significa “enviar a PSA”.</p>'+
-    (rows.length?rows.map((r,i)=>'<article class="rotationRow"><div><b>#'+(i+1)+' '+r.c.name+(r.c.number?' #'+r.c.number:'')+'</b><small>'+r.c.set+' · RAW '+euro(r.raw)+'</small></div><strong>'+r.score+'/100</strong><span class="rotationAction revisar-psa">ESTUDIAR</span><small>'+r.reasons.slice(0,3).join(" · ")+(r.missing.length?' · falta '+r.missing.join(" + "):' · evidencia fotográfica suficiente para seguir')+'</small></article>').join(""):'<div class="empty">No hay cartas RAW con valoración suficiente para priorizar.</div>')+
-    '<small>Para pasar de ESTUDIAR a una decisión de envío hacen falta fotos adecuadas y precios PSA 9/10 comparables respaldados. Card Vault no asigna probabilidad de PSA 10.</small>';
+  box.innerHTML='<h3>Prioridad para estudiar PSA</h3><p class="muted">Ordena qué cartas merece la pena revisar primero. No significa “enviar a PSA”.</p>'+
+    (rows.length?rows.map((r,i)=>'<article class="rotationRow"><div><b>#'+(i+1)+' '+r.c.name+(r.c.number?' #'+r.c.number:'')+'</b><small>'+r.c.set+' · RAW '+euro(r.raw)+'</small></div><strong>'+r.score+'/100</strong><span class="rotationAction revisar-psa">ESTUDIAR</span><small>'+r.reasons.slice(0,3).join(" · ")+'</small><small>PSA 9: '+(r.evidence.p9?euro(r.evidence.p9.value)+' · '+r.evidence.count9+' ventas':'sin evidencia suficiente')+' · PSA 10: '+(r.evidence.p10?euro(r.evidence.p10.value)+' · '+r.evidence.count10+' ventas':'sin evidencia suficiente')+'</small><small>'+(r.missing.length?'Falta: '+r.missing.join(" + "):'Evidencia mínima completa para evaluar economía; falta aún validar físicamente la copia.')+'</small><button type="button" class="psaPickOwned" data-cardid="'+r.c.id+'">Analizar esta</button></article>').join(""):'<div class="empty">No hay cartas RAW con valoración suficiente para priorizar.</div>')+
+    '<small>Las medianas PSA solo se muestran con al menos 2 ventas cerradas EUR comparables. Card Vault no convierte un precio anunciado en valor PSA ni asigna probabilidad de PSA 10.</small>';
+  box.querySelectorAll(".psaPickOwned").forEach(b=>b.onclick=()=>{const sel=document.querySelector("#psaCollectionCard");if(sel){sel.value=b.dataset.cardid;sel.dispatchEvent(new Event("change"));sel.scrollIntoView({behavior:"smooth",block:"center"})}});
 }
 function selectedPSACard(){const id=document.querySelector("#psaCollectionCard")?.value;return id?activeCards().find(c=>c.id===id)||null:null}
 function renderCollectionPSADecision(){
@@ -1463,11 +1473,12 @@ function renderCollectionPSADecision(){
   box.innerHTML='<div class="qaRow"><span>Valor RAW actual</span><b>'+euro(raw)+'</b></div>'+
     '<div class="qaRow"><span>Estado</span><b>'+((c.notes||"").includes("pendiente de reverso")?"Falta reverso":"Pendiente de pregrado completo")+'</b></div>'+
     '<div class="qaRow"><span>Último pregrado</span><b>'+(last?('PSA '+last.range.low+'–'+last.range.high+' · confianza '+last.confidence+'%'):'Sin analizar')+'</b></div>'+
+    (()=>{const ev=psaEvidenceForCard(c);return '<div class="qaRow"><span>PSA 9 comparable</span><b>'+(ev.p9?euro(ev.p9.value)+' · '+ev.count9+' ventas':'Pendiente')+'</b></div><div class="qaRow"><span>PSA 10 comparable</span><b>'+(ev.p10?euro(ev.p10.value)+' · '+ev.count10+' ventas':'Pendiente')+'</b></div>'})()+
     '<small>Para recomendar envío necesitamos frontal + reverso; las 4 esquinas aumentan la confianza. El valor RAW es coste de oportunidad, no dinero que vuelves a pagar.</small>';
 }
 function bindPSACollectionPicker(){
   const sel=document.querySelector("#psaCollectionCard");if(!sel||sel.dataset.bound)return;sel.dataset.bound="1";
-  sel.onchange=()=>{const c=selectedPSACard();if(c){const raw=document.querySelector("#gradeBuyPrice"),ship=document.querySelector("#gradeBuyShip");if(raw)raw.value=+c.value||0;if(ship)ship.value=0}renderCollectionPSADecision();calculateGradingEconomics()};
+  sel.onchange=()=>{const c=selectedPSACard();if(c){const raw=document.querySelector("#gradeBuyPrice"),ship=document.querySelector("#gradeBuyShip"),p9=document.querySelector("#gradePSA9"),p10=document.querySelector("#gradePSA10"),ev=psaEvidenceForCard(c);if(raw)raw.value=+c.value||0;if(ship)ship.value=0;if(p9)p9.value=ev.p9?.value||0;if(p10)p10.value=ev.p10?.value||0}renderCollectionPSADecision();calculateGradingEconomics()};
   populatePSACollectionPicker();
 }
 function hydrateGradingEconomics(){
