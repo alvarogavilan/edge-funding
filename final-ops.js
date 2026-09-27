@@ -20,8 +20,8 @@ function collectionStats(){
 }
 function salesStats(){const rows=window.CVSalesDesk?.active?.()||[];return {active:rows.length,gross:rows.reduce((a,x)=>a+N(x.price),0),net:rows.reduce((a,x)=>a+N(x.price)*.95,0)}}
 function ledgerStats(){
-  const rows=state.investmentLedger||[],settled=x=>["paid","paid-confirmed","completed","settled"].includes(String(x.fulfillmentStatus||"").toLowerCase());
-  const sale=rows.filter(x=>x.type==="sell"&&settled(x)).reduce((a,x)=>a+N(x.unitPrice)*N(x.qty||1)-N(x.fees)-N(x.shipping),0);
+  const rows=state.investmentLedger||[];
+  const sale=rows.filter(x=>x.type==="sell"&&window.CVLedgerWorkflow?.saleSettled?.(x)===true&&window.CVLedgerWorkflow?.saleReconciled?.(x)!==false).reduce((a,x)=>a+N(x.unitPrice)*N(x.qty||1)-N(x.fees)-N(x.shipping),0);
   return {entries:rows.length,released:sale};
 }
 function render(){
