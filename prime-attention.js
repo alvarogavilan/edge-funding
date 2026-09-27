@@ -53,9 +53,13 @@ function render(){
  const high=rows.filter(x=>x.priority>=90).length;
  box.innerHTML='<b>Bandeja PRIME · Atención</b>'+
   '<div class="statsGrid"><div><span>Pendientes</span><b>'+rows.length+'</b></div><div><span>Prioridad alta</span><b>'+high+'</b></div></div>'+
-  (rows.length?rows.slice(0,12).map(x=>'<div class="qaRow"><span>'+x.name+'<small> · '+x.text+'</small>'+(x.oppId?'<button type="button" class="buyButton secondary" data-prime-evidence="'+x.oppId+'">Refrescar evidencia</button>':'')+(x.sealedId?'<button type="button" class="buyButton secondary" data-prime-sealed="'+x.sealedId+'">Refrescar sellado</button>':'')+'</span><b>'+(x.priority>=90?"AHORA":x.priority>=70?"REVISAR":"CUANDO TOQUE")+'</b></div>').join(""):'<div class="qaRow"><span>Estado</span><b>Sin pendientes críticos</b></div>')+
+  (rows.length?rows.slice(0,12).map(x=>'<div class="qaRow"><span>'+x.name+'<small> · '+x.text+'</small>'+(x.oppId?'<button type="button" class="buyButton secondary" data-prime-evidence="'+x.oppId+'">Refrescar evidencia</button>':'')+(x.sealedId?'<button type="button" class="buyButton secondary" data-prime-sealed="'+x.sealedId+'">Refrescar sellado</button>':'')+(x.kind==="shipment"&&x.saleId?'<button type="button" class="buyButton secondary" data-prime-shipped="'+x.saleId+'">Confirmar envío</button>':'')+(x.kind==="payment"&&x.saleId?'<button type="button" class="buyButton secondary" data-prime-paid="'+x.saleId+'">Confirmar cobro</button>':'')+'</span><b>'+(x.priority>=90?"AHORA":x.priority>=70?"REVISAR":"CUANDO TOQUE")+'</b></div>').join(""):'<div class="qaRow"><span>Estado</span><b>Sin pendientes críticos</b></div>')+
   '<small>No crea compras ni ventas. Solo concentra tareas que pueden provocar errores, pérdida de datos o decisiones con evidencia incompleta.</small>';
 }
+document.addEventListener("click",e=>{
+ const shipped=e.target.closest("[data-prime-shipped]");if(shipped){e.preventDefault();e.stopPropagation();window.CVLedgerWorkflow?.confirmShipment?.(shipped.dataset.primeShipped);return}
+ const paid=e.target.closest("[data-prime-paid]");if(paid){e.preventDefault();e.stopPropagation();window.CVLedgerWorkflow?.confirmSaleCash?.(paid.dataset.primePaid)}
+});
 function run(){render()}
 setTimeout(run,180);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)run()});
