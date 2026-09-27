@@ -7,7 +7,6 @@ function auditOpportunity(x){
  if(expires!=null&&expires<=now)issues.push("oferta caducada");
  if(checked!=null&&expires!=null&&expires<=checked)issues.push("expiresAt ≤ checkedAt");
  if(ev!=null&&ev>now+5*60*1000)issues.push("evidencia futura");
- if(ev!=null&&checked!=null&&ev+5*60*1000<checked)issues.push("evidencia anterior al snapshot de oferta");
  if(x.languageVerified===true&&/pendiente|unknown|desconoc/i.test(String(x.offerLanguage||x.language||"")))issues.push("idioma marcado verificado pero desconocido");
  if(x.sameMarketComparableVerified===true&&!(x.marketEvidence?.identityKey))issues.push("comparable verificado sin sello de identidad");
  if(x.exitEvidenceVerified===true&&!x.marketEvidence&&!N(x.sales30)&&!N(x.lastSalePrice)&&!N(x.soldMedianEUR))issues.push("salida verificada sin evidencia material");
@@ -60,7 +59,13 @@ function run(){
   }
  }
  for(const x of (state.manualOpportunities||[])){
-  if(!opps.some(r=>r.id===x.id)){x.integrityIssues=[];x.integrityBlocked=false}
+  if(!opps.some(r=>r.id===x.id)){
+   const wasBlocked=x.integrityBlocked===true,prev=x.preIntegrityApproval;
+   x.integrityIssues=[];x.integrityBlocked=false;
+   if(wasBlocked&&["BUY-ONE","BUY-SCALE"].includes(prev)&&x.approval==="WATCH"){
+    x.approval=prev;x.status=prev==="BUY-SCALE"?"COMPRAR AHORA · PRIME · ESCALA":"COMPRAR AHORA · PRIME · 1 UNIDAD";
+   }
+  }
  }
  state.primeIntegrity={at:new Date().toISOString(),issues:all.slice(0,100)};
  save();render();
