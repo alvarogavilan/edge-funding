@@ -39,6 +39,16 @@ function saleSettled(r){
  const s=String(r?.fulfillmentStatus||"").toLowerCase();
  return r?.type!=="sell"||["paid","paid-confirmed","completed","settled"].includes(s);
 }
+function saleReconciled(r){
+ if(r?.type!=="sell")return true;
+ const isCard=r.assetType==="card"||String(r.assetKey||"").startsWith("card:");
+ if(!isCard)return true;
+ const h=(state.saleHistory||[]).find(x=>x.id===r.id);if(!h)return false;
+ const same=(a,b)=>Math.abs(num(a)-num(b))<=.009;
+ return same(r.unitPrice,h.unitPrice)&&same(r.qty||1,h.qty||1)&&same(r.shipping,h.shipping)&&same(r.fees,h.fees)&&
+  String(r.fulfillmentStatus||"")===String(h.fulfillmentStatus||"")&&
+  same(h.net,num(h.unitPrice)*num(h.qty||1)-num(h.shipping)-num(h.fees))&&!!h.cardSnapshot;
+}
 function confirmShipment(id){
  const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
  if(String(r.fulfillmentStatus||"")!=="sold-awaiting-shipment")return;
@@ -57,7 +67,7 @@ function confirmSaleCash(id){
 }
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
- sales=rows.filter(r=>r.type==="sell"&&saleSettled(r)).reduce((a,r)=>a+(num(r.unitPrice)*num(r.qty||1)-num(r.shipping)-num(r.fees)),0),
+ sales=rows.filter(r=>r.type==="sell"&&saleSettled(r)&&saleReconciled(r)).reduce((a,r)=>a+(num(r.unitPrice)*num(r.qty||1)-num(r.shipping)-num(r.fees)),0),
  costs=rows.filter(r=>r.type==="grading"||r.type==="fee").reduce((a,r)=>a+total(r),0),
  capital=rows.filter(r=>r.type==="capital").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0),
  withdrawals=rows.filter(r=>r.type==="withdrawal").reduce((a,r)=>a+num(r.unitPrice)*num(r.qty||1),0),
@@ -69,7 +79,7 @@ function render(){
  const issues=integrity();
  box.innerHTML='<div class="stat"><b>'+eur(x.buys)+'</b><span>Compras registradas</span></div><div class="stat"><b>'+eur(x.sales)+'</b><span>Ventas netas</span></div><div class="stat"><b>'+eur(x.capital)+'</b><span>Capital aportado</span></div><div class="stat"><b>'+eur(x.costs+x.withdrawals)+'</b><span>Costes/retiradas</span></div><div class="stat"><b>'+eur(x.netCash)+'</b><span>Caja disponible</span></div><div class="stat"><b>'+issues.length+'</b><span>Alertas contables</span></div>';
  const rows=[...state.investmentLedger].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- list.innerHTML=rows.length?rows.map(r=>{const fs=String(r.fulfillmentStatus||"");const saleState=r.type!=="sell"?"":fs==="sold-awaiting-shipment"?"ENVÍO PENDIENTE":fs==="sold-awaiting-payment"?"COBRO PENDIENTE":saleSettled(r)?"COBRADA":"PENDIENTE";return '<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste",capital:"Aportación",withdrawal:"Retirada"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+(saleState?" · "+saleState:"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.type==="sell"&&!saleSettled(r)?" · "+saleState+" · no entra en caja":"")+(r.basisUnknown?" · Coste base pendiente":"")+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+(r.type==="sell"&&fs==="sold-awaiting-shipment"?'<button data-ledger-shipped="'+esc(r.id)+'">Confirmar envío</button>':"")+(r.type==="sell"&&fs==="sold-awaiting-payment"?'<button data-ledger-confirm="'+esc(r.id)+'">Confirmar cobro</button>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>'}).join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
+ list.innerHTML=rows.length?rows.map(r=>{const fs=String(r.fulfillmentStatus||"");const reconciled=saleReconciled(r),saleState=r.type!=="sell"?"":!reconciled?"RECONCILIAR":fs==="sold-awaiting-shipment"?"ENVÍO PENDIENTE":fs==="sold-awaiting-payment"?"COBRO PENDIENTE":saleSettled(r)?"COBRADA":"PENDIENTE";return '<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+({buy:"Compra",sell:"Venta",grading:"Graduación",fee:"Coste",capital:"Aportación",withdrawal:"Retirada"}[r.type]||r.type)+'</span><h4>'+esc(r.name)+'</h4><small>'+esc(r.date||"")+" · "+esc(r.assetType||"")+(saleState?" · "+saleState:"")+'</small></div><div class="sealedNumbers"><b>'+eur(num(r.unitPrice)*num(r.qty||1))+'</b><span>cant. '+num(r.qty||1)+'</span></div></div><div class="microNote">Envío '+eur(r.shipping)+' · Comisiones '+eur(r.fees)+(r.type==="sell"&&!saleSettled(r)?" · "+saleState+" · no entra en caja":"")+(r.basisUnknown?" · Coste base pendiente":"")+(r.notes?" · "+esc(r.notes):"")+'</div><div class="sealedActions">'+(r.sourceUrl?'<a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener">Evidencia</a>':"")+(r.type==="sell"&&fs==="sold-awaiting-shipment"?'<button data-ledger-shipped="'+esc(r.id)+'">Confirmar envío</button>':"")+(r.type==="sell"&&fs==="sold-awaiting-payment"?'<button data-ledger-confirm="'+esc(r.id)+'">Confirmar cobro</button>':"")+'<button data-ledger-edit="'+esc(r.id)+'">Editar</button></div></article>'}).join(""):'<div class="emptyState"><b>Aún no hay operaciones.</b><span>Registra compras y ventas reales para medir resultados realizados.</span></div>';
  document.querySelectorAll("[data-ledger-edit]").forEach(b=>b.onclick=()=>open(b.dataset.ledgerEdit));document.querySelectorAll("[data-ledger-shipped]").forEach(b=>b.onclick=()=>confirmShipment(b.dataset.ledgerShipped));document.querySelectorAll("[data-ledger-confirm]").forEach(b=>b.onclick=()=>confirmSaleCash(b.dataset.ledgerConfirm));
 }
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -81,5 +91,5 @@ $("#ledgerAdd")?.addEventListener("click",()=>open());$("#ledgerCancel")?.addEve
 $("#ledgerForm")?.addEventListener("submit",e=>{e.preventDefault();const r={id:editId||crypto.randomUUID(),type:$("#ledgerType").value,assetType:$("#ledgerAssetType").value,assetKey:$("#ledgerAssetKey").value,name:$("#ledgerName").value.trim(),date:$("#ledgerDate").value,qty:num($("#ledgerQty").value),unitPrice:num($("#ledgerUnitPrice").value),shipping:num($("#ledgerShipping").value),fees:num($("#ledgerFees").value),sourceUrl:$("#ledgerSource").value.trim(),notes:$("#ledgerNotes").value.trim(),updatedAt:new Date().toISOString()};if(!r.name||!r.date||r.qty<=0||r.unitPrice<0)return;if(editId){const prev=state.investmentLedger.find(x=>x.id===editId)||{};const merged={...prev,...r,id:prev.id||r.id,updatedAt:new Date().toISOString()};state.investmentLedger=state.investmentLedger.map(x=>x.id===editId?merged:x)}else state.investmentLedger.push(r);save();$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
 $("#ledgerDelete")?.addEventListener("click",()=>{if(!editId)return;state.investmentLedger=state.investmentLedger.filter(x=>x.id!==editId);save();$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
 render();
-window.renderInvestmentLedger=render;window.investmentLedgerStats=stats;window.assetAccounting=assetAccounting;window.investmentLedgerIntegrity=integrity;window.CVLedgerWorkflow={confirmShipment,confirmSaleCash,saleSettled};
+window.renderInvestmentLedger=render;window.investmentLedgerStats=stats;window.assetAccounting=assetAccounting;window.investmentLedgerIntegrity=integrity;window.CVLedgerWorkflow={confirmShipment,confirmSaleCash,saleSettled,saleReconciled};
 })();
