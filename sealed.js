@@ -4,7 +4,7 @@
 "use strict";
 if(!Array.isArray(state.sealedProducts))state.sealedProducts=[];
 if(!state.sealedSnapshots||typeof state.sealedSnapshots!=="object"||Array.isArray(state.sealedSnapshots))state.sealedSnapshots={};
-if(!state.sealedPolicy||typeof state.sealedPolicy!=="object")state.sealedPolicy={minPriceEUR:40,maxPriceEUR:250,minUpsideEUR:50,chaseThresholdEUR:50};if(!(num(state.sealedPolicy.chaseThresholdEUR)>0))state.sealedPolicy.chaseThresholdEUR=50;
+if(!state.sealedPolicy||typeof state.sealedPolicy!=="object")state.sealedPolicy={minPriceEUR:40,maxPriceEUR:250,minUpsideEUR:50,chaseThresholdEUR:50};if(!(num(state.sealedPolicy.chaseThresholdEUR)>0))state.sealedPolicy.chaseThresholdEUR=50;if(!state.sealedPolicyMigrationV742){if(num(state.sealedPolicy.minPriceEUR)===40)state.sealedPolicy.minPriceEUR=20;state.sealedPolicyMigrationV742=true;}
 for(const c of state.cards||[])if(!c.purpose)c.purpose="investment";
 save();
 
