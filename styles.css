@@ -283,3 +283,6 @@ nav button{min-height:46px;line-height:1.05}
 @media(max-width:600px){#reinvestmentCommitteePanel .sectionHead{display:grid!important;gap:4px}#reinvestmentCommitteePanel .qaRow{grid-template-columns:1fr!important}#reinvestmentCommitteePanel .qaRow>b{justify-self:start}.dualSimpleLinks{grid-template-columns:1fr!important}.buyNumbers{grid-template-columns:repeat(2,minmax(0,1fr))!important}.buyNumbers>div{min-width:0}.buyNumbers span,.buyNumbers b{overflow-wrap:anywhere}}
 
 .bestOffer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0;padding:10px 12px;border:1px solid #dfe5ef;border-radius:12px;background:#f8fafc}.bestOffer span{font-size:11px;font-weight:800;letter-spacing:.04em}.bestOffer b{white-space:nowrap;font-size:15px}@media(max-width:600px){.bestOffer{align-items:flex-start;flex-direction:column}.bestOffer b{font-size:17px}}
+
+/* V73.2 sealed pull odds */
+.pullOdds{margin:9px 0;padding:10px 12px;border-radius:12px;background:#10261a;border:1px solid #2e6a45;display:grid;gap:4px}.pullOdds.pending{background:#211b10;border-color:#5a4a2c}.pullOdds b{font-size:12px}.pullOdds span,.pullOdds small,.pullOdds a{font-size:10px;line-height:1.35}.pullOdds a{font-weight:800}
