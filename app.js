@@ -114,6 +114,15 @@ if(!state.gyaradosConditionClosureV749){
   }
   state.gyaradosConditionClosureV749=true;
 }
+if(!state.quickSalePlanV7410){
+  const plans={
+    "own-gyarados-ex-089-xy9-jp":{mode:"sell-fast",channel:"Cardmarket",listEUR:169.90,floorEUR:160,reason:"Undercut current GD 190 EUR while preserving meaningful margin over 119.45 EUR cost.",status:"LISTAR YA"},
+    "own-mewtwo-118-ec1-jp-1ed-holo":{mode:"sell-fast",channel:"Cardmarket",listEUR:169.90,floorEUR:140,reason:"PO copy; no direct PO comparable. Price materially below current EX-/GD asks to seek faster sale.",status:"LISTAR YA"},
+    "own-surfing-pikachu-mt-fuji-jr-1997":{mode:"sell-fast",channel:"Cardmarket",listEUR:279.90,floorEUR:225,reason:"PO with strong crease; rare V1 but no direct PO comparable. Price below general trend/active higher-condition asks to create liquidity.",status:"LISTAR YA"}
+  };
+  for(const c of state.cards||[]){const p=plans[c.id];if(p){c.sellPolicy=p;c.purpose="sell"}}
+  state.quickSalePlanV7410=true;
+}
 const soldEevee=state.cards.find(c=>c.id==="eev174");if(soldEevee&&!soldEevee.sale1304093225Applied){const q=Math.max(1,+soldEevee.quantity||1);if(q>1)soldEevee.quantity=q-1;else soldEevee.archivedSold=true;soldEevee.sale1304093225Applied=true;soldEevee.soldAt="2026-09-27";soldEevee.soldPrice=60;}const refImages={vap149:"https://images.pokemontcg.io/sv8pt5/149_hires.png",eev174:"https://images.pokemontcg.io/svp/174_hires.png",cha074:"https://images.pokemontcg.io/svp/74_hires.png",cha228:"https://images.pokemontcg.io/sv3/228_hires.png"};for(const c of state.cards){if(refImages[c.id]&&!c.referenceImage)c.referenceImage=refImages[c.id]}save();let radarLimit=999999;
 const euro=n=>(+n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 const qty=x=>Math.max(1,+x.quantity||1);
