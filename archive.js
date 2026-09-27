@@ -54,7 +54,10 @@ function records(){
 function summary(rows){
  const gross=rows.reduce((a,x)=>a+N(x.unitPrice)*N(x.qty||1),0),net=rows.reduce((a,x)=>a+N(x.net),0);
  const known=rows.filter(x=>x.result!=null),pnl=known.reduce((a,x)=>a+N(x.result),0),pending=rows.filter(x=>x.payment!=="COBRADA").reduce((a,x)=>a+N(x.net),0);
- return {count:rows.reduce((a,x)=>a+N(x.qty||1),0),records:rows.length,gross,net,known:known.length,pnl,pending};
+ const psa=rows.filter(x=>String(x.grading||"").toUpperCase()==="PSA").length,raw=rows.filter(x=>String(x.grading||"RAW").toUpperCase()==="RAW").length;
+ const pokemon=rows.filter(x=>String(x.universe||"pokemon").toLowerCase()==="pokemon").length,lorcana=rows.filter(x=>String(x.universe||"").toLowerCase()==="lorcana").length;
+ const best=rows.slice().sort((a,b)=>N(b.unitPrice)-N(a.unitPrice))[0]||null;
+ return {count:rows.reduce((a,x)=>a+N(x.qty||1),0),records:rows.length,gross,net,known:known.length,pnl,pending,psa,raw,pokemon,lorcana,best};
 }
 function csv(rows){
  const cols=["Fecha venta","Nombre","Set","Número","Idioma","Graduación","Nota","Certificado","Cantidad","Precio unidad","Neto","Coste unidad","Resultado","Canal","Pedido","Cobro","Procedencia","URL mercado"];
@@ -79,7 +82,7 @@ function watchAgain(id){
 function render(){
  const box=Q("#archiveList"),sum=Q("#archiveSummary");if(!box||!sum)return;
  const rows=records(),s=summary(rows);
- sum.innerHTML='<div><span>Cartas vendidas</span><b>'+s.count+'</b></div><div><span>Ventas archivadas</span><b>'+s.records+'</b></div><div><span>Bruto histórico</span><b>'+EUR(s.gross)+'</b></div><div><span>Neto histórico</span><b>'+EUR(s.net)+'</b></div><div><span>Resultado conocido</span><b>'+(s.known?(s.pnl>=0?"+":"")+EUR(s.pnl):"Coste pendiente")+'</b></div><div><span>Cobros pendientes</span><b>'+EUR(s.pending)+'</b></div>';
+ sum.innerHTML='<div><span>Cartas vendidas</span><b>'+s.count+'</b></div><div><span>Ventas archivadas</span><b>'+s.records+'</b></div><div><span>Bruto histórico</span><b>'+EUR(s.gross)+'</b></div><div><span>Neto histórico</span><b>'+EUR(s.net)+'</b></div><div><span>Resultado conocido</span><b>'+(s.known?(s.pnl>=0?"+":"")+EUR(s.pnl):"Coste pendiente")+'</b></div><div><span>Cobros pendientes</span><b>'+EUR(s.pending)+'</b></div><div><span>PSA / RAW</span><b>'+s.psa+' / '+s.raw+'</b></div><div><span>Pokémon / Lorcana</span><b>'+s.pokemon+' / '+s.lorcana+'</b></div><div><span>Mejor salida</span><b>'+(s.best?EUR(s.best.unitPrice):"—")+'</b></div>';
  box.innerHTML=rows.length?rows.map(x=>{
   const detail=[x.number,x.set,x.language,x.grading,x.grade,x.cert?("Cert. "+x.cert):""].filter(Boolean).join(" · ");
   const origin=[x.acquisitionSource,x.acquisitionType].filter(Boolean).join(" · ");
