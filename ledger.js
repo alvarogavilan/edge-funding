@@ -42,7 +42,7 @@ function saleSettled(r){
 function confirmSaleCash(id){
  const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
  if(!confirm("¿Confirmar que esta venta ya está cobrada y puede entrar en caja disponible?"))return;
- r.fulfillmentStatus="paid-confirmed";r.updatedAt=new Date().toISOString();save();render();try{renderRebalance()}catch{}
+ r.fulfillmentStatus="paid-confirmed";r.updatedAt=new Date().toISOString();save();render();try{renderRebalance()}catch{}try{window.CVSalesHistory?.render?.()}catch{}
 }
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
