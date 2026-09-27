@@ -146,29 +146,42 @@ function holdingMarketMatch(c,signals){
 }
 function portfolioRotationAnalysis(signals=[]){
   const goal=+(state.investmentProfile?.minUpsideEUR||50),minBuy=+(state.investmentProfile?.minPriceEUR||40);
-  const rows=state.cards.filter(c=>(+c.value||0)>0).map(c=>{
+  const rows=activeCards().filter(c=>(+c.value||0)>0).map(c=>{
     const market=holdingMarketMatch(c,signals),value=(+c.value||0)*qty(c),cost=(+c.purchase||0)*qty(c),pnl=cost?value-cost:null,ret=cost?value/cost-1:null;
-    const momentum=market?.momentum7??null,liq=market?liquiditySignal(market):null,conv=market?convictionSignal(market):null;
+    const momentum=market?.momentum7??null,liq=market?liquiditySignal(market):null,conv=market?convictionSignal(market):null,purpose=c.purpose||"collection";
     const reasons=[];let action="CONSERVAR",score=50;
-    if(value<minBuy){score-=18;reasons.push("valor pequeño para tu estrategia")}
-    if(momentum!=null&&momentum<-.08){score-=22;reasons.push("momentum negativo")}
-    if(momentum!=null&&momentum>.08){score+=12;reasons.push("momentum positivo")}
-    if(liq!=null&&liq<55){score-=12;reasons.push("liquidez baja")}
-    if(conv!=null&&conv>=78){score+=15;reasons.push("convicción de mercado alta")}
-    if(ret!=null&&ret>=.45&&momentum!=null&&momentum<=0){score-=18;reasons.push("ganancia acumulada con impulso débil")}
-    if((c.grading||"RAW")==="PSA"&&String(c.grade)==="9"&&value<minBuy*1.25){score-=10;reasons.push("PSA 9 de bajo valor absoluto")}
-    if(score<=28)action="VENDER / REINVERTIR";
-    else if(score<=42)action="REVISAR VENTA";
-    else if(!market)action="ACTUALIZAR DATOS";
-    return {c,market,value,cost,pnl,ret,momentum,liq,conv,score,action,reasons};
+    if(purpose==="hold"){action="NO VENDER";score=100;reasons.push("bloqueada por decisión de colección")}
+    else if(purpose==="psa"){action="REVISAR PSA";score=70;reasons.push("marcada para valorar graduación")}
+    else{
+      if(value<Math.max(10,minBuy*.25)){score-=8;reasons.push("valor demasiado pequeño para vender individualmente")}
+      else if(value<minBuy){score-=12;reasons.push("valor por debajo del rango principal de reinversión")}
+      if(momentum!=null&&momentum<-.08){score-=22;reasons.push("momentum negativo")}
+      if(momentum!=null&&momentum>.08){score+=12;reasons.push("momentum positivo")}
+      if(liq!=null&&liq<55){score-=12;reasons.push("liquidez baja")}
+      if(conv!=null&&conv>=78){score+=15;reasons.push("convicción de mercado alta")}
+      if(ret!=null&&ret>=.45&&momentum!=null&&momentum<=0){score-=18;reasons.push("ganancia acumulada con impulso débil")}
+      if((c.grading||"RAW")==="PSA"&&String(c.grade)==="9"&&value<minBuy*1.25){score-=10;reasons.push("PSA 9 de bajo valor absoluto")}
+      if(purpose==="reinvest"){score-=20;reasons.push("marcada para reinversión")}
+      if(purpose==="sell"){score-=14;reasons.push("marcada para valorar venta")}
+      if(purpose==="investment"){score+=8;reasons.push("marcada como inversión")}
+      if(purpose==="collection"){score+=5;reasons.push("colección personal")}
+      if(value<10){
+        action="CONSERVAR / LOTE";
+        reasons.push("evita comisiones y trabajo por una venta pequeña");
+      }else if(score<=28)action="VENDER / REINVERTIR";
+      else if(score<=42)action="REVISAR VENTA";
+      else if(!market)action="ACTUALIZAR DATOS";
+    }
+    return {c,market,value,cost,pnl,ret,momentum,liq,conv,score,action,reasons,purpose};
   });
   const sell=rows.filter(r=>r.action==="VENDER / REINVERTIR").sort((a,b)=>a.score-b.score);
   const review=rows.filter(r=>r.action==="REVISAR VENTA").sort((a,b)=>a.score-b.score);
-  const keep=rows.filter(r=>r.action==="CONSERVAR").sort((a,b)=>b.score-a.score);
+  const psa=rows.filter(r=>r.action==="REVISAR PSA").sort((a,b)=>b.value-a.value);
+  const keep=rows.filter(r=>["CONSERVAR","NO VENDER","CONSERVAR / LOTE","ACTUALIZAR DATOS"].includes(r.action)).sort((a,b)=>b.value-a.value);
   const capital=sell.reduce((s,r)=>s+r.value,0);
   const buys=(signals||[]).map(topBuyRank).filter(o=>o.eligible).sort((a,b)=>b.rank-a.rank);
   const affordable=buys.filter(o=>(+o.x.price||0)<=capital+goal).slice(0,5);
-  return {rows,sell,review,keep,capital,affordable};
+  return {rows,sell,review,psa,keep,capital,affordable};
 }
 function renderRotationPanel(){
   const box=document.querySelector("#rotationPanel");if(!box)return;
@@ -177,7 +190,8 @@ function renderRotationPanel(){
   box.innerHTML='<div class="rotationHero"><h3>Reinvertir mi colección</h3><p>Objetivo: hacer crecer una colección todavía pequeña. No vendo por vender: libero capital solo cuando una carta aporta poco al objetivo o hay una alternativa claramente mejor.</p><div class="rotationStats"><div><span>Valor colección</span><b>'+euro(total())+'</b></div><div><span>Capital liberable</span><b>'+euro(r.capital)+'</b></div><div><span>Cartas a revisar</span><b>'+(r.sell.length+r.review.length)+'</b></div></div></div>'+
     '<div class="rotationGroup"><h4>Considerar vender / reinvertir</h4>'+(r.sell.length?r.sell.map(rowHtml).join(""):'<div class="empty">Ninguna venta clara con los datos actuales.</div>')+'</div>'+
     '<div class="rotationGroup"><h4>Revisar antes de vender</h4>'+(r.review.length?r.review.map(rowHtml).join(""):'<div class="empty">Sin cartas en zona gris.</div>')+'</div>'+
-    '<div class="rotationGroup"><h4>Conservar</h4>'+(r.keep.length?r.keep.slice(0,8).map(rowHtml).join(""):'<div class="empty">Faltan datos de mercado.</div>')+'</div>'+
+    '<div class="rotationGroup"><h4>Revisar para PSA</h4>'+(r.psa.length?r.psa.map(rowHtml).join(""):'<div class="empty">Ninguna carta marcada para PSA todavía.</div>')+'</div>'+
+    '<div class="rotationGroup"><h4>Conservar / no vender</h4>'+(r.keep.length?r.keep.slice(0,12).map(rowHtml).join(""):'<div class="empty">Faltan datos de mercado.</div>')+'</div>'+
     '<div class="rotationGroup"><h4>Qué podrías comprar con lo liberado</h4>'+(r.affordable.length?r.affordable.map((o,i)=>'<div class="rotationTarget"><b>#'+(i+1)+' '+universeIcon(marketUniverseOf(o.x))+' '+o.x.name+'</b><span>'+money(o.x.price,o.x.currency||"EUR")+' · potencial +'+money(o.gate.upside,o.x.currency||"EUR")+'</span><a href="'+cardmarketProductLink(o.x)+'" target="_blank" rel="noopener">Cardmarket</a></div>').join(""):'<div class="empty">El capital liberable aún no alcanza una candidata que pase todos los filtros.</div>')+'</div>'+
     '<small class="rotationFoot">La etiqueta “vender/reinvertir” es un filtro de cartera, no una obligación. Confirma precio real de salida, comisiones y demanda antes de listar.</small>';
 }
