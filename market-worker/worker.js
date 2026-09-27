@@ -518,22 +518,33 @@ async function handle(req, env) {
       ORDER BY o.price_eur ASC
       LIMIT 1200
     `).all()).results || [];
+    const langPools=new Map();
+    for(const r of rows){
+      if(!/near mint|mint/i.test(String(r.condition||""))||!(r.price_eur>0))continue;
+      const k=r.product_id+"|"+norm(r.lang||"");
+      if(!langPools.has(k))langPools.set(k,[]);
+      langPools.get(k).push(r.price_eur);
+    }
+    for(const a of langPools.values())a.sort((x,y)=>x-y);
     const best = new Map();
     for (const r of rows) {
       if (!/near mint|mint/i.test(String(r.condition||""))) continue;
       const refs=[r.cm_trend,r.cm_avg1,r.cm_avg7,r.cm_avg30].map(num).filter(Boolean);
-      let exitGross=refs.length?Math.min(...refs):null;
-      if(!exitGross){
+      let marketRef=refs.length?Math.min(...refs):null;
+      if(!marketRef){
         const tp=num(r.tp_market_foil)||num(r.tp_market), rate=num(r.fx_usd_eur);
-        if(tp&&rate) exitGross=tp*rate;
+        if(tp&&rate) marketRef=tp*rate;
       }
-      if(!(exitGross>0)) continue;
-      // haircut de salida + comisión Cardmarket + reserva logística
+      const pool=langPools.get(r.product_id+"|"+norm(r.lang||""))||[];
+      const sameLangMedian=pool.length?pool[Math.floor(pool.length/2)]:null;
+      if(!(marketRef>0)||pool.length<5||!(sameLangMedian>0))continue;
+      const exitGross=Math.min(marketRef,sameLangMedian);
+      // salida conservadora: referencia general + mediana del MISMO idioma, haircut, comisión y reserva logística
       const prudentGross=exitGross*.88, netExit=prudentGross*.95-3, edge=netExit-r.price_eur, roi=edge/r.price_eur*100;
       const spread=(exitGross-r.price_eur)/exitGross*100;
-      const enoughRefs=refs.length>=3 || (r.n_nm>=5 && r.median_nm_eur>0);
+      const enoughRefs=refs.length>=3&&pool.length>=5;
       const pass=enoughRefs&&edge>=minEdge&&roi>=minRoi&&spread>=25;
-      const x={...r,exit_gross:Math.round(exitGross*100)/100,exit_net:Math.round(netExit*100)/100,edge:Math.round(edge*100)/100,roi:Math.round(roi*10)/10,spread:Math.round(spread*10)/10,pass,evidence_refs:refs.length};
+      const x={...r,exit_gross:Math.round(exitGross*100)/100,exit_net:Math.round(netExit*100)/100,edge:Math.round(edge*100)/100,roi:Math.round(roi*10)/10,spread:Math.round(spread*10)/10,pass,evidence_refs:refs.length,same_language_offers:pool.length,same_language_median:Math.round(sameLangMedian*100)/100};
       const prev=best.get(r.product_id);if(!prev||x.edge>prev.edge)best.set(r.product_id,x);
     }
     const out=[...best.values()].filter(x=>x.pass).sort((a,b)=>b.edge-a.edge||b.roi-a.roi).slice(0,Math.min(100,Number(q("limit"))||40));
