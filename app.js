@@ -1028,29 +1028,29 @@ function authenticityStatus(x){
 }
 function buyRouteLabel(x){
   const g=topBuyRank(x);
-  if((x.grading||"RAW")!=="RAW")return "Comprar ya graduada";
+  if((x.grading||"RAW")!=="RAW")return "Comparar ya graduada";
   if(g.gate.upside>=g.gate.profile.upside)return "RAW → revisar para PSA";
   return "RAW / conservar";
 }
 function renderBuyNow(ranked){
   const box=document.querySelector("#buyNowCard");if(!box)return;
   const best=(ranked||[])[0];
-  if(!best){box.innerHTML='<div class="buyNow none"><b>COMPRA YA</b><strong>Ninguna validada ahora mismo</strong><span>Prefiero dejarlo vacío antes que señalar una carta sin margen, evidencia o autenticidad suficiente.</span></div>';return}
+  if(!best){box.innerHTML='<div class="buyNow none"><b>RADAR CUANTITATIVO</b><strong>Ninguna candidata ahora mismo</strong><span>Este radar nunca autoriza una compra. La decisión ejecutable vive en el gate PRIME con oferta y evidencia exactas.</span></div>';return}
   const x=best.x,a=authenticityStatus(x),rawUrl=cardmarketProductLink(x),psaUrl=psa10BuyLink(x);
-  box.innerHTML='<div class="buyNow"><div class="buyNowFlag">COMPRA YA · candidata #1</div><div class="buyNowMain">'+
+  box.innerHTML='<div class="buyNow"><div class="buyNowFlag">RADAR · candidata cuantitativa #1</div><div class="buyNowMain">'+
     (x.image?'<img src="'+x.image+'" alt="">':'<div class="buyNoImg">🃏</div>')+
     '<div><h3>'+universeIcon(marketUniverseOf(x))+' '+x.name+'</h3><small>'+[x.set,x.rarity,x.finish].filter(Boolean).join(" · ")+'</small>'+
     '<div class="buyRoute">'+buyRouteLabel(x)+'</div><div class="buyMetrics"><span>Precio RAW señal <strong>'+money(x.price,x.currency||"EUR")+'</strong></span><span>Potencial modelado <strong>+'+money(best.gate.upside,x.currency||"EUR")+'</strong></span><span>Conv <strong>'+best.d.conv+'/100</strong></span><span>Liq <strong>'+best.d.liq+'/100</strong></span></div>'+
     routeComparisonHtml(x)+'<div class="auth '+a.level+'">Originalidad: '+a.label+'</div></div></div>'+
     '<div class="dualBuyLinks"><a class="buyLink" href="'+rawUrl+'" target="_blank" rel="noopener">Ver ficha RAW · Cardmarket</a>'+(psaUrl?'<a class="buyLink psa" href="'+psaUrl+'" target="_blank" rel="noopener">PSA 10 · oferta admitida</a>':'<span class="buyLink disabled">PSA 10 · sin oferta exacta</span>')+'</div>'+
-    '<small class="buyCaveat">Los enlaces llevan al producto/consulta correspondiente. Antes de pagar, verifica ejemplar, vendedor, fotos, idioma y certificado PSA. Una oferta online no permite garantizar al 100% autenticidad física.</small></div>';
+    '<small class="buyCaveat">RADAR NO EJECUTABLE. Los agregados sirven para descubrir candidatas; solo el gate PRIME puede mostrar COMPRAR AHORA tras verificar oferta exacta, identidad, vendedor, salida y evidencia vigente.</small></div>';
 }
 async function refreshGlobalToday(){
   const box=document.querySelector("#topBuyCandidates"),sum=document.querySelector("#globalTodaySummary");
   const all=await marketSignalAll().catch(()=>[]),active=all.filter(x=>{const t=new Date(x.scannedAt||x.updated||0).getTime();return t&&Date.now()-t<=45*86400000});
   const scored=active.map(topBuyRank),eligible=scored.filter(o=>o.eligible).sort((a,b)=>b.rank-a.rank),ranked=eligible.slice(0,10);
   const pokemon=active.filter(x=>marketUniverseOf(x)==="pokemon"),lorcana=active.filter(x=>marketUniverseOf(x)==="lorcana");
-  if(sum)sum.innerHTML='<div><span>Pokémon activas</span><b>'+pokemon.length+'</b></div><div><span>Lorcana activas</span><b>'+lorcana.length+'</b></div><div><span>Pasan filtro compra</span><b>'+eligible.length+'</b></div>';
+  if(sum)sum.innerHTML='<div><span>Pokémon activas</span><b>'+pokemon.length+'</b></div><div><span>Lorcana activas</span><b>'+lorcana.length+'</b></div><div><span>Pasan filtro radar</span><b>'+eligible.length+'</b></div>';
   const investible=scored.filter(o=>o.investability?.investible).sort((a,b)=>b.rank-a.rank);window.CVGlobalRadar={active,scored,eligible,investible,ranked,near:scored.filter(o=>(+o.x.price||0)>=o.gate.profile.min&&(+o.x.price||0)<=o.gate.profile.max).sort((a,b)=>b.rank-a.rank).slice(0,10),best:scored.filter(o=>(+o.x.price||0)>0).sort((a,b)=>b.rank-a.rank).slice(0,10),at:new Date().toISOString()};try{window.CVTodaySimple?.render?.()}catch{}
   if(!box)return;
   renderBuyNow(ranked);
@@ -1060,7 +1060,7 @@ async function refreshGlobalToday(){
       (near.length?'<div class="topTenList">'+near.map((o,i)=>'<article class="topTenRow"><div class="topTenBody"><b>#'+(i+1)+' '+universeIcon(marketUniverseOf(o.x))+' '+o.x.name+'</b><span>'+money(o.x.price,o.x.currency||"EUR")+'</span><small>'+[...(o.historyOk?[]:["historial insuficiente"]),...(o.pokemonEvidence?[]:["fuentes insuficientes"]),...o.gate.reasons,...o.d.reasons].slice(0,3).join(" · ")+'</small><div class="topTenLinks"><a class="buyLink mini" href="'+cardmarketProductLink(o.x)+'" target="_blank" rel="noopener">RAW · Cardmarket</a>'+(psa10BuyLink(o.x)?'<a class="buyLink mini psa" href="'+psa10BuyLink(o.x)+'" target="_blank" rel="noopener">PSA 10 · oferta admitida</a>':'<span class="buyLink mini disabled">PSA 10 · sin oferta</span>')+'</div></div></article>').join("")+'</div>':'<div class="empty">Sin candidatas en el rango económico actual.</div>');
     return;
   }
-  box.innerHTML='<div class="buyHead"><h3>Top 10 global · Pokémon + Lorcana</h3><span>RAW y PSA 10 comparados</span></div><div class="topTenList">'+
+  box.innerHTML='<div class="buyHead"><h3>Top 10 radar cuantitativo · Pokémon + Lorcana</h3><span>descubrimiento · no orden de compra</span></div><div class="topTenList">'+
     ranked.map((o,i)=>{const x=o.x,a=authenticityStatus(x),rc=routeComparison(x);return '<article class="topTenRow"><div class="topTenThumb">'+(x.image?'<img src="'+x.image+'" alt="">':'🃏')+'</div><div class="topTenBody"><b>#'+(i+1)+' '+universeIcon(marketUniverseOf(x))+' '+x.name+'</b><small>'+[x.set,x.rarity,x.finish].filter(Boolean).join(" · ")+'</small><div>'+buyRouteLabel(x)+'</div><div class="buyMetrics"><span>RAW <strong>'+money(x.price,x.currency||"EUR")+'</strong></span><span>Potencial <strong>+'+money(o.gate.upside,x.currency||"EUR")+'</strong></span><span>Conv <strong>'+o.d.conv+'</strong></span><span>Liq <strong>'+o.d.liq+'</strong></span></div><div class="routeMini '+rc.level+'">'+rc.label+'</div><div class="auth '+a.level+'">'+a.label+'</div></div><div class="topTenLinks"><a class="buyLink mini" href="'+cardmarketProductLink(x)+'" target="_blank" rel="noopener">RAW · Cardmarket</a>'+(psa10BuyLink(x)?'<a class="buyLink mini psa" href="'+psa10BuyLink(x)+'" target="_blank" rel="noopener">PSA 10 · oferta admitida</a>':'<span class="buyLink mini disabled">PSA 10 · sin oferta</span>')+'</div></article>'}).join("")+'</div>'+
     '<small class="buyFoot">Card Vault solo declara RAW→PSA o comprar PSA10 cuando tiene suficientes ventas PSA10 verificadas. Si no, muestra que faltan comparables en lugar de inventar una conclusión.</small>';
 }
