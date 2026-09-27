@@ -4,8 +4,17 @@ const EUR=v=>(Number(v)||0).toLocaleString("es-ES",{style:"currency",currency:"E
 const Q=s=>document.querySelector(s);
 const qty=c=>Math.max(1,Number(c?.quantity)||1);
 function img(c){
- if(c?.referenceImage)return c.referenceImage;
- try{const x=typeof catalogImageFor==="function"?catalogImageFor(c):"";if(x)return x}catch{}
+ const exact={
+  "own-hitmonlee-106-jp-fossil-psa5":"https://auctions.c.yimg.jp/images.auctions.yahoo.co.jp/image/dr000/auc0511/users/e9f856a2ec12f2a846115d263d6a1bc6928e6c87/i-img977x1200-1730593480kv0niq7.jpg",
+  "own-surfing-pikachu-mt-fuji-jr-1997":"https://cdn-vault.fanaticscollect.com/2026/3/6/wr12/large/v2783490_20260306155210986M_1.jpg"
+ };
+ if(exact[c?.id])return exact[c.id];
+ if(c?.referenceImage&&c.referenceImageIdentityExact===true)return c.referenceImage;
+ /* Nunca usamos una coincidencia solo por nombre/número para vintage: puede devolver otra impresión con el mismo nº. */
+ try{
+  const x=typeof catalogImageFor==="function"?catalogImageFor(c):"";
+  if(x&&c?.catalogId)return x;
+ }catch{}
  return "";
 }
 function labelGrade(c){
