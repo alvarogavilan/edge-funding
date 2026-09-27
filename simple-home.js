@@ -140,10 +140,14 @@ function render(){
  let simple=document.querySelector("#primeSimpleHome");
  if(!simple){simple=document.createElement("section");simple.id="primeSimpleHome";host.prepend(simple)}
  const rows=buys(),cards=rows.filter(r=>!r.id.startsWith("sealed:")),products=rows.filter(r=>r.id.startsWith("sealed:")),f=funnel();
+ const ct=state.cardTraderDirect||{},hasCt=window.CVCardTraderDirect?.hasToken?.()===true,diag=ct.diagnostics||{};
+ const marketStatus=!hasCt?'<section class="primeScannerStatus warn"><b>CardTrader no conectado</b><span>Sin el token local no puedo consultar ofertas reales de CardTrader al abrir.</span><button type="button" data-home-ct-token>Conectar CardTrader una sola vez</button></section>':
+  ct.status==="error"?'<section class="primeScannerStatus warn"><b>CardTrader: error de escaneo</b><span>'+E(ct.error||"No se pudo consultar")+'</span><button type="button" data-home-ct-token>Revisar token</button></section>':
+  '<section class="primeScannerStatus"><b>Escaneo real CardTrader</b><span>'+N(ct.scanned)+' candidatas · '+N(diag.blueprintExact)+' identidades exactas · '+N(ct.offers)+' ofertas · '+N(diag.languageDepth)+' con profundidad de idioma · '+N(ct.approved)+' compras aprobadas</span></section>';
  if(rows.some(r=>!r.image))setTimeout(()=>hydrateBuyImages().catch(()=>{}),50);
  const section=(title,subtitle,items)=>'<section class="primeBuyGroup"><div class="primeBuyGroupHead"><div><span>COMPRA YA</span><h3>'+E(title)+'</h3><small>'+E(subtitle)+'</small></div><b>'+items.length+'</b></div>'+
   (items.length?'<div class="primeBuyList">'+items.slice(0,10).map(card).join("")+'</div>':'<div class="primeNoBuy compact"><b>NINGUNA COMPRA VERIFICADA EN ESTE BLOQUE.</b><span>Se mantiene visible la categoría; no se mezcla con candidatos sin evidencia suficiente.</span></div>')+'</section>';
- simple.innerHTML='<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Compras ejecutables separadas por tipo. Solo entran si superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
+ simple.innerHTML=marketStatus+'<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Compras ejecutables separadas por tipo. Solo entran si superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
   section("CARTAS","Pokémon y Lorcana · cartas individuales RAW o graduadas",cards)+
   section("SETS / OTROS PRODUCTOS","ETB, booster boxes, colecciones, blísteres, troves y demás sellado",products)+
   '<section class="primeFunnel"><div class="primeBuyGroupHead"><div><span>COBERTURA</span><h3>Por qué no aparecen miles como “Compra ya”</h3></div></div><div class="statsGrid">'+
@@ -164,6 +168,18 @@ function installGuard(){
 setTimeout(()=>{installGuard();render()},700);
 setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
-document.addEventListener("click",e=>{if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}});
+document.addEventListener("click",e=>{
+ if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}
+ const b=e.target.closest("[data-home-ct-token]");if(!b)return;
+ const v=(prompt("Pega tu token API de CardTrader. Se guarda solo en este iPhone:","")||"").trim();if(!v)return;
+ window.CVCardTraderDirect?.setToken?.(v);
+ b.disabled=true;b.textContent="Comprobando…";
+ window.CVCardTraderDirect?.verify?.().then(async r=>{
+  if(!r?.ok){alert("No se pudo conectar CardTrader: "+(r?.error||"error"));render();return}
+  b.textContent="Escaneando mercado…";
+  await window.CVCardTraderDirect?.scan?.();
+  render();
+ });
+});
 window.CVSimpleHome={render,buys,euBuys,arbitrageBuys,funnel,installGuard,hydrateBuyImages};
 })();
