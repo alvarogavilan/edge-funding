@@ -89,12 +89,18 @@ function sealedDecision(p){
     return {key:"buy",label:"COMPRA YA",why:"Gate PRIME sellado superado: oferta exacta, identidad, vendedor, salida, frescura, margen y ROI.",prime};
   return {key:"watch",label:"VIGILAR",why:!inBand?"Fuera del rango configurado.":"La salida verificada no supera margen/ROI mínimos.",prime};
 }
+function sealedAbsorption(p){
+  const ev=p.primeEvidence||{},s=ev.sales30==null?null:num(ev.sales30),q=ev.currentQty==null?null:num(ev.currentQty);
+  if(s==null||q==null)return {rate:null,days:null,label:"SIN DATO"};
+  const rate=(s+q)>0?s/(s+q)*100:0,days=s>0?q/(s/30):null;
+  return {rate,days,label:rate>=50?"FUERTE":rate>=25?"MEDIA":rate>0?"BAJA":"SIN ABSORCIÓN"};
+}
 function confidence(p){const e=sealedEvidenceScore(p);return e>=85?"Alta":e>=65?"Media":"Baja"}
 function universeName(u){return u==="lorcana"?"Lorcana":"Pokémon"}
 function ageYears(date){if(!date)return null;const t=new Date(date).getTime();if(!Number.isFinite(t))return null;return Math.max(0,(Date.now()-t)/31557600000)}
 function cardmarketHub(p){return p.universe==="lorcana"?"https://www.cardmarket.com/es/Lorcana/Products/Sealed-Products":"https://www.cardmarket.com/es/Pokemon/Products/Sealed-Products"}
 function productCard(p,rank){
-  const d=sealedDecision(p),x=sealedEconomics(p),ev=sealedEvidenceScore(p),age=ageYears(p.releaseDate),pm=sealedPullMath(p);
+  const d=sealedDecision(p),x=sealedEconomics(p),ev=sealedEvidenceScore(p),age=ageYears(p.releaseDate),pm=sealedPullMath(p),abs=sealedAbsorption(p),pev=p.primeEvidence||{},ph=Array.isArray(p.primeEvidenceHistory)?p.primeEvidenceHistory:[];
   const premium=num(p.msrp)>0?((num(p.currentPrice)-num(p.msrp))/num(p.msrp)*100):null;
   const photo=p.photoUrl?'<img src="'+esc(p.photoUrl)+'" alt="'+esc(p.name)+'" loading="lazy">':'📦';
   const t30=derivedSealedTrend(p,30),t90=derivedSealedTrend(p,90);
@@ -103,6 +109,7 @@ function productCard(p,rank){
     '<div class="sealedTitle"><div>'+(rank?'<small>#'+rank+' · '+universeName(p.universe)+'</small>':'<small>'+universeName(p.universe)+'</small>')+'<h3>'+esc(p.name)+'</h3><div class="meta">'+esc(p.set||"—")+' · '+esc(p.productType||"Producto sellado")+'</div></div><span class="decisionPill '+d.key+'">'+d.label+'</span></div>'+
     '<div class="sealedMetrics"><div><span>Precio total</span><b>'+euro(x.cost)+'</b></div><div><span>Escenario base</span><b>'+(x.base?euro(x.base):"Sin dato")+'</b></div><div><span>Potencial base</span><b>'+(x.baseProfit==null?"Sin dato":(x.baseProfit>=0?"+":"")+euro(x.baseProfit))+'</b></div><div><span>Confianza datos</span><b>'+confidence(p)+' · '+ev+'/100</b></div><div><span>Liquidez</span><b>'+esc(p.liquidity||"Sin evaluar")+'</b></div><div><span>Riesgo reedición</span><b>'+esc(p.reprintRisk||"Sin evaluar")+'</b></div></div>'+
     '<div class="evidenceLine">'+esc(d.why)+(trend?' · '+esc(trend):'')+(premium!=null?' · Prima MSRP '+pct(premium):'')+(age!=null?' · Edad '+age.toFixed(1)+' años':'')+'</div>'+
+    '<div class="evidenceLine"><b>PRIME:</b> salida '+(d.prime?.exit>0?euro(d.prime.exit):'sin dato')+' · edge '+(d.prime?.edge?euro(d.prime.edge):'sin dato')+' · ROI '+(d.prime?.roi?d.prime.roi.toFixed(1)+'%':'sin dato')+' · absorción 30d '+(abs.rate==null?'sin dato':abs.rate.toFixed(0)+'% '+abs.label)+' · stock '+(abs.days==null?'sin dato':abs.days.toFixed(0)+' días')+' · historial evidencia '+(ph.length+(pev.at?1:0))+'</div>'+
     (pm.verified&&pm.kind==="value"?'<div class="pullOdds"><b>'+pct(pm.atLeastOne*100)+' aprox. de ≥1 carta valorada en '+euro(pm.threshold)+' o más</b><span>'+pct(pm.perPack*100)+' por sobre · '+pm.packs+' sobres/producto · muestra '+pm.hits+'/'+pm.sample+' · cálculo empírico</span>'+(pm.partialEV!=null?'<small>EV parcial de cartas ≥ '+euro(pm.threshold)+': '+euro(pm.partialEV)+'; no incluye el resto del contenido.</small>':'')+'<small>La probabilidad del producto supone independencia entre sobres salvo que exista evidencia específica de caja.</small><a href="'+esc(pm.sourceUrl)+'" target="_blank" rel="noopener">Fuente de tasa</a></div>':pm.verified&&pm.kind==="rarity"?'<div class="pullOdds rarity"><b>'+pct(pm.atLeastOne*100)+' aprox. de ≥1 '+esc(pm.metric)+' en '+pm.packs+' sobres</b><span>'+pct(pm.perPack*100)+' por sobre · muestra '+pm.hits+'/'+pm.sample+' · '+esc(pm.sourceLabel||"muestra pública")+'</span><small>Esto mide rareza premium, NO probabilidad de una carta ≥ '+euro(num(p.pullThresholdEUR)||num(state.sealedPolicy.chaseThresholdEUR)||50)+'. Además, la estimación de caja supone independencia y puede desviarse por colación.</small><a href="'+esc(pm.sourceUrl)+'" target="_blank" rel="noopener">Ver muestra</a></div>':'<div class="pullOdds pending"><b>Probabilidad de carta ≥ '+euro(num(p.pullThresholdEUR)||num(state.sealedPolicy.chaseThresholdEUR)||50)+': pendiente de evidencia</b><span>No se inventa una tasa de apertura. Hace falta muestra del set/producto y fuente verificable.</span></div>')+
     '<div class="evidenceLine">Idioma/mercado: '+esc(p.language||"sin verificar")+(p.languageVerified===true?' · ✓ referencia del mismo idioma':' · ⚠ pendiente de equivalencia')+' · Estado: '+esc(p.printStatus||"unknown")+' · Stock: '+esc(p.availability||"unknown")+(p.seller?' · Vendedor: '+esc(p.seller):'')+'</div>'+
     (p.notes?'<div class="evidenceLine">'+esc(p.notes)+'</div>':'')+
