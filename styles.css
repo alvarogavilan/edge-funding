@@ -325,3 +325,11 @@ nav button{min-height:46px;line-height:1.05}
 #salesDeskPanel .sealedMain{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
 #salesDeskPanel .sealedNumbers{text-align:right}
 #salesDeskPanel .sealedNumbers span{display:block;font-size:11px;color:#9fb0cf}
+/* V84.6 · Decisión de cartera */
+.decisionRow{border-bottom:1px solid #202b43;padding:4px 0}
+.decisionRow summary{display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;list-style:none}
+.decisionRow summary::-webkit-details-marker{display:none}
+.decisionName{display:flex;flex-direction:column;min-width:0;font-weight:800;font-size:13px}
+.decisionName small{font-weight:500;color:#8794ad;font-size:11px}
+.decisionPill{flex:0 0 auto;font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#1a2340;color:#c9d3ea;white-space:nowrap}
+.decisionPill.d-sell{background:#3a1520;color:#ffb4bd}.decisionPill.d-review{background:#2a2111;color:#ffd99a}.decisionPill.d-hold{background:#10231a;color:#9fe0b4}
