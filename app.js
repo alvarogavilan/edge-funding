@@ -137,7 +137,7 @@ let cs=document.querySelector("#collectionStats");if(cs){let g=gain(),inv=invest
 '<div><span>Pendientes</span><b>'+drafts()+'</b></div>';} let prev=state.history.at(-1)?.total;document.querySelector("#change").textContent=prev==null?"Pulsa «Guardar valoración» para crear histórico":(total()-prev>=0?"+":"")+euro(total()-prev)+" desde la última valoración";document.querySelector("#watchList").innerHTML=state.watch.length?state.watch.map((x,i)=>{let m=(state.marketScan||[]).find(s=>s.id===x.catalogId||norm(s.name)===norm(x.name));return `<div class="card"><div class="thumb">👁️</div><div><h3>${x.name}</h3><div class="meta">Objetivo ≤ ${euro(x.target)}${m?" · mercado "+euro(m.price):""}${m&&m.price<=x.target?" · ✅ en objetivo":""}</div>${m?`<div class="recognition">Convicción ${convictionSignal(m)}/100 · Liquidez ${liquiditySignal(m)}/100</div>`:""}</div><button onclick="removeWatch(${i})">×</button></div>`}).join(""):'<div class="empty">No sigues ninguna carta todavía.</div>';renderWatchSummary();renderHistory()}
 function renderHistory(){const h=[...state.history].reverse();document.querySelector("#history").innerHTML=h.slice(0,10).map(x=>`<div class="historyRow"><span>${new Date(x.at).toLocaleString("es-ES")}</span><b>${euro(x.total)}</b></div>`).join("");drawChart()}
 function drawChart(){const c=document.querySelector("#chart"),dpr=devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*dpr;c.height=r.height*dpr;const g=c.getContext("2d");g.scale(dpr,dpr);g.clearRect(0,0,r.width,r.height);let a=state.history.slice(-30);if(a.length<2){g.fillStyle="#8992ad";g.font="13px -apple-system";g.fillText("Guarda 2 valoraciones para ver la evolución",12,30);return}let vals=a.map(x=>x.total),mn=Math.min(...vals),mx=Math.max(...vals);if(mx===mn){mx++;mn--}g.strokeStyle="#eef2ff";g.lineWidth=2;g.beginPath();a.forEach((x,i)=>{let px=10+i*(r.width-20)/(a.length-1),py=10+(mx-x.total)*(r.height-20)/(mx-mn);i?g.lineTo(px,py):g.moveTo(px,py)});g.stroke()}
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.add("hidden"));document.querySelector("#"+b.dataset.tab).classList.remove("hidden");if(b.dataset.tab==="data")drawChart()});document.querySelector("#runPregrade").onclick=runPSAPregrade;renderPregradeHistory();document.querySelector("#calculateGradingEconomics").onclick=calculateGradingEconomics;hydrateGradingEconomics();
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.add("hidden"));document.querySelector("#"+b.dataset.tab).classList.remove("hidden");if(b.dataset.tab==="data")drawChart()});document.querySelector("#runPregrade").onclick=runPSAPregrade;renderPregradeHistory();document.querySelector("#calculateGradingEconomics").onclick=calculateGradingEconomics;bindPSACollectionPicker();hydrateGradingEconomics();
 document.querySelector("#snapshot").onclick=()=>{state.history.push({at:new Date().toISOString(),total:total(),cards:Object.fromEntries(state.cards.map(x=>[x.id,x.value]))});save();render()};
 function radarScore(group){let sold=group.filter(x=>x.kind==="sold"),list=group.filter(x=>x.kind==="listing");if(!sold.length)return 0;let prices=sold.map(x=>x.price).sort((a,b)=>a-b),med=prices[Math.floor(prices.length/2)],latest=sold.at(-1)?.price||med,score=Math.min(55,sold.length*11);if(latest<med)score+=15;if(list.length&&Math.min(...list.map(x=>x.price))<med*.9)score+=20;return Math.min(100,score)}
 
@@ -1398,23 +1398,48 @@ function paintPregradeOverlay(src,target,analysis){
   ctx.strokeStyle="rgba(255,210,80,.9)";ctx.strokeRect(e,e,w-2*e,h-2*e);
 }
 function calculateGradingEconomics(){
-  const v=id=>Math.max(0,+document.querySelector(id)?.value||0),buy=v("#gradeBuyPrice"),buyShip=v("#gradeBuyShip"),gradeCost=v("#gradeCost"),psa9=v("#gradePSA9"),psa10=v("#gradePSA10"),sellFeePct=clamp(v("#gradeSellFee"),0,50);
-  const fixed=buy+buyShip+gradeCost,net=sale=>sale*(1-sellFeePct/100)-fixed,profit9=psa9>0?net(psa9):null,profit10=psa10>0?net(psa10):null,goal=+(state.investmentProfile?.minUpsideEUR||50);
+  const v=id=>Math.max(0,+document.querySelector(id)?.value||0),buy=v("#gradeBuyPrice"),buyShip=v("#gradeBuyShip"),gradeCost=v("#gradeCost"),psa9=v("#gradePSA9"),psa10=v("#gradePSA10"),sellFeePct=clamp(v("#gradeSellFee"),0,50),own=selectedPSACard();
+  const rawOpportunity=own?(+own.value||buy):buy+buyShip,fixed=own?gradeCost:(buy+buyShip+gradeCost),netSale=sale=>sale*(1-sellFeePct/100);
+  const profit9=psa9>0?(own?netSale(psa9)-gradeCost-rawOpportunity:netSale(psa9)-fixed):null;
+  const profit10=psa10>0?(own?netSale(psa10)-gradeCost-rawOpportunity:netSale(psa10)-fixed):null,goal=+(state.investmentProfile?.minUpsideEUR||50);
   state.gradingEconomics={buy,buyShip,gradeCost,psa9,psa10,sellFeePct};save();
-  const last=(state.pregradeHistory||[]).at(-1),box=document.querySelector("#gradingEconomicsResult");if(!box)return;
-  if(!(buy>0)||!(psa9>0||psa10>0)){box.innerHTML='<div class="gradeEconHero warn"><b>Faltan precios reales</b><span>Introduce el coste RAW y al menos una salida PSA 9 o PSA 10 respaldada antes de calcular.</span></div>';return null}
+  const last=own?(state.pregradeHistory||[]).filter(x=>x.cardId===own.id).at(-1):(state.pregradeHistory||[]).at(-1),box=document.querySelector("#gradingEconomicsResult");if(!box)return;
+  if(!(buy>0)||!(psa9>0||psa10>0)){box.innerHTML='<div class="gradeEconHero warn"><b>Faltan precios reales</b><span>'+(own?'Valor RAW cargado desde tu colección. Añade al menos una salida PSA 9 o PSA 10 respaldada y el coste real de graduación.':'Introduce el coste RAW y al menos una salida PSA 9 o PSA 10 respaldada antes de calcular.')+'</span></div>';return null}
   let verdict=psa10>0?"Necesita PSA 10 para justificar la operación":"PSA 10 sin precio respaldado",cls="warn";
-  if(profit9!=null&&profit9>=goal){verdict="Incluso PSA 9 supera el objetivo de beneficio";cls="ok"}
-  else if(profit10!=null&&profit10>=goal){verdict="Solo compensa si alcanza PSA 10";cls="warn"}
-  else if(profit10!=null){verdict="No alcanza el objetivo ni con PSA 10";cls="bad"}
-  else if(profit9!=null){verdict="PSA 9 no alcanza el objetivo y falta precio PSA 10";cls="warn"}
+  if(profit9!=null&&profit9>=goal){verdict="PSA 9 ya aporta suficiente valor frente a RAW";cls="ok"}
+  else if(profit10!=null&&profit10>=goal){verdict="Solo compensa económicamente si alcanza PSA 10";cls="warn"}
+  else if(profit10!=null){verdict="No mejora suficiente frente a conservar/vender RAW";cls="bad"}
+  else if(profit9!=null){verdict="PSA 9 no justifica el envío y falta PSA 10";cls="warn"}
   const photo=last?(' · Pregrado fotográfico PSA '+last.range.low+'–'+last.range.high):'';
-  box.innerHTML='<div class="gradeEconHero '+cls+'"><b>'+verdict+'</b><span>Coste total antes de venta '+euro(fixed)+photo+'</span></div>'+
-    '<div class="gradeEconRows"><div><span>Si obtiene PSA 9</span><b class="'+(profit9!=null&&profit9>=goal?"ok":"warn")+'">'+(profit9==null?"—":(profit9>=0?"+":"")+euro(profit9))+'</b></div>'+
-    '<div><span>Si obtiene PSA 10</span><b class="'+(profit10!=null&&profit10>=goal?"ok":"warn")+'">'+(profit10==null?"—":(profit10>=0?"+":"")+euro(profit10))+'</b></div>'+
+  box.innerHTML='<div class="gradeEconHero '+cls+'"><b>'+verdict+'</b><span>'+(own?('Carta propia · RAW '+euro(rawOpportunity)+' · coste graduación '+euro(gradeCost)):('Coste total antes de venta '+euro(fixed)))+photo+'</span></div>'+
+    '<div class="gradeEconRows"><div><span>Valor añadido si PSA 9</span><b class="'+(profit9!=null&&profit9>=goal?"ok":"warn")+'">'+(profit9==null?"—":(profit9>=0?"+":"")+euro(profit9))+'</b></div>'+
+    '<div><span>Valor añadido si PSA 10</span><b class="'+(profit10!=null&&profit10>=goal?"ok":"warn")+'">'+(profit10==null?"—":(profit10>=0?"+":"")+euro(profit10))+'</b></div>'+
     '<div><span>Objetivo mínimo</span><b>'+euro(goal)+'</b></div></div>'+
-    '<small>No asigna probabilidades de nota. Usa el Pregrado PSA para descartar copias débiles y confirma los precios de venta con ventas cerradas antes de enviar.</small>';
-  return {profit9,profit10,fixed,goal};
+    '<small>'+(own?'El cálculo compara contra vender/conservar la carta RAW ahora. No asigna probabilidades de obtener 9 o 10.':'No asigna probabilidades de nota.')+' Confirma ventas cerradas PSA comparables antes de enviar.</small>';
+  renderCollectionPSADecision();
+  return {profit9,profit10,fixed,goal,rawOpportunity,ownCardId:own?.id||null};
+}
+function populatePSACollectionPicker(){
+  const sel=document.querySelector("#psaCollectionCard");if(!sel)return;
+  const current=sel.value,rows=activeCards().filter(c=>(c.grading||"RAW")==="RAW"&&(+c.value||0)>0).sort((a,b)=>(+b.value||0)-(+a.value||0));
+  sel.innerHTML='<option value="">Seleccionar carta de Mi colección</option>'+rows.map(c=>'<option value="'+c.id+'">'+c.name+(c.number?' #'+c.number:'')+' · '+euro(c.value)+'</option>').join("");
+  if(rows.some(c=>c.id===current))sel.value=current;
+  renderCollectionPSADecision();
+}
+function selectedPSACard(){const id=document.querySelector("#psaCollectionCard")?.value;return id?activeCards().find(c=>c.id===id)||null:null}
+function renderCollectionPSADecision(){
+  const box=document.querySelector("#collectionPSADecision");if(!box)return;const c=selectedPSACard();
+  if(!c){box.innerHTML='<p class="muted">Elige una carta para conectar el pregrado con su economía real.</p>';return}
+  const last=(state.pregradeHistory||[]).filter(x=>x.cardId===c.id).at(-1),raw=+c.value||0;
+  box.innerHTML='<div class="qaRow"><span>Valor RAW actual</span><b>'+euro(raw)+'</b></div>'+
+    '<div class="qaRow"><span>Estado</span><b>'+((c.notes||"").includes("pendiente de reverso")?"Falta reverso":"Pendiente de pregrado completo")+'</b></div>'+
+    '<div class="qaRow"><span>Último pregrado</span><b>'+(last?('PSA '+last.range.low+'–'+last.range.high+' · confianza '+last.confidence+'%'):'Sin analizar')+'</b></div>'+
+    '<small>Para recomendar envío necesitamos frontal + reverso; las 4 esquinas aumentan la confianza. El valor RAW es coste de oportunidad, no dinero que vuelves a pagar.</small>';
+}
+function bindPSACollectionPicker(){
+  const sel=document.querySelector("#psaCollectionCard");if(!sel||sel.dataset.bound)return;sel.dataset.bound="1";
+  sel.onchange=()=>{const c=selectedPSACard();if(c){const raw=document.querySelector("#gradeBuyPrice"),ship=document.querySelector("#gradeBuyShip");if(raw)raw.value=+c.value||0;if(ship)ship.value=0}renderCollectionPSADecision();calculateGradingEconomics()};
+  populatePSACollectionPicker();
 }
 function hydrateGradingEconomics(){
   const g=state.gradingEconomics||{};const map={gradeBuyPrice:g.buy,gradeBuyShip:g.buyShip,gradeCost:g.gradeCost,gradePSA9:g.psa9,gradePSA10:g.psa10,gradeSellFee:g.sellFeePct};
@@ -1423,7 +1448,7 @@ function hydrateGradingEconomics(){
 }
 function renderPregradeHistory(){
   const box=document.querySelector("#pregradeHistory");if(!box)return;const h=[...(state.pregradeHistory||[])].reverse().slice(0,5);
-  box.innerHTML='<h3>Últimos pregrados</h3>'+(h.length?h.map(x=>'<div class="qaRow"><span>'+new Date(x.at).toLocaleString("es-ES")+'</span><b>PSA '+x.range.low+'–'+x.range.high+' · '+x.overall+'/100 · '+x.confidence+'%</b></div>').join(""):'<p class="muted">Aún no hay análisis guardados.</p>');
+  box.innerHTML='<h3>Últimos pregrados</h3>'+(h.length?h.map(x=>'<div class="qaRow"><span>'+(x.cardName?x.cardName+' · ':'')+new Date(x.at).toLocaleString("es-ES")+'</span><b>PSA '+x.range.low+'–'+x.range.high+' · '+x.overall+'/100 · '+x.confidence+'%</b></div>').join(""):'<p class="muted">Aún no hay análisis guardados.</p>');
 }
 function renderPregradeReport(r){
   const box=document.querySelector("#pregradeResult");if(!box)return;
@@ -1463,7 +1488,7 @@ async function runPSAPregrade(){
     if(minQuality<50)overall=Math.min(overall,88);
     const range=psaRange(overall,confidence);
     const issues=[...new Set([...(f.issues||[]),...(b?.issues||[]),...(cornerAgg?.issues||[])])];
-    const report={at:new Date().toISOString(),overall,centering,corners:cornersScore,edges,surface,confidence,range,issues,frontQuality:f.q.score,backQuality:b?.q.score??null,cornerCount:corners.length,cornerMacro:corners};
+    const selected=selectedPSACard();const report={at:new Date().toISOString(),cardId:selected?.id||null,cardName:selected?.name||"",cardNumber:selected?.number||"",overall,centering,corners:cornersScore,edges,surface,confidence,range,issues,frontQuality:f.q.score,backQuality:b?.q.score??null,cornerCount:corners.length,cornerMacro:corners};
     state.pregradeHistory=state.pregradeHistory||[];state.pregradeHistory.push(report);state.pregradeHistory=state.pregradeHistory.slice(-20);save();
     renderPregradeReport(report);renderCornerDetail(report);renderPregradeHistory();calculateGradingEconomics();st.textContent="Análisis completado.";
   }catch(e){st.textContent="No se pudo completar el análisis. Usa fotos más rectas, nítidas y sin reflejos.";pushRuntimeError("pregrade",e?.message||e)}
