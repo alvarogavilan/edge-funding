@@ -30,6 +30,8 @@ function items(){
   }
   if(x.integrityBlocked)out.push({kind:"integrity",priority:99,name:x.name,text:"Integrity Guard · "+(x.integrityIssues||[]).join(" · "),oppId:x.id});
  }
+ const rec=(state.primeIntegrity?.issues||[]).filter(x=>x.type==="reconciliation");
+ if(rec.length)out.push({kind:"reconciliation",priority:100,name:"Libro ↔ Archivo",text:rec.length+" descuadre(s) contable(s) · revisar antes de usar caja"});
  for(const p of (state.sealedProducts||[])){
   if(!(N(p.currentPrice)>=20)||!p.buyUrl)continue;
   const at=p.primeEvidence?.at;
