@@ -69,7 +69,7 @@ function quality(x){
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
  const checks=[
   ["Oferta exacta",ex],
-  ["Comparable mismo mercado",ee.sameMarket],
+  ["Comparable mismo idioma/mercado",ee.sameMarket],
   ["Evidencia de salida",ee.ok],
   ["Identidad evidencia intacta",ee.idOk],
   ["Evidencia ≤24h",ee.fresh],
@@ -127,7 +127,7 @@ function render(){
    '<div><span>Anomalías de referencia</span><b>'+anoms+'</b></div>'+
    '<div><span>BUY tras gate PRIME</span><b>'+buy.length+'</b></div>'+
   '</div>'+
-  '<small>La caja no interviene. Un agregado de precios nunca eleva a COMPRAR. BUY exige oferta exacta, idioma/variante/condición, vendedor, URL, comparable del mismo mercado, evidencia de salida, +40 € aprox. y ROI ≥35%.</small>'+
+  '<small>La caja no interviene. Un agregado de precios nunca eleva a COMPRAR. BUY admite cualquier idioma, pero exige oferta exacta, idioma/variante/condición, vendedor, URL y comparable del MISMO idioma/mercado, evidencia de salida, +40 € aprox. y ROI ≥35%.</small>'+
   (best.length?'<div class="sectionHead"><h3>Superan el gate PRIME</h3></div>'+best.map(({x,q})=>
    '<div class="qaRow"><span>'+E(x.name)+'<small> · '+E(x.offerLanguage||x.language||"")+' · '+E(x.condition||"")+'</small></span><b>edge '+EUR(q.econ.edge)+' · '+q.econ.roi.toFixed(0)+'%</b></div>'
   ).join(""):'<div class="qaRow"><span>Compras con evidencia completa</span><b>0 · correcto si no existen</b></div>')+
