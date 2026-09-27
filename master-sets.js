@@ -8,7 +8,7 @@ function imageOf(c){
  const rows=[...(state.marketScan||[]),...(state.marketCandidates||[]),...(state.globalRadar?.scored||[]).map(z=>z.x||z)].filter(Boolean);
  const name=String(c.name||"").trim().toLowerCase(),num=String(c.number||"").replace(/\s/g,"").toLowerCase();
  const auto=rows.find(r=>r.image&&String(r.name||"").trim().toLowerCase()===name&&(!num||String(r.number||"").replace(/\s/g,"").toLowerCase()===num))?.image||"";
- return auto||c.photoURL||c.photo||"";
+ return auto||"";
 }
 function prudent(c){
  try{const b=window.CVPrimeValuation?.bucket?.(c);return b&&["CONFIRMED","PROVISIONAL"].includes(b.bucket)?N(b.amount):0}catch{return 0}
