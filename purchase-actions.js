@@ -64,16 +64,19 @@ function addCardPurchase(src,row,qty=1,costs={shipping:0,fees:0}){
   return card;
 }
 function addSealedPurchase(src,row,qty=1,costs={shipping:0,fees:0}){
-  const p=src.row;
+  const p=src.row,prime=window.CVSealedPrime?.decision?.(p)||null;
   p.ownedQuantity=N(p.ownedQuantity)+qty;
   p.purchasePrice=N(row.price);p.purchaseDate=today();p.purpose="investment";
   p.purchaseShipping=N(costs.shipping);p.purchaseFees=N(costs.fees);p.landedCostUnit=N(row.price)+(N(costs.shipping)+N(costs.fees))/Math.max(1,qty);
+  p.purchaseThesis={at:new Date().toISOString(),kind:"sealed",entryEUR:N(row.price),landedCostUnit:p.landedCostUnit,
+   primeDecision:prime?{key:prime.key,label:prime.label,why:prime.why,edgeEUR:prime.prime?.edge??null,roiPct:prime.prime?.roi??null,exitEUR:prime.prime?.exit??null}:null,
+   evidence:p.primeEvidence?JSON.parse(JSON.stringify(p.primeEvidence)):null};
   p.saleDescription=[p.name,p.set,p.productType,p.language].filter(Boolean).join(" · ")+" · producto sellado para inversión/reventa.";
   state.investmentLedger=Array.isArray(state.investmentLedger)?state.investmentLedger:[];
   state.investmentLedger.push({
     id:"buy-sealed-"+crypto.randomUUID(),type:"buy",assetType:"sealed",assetKey:"sealed:"+p.id,name:p.name,date:today(),qty,
     unitPrice:N(row.price),shipping:N(costs.shipping),fees:N(costs.fees),sourceUrl:row.buyUrl||row.source||"",
-    notes:"Compra sellada desde COMPRAR AHORA · "+p.saleDescription,
+    notes:"Compra sellada desde COMPRAR AHORA · "+p.saleDescription,purchaseThesis:p.purchaseThesis,
     fundingSource:"owner-external",cashImpact:false,updatedAt:new Date().toISOString()
   });
   return p;
@@ -82,6 +85,16 @@ function buy(key){
   const row=strictRow(key),src=sourceFor(key);
   if(!row||!src?.row){alert("La oportunidad ya no está disponible o necesita volver a verificarse.");return}
   if(row.status!=="buy"){alert("Esta oportunidad ya no cumple COMPRAR AHORA. Refresca el mercado antes de registrar la compra.");return}
+  if(src.kind==="manual"){
+    const q=window.CVPrimeMarket?.quality?.(src.row);
+    if(!q||q.passed!==q.total||!["BUY-ONE","BUY-SCALE"].includes(src.row.approval)){
+      alert("Compra bloqueada: el gate PRIME actual no está completo. Refresca evidencia exacta antes de registrar la compra.");return
+    }
+  }
+  if(src.kind==="sealed"){
+    const d=window.CVSealedPrime?.decision?.(src.row);
+    if(!d||d.key!=="buy"){alert("Compra sellada bloqueada: el gate PRIME de sellado ya no está completo.");return}
+  }
   let qty=1;
   if(src.kind==="manual"&&src.row.approval==="BUY-SCALE"){
     const raw=prompt("¿Cuántas unidades has comprado?","1");if(raw==null)return;qty=Math.max(1,Math.floor(N(raw)||1));
