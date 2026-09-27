@@ -7,6 +7,19 @@ state.rejectedManualOpportunities=[
 const id="lorcana-donald-pie-slinger-v2-20260927";
 const caravanId="pokemon-ex-sandstorm-caravan-20260927";
 const auroraId="lorcana-aurora-dreaming-guardian-v2-20260927";
+const mickeyId="lorcana-mickey-wayward-v2-20260927";
+if(!state.manualOpportunities.some(x=>x.id===mickeyId)){
+ state.manualOpportunities.push({
+  id:mickeyId,universe:"lorcana",name:"Mickey Mouse - Wayward Sorcerer (V.2)",set:"The First Chapter",number:"",
+  variant:"Foil / V.2",condition:"NM",shop:"Cardmarket",seller:"Smurf256",
+  price:70.00,trend:145.48,avg30:158.24,avg7:110.54,avg1:69.00,available:80,
+  depthPrices:[70,79.90,79.95,80,89.99,90],
+  url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/The-First-Chapter/Mickey-Mouse-Wayward-Sorcerer-V2",
+  checkedAt:"2026-09-27T16:50:00+02:00",expiresAt:"2026-09-28T16:50:00+02:00",
+  status:"PRIORIDAD · 1 UNIDAD",approval:"BUY-ONE",
+  note:"NM a 70 €, seguida por varias NM/MT 79,90–90 €. No escalar hasta verificar ventas/profundidad de salida."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===auroraId)){
  state.manualOpportunities.push({
   id:auroraId,universe:"lorcana",name:"Aurora - Dreaming Guardian (V.2)",set:"The First Chapter",number:"",
@@ -40,11 +53,12 @@ function cash(){try{return Math.max(0,window.investmentLedgerStats?.().netCash||
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[id,auroraId,caravanId].includes(z.id));
+ const rows=state.manualOpportunities.filter(z=>[id,auroraId,mickeyId,caravanId].includes(z.id));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),netExit=N(x.trend)*.95,potential=netExit-N(x.price),isWatch=x.approval==="WATCH";const ps=positionSizing(x,c);
  if(x.approval==="BUY-SCALE"){ps.maxUnits=Math.min(3,N(x.sellerQty)||3);ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(ps.maxUnits,ps.affordable);ps.reason="Posición escalable: varias NM al mismo precio del mismo vendedor; verificar portes y disponibilidad."}
- return '<article class="buyTile"><div class="buyNoPhoto">'+E(x.universe.toUpperCase())+'<br>'+E(isWatch?"WATCH":isScale?"ESCALABLE":"PRIORIDAD")+'</div><div class="buyBody"><div class="buyKicker">'+E(stale?"REVERIFICAR PRECIO":x.status)+'</div><h3>'+E(x.name)+'</h3><small>'+E([x.set,x.number,x.variant,x.condition].filter(Boolean).join(" · "))+'</small><div class="buyNumbers"><div><span>Oferta observada</span><b>'+EUR(x.price)+'</b></div><div><span>Tendencia</span><b>'+EUR(x.trend)+'</b></div><div><span>Media 30 días</span><b>'+EUR(x.avg30)+'</b></div><div><span>Potencial neto aprox.</span><b>'+EUR(potential)+'</b></div></div><div class="buyWhy">Cardmarket: '+E(x.available)+' disponibles · vendedor observado '+E(x.seller)+' · '+(isWatch?'precio extremadamente anómalo; confirmar que sea producto completo y sellado antes de considerar compra.':'la tendencia no garantiza una reventa futura.')+'</div><div class="buyWhy"><b>Tamaño de posición:</b> caja actual permite '+ps.affordable+' unidad(es); límite de riesgo '+ps.maxUnits+'; recomendación actual '+ps.recommended+'. '+E(ps.reason)+'</div><div class="buyWhy">'+(c>=x.price?'✓ CABE EN CAJA · quedarían '+EUR(c-x.price):'Caja registrada '+EUR(c)+' · faltan '+EUR(x.price-c))+(isWatch?' · NO APROBADA TODAVÍA':'')+'</div><a class="buyButton '+(isWatch?'secondary':'')+'" href="'+E(x.url)+'" target="_blank" rel="noopener">'+(isWatch?'ABRIR Y VERIFICAR ANOMALÍA':'ABRIR FICHA · BUSCAR '+E(x.seller)+' A '+EUR(x.price))+'</a></div></article>'}).join("");
+ if(x.approval==="BUY-ONE"){ps.maxUnits=1;ps.affordable=Math.floor(c/N(x.price));ps.recommended=Math.min(1,ps.affordable);ps.reason="Una unidad máximo hasta verificar liquidez de salida y comparables recientes."}
+ return '<article class="buyTile"><div class="buyNoPhoto">'+E(x.universe.toUpperCase())+'<br>'+E(isWatch?"WATCH":isScale?"ESCALABLE":isOne?"1 UNIDAD":"PRIORIDAD")+'</div><div class="buyBody"><div class="buyKicker">'+E(stale?"REVERIFICAR PRECIO":x.status)+'</div><h3>'+E(x.name)+'</h3><small>'+E([x.set,x.number,x.variant,x.condition].filter(Boolean).join(" · "))+'</small><div class="buyNumbers"><div><span>Oferta observada</span><b>'+EUR(x.price)+'</b></div><div><span>Tendencia</span><b>'+EUR(x.trend)+'</b></div><div><span>Media 30 días</span><b>'+EUR(x.avg30)+'</b></div><div><span>Potencial neto aprox.</span><b>'+EUR(potential)+'</b></div></div><div class="buyWhy">Cardmarket: '+E(x.available)+' disponibles · vendedor observado '+E(x.seller)+' · '+(isWatch?'precio extremadamente anómalo; confirmar que sea producto completo y sellado antes de considerar compra.':'la tendencia no garantiza una reventa futura.')+'</div><div class="buyWhy"><b>Tamaño de posición:</b> caja actual permite '+ps.affordable+' unidad(es); límite de riesgo '+ps.maxUnits+'; recomendación actual '+ps.recommended+'. '+E(ps.reason)+'</div><div class="buyWhy">'+(c>=x.price?'✓ CABE EN CAJA · quedarían '+EUR(c-x.price):'Caja registrada '+EUR(c)+' · faltan '+EUR(x.price-c))+(isWatch?' · NO APROBADA TODAVÍA':'')+'</div><a class="buyButton '+(isWatch?'secondary':'')+'" href="'+E(x.url)+'" target="_blank" rel="noopener">'+(isWatch?'ABRIR Y VERIFICAR ANOMALÍA':'ABRIR FICHA · BUSCAR '+E(x.seller)+' A '+EUR(x.price))+'</a></div></article>'}).join("");
 }
 window.CVManualOpportunities={render};setTimeout(render,50);document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
 })();
