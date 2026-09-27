@@ -397,3 +397,27 @@ main button,dialog button,.buyButton,.sealedActions a,.sealedActions button,.min
 #collection .card .price{min-width:150px}
 .conditionPrice{display:block;font-size:24px;font-weight:800;color:#d8f4df}
 #collection .card .marketRef{font-size:11px;line-height:1.3;margin-top:4px;opacity:.75}
+
+/* V87.2 · colección simple de uso diario */
+#collection>.welcome,#collection>#readyBanner,#collection>#repairStatus,#collection>#queueStatus{display:none!important}
+#collection .sectionHead>.miniActions #clearTests,
+#collection .sectionHead>.miniActions #reanalyzePending,
+#collection .sectionHead>.miniActions #bulkAdd,
+#collection .sectionHead>.miniActions #binderScan,
+#collection .sectionHead>.miniActions #binderPageScan{display:none!important}
+#collectionStats{grid-template-columns:repeat(3,minmax(0,1fr))!important;margin:10px 0 16px}
+#collectionStats>div{min-height:72px;padding:12px!important}
+#collectionStats span{font-size:11px!important}#collectionStats b{font-size:18px!important}
+#collection .card{grid-template-columns:92px minmax(0,1fr) 150px!important;gap:12px!important}
+#collection .card .thumb{width:92px!important;min-width:92px!important}
+#collection .card .price{text-align:right!important}
+#collection .saleBlocked{font-size:10px;line-height:1.3;margin:8px 0;color:#f0b84f;max-width:150px;margin-left:auto}
+#collection .unvaluedPrice{max-width:150px;margin-left:auto}
+#radar>.expertDrawer{display:none!important}
+@media(max-width:640px){
+ #collectionStats{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ #collection .card{grid-template-columns:76px minmax(0,1fr)!important}
+ #collection .card .thumb{width:76px!important;min-width:76px!important}
+ #collection .card .price{grid-column:2;text-align:left!important;border-top:1px solid rgba(140,160,210,.15);padding-top:10px!important;margin-top:4px}
+ #collection .saleBlocked,#collection .unvaluedPrice{max-width:none;margin-left:0;text-align:left}
+}
