@@ -23,6 +23,18 @@ function addCardPurchase(src,row,qty=1,costs={shipping:0,fees:0}){
   const x=src.row, id=crypto.randomUUID(), language=row.meta?.language||x.offerLanguage||x.language||"", condition=row.meta?.condition||x.condition||"";
   const value=N(row.target)>0?N(row.target):N(row.price), purchase=N(row.price);
   const description=saleText(x,row);
+  const q=window.CVPrimeMarket?.quality?.(x)||null;
+  const supply=window.CVSupplyRisk?.stateOf?.(x)||null;
+  const purchaseThesis={
+    at:new Date().toISOString(),opportunityId:x.id||src.id||"",approval:x.approval||"",identityKey:window.CVIdentity?.key?.(x)||"",
+    entryEUR:purchase,conservativeExitEUR:q?.econ?.exit??null,edgeEUR:q?.econ?.edge??null,roiPct:q?.econ?.roi??null,
+    evidenceConfidence:q?.confidence||null,liquidity:window.CVPrimeMarket?.liquidityBand?.(x)||null,
+    lastSaleEUR:x.lastSalePrice??x.marketEvidence?.lastSaleEUR??null,soldMedianEUR:x.soldMedianEUR??x.marketEvidence?.soldMedianEUR??null,
+    soldSample:x.soldSample??x.marketEvidence?.soldSample??0,sales7:x.sales7??null,sales30:x.sales30??null,sales90:x.sales90??null,
+    depthPrices:Array.isArray(x.depthPrices)?[...x.depthPrices]:[],seller:row.meta?.seller||x.seller||"",sourceUrl:row.buyUrl||row.source||"",
+    language,variant:row.meta?.variant||x.variant||"",condition,supply:supply?{risk:supply.risk,status:supply.status,verified:supply.verified}:null,
+    marketEvidence:x.marketEvidence?JSON.parse(JSON.stringify(x.marketEvidence)):null
+  };
   const card={
     id,universe:x.universe||row.universe||"pokemon",name:x.name||row.name,set:x.set||row.set||"",number:x.number||row.number||"",
     year:"",language,grading:"RAW",grade:condition,value,purchase,quantity:qty,purchaseDate:today(),purpose:"investment",
@@ -31,6 +43,7 @@ function addCardPurchase(src,row,qty=1,costs={shipping:0,fees:0}){
     marketPricing:{value,currency:"EUR",source:"Card Vault · salida conservadora verificada",url:row.source||row.buyUrl||"",checkedAt:today()},
     buySourceUrl:row.buyUrl||row.source||"",buySeller:row.meta?.seller||x.seller||"",buyVariant:row.meta?.variant||x.variant||"",
     purchaseShipping:N(costs.shipping),purchaseFees:N(costs.fees),landedCostUnit:purchase+(N(costs.shipping)+N(costs.fees))/Math.max(1,qty),
+    purchaseThesis,
     saleDescription:description,notes:"Compra registrada desde COMPRAR AHORA. Descripción de venta: "+description,
     createdAt:new Date().toISOString(),icon:"🃏"
   };
@@ -40,7 +53,7 @@ function addCardPurchase(src,row,qty=1,costs={shipping:0,fees:0}){
   state.investmentLedger.push({
     id:"buy-"+id,type:"buy",assetType:"card",assetKey:"card:"+id,name:card.name,date:today(),qty,
     unitPrice:purchase,shipping:N(costs.shipping),fees:N(costs.fees),sourceUrl:row.buyUrl||row.source||"",
-    notes:"Compra desde oportunidad verificada · "+description,
+    notes:"Compra desde oportunidad verificada · "+description,purchaseThesis,
     fundingSource:"owner-external",cashImpact:false,updatedAt:new Date().toISOString()
   });
   if(src.kind==="manual"){
