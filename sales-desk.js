@@ -7,6 +7,20 @@ const seed=[
  {id:"listing-vaporeon-pre149",cardId:"vap149",channel:"Cardmarket",price:229.90,floor:199.90,status:"active",condition:"PSA 9",note:"PSA 9 · slab original"}
 ];
 for(const x of seed)if(!state.saleListings.some(y=>y.id===x.id))state.saleListings.push({...x,listedAt:"2026-09-27",updatedAt:new Date().toISOString()});
+if(!state.userConfirmedListingsV881){
+ const confirmed=[
+  {id:"listing-gyarados-xy9",cardId:"own-gyarados-ex-089-xy9-jp",channel:"Cardmarket",price:169.90,status:"active",condition:"GD",note:"ANUNCIO ACTIVO confirmado por captura del usuario · 27/09/2026"},
+  {id:"listing-mewtwo-ec1",cardId:"own-mewtwo-118-ec1-jp-1ed-holo",channel:"Cardmarket",price:149.90,status:"active",condition:"PO",note:"ANUNCIO ACTIVO confirmado por captura del usuario · 27/09/2026"},
+  {id:"listing-surfing-pikachu-v1",cardId:"own-surfing-pikachu-mt-fuji-jr-1997",channel:"Cardmarket",price:229.90,status:"active",condition:"PO",note:"ANUNCIO ACTIVO confirmado por captura del usuario · 27/09/2026"}
+ ];
+ for(const x of confirmed){
+  const cur=(state.saleListings||[]).find(y=>y.id===x.id);
+  if(cur)Object.assign(cur,x,{floor:cur.floor??0,pauseReason:"",updatedAt:new Date().toISOString(),userConfirmed:true});
+  else state.saleListings.push({...x,floor:0,listedAt:"2026-09-27",updatedAt:new Date().toISOString(),userConfirmed:true});
+ }
+ state.userConfirmedListingsV881=true;save();
+}
+
 if(!state.salesLegacyPauseV870){
  const legacyIds=new Set(["listing-gyarados-xy9","listing-mewtwo-ec1","listing-surfing-pikachu-v1"]);
  for(const x of state.saleListings||[])if(legacyIds.has(x.id)&&x.status==="active"&&!x.exitEvidence?.at){
