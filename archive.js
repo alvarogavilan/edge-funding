@@ -23,6 +23,19 @@ function ensureEeveeArchive(){
   save();
  }
 }
+function workflowLabel(h){
+ const r=(state.investmentLedger||[]).find(x=>x.id===h.id),v=String(r?.fulfillmentStatus||h.fulfillmentStatus||"");
+ if(["paid","paid-confirmed","completed","settled"].includes(v))return "COBRADA";
+ if(v==="sold-awaiting-shipment")return "VENDIDA · ENVÍO PENDIENTE";
+ if(v==="sold-awaiting-payment")return "VENDIDA · COBRO PENDIENTE";
+ return v?String(v).toUpperCase():"VENDIDA";
+}
+function holdDays(h,c={}){
+ const a=h.purchaseDate||c.purchaseDate||"",b=h.soldAt||"";
+ if(!a||!b)return null;
+ const d=(new Date(b+"T00:00:00Z")-new Date(a+"T00:00:00Z"))/86400000;
+ return Number.isFinite(d)&&d>=0?Math.round(d):null;
+}
 function paymentStatus(h){
  const r=(state.investmentLedger||[]).find(x=>x.id===h.id);
  const s=String(r?.fulfillmentStatus||h.fulfillmentStatus||"");
@@ -35,7 +48,7 @@ function records(){
   const c=cardFor(h)||{},ledger=(state.investmentLedger||[]).find(r=>r.id===h.id);
   const purchase=h.purchase??c.purchase??null,basis=purchase==null?null:N(purchase)*N(h.qty||1),net=N(h.net)||N(h.unitPrice)*N(h.qty||1)-N(h.shipping)-N(h.fees);
   return {...c,...h,cert:h.cert||c.cert||"",referenceImage:h.referenceImage||c.referenceImage||"",purchase,basis,net,
-    result:basis==null?null:net-basis,payment:paymentStatus(h),ledgerStatus:ledger?.fulfillmentStatus||h.fulfillmentStatus||""};
+    result:basis==null?null:net-basis,payment:paymentStatus(h),workflow:workflowLabel(h),heldDays:holdDays(h,c),ledgerStatus:ledger?.fulfillmentStatus||h.fulfillmentStatus||""};
  }).sort((a,b)=>(b.soldAt||"").localeCompare(a.soldAt||""));
 }
 function summary(rows){
