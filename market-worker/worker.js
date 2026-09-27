@@ -12,7 +12,7 @@
 
    Plan gratuito: cron cada 2 min, lotes pequeños (≤ BATCH subpeticiones), presupuesto diario de escrituras D1. */
 
-const VERSION = "1.0.1";
+const VERSION = "1.1.0";
 const TCGDEX = "https://api.tcgdex.net/v2/en";
 const LORCAST = "https://api.lorcast.com/v0";
 const CT = "https://api.cardtrader.com/api/v2";
@@ -238,6 +238,50 @@ async function phaseCtBlueprints(env, budget) {
   return n;
 }
 
+/* ---------- CardTrader · descubrimiento automático de mercado ---------- */
+async function phaseArbitrageSeed(env, budget) {
+  if (!env.CARDTRADER_TOKEN) return 0;
+  if ((await writesToday(env)) > WRITE_BUDGET * 0.72) return 0;
+  const fx = await fxToday(env);
+  const rows = (await env.DB.prepare(`
+    SELECT p.id,p.universe,p.name,p.set_name,p.number,p.tcgplayer_id,
+           x.cm_trend,x.cm_avg7,x.cm_avg30,x.tp_market,x.tp_market_foil,x.fx_usd_eur
+    FROM products p
+    JOIN prices x ON x.product_id=p.id
+    WHERE x.day=(SELECT MAX(day) FROM prices z WHERE z.product_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM tracked t WHERE t.product_id=p.id)
+    ORDER BY COALESCE(x.cm_trend,x.cm_avg30,x.cm_avg7,x.tp_market*x.fx_usd_eur,x.tp_market_foil*x.fx_usd_eur,0) DESC
+    LIMIT ?
+  `).bind(Math.min(120, Math.max(20, budget * 4))).all()).results || [];
+  let n = 0;
+  for (const p of rows) {
+    const ref = num(p.cm_trend) || num(p.cm_avg30) || num(p.cm_avg7) || (num(p.tp_market) && (p.fx_usd_eur || fx) ? p.tp_market * (p.fx_usd_eur || fx) : null) || (num(p.tp_market_foil) && (p.fx_usd_eur || fx) ? p.tp_market_foil * (p.fx_usd_eur || fx) : null);
+    if (!(ref >= 35)) continue;
+    let cand = [];
+    if (p.tcgplayer_id) cand = (await env.DB.prepare("SELECT * FROM ct_blueprints WHERE tcgplayer_id=? LIMIT 8").bind(p.tcgplayer_id).all()).results || [];
+    if (!cand.length) {
+      const nk = numKey(p.number), first = norm(p.name).split(" ")[0] || "";
+      const rough = (await env.DB.prepare("SELECT * FROM ct_blueprints WHERE name LIKE ? LIMIT 160").bind("%" + first + "%").all()).results || [];
+      const pn = norm(p.name).replace(/\s+-\s+.*$/,""), ps = norm(p.set_name);
+      cand = rough.filter(b=>{
+        const bn=norm([b.name,b.version].filter(Boolean).join(" ")).replace(/\s+-\s+.*$/,""), bs=norm(b.expansion_name);
+        const nameOk=bn===pn||norm(b.name)===pn;
+        const numOk=!nk||numKey(b.number)===nk;
+        const setOk=!!ps&&!!bs&&(ps===bs||ps.includes(bs)||bs.includes(ps));
+        return nameOk&&numOk&&setOk;
+      });
+    }
+    if (cand.length !== 1) continue;
+    const b=cand[0];
+    await env.DB.prepare(`INSERT INTO tracked(product_id,label,universe,lang,condition,priority,blueprint_id,blueprint_confirmed,added_at,last_offers_day)
+      VALUES(?,?,?,?,?,?,?,?,?,NULL) ON CONFLICT(product_id) DO NOTHING`)
+      .bind(p.id,String(p.name||"").slice(0,200),p.universe||"pokemon","", "Near Mint", 6, b.id, 1, new Date().toISOString()).run();
+    await addWrites(env,1); n++;
+    if(n>=Math.max(8,Math.min(30,budget))) break;
+  }
+  return n;
+}
+
 /* ---------- CardTrader · ofertas de lo seguido (diario) ---------- */
 function parseProps(p = {}) {
   let lang = "", condition = "", finish = [];
@@ -254,7 +298,7 @@ async function phaseOffers(env, budget) {
   const d = day();
   const rows = (await env.DB.prepare(
     `SELECT product_id, blueprint_id, lang FROM tracked WHERE blueprint_id IS NOT NULL AND blueprint_confirmed=1 AND (last_offers_day IS NULL OR last_offers_day<>?) ORDER BY priority DESC LIMIT ?`
-  ).bind(d, Math.min(budget, 8)).all()).results || [];
+  ).bind(d, Math.min(budget, 20)).all()).results || [];
   if (!rows.length) return 0;
   const fx = await fxToday(env);
   let n = 0;
@@ -300,11 +344,11 @@ async function logRun(env, phase, n, ms, error = null) {
     env.DB.prepare("DELETE FROM runs WHERE id < (SELECT MAX(id)-500 FROM runs)")
   ]);
 }
-const PHASES = { fx: phaseFx, offers: phaseOffers, lorcana: phaseLorcana, pokemonCatalog: phasePokemonCatalog, pokemonPrices: phasePokemonPrices, ctBlueprints: phaseCtBlueprints };
+const PHASES = { fx: phaseFx, arbitrageSeed: phaseArbitrageSeed, offers: phaseOffers, lorcana: phaseLorcana, pokemonCatalog: phasePokemonCatalog, pokemonPrices: phasePokemonPrices, ctBlueprints: phaseCtBlueprints };
 async function tick(env, only = null) {
   await ensureSchema(env);
   const budget = Math.max(5, Math.min(45, Number(env.BATCH) || 30));
-  const order = only ? [only] : ["fx", "offers", "lorcana", "pokemonCatalog", "pokemonPrices", "ctBlueprints"];
+  const order = only ? [only] : ["fx", "arbitrageSeed", "offers", "lorcana", "pokemonCatalog", "pokemonPrices", "ctBlueprints"];
   const out = [];
   for (const name of order) {
     const t0 = Date.now();
@@ -457,6 +501,43 @@ async function handle(req, env) {
       out[id] = last?.d ? { day: last.d, offers: (await env.DB.prepare("SELECT * FROM offers WHERE product_id=? AND day=? ORDER BY price_eur").bind(id, last.d).all()).results } : null;
     }
     return json({ offers: out }, 200, h);
+  }
+  if (p === "/api/arbitrage") {
+    const d = day(), minEdge = Math.max(0, Number(q("min_edge")) || 40), minRoi = Math.max(0, Number(q("min_roi")) || 35);
+    const rows = (await env.DB.prepare(`
+      SELECT p.id product_id,p.universe,p.name,p.set_name,p.number,p.image,
+             o.blueprint_id,o.lang,o.condition,o.finish,o.price_eur,o.seller,o.country,o.zero,o.qty,o.url,o.fetched_at,
+             pr.cm_trend,pr.cm_avg1,pr.cm_avg7,pr.cm_avg30,pr.tp_market,pr.tp_market_foil,pr.fx_usd_eur,
+             os.n_listings,os.n_nm,os.median_nm_eur,os.units
+      FROM offers o
+      JOIN products p ON p.id=o.product_id
+      JOIN prices pr ON pr.product_id=p.id AND pr.day=(SELECT MAX(day) FROM prices px WHERE px.product_id=p.id)
+      LEFT JOIN offer_stats os ON os.product_id=p.id AND os.day=o.day
+      WHERE o.day=(SELECT MAX(day) FROM offers ox WHERE ox.product_id=o.product_id)
+        AND o.graded=0 AND o.price_eur IS NOT NULL AND o.price_eur>=20
+      ORDER BY o.price_eur ASC
+      LIMIT 1200
+    `).all()).results || [];
+    const best = new Map();
+    for (const r of rows) {
+      if (!/near mint|mint/i.test(String(r.condition||""))) continue;
+      const refs=[r.cm_trend,r.cm_avg1,r.cm_avg7,r.cm_avg30].map(num).filter(Boolean);
+      let exitGross=refs.length?Math.min(...refs):null;
+      if(!exitGross){
+        const tp=num(r.tp_market_foil)||num(r.tp_market), rate=num(r.fx_usd_eur);
+        if(tp&&rate) exitGross=tp*rate;
+      }
+      if(!(exitGross>0)) continue;
+      // haircut de salida + comisión Cardmarket + reserva logística
+      const prudentGross=exitGross*.88, netExit=prudentGross*.95-3, edge=netExit-r.price_eur, roi=edge/r.price_eur*100;
+      const spread=(exitGross-r.price_eur)/exitGross*100;
+      const enoughRefs=refs.length>=3 || (r.n_nm>=5 && r.median_nm_eur>0);
+      const pass=enoughRefs&&edge>=minEdge&&roi>=minRoi&&spread>=25;
+      const x={...r,exit_gross:Math.round(exitGross*100)/100,exit_net:Math.round(netExit*100)/100,edge:Math.round(edge*100)/100,roi:Math.round(roi*10)/10,spread:Math.round(spread*10)/10,pass,evidence_refs:refs.length};
+      const prev=best.get(r.product_id);if(!prev||x.edge>prev.edge)best.set(r.product_id,x);
+    }
+    const out=[...best.values()].filter(x=>x.pass).sort((a,b)=>b.edge-a.edge||b.roi-a.roi).slice(0,Math.min(100,Number(q("limit"))||40));
+    return json({day:d,method:"CardTrader exact ask -> conservative Cardmarket/market reference",rules:{minEdge,minRoi,exitHaircutPct:12,sellFeePct:5,logisticsReserveEUR:3,minSpreadPct:25},count:out.length,results:out},200,h);
   }
   if (p.startsWith("/api/cert/")) {
     const cert = p.split("/").pop().replace(/\D/g, "");
