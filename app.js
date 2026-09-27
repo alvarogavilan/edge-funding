@@ -763,7 +763,7 @@ async function indexFullCatalog(){
   }catch(e){pushRuntimeError("catalog-index",e?.message||e);st.textContent="Indexado interrumpido. Lo ya guardado se conserva; puedes reintentar."}
   if(btn)btn.disabled=false;
 }
-window.CVRunMarketScan=runMarketScan;
+window.CVRunMarketScan=runMarketScan;window.CVAllMarketSignals=()=>marketSignalAll();
 let lorcastSetsCache=null;
 async function lorcastSets(){
   if(lorcastSetsCache)return lorcastSetsCache;
