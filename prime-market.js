@@ -10,11 +10,13 @@ function exactOffer(x){
   String(x.variant||"").trim()&&String(x.condition||"").trim()&&lang&&!/pendiente|unknown|desconoc/i.test(lang)&&x.languageVerified===true);
 }
 function exitEvidence(x){
- const r=refs(x),sameMarket=x.sameMarketComparableVerified===true;
- const sales=N(x.sales30||x.recentSalesCount),lastSale=N(x.lastSalePrice||x.marketEvidence?.lastSaleEUR),currentExit=N(x.marketEvidence?.currentExitEUR);
- const soldMedian=N(x.soldMedianEUR||x.marketEvidence?.soldMedianEUR),soldSample=N(x.soldSample||x.marketEvidence?.soldSample);
+ const r=refs(x),ev=x.marketEvidence||{},idNow=window.CVIdentity?.key?.(x)||"",idOk=!!(ev.identityKey&&idNow&&ev.identityKey===idNow);
+ const age=window.CVIdentity?.ageHours?.(x.evidenceCheckedAt||ev.at)??Infinity,fresh=age<=24;
+ const sameMarket=x.sameMarketComparableVerified===true&&idOk;
+ const sales=N(x.sales30||x.recentSalesCount),lastSale=N(x.lastSalePrice||ev.lastSaleEUR),currentExit=N(ev.currentExitEUR);
+ const soldMedian=N(x.soldMedianEUR||ev.soldMedianEUR),soldSample=N(x.soldSample||ev.soldSample);
  const verified=x.exitEvidenceVerified===true||sales>0||lastSale>0||soldMedian>0||currentExit>0;
- return {ok:sameMarket&&verified,sameMarket,sales,lastSale,soldMedian,soldSample,currentExit,refs:r.length,verified};
+ return {ok:sameMarket&&verified&&fresh,sameMarket,sales,lastSale,soldMedian,soldSample,currentExit,refs:r.length,verified,idOk,fresh,age};
 }
 function liquidityBand(x){
  const s7=x.sales7==null?null:N(x.sales7),s30=x.sales30==null?null:N(x.sales30),s90=x.sales90==null?null:N(x.sales90);
@@ -44,7 +46,7 @@ function conservative(x){
 function evidenceConfidence(x){
  const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x);
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
- const signals=[ex,ee.sameMarket,ee.verified,d.units>=2,!stale,ee.soldSample>=3||ee.sales>=3];
+ const signals=[ex,ee.sameMarket,ee.verified,ee.idOk,ee.fresh,d.units>=2,!stale,ee.soldSample>=3||ee.sales>=3];
  const n=signals.filter(Boolean).length;
  return {label:n>=6?"A":n>=5?"B":n>=3?"C":"NO VERIFICADA",score:Math.round(n/signals.length*100),checks:n,total:signals.length};
 }
@@ -55,6 +57,8 @@ function quality(x){
   ["Oferta exacta",ex],
   ["Comparable mismo mercado",ee.sameMarket],
   ["Evidencia de salida",ee.ok],
+  ["Identidad evidencia intacta",ee.idOk],
+  ["Evidencia ≤24h",ee.fresh],
   ["Margen ≥ 40 €",econ.edge>=40],
   ["ROI ≥ 35%",econ.roi>=35],
   ["Precio ≥ 20 €",N(x.price)>=20],
@@ -101,6 +105,7 @@ function render(){
    '<div><span>Oferta exacta completa</span><b>'+exact+'</b></div>'+
    '<div><span>Comparable mismo mercado</span><b>'+same+'</b></div>'+
    '<div><span>Salida verificada</span><b>'+soldEvidence+'</b></div>'+
+   '<div><span>Evidencia fresca ≤24h</span><b>'+audited.filter(z=>z.q.ee.fresh).length+'</b></div>'+
    '<div><span>Profundidad ≥2 niveles</span><b>'+deep+'</b></div>'+
    '<div><span>Anomalías de referencia</span><b>'+anoms+'</b></div>'+
    '<div><span>BUY tras gate PRIME</span><b>'+buy.length+'</b></div>'+
