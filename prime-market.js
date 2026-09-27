@@ -51,7 +51,7 @@ function evidenceConfidence(x){
  return {label:n>=6?"A":n>=5?"B":n>=3?"C":"NO VERIFICADA",score:Math.round(n/signals.length*100),checks:n,total:signals.length};
 }
 function quality(x){
- const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x),c=consistency(x),econ=conservative(x);
+ const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x),c=consistency(x),econ=conservative(x),supply=window.CVSupplyRisk?.stateOf?.(x)||{risk:"unknown",verified:false};
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
  const checks=[
   ["Oferta exacta",ex],
@@ -63,11 +63,12 @@ function quality(x){
   ["ROI ≥ 35%",econ.roi>=35],
   ["Precio ≥ 20 €",N(x.price)>=20],
   ["Datos vigentes",!stale],
-  ["Integridad estructural",x.integrityBlocked!==true]
+  ["Integridad estructural",x.integrityBlocked!==true],
+  ["Sin riesgo reprint alto verificado",!(supply.verified&&supply.risk==="high")]
  ];
  const passed=checks.filter(([,ok])=>ok).length;
  let label=passed===checks.length?"APTA PARA REVISIÓN DE COMPRA":passed>=5?"WATCH · FALTA EVIDENCIA":"NO COMPRAR / REVISAR";
- return {checks,passed,total:checks.length,label,ex,ee,d,c,econ,stale,confidence:evidenceConfidence(x)};
+ return {checks,passed,total:checks.length,label,ex,ee,d,c,econ,stale,supply,confidence:evidenceConfidence(x)};
 }
 function harden(){
  let changed=false;
@@ -117,10 +118,10 @@ function render(){
   ).join(""):'<div class="qaRow"><span>Compras con evidencia completa</span><b>0 · correcto si no existen</b></div>')+
   '<details><summary>Ver auditoría de oportunidades</summary>'+audited.slice(0,30).map(({x,q})=>{
    const gap=q.d.gap==null?"sin 2º nivel":q.d.gap.toFixed(1)+"%";
-   const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence;
+   const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence,supply=q.supply;
    return '<article class="microNote"><b>'+E(x.name)+'</b> · '+E(q.label)+'<br>'+
     'Entrada '+EUR(x.price)+' · salida conservadora '+EUR(q.econ.exit)+' · edge '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
-    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · evidencia '+conf.label+' '+conf.score+'/100 · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
+    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · evidencia '+conf.label+' '+conf.score+'/100 · supply/reprint '+(supply.verified?supply.risk.toUpperCase():'SIN EVIDENCIA')+' · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
 }
