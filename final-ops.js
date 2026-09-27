@@ -16,7 +16,7 @@ function collectionStats(){
   return {total:rows.length,valued:valued.length,pending:pending.length};
 }
 function ledgerStats(){
-  const rows=state.ledger||state.ledgerEntries||[];
+  const rows=state.investmentLedger||[];
   const sale=rows.filter(x=>x.type==="sell").reduce((a,x)=>a+N(x.unitPrice)*N(x.qty||1)-N(x.fees)-N(x.shipping),0);
   return {entries:rows.length,released:sale};
 }
