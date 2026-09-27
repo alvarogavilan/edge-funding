@@ -442,3 +442,17 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 .catalogThumb{position:relative;width:100%;height:100%}
 .catalogThumb img{width:100%;height:100%;object-fit:cover;border-radius:12px}
 .catalogThumb small{position:absolute;left:4px;right:4px;bottom:4px;padding:3px 4px;border-radius:6px;background:rgba(4,8,18,.78);font-size:8px;text-align:center;letter-spacing:.02em;color:#fff}
+
+/* V88.0 · Master Sets útiles y compactos */
+.moreDailySection{margin:14px 0;border:1px solid rgba(140,160,210,.22);border-radius:18px;padding:14px;background:rgba(15,22,40,.72)}
+.moreDailySection>summary{font-size:20px;font-weight:800;cursor:pointer}
+.masterSetPrime{display:grid;grid-template-columns:82px minmax(0,1fr);gap:12px;padding:12px;margin-top:12px;border:1px solid rgba(140,160,210,.18);border-radius:16px;background:rgba(255,255,255,.025)}
+.masterSetCover{width:82px;aspect-ratio:2.5/3.5;object-fit:cover;border-radius:10px;background:#11182b}
+.masterSetNoImage{display:grid;place-items:center;text-align:center;font-size:9px;opacity:.55}
+.masterSetBody{min-width:0}.masterSetHead{display:flex;justify-content:space-between;gap:10px}.masterSetHead h3{margin:2px 0 8px;font-size:19px}.masterSetHead small{opacity:.6}
+.masterSetStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.masterSetStats div{padding:8px;background:rgba(255,255,255,.035);border-radius:9px}.masterSetStats span{display:block;font-size:9px;opacity:.62}.masterSetStats b{font-size:13px}
+.masterSetCards{display:grid;gap:5px;margin-top:8px}.masterSetCards>div{display:grid;grid-template-columns:54px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid rgba(140,160,210,.12)}.masterSetCards small{opacity:.65}
+.masterSetTarget{margin-top:8px}.masterSetTarget input{max-width:120px}
+.primeBuyEvidence{margin:4px 0 8px!important;font-size:10px!important;opacity:.72!important}
+.warningText{color:#f0b84f!important}
+@media(max-width:520px){.masterSetPrime{grid-template-columns:68px minmax(0,1fr)}.masterSetCover{width:68px}.masterSetStats{grid-template-columns:1fr}.masterSetHead{display:block}}
