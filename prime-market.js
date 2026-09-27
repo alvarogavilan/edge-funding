@@ -18,6 +18,15 @@ function exitEvidence(x){
  const verified=x.exitEvidenceVerified===true||sales>0||lastSale>0||soldMedian>0||currentExit>0;
  return {ok:sameMarket&&verified&&fresh,sameMarket,sales,lastSale,soldMedian,soldSample,currentExit,refs:r.length,verified,idOk,fresh,age};
 }
+function absorption(x){
+ const sold=x.sales30==null?null:N(x.sales30),qty=x.marketEvidence?.currentQty??x.available??null;
+ if(sold==null||qty==null)return {rate:null,days:null,label:"SIN DATO"};
+ const q=Math.max(0,N(qty)),s=Math.max(0,N(sold));
+ const rate=(s+q)>0?s/(s+q)*100:0;
+ const days=s>0?q/(s/30):null;
+ const label=rate>=50?"FUERTE":rate>=25?"MEDIA":rate>0?"BAJA":"SIN ABSORCIÓN";
+ return {rate,days,label,sold30:s,currentQty:q};
+}
 function liquidityBand(x){
  const s7=x.sales7==null?null:N(x.sales7),s30=x.sales30==null?null:N(x.sales30),s90=x.sales90==null?null:N(x.sales90);
  if(s7==null&&s30==null&&s90==null)return {label:"SIN DATO VERIFICADO",score:null};
@@ -51,7 +60,7 @@ function evidenceConfidence(x){
  return {label:n>=6?"A":n>=5?"B":n>=3?"C":"NO VERIFICADA",score:Math.round(n/signals.length*100),checks:n,total:signals.length};
 }
 function quality(x){
- const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x),c=consistency(x),econ=conservative(x),supply=window.CVSupplyRisk?.stateOf?.(x)||{risk:"unknown",verified:false};
+ const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x),c=consistency(x),econ=conservative(x),supply=window.CVSupplyRisk?.stateOf?.(x)||{risk:"unknown",verified:false},abs=absorption(x);
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
  const checks=[
   ["Oferta exacta",ex],
@@ -68,7 +77,7 @@ function quality(x){
  ];
  const passed=checks.filter(([,ok])=>ok).length;
  let label=passed===checks.length?"APTA PARA REVISIÓN DE COMPRA":passed>=5?"WATCH · FALTA EVIDENCIA":"NO COMPRAR / REVISAR";
- return {checks,passed,total:checks.length,label,ex,ee,d,c,econ,stale,supply,confidence:evidenceConfidence(x)};
+ return {checks,passed,total:checks.length,label,ex,ee,d,c,econ,stale,supply,abs,confidence:evidenceConfidence(x)};
 }
 function harden(){
  let changed=false;
@@ -118,15 +127,15 @@ function render(){
   ).join(""):'<div class="qaRow"><span>Compras con evidencia completa</span><b>0 · correcto si no existen</b></div>')+
   '<details><summary>Ver auditoría de oportunidades</summary>'+audited.slice(0,30).map(({x,q})=>{
    const gap=q.d.gap==null?"sin 2º nivel":q.d.gap.toFixed(1)+"%";
-   const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence,supply=q.supply;
+   const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence,supply=q.supply,abs=q.abs;
    return '<article class="microNote"><b>'+E(x.name)+'</b> · '+E(q.label)+'<br>'+
     'Entrada '+EUR(x.price)+' · salida conservadora '+EUR(q.econ.exit)+' · edge '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
-    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · evidencia '+conf.label+' '+conf.score+'/100 · supply/reprint '+(supply.verified?supply.risk.toUpperCase():'SIN EVIDENCIA')+' · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
+    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · absorción 30d '+(abs.rate==null?'sin dato':abs.rate.toFixed(0)+'% '+abs.label)+' · stock observado '+(abs.days==null?'sin dato':abs.days.toFixed(0)+' días al ritmo 30d')+' · evidencia '+conf.label+' '+conf.score+'/100 · supply/reprint '+(supply.verified?supply.risk.toUpperCase():'SIN EVIDENCIA')+' · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
 }
 function run(){harden();render()}
-window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency,liquidityBand,evidenceConfidence};
+window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency,liquidityBand,evidenceConfidence,absorption};
 setTimeout(run,100);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)run()});
 })();
