@@ -29,7 +29,7 @@ El histórico empieza el día que actives el recolector. Las zonas necesitan **�
    - Secreto **`CARDTRADER_TOKEN`**: CardTrader → tu perfil → *Settings* → *API* → token. (Opcional, pero sin él no hay ofertas ni japonés/sellado.)
    - Secreto **`PSA_TOKEN`**: psacard.com → *Public API* → genera token. (Opcional.)
    - Texto **`ALLOWED_ORIGIN`** = `https://alvarogavilan.github.io`
-   - Texto **`BATCH`** = `30`
+   - Texto **`BATCH`** = `20`
 6. **Programación** — *Settings* → *Triggers* → *Cron Triggers* → **Add** → `*/2 * * * *` (cada 2 minutos).
 7. **Card Vault** — pestaña *Hoy* → *Mercado controlado* → **Conectar recolector** → pega la URL del Worker (`https://cardvault-market.<tu-subdominio>.workers.dev`) y tu `CV_KEY`.
 
@@ -50,3 +50,8 @@ En *Mercado controlado → Vincular*: busca cada carta (mejor por su nombre en i
 - Plan gratuito: 10 ms de CPU por ejecución. Si en *Logs* ves «exceeded CPU», baja `BATCH` a `15`.
 - D1 gratuito: 100.000 filas escritas/día; el recolector se limita solo a ~90.000.
 - `/api/status` (con cabecera `x-cv-key`) muestra días de histórico, productos, ofertas y últimas ejecuciones.
+
+
+## Protección de coste PRIME
+
+El Worker usa un presupuesto interno de **70.000 escrituras D1/día**, por debajo del límite Free de 100.000. Si alcanza el presupuesto interno deja de ampliar trabajo pesado ese día; no intenta forzar un plan de pago. En Card Vault, Mercado controlado muestra escrituras usadas/restantes.
