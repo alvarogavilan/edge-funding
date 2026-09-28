@@ -57,7 +57,7 @@ async function candidateRows(){
  return out.filter(x=>x?.name&&x?.set).filter(x=>{
   const k=[x.universe,norm(x.name),norm(x.set),numKey(x.number)].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
- }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||(eur>=20&&eur<=300)})
+ }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||eur>=20})
  .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,320);
 }
 function pctMedian(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]}
@@ -81,7 +81,7 @@ function localArbitrageForCandidate(c,offers){
   const prudentGross=grossExit*.88,netExit=prudentGross*.95-3;
   const edge=netExit-Number(entry.total),roi=Number(entry.total)>0?edge/Number(entry.total)*100:0;
   const spread=grossExit>0?(grossExit-Number(entry.total))/grossExit*100:0;
-  const pass=Number(entry.total)>=20&&Number(entry.total)<=250&&edge>=40&&roi>=35&&spread>=25;
+  const pass=Number(entry.total)>=20&&edge>=40&&roi>=35&&spread>=25;
   out.push({
    product_id:"local:"+String(entry.externalId||entry.id||c.id||c.name),universe:c.universe||"pokemon",name:c.name,set_name:c.set||"",number:c.number||"",
    image:c.image||"",blueprint_id:String(entry.externalId||"").replace(/^ct:/,""),lang:entry.language||"",condition:entry.condition||"Near Mint",
@@ -112,7 +112,7 @@ function discoverExpansionDislocations(expansionProducts,bps,universe){
   const bp=bpMap.get(bpId);if(!bp)continue;
   const ph=prod.properties_hash||{},lang=Object.entries(ph).find(([k])=>/language$/i.test(k))?.[1]||"",condition=ph.condition||"";
   const raw=(prod.price?.cents||0)/100,currency=String(prod.price?.currency||"EUR").toUpperCase(),price=currency==="USD"&&cache.usdEur?raw*cache.usdEur:currency==="EUR"?raw:0;
-  if(!(price>=20&&price<=250)||!lang||!/near mint|mint/i.test(String(condition)))continue;
+  if(!(price>=20)||!lang||!/near mint|mint/i.test(String(condition)))continue;
   const finish=Object.entries(ph).filter(([k,v])=>/foil|reverse|holo|edition/i.test(k)&&v===true).map(([k])=>k).join(",");
   const k=[bpId,norm(lang),norm(finish)].join("|");
   if(!byBp.has(k))byBp.set(k,[]);
