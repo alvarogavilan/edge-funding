@@ -21,7 +21,8 @@ function capture(id){
  const depthRaw=(prompt("Siguientes precios comparables separados por ; (ej. 169;174.90;180):","")||"").trim();
  const depth=depthRaw?depthRaw.split(";").map(v=>N(v.replace(",","."))).filter(v=>v>0).sort((a,b)=>a-b):[];
  const ev={at:new Date().toISOString(),identityKey:window.CVIdentity?.key?.(c)||"",source,url,lowestAskEUR:lowestAsk&&lowestAsk>0?lowestAsk:null,
-  soldPrices:sold,soldMedianEUR:median,soldSample:sold.length,sales30,sellers,depthPrices:depth};
+  soldPrices:sold,soldMedianEUR:median,soldSample:sold.length,sales30,sellers,depthPrices:depth,
+  closedSaleVerified:sold.length>0,closedSaleIdentityVerified:sold.length>0,closedSaleLanguageVerified:sold.length>0,activeAskVerified:lowestAsk!=null};
  x.exitEvidenceHistory=Array.isArray(x.exitEvidenceHistory)?x.exitEvidenceHistory:[];
  if(x.exitEvidence?.at)x.exitEvidenceHistory.push({...x.exitEvidence,replacedAt:ev.at});
  x.exitEvidenceHistory=x.exitEvidenceHistory.slice(-20);
