@@ -109,6 +109,19 @@ const beastGraciousId="lorcana-beast-gracious-prince-224-20260927";
 const pongoId="lorcana-pongo-determined-father-223-it-20260928";
 const winnieId="lorcana-winnie-hunny-wizard-227-de-20260928";
 const elsaId="lorcana-elsa-spirit-winter-207-fr-20260928";
+const scroogeId="lorcana-scrooge-richest-duck-218-it-20260928";
+if(!state.manualOpportunities.some(x=>x.id===scroogeId)){
+ state.manualOpportunities.push({
+  id:scroogeId,universe:"lorcana",name:"Scrooge McDuck - Richest Duck in the World",set:"Into the Inklands",number:"218/204",
+  variant:"Encantada · Holofoil · Italiano",condition:"NM",shop:"Cardmarket",seller:"Oferta italiana publicada en Cardmarket",
+  price:57.99,trend:223.88,avg30:188.63,avg7:215.44,avg1:0,available:8,sellerQty:1,
+  url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Into-the-Inklands/Scrooge-McDuck-Richest-Duck-in-the-World-V2",
+  checkedAt:"2026-09-28T22:12:00+02:00",expiresAt:"2026-09-29T22:12:00+02:00",
+  status:"COMPRAR AHORA · ITALIANO NM · 1 UNIDAD",approval:"BUY-ONE",
+  offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,
+  note:"Italiano Holofoil NM desde 57,99 €, mediana italiana 117,48 €, 8+ ofertas. Última venta global visible 23/09: 95 €. Una unidad."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===elsaId)){
  state.manualOpportunities.push({
   id:elsaId,universe:"lorcana",name:"Elsa - Spirit of Winter",set:"The First Chapter",number:"207/204",
@@ -322,7 +335,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[elsaId,winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[scroogeId,elsaId,winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
