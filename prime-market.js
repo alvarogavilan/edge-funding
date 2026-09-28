@@ -35,10 +35,11 @@ function exitEvidence(x){
  const age=window.CVIdentity?.ageHours?.(x.evidenceCheckedAt||ev.at)??Infinity,fresh=age<=24;
  const sameMarket=x.sameMarketComparableVerified===true&&idOk;
  const currentExit=N(ev.currentExitEUR),closed=closedSaleEvidence(x);
- const soldVerified=closed.verified||(x.closedSaleVerified===true||ev.closedSaleVerified===true);
- const soldSameIdentity=closed.verified||(soldVerified&&(x.closedSaleIdentityVerified===true||ev.closedSaleIdentityVerified===true));
- const soldSameLanguage=closed.verified||(soldVerified&&(x.closedSaleLanguageVerified===true||ev.closedSaleLanguageVerified===true));
- const soldUsable=closed.verified||(soldVerified&&soldSameIdentity&&soldSameLanguage);
+ const hasStructured=!!(x.closedSaleEvidence&&Object.keys(x.closedSaleEvidence).length);
+ const soldVerified=hasStructured?closed.verified:(x.closedSaleVerified===true||ev.closedSaleVerified===true);
+ const soldSameIdentity=hasStructured?closed.verified:(soldVerified&&(x.closedSaleIdentityVerified===true||ev.closedSaleIdentityVerified===true));
+ const soldSameLanguage=hasStructured?closed.verified:(soldVerified&&(x.closedSaleLanguageVerified===true||ev.closedSaleLanguageVerified===true));
+ const soldUsable=hasStructured?closed.verified:(soldVerified&&soldSameIdentity&&soldSameLanguage);
  const sales=closed.verified?closed.sample:(soldUsable?N(x.sales30||x.recentSalesCount||ev.sales30):0);
  const lastSale=closed.verified?closed.last:(soldUsable?N(x.lastSalePrice||ev.lastSaleEUR):0);
  const soldMedian=closed.verified?closed.median:(soldUsable?N(x.soldMedianEUR||ev.soldMedianEUR):0);
