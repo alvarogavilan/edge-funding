@@ -327,14 +327,14 @@ function positionSizing(x,c){
  const refs=[trend,avg30,avg7,avg1].filter(v=>v>0);
  const floor=refs.length?Math.min(...refs):Infinity;
  const conservativeGross=isFinite(floor)?floor:0;
- const conservativeExit=conservativeGross*.95;
+ const conservativeExit=Math.max(0,conservativeGross*.85*.95-3);
  const netEdge=conservativeExit>unit?conservativeExit-unit:0;
  const roi=unit>0?netEdge/unit*100:0;
  const passes=unit>=20&&netEdge>=40&&roi>=35;
  const depth=Array.isArray(x.depthPrices)?x.depthPrices.filter(v=>N(v)>0).length:0;
  const sales30=x.sales30==null?null:N(x.sales30),sellerQty=N(x.sellerQty);
  const exactExit=x.exitEvidenceVerified===true&&x.sameMarketComparableVerified===true;
- let maxUnits=passes?1:0,reason=passes?"1 unidad por defecto. Escalar requiere liquidez y profundidad verificadas.":"No supera simultáneamente +40 € netos aprox. y ROI 35% con la referencia más conservadora.";
+ let maxUnits=passes?1:0,reason=passes?"1 unidad por defecto. Escalar requiere liquidez y profundidad verificadas.":"No supera simultáneamente +40 € netos aprox. y ROI 35% después de recorte, comisión y reserva logística.";
  if(passes&&exactExit&&sales30!=null&&sales30>=3&&depth>=2&&sellerQty>=2){maxUnits=2;reason="2 unidades máximo: margen + salida exacta + ≥3 ventas/30d + ≥2 niveles de profundidad.";}
  if(passes&&exactExit&&sales30!=null&&sales30>=6&&depth>=3&&sellerQty>=3&&roi>=50){maxUnits=3;reason="3 unidades máximo: liquidez fuerte verificada, ≥6 ventas/30d, ≥3 niveles de profundidad y ROI ≥50%.";}
  return {conservativeGross,conservativeExit,netEdge,roi,passes,maxUnits,recommended:maxUnits,reason,depth,sales30,exactExit};
