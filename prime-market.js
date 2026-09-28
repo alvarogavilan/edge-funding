@@ -5,8 +5,9 @@ const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt
 const BUY=new Set(["BUY-ONE","BUY-SCALE"]);
 function refs(x){return [x.trend,x.avg30,x.avg7,x.avg1].map(N).filter(v=>v>0)}
 function exactOffer(x){
- const lang=String(x.offerLanguage||x.language||"").trim();
- return !!(N(x.price)>0&&String(x.seller||"").trim()&&/^https?:\/\//i.test(String(x.url||""))&&
+ const lang=String(x.offerLanguage||x.language||"").trim(),seller=String(x.seller||"").trim();
+ const sellerSpecific=!!seller&&!/oferta .*publicada|cardmarket\s*·?\s*(oferta|mínimo|minimo)|mercado público|vendedor verificado|oferta (italiana|francesa|alemana|inglesa|japonesa) más barata/i.test(seller);
+ return !!(N(x.price)>0&&sellerSpecific&&/^https?:\/\//i.test(String(x.url||""))&&
   String(x.variant||"").trim()&&String(x.condition||"").trim()&&lang&&!/pendiente|unknown|desconoc/i.test(lang)&&x.languageVerified===true);
 }
 function exitEvidence(x){
