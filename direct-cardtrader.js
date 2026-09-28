@@ -150,7 +150,7 @@ async function scan(){
  if(busy||!token())return {ok:false,reason:"no-token"};
  busy=true;
  try{
-  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],discovered=[],marketCache=new Map(),blueprintCacheByExp=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,ambiguousBlueprint:0,withOffers:0,languageDepth:0,economicPass:0,dislocations:0,pokemon:0,lorcana:0};
+  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],discovered=[],marketCache=new Map(),blueprintCacheByExp=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,ambiguousBlueprint:0,withOffers:0,languageDepth:0,economicPass:0,dislocations:0,languageLocked:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
    const setNorm=norm(c.canonicalSet||c.set),setCode=norm(c.setId||"");
@@ -160,7 +160,7 @@ async function scan(){
     return (!!setCode&&ec===setCode)||en===setNorm||(setNorm&&en.includes(setNorm))||(en&&setNorm.includes(en));
    });
    if(exps.length!==1)continue;
-   diag.expansionExact++;
+   diag.expansionExact++;if(c.languageLockedBySet)diag.languageLocked++;
    const bps=await blueprintsFor(exps[0]);blueprintCacheByExp.set(exps[0].id,bps);
    let expansionProducts;try{expansionProducts=await marketplaceForExpansion(exps[0],marketCache)}catch(e){if(String(e.message).includes("429")){await sleep(1100);continue}throw e}
    diag.uniqueExpansions=marketCache.size;
