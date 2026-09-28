@@ -190,13 +190,15 @@ function render(){
  if(!simple){simple=document.createElement("section");simple.id="primeSimpleHome";host.prepend(simple)}
  const rows=buys(),cards=rows.filter(r=>!r.id.startsWith("sealed:")),products=rows.filter(r=>r.id.startsWith("sealed:")),f=funnel();
  const ct=state.cardTraderDirect||{},hasCt=window.CVCardTraderDirect?.hasToken?.()===true,diag=ct.diagnostics||{};
+ const pc=state.coverageByUniverse?.pokemon||{},pls=pc.languageStats||{};
+ const pokemonStatus=pc.multilingual?'<section class="primeScannerStatus"><b>Pokémon · cobertura multilingüe completa</b><span>🇯🇵 '+N(pls.ja?.signals)+' señales · 🇬🇧 '+N(pls.en?.signals)+' · 🇪🇸 '+N(pls.es?.signals)+' · 🇮🇹 '+N(pls.it?.signals)+' · 🇩🇪 '+N(pls.de?.signals)+' · 🇫🇷 '+N(pls.fr?.signals)+' · normal y holo separados</span></section>':'';
  const marketStatus=!hasCt?'<section class="primeScannerStatus"><b>Escaneo público activo</b><span>Pokémon y Lorcana se refrescan al abrir. CardTrader es un acelerador opcional y no bloquea Compra ya.</span></section>':
   ct.status==="error"?'<section class="primeScannerStatus warn"><b>CardTrader no disponible</b><span>La app continúa con fuentes públicas; no requiere ninguna acción tuya.</span></section>':
   '<section class="primeScannerStatus"><b>Escaneo real CardTrader + fuentes públicas</b><span>'+N(ct.scanned)+' candidatas · '+N(diag.uniqueExpansions)+' sets completos · '+N(diag.blueprintExact)+' identidades exactas · '+N(diag.ambiguousBlueprint)+' ambiguas · '+N(ct.offers)+' ofertas · '+N(diag.dislocations)+' gangas internas · '+N(ct.approved)+' compras aprobadas</span></section>';
  if(rows.some(r=>!r.image))setTimeout(()=>hydrateBuyImages().catch(()=>{}),50);
  const section=(title,subtitle,items)=>'<section class="primeBuyGroup"><div class="primeBuyGroupHead"><div><span>COMPRA YA</span><h3>'+E(title)+'</h3><small>'+E(subtitle)+'</small></div><b>'+items.length+'</b></div>'+
   (items.length?'<div class="primeBuyList">'+items.slice(0,10).map(card).join("")+'</div>':'<div class="primeNoBuy compact"><b>NINGUNA COMPRA VERIFICADA EN ESTE BLOQUE.</b><span>Se mantiene visible la categoría; no se mezcla con candidatos sin evidencia suficiente.</span></div>')+'</section>';
- simple.innerHTML=marketStatus+'<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Compras ejecutables separadas por tipo. Solo entran si superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
+ simple.innerHTML=marketStatus+pokemonStatus+'<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Compras ejecutables separadas por tipo. Solo entran si superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
   section("CARTAS","Pokémon y Lorcana · cartas individuales RAW o graduadas",cards)+
   section("SETS / OTROS PRODUCTOS","ETB, booster boxes, colecciones, blísteres, troves y demás sellado",products)+
   '<section class="primeFunnel"><div class="primeBuyGroupHead"><div><span>COBERTURA</span><h3>Por qué no aparecen miles como “Compra ya”</h3></div></div><div class="statsGrid">'+
