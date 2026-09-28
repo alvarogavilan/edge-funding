@@ -38,6 +38,20 @@ function img(x){
  const hit=rows.find(r=>r.image&&String(r.name||"").trim().toLowerCase()===n&&(!num||String(r.number||"").replace(/\s/g,"").toLowerCase()===num));
  return hit?.image||"";
 }
+function alreadyOwned(x){
+ const cards=(state.cards||[]).filter(c=>c&&!c.archivedSold);
+ return cards.some(c=>{
+  try{if(window.CVIdentity?.sameOwnedCard)return window.CVIdentity.sameOwnedCard(c,x)}catch{}
+  const n=v=>String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const num=v=>n(v).replace(/\s/g,"");
+  if(n(c.universe||"pokemon")!==n(x.universe||"pokemon")||n(c.name)!==n(x.name))return false;
+  if(c.number&&x.number&&num(c.number)!==num(x.number))return false;
+  if(c.set&&x.set&&n(c.set)!==n(x.set)&&!n(c.set).includes(n(x.set))&&!n(x.set).includes(n(c.set)))return false;
+  const cl=n(c.language),xl=n(x.offerLanguage||x.language);
+  if(cl&&xl&&cl!==xl)return false;
+  return !!(c.number||x.number||c.set||x.set);
+ });
+}
 function bestKnownOffer(x){
  const rows=[{price:N(x.price),seller:x.seller||"",url:x.url||"",source:x.shop||"Oferta actual"}];
  for(const o of (state.euOffers||[])){
@@ -107,7 +121,8 @@ function sealedBuys(){
  exit:N(r.d.prime?.exit),edge:N(r.d.prime?.edge),roi:N(r.d.prime?.roi),units:1}));
 }
 function buys(){
- const all=[...manualBuys(),...publicVerifiedBuys(),...arbitrageBuys(),...euBuys(),...sealedBuys()];
+ const all=[...manualBuys(),...publicVerifiedBuys(),...arbitrageBuys(),...euBuys(),...sealedBuys()]
+  .filter(r=>String(r.id||"").startsWith("sealed:")||!alreadyOwned(r));
  const seen=new Set();
  return all.filter(r=>{const k=String(r.id||"").replace(/^(manual|public):/,"");if(seen.has(k))return false;seen.add(k);return true})
   .sort((a,b)=>(b.edge-a.edge)||(b.roi-a.roi));
@@ -223,5 +238,5 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGu
 document.addEventListener("click",e=>{
  if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}
 });
-window.CVSimpleHome={render,buys,publicVerifiedBuys,euBuys,arbitrageBuys,funnel,installGuard,hydrateBuyImages};
+window.CVSimpleHome={render,buys,publicVerifiedBuys,euBuys,arbitrageBuys,funnel,alreadyOwned,installGuard,hydrateBuyImages};
 })();
