@@ -141,9 +141,9 @@ function render(){
  if(!simple){simple=document.createElement("section");simple.id="primeSimpleHome";host.prepend(simple)}
  const rows=buys(),cards=rows.filter(r=>!r.id.startsWith("sealed:")),products=rows.filter(r=>r.id.startsWith("sealed:")),f=funnel();
  const ct=state.cardTraderDirect||{},hasCt=window.CVCardTraderDirect?.hasToken?.()===true,diag=ct.diagnostics||{};
- const marketStatus=!hasCt?'<section class="primeScannerStatus warn"><b>CardTrader no conectado</b><span>Sin el token local no puedo consultar ofertas reales de CardTrader al abrir.</span><button type="button" data-home-ct-token>Conectar CardTrader una sola vez</button></section>':
-  ct.status==="error"?'<section class="primeScannerStatus warn"><b>CardTrader: error de escaneo</b><span>'+E(ct.error||"No se pudo consultar")+'</span><button type="button" data-home-ct-token>Revisar token</button></section>':
-  '<section class="primeScannerStatus"><b>Escaneo real CardTrader</b><span>'+N(ct.scanned)+' candidatas · '+N(diag.uniqueExpansions)+' sets completos · '+N(diag.blueprintExact)+' identidades exactas · '+N(diag.ambiguousBlueprint)+' ambiguas · '+N(ct.offers)+' ofertas · '+N(diag.dislocations)+' gangas internas · '+N(ct.approved)+' compras aprobadas</span></section>';
+ const marketStatus=!hasCt?'<section class="primeScannerStatus"><b>Escaneo público activo</b><span>Pokémon y Lorcana se refrescan al abrir. CardTrader es un acelerador opcional y no bloquea Compra ya.</span></section>':
+  ct.status==="error"?'<section class="primeScannerStatus warn"><b>CardTrader no disponible</b><span>La app continúa con fuentes públicas; no requiere ninguna acción tuya.</span></section>':
+  '<section class="primeScannerStatus"><b>Escaneo real CardTrader + fuentes públicas</b><span>'+N(ct.scanned)+' candidatas · '+N(diag.uniqueExpansions)+' sets completos · '+N(diag.blueprintExact)+' identidades exactas · '+N(diag.ambiguousBlueprint)+' ambiguas · '+N(ct.offers)+' ofertas · '+N(diag.dislocations)+' gangas internas · '+N(ct.approved)+' compras aprobadas</span></section>';
  if(rows.some(r=>!r.image))setTimeout(()=>hydrateBuyImages().catch(()=>{}),50);
  const section=(title,subtitle,items)=>'<section class="primeBuyGroup"><div class="primeBuyGroupHead"><div><span>COMPRA YA</span><h3>'+E(title)+'</h3><small>'+E(subtitle)+'</small></div><b>'+items.length+'</b></div>'+
   (items.length?'<div class="primeBuyList">'+items.slice(0,10).map(card).join("")+'</div>':'<div class="primeNoBuy compact"><b>NINGUNA COMPRA VERIFICADA EN ESTE BLOQUE.</b><span>Se mantiene visible la categoría; no se mezcla con candidatos sin evidencia suficiente.</span></div>')+'</section>';
@@ -170,16 +170,6 @@ setTimeout(installGuard,1400);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){installGuard();setTimeout(render,100)}});
 document.addEventListener("click",e=>{
  if(e.target.closest('[data-tab="radar"]')){installGuard();setTimeout(render,100)}
- const b=e.target.closest("[data-home-ct-token]");if(!b)return;
- const v=(prompt("Pega tu token API de CardTrader. Se guarda solo en este iPhone:","")||"").trim();if(!v)return;
- window.CVCardTraderDirect?.setToken?.(v);
- b.disabled=true;b.textContent="Comprobando…";
- window.CVCardTraderDirect?.verify?.().then(async r=>{
-  if(!r?.ok){alert("No se pudo conectar CardTrader: "+(r?.error||"error"));render();return}
-  b.textContent="Escaneando mercado…";
-  await window.CVCardTraderDirect?.scan?.();
-  render();
- });
 });
 window.CVSimpleHome={render,buys,euBuys,arbitrageBuys,funnel,installGuard,hydrateBuyImages};
 })();
