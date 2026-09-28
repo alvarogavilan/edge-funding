@@ -47,6 +47,10 @@ async function marketplaceForExpansion(exp,marketCache){
 }
 async function candidateRows(){
  const out=[];
+ const priority=(state.manualOpportunities||[])
+  .filter(x=>x.universe==="pokemon"&&["VERIFY-LANGUAGE","WATCH"].includes(x.approval)&&Number(x.price)>=20)
+  .map(x=>({...x,score:120,source:"Card Vault · investigación prioritaria"}));
+ out.push(...priority);
  for(const u of ["pokemon","lorcana"]){
   const pack=state.autoMarketScans?.[u];
   for(const x of (Array.isArray(pack?.signals)?pack.signals:[]))out.push({...x,universe:u});
@@ -58,7 +62,7 @@ async function candidateRows(){
   const k=[x.universe,norm(x.canonicalName||x.name),norm(x.canonicalSet||x.set),numKey(x.number),norm(x.language||x.languageCode||""),norm(x.finish||"")].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
  }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||eur>=20})
- .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,320);
+ .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,400);
 }
 function pctMedian(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]}
 function localArbitrageForCandidate(c,offers){
@@ -175,7 +179,7 @@ async function scan(){
    /* Fallback Pokémon internacional: el número está en properties_hash del producto real,
       aunque no exista en Blueprint. Esto rescata JP/promos con nombre localizado. */
    if(exact.length!==1&&nk){
-    const want=String(c.languageCode||c.language||"").toLowerCase(),aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",korean:"ko",jp:"ja"};
+    const want=String(c.languageCode||c.language||"").toLowerCase(),aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",korean:"ko",portuguese:"pt",dutch:"nl",polish:"pl",russian:"ru","traditional chinese":"zh-tw","simplified chinese":"zh-cn",indonesian:"id",thai:"th",jp:"ja",kr:"ko","zh-tw":"zh-tw","zh-cn":"zh-cn"};
     const wk=aliases[want]||want,ids=new Set();
     for(const prod of expansionProducts||[]){
      const ph=prod.properties_hash||{},pn=numKey(ph.collector_number||ph.pokemon_number||ph.number||"");
