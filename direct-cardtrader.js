@@ -49,7 +49,7 @@ async function candidateRows(){
  const out=[];
  const priority=(state.manualOpportunities||[])
   .filter(x=>x.universe==="pokemon"&&["VERIFY-LANGUAGE","WATCH"].includes(x.approval)&&Number(x.price)>=20)
-  .map(x=>({...x,score:120,source:"Card Vault · investigación prioritaria"}));
+  .map(x=>({...x,score:/giratina|mew-ex-sv2a205/.test(String(x.id||""))?180:120,source:"Card Vault · investigación prioritaria"}));
  out.push(...priority);
  for(const u of ["pokemon","lorcana"]){
   const pack=state.autoMarketScans?.[u];
@@ -62,7 +62,7 @@ async function candidateRows(){
   const k=[x.universe,norm(x.canonicalName||x.name),norm(x.canonicalSet||x.set),numKey(x.number),norm(x.language||x.languageCode||""),norm(x.finish||"")].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
  }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||eur>=20})
- .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,400);
+ .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,500);
 }
 function pctMedian(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]}
 function localArbitrageForCandidate(c,offers){
