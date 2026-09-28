@@ -110,6 +110,19 @@ const pongoId="lorcana-pongo-determined-father-223-it-20260928";
 const winnieId="lorcana-winnie-hunny-wizard-227-de-20260928";
 const elsaId="lorcana-elsa-spirit-winter-207-fr-20260928";
 const scroogeId="lorcana-scrooge-richest-duck-218-it-20260928";
+const gyaradosBuyId="pokemon-gyarados-ex-xy9-089-jp-nm-20260928";
+if(!state.manualOpportunities.some(x=>x.id===gyaradosBuyId)){
+ state.manualOpportunities.push({
+  id:gyaradosBuyId,universe:"pokemon",name:"Gyarados EX",set:"Rage of the Broken Heavens",number:"089/080",
+  variant:"Full Art secreta · Japonés",condition:"NM",shop:"Cardmarket",seller:"AngelD4rk",
+  price:150.00,trend:509.76,avg30:274.17,avg7:535.49,avg1:660.00,available:20,sellerQty:1,
+  url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Rage-of-the-Broken-Heavens/Gyarados-EX-V3",
+  checkedAt:"2026-09-28T22:12:00+02:00",expiresAt:"2026-09-29T22:12:00+02:00",
+  status:"COMPRAR AHORA · JAPONÉS NM · 1 UNIDAD",approval:"BUY-ONE",
+  offerLanguage:"Japanese",languageVerified:true,publicFloorVerified:true,
+  note:"Oferta pública Cardmarket: AngelD4rk NM 150 €. Media 30 días 274,17 €. Otras NM visibles: 230 €, 250 €, 649 €, 699,90 € y 700 €. Una unidad."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===scroogeId)){
  state.manualOpportunities.push({
   id:scroogeId,universe:"lorcana",name:"Scrooge McDuck - Richest Duck in the World",set:"Into the Inklands",number:"218/204",
@@ -335,7 +348,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[scroogeId,elsaId,winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[gyaradosBuyId,scroogeId,elsaId,winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
