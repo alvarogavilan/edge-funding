@@ -15,16 +15,20 @@ function closedSaleEvidence(x){
  const prices=(Array.isArray(ev.pricesEUR)?ev.pricesEUR:[]).map(N).filter(v=>v>0).sort((a,b)=>a-b);
  const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:(prices[prices.length/2-1]+prices[prices.length/2])/2):0;
  const source=String(ev.source||"").trim(),url=String(ev.url||"").trim(),lang=String(ev.language||"").trim(),condition=String(ev.condition||"").trim();
+ const canonLang=v=>{const k=String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");return ({en:"english",ingles:"english",english:"english",fr:"french",frances:"french",french:"french",de:"german",aleman:"german",german:"german",es:"spanish",espanol:"spanish",spanish:"spanish",it:"italian",italiano:"italian",italian:"italian",pt:"portuguese",portugues:"portuguese",portuguese:"portuguese",ja:"japanese",jp:"japanese",japones:"japanese",japanese:"japanese",ko:"korean",kr:"korean",coreano:"korean",korean:"korean","zh-tw":"traditional chinese","traditional chinese":"traditional chinese","chino-t":"traditional chinese","zh-cn":"simplified chinese","simplified chinese":"simplified chinese","chino-s":"simplified chinese"}[k]||k)};
+ const canonCondition=v=>{const k=String(v||"").trim().toLowerCase().replace(/[^a-z]/g,"");return ({mint:"mt",mt:"mt",nearmint:"nm",nm:"nm",excellent:"ex",ex:"ex",good:"gd",gd:"gd",lightplayed:"lp",lightlyplayed:"lp",lp:"lp",played:"pl",pl:"pl",poor:"po",po:"po"}[k]||k)};
+ const offerLang=canonLang(x.offerLanguage||x.language||""),saleLang=canonLang(lang);
+ const offerCondition=canonCondition(x.condition||""),saleCondition=canonCondition(condition);
  const sourceOk=!!source&&/^https?:\/\//i.test(url);
  const identityOk=ev.identityVerified===true;
- const languageOk=ev.languageVerified===true&&!!lang;
- const conditionOk=ev.conditionVerified===true&&!!condition;
+ const languageOk=ev.languageVerified===true&&!!saleLang&&!!offerLang&&saleLang===offerLang;
+ const conditionOk=ev.conditionVerified===true&&!!saleCondition&&!!offerCondition&&saleCondition===offerCondition;
  const transactionOk=ev.transactionType==="closed-sale"||ev.transactionVerified===true;
  const age=window.CVIdentity?.ageHours?.(ev.at)??Infinity,recencyDays=age/24;
  const recentEnough=Number.isFinite(recencyDays)&&recencyDays<=120;
  const verified=sourceOk&&identityOk&&languageOk&&conditionOk&&transactionOk&&prices.length>0&&recentEnough;
  return {verified,prices,median,last:prices.length?prices[prices.length-1]:0,sample:prices.length,source,url,language:lang,condition,
-  identityOk,languageOk,conditionOk,transactionOk,at:ev.at||"",age,recencyDays,recentEnough};
+  identityOk,languageOk,conditionOk,transactionOk,offerLanguage:offerLang,saleLanguage:saleLang,offerCondition,saleCondition,at:ev.at||"",age,recencyDays,recentEnough};
 }
 function exitEvidence(x){
  const r=refs(x),ev=x.marketEvidence||{},idNow=window.CVIdentity?.key?.(x)||"",idOk=!!(ev.identityKey&&idNow&&ev.identityKey===idNow);
