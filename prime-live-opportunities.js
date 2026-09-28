@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const now="2026-09-27T22:25:00+02:00";
+const now="2026-09-28T10:06:00+02:00";
 function seal(x){return window.CVIdentity?.key?.(x)||""}
 function setEvidence(id,data){
  const x=(state.manualOpportunities||[]).find(o=>o.id===id);if(!x)return;
@@ -18,6 +18,13 @@ function setEvidence(id,data){
  if(data.approval)x.approval=data.approval;
  if(data.status)x.status=data.status;
 }
+setEvidence("lorcana-pongo-determined-father-223-it-20260928",{
+ source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_223",currentExitEUR:271.91,currentQty:5,available:5,
+ depthPrices:[137.95,149,170,179,245,247,271.91],
+ offer:{price:137.95,seller:"Cardmarket · oferta italiana más barata",url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Pongo-Determined-Father-V2",offerLanguage:"Italian",languageVerified:true,condition:"NM",variant:"Enchanted · Holofoil · Italian"},
+ approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · ITALIAN NM · 1 UNIDAD",
+ note:"Entrada pública Cardmarket italiana NM 137,95 €. Mediana italiana 271,91 € con 5+ ofertas. Salida económica aplica recorte PRIME 15%; no equivale a venta cerrada."
+});
 setEvidence("lorcana-belle-accomplished-mystic-226-it-20260927",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_226",currentExitEUR:245,currentQty:7,available:65,
  depthPrices:[150,240,240,240,244.99,245,249.95],
