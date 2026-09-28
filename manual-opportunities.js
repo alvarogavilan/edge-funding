@@ -392,6 +392,23 @@ if(!state.manualOpportunities.some(x=>x.id===caravanId)){
 if(!state.manualOpportunities.some(x=>x.id===id)){
  state.manualOpportunities.push({id,universe:"lorcana",name:"Donald Duck - Pie Slinger (V.2)",set:"Shimmering Skies",number:"214/204",variant:"Enchanted · V.2 · Foil",condition:"NM",shop:"Cardmarket",seller:"BKJ38",price:44.90,trend:116.36,avg30:76.69,avg7:101.80,avg1:138.18,available:47,url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Shimmering-Skies/Donald-Duck-Pie-Slinger-V2",checkedAt:"2026-09-27T14:20:00+02:00",expiresAt:"2026-09-28T14:20:00+02:00",status:"SECUNDARIA · PROFUNDIDAD NM CONFIRMADA",depthPrices:[44.9,45,45,45,49,50,50],depthNote:"Varias NM consecutivas entre 44,90 y 50 €; no depende de una sola oferta."});save();
 }
+
+/* V94.5 · normalización FINAL después de crear todos los seeds.
+   Evita que una instalación limpia regenere BUY antiguos antes de los bloqueos. */
+for(const [id,approval,status,flags] of [
+ [gyaradosBuyId,"WATCH","YA EN MI COLECCIÓN · NO REPETIR",{publicFloorVerified:false,ownedDuplicateBlocked:true}],
+ [belleMysticId,"WATCH","WATCH · ROI NETO < 35%",{publicFloorVerified:false,netEconomicsBlocked:true}],
+ [elsaId,"WATCH","WATCH · ROI NETO < 35%",{publicFloorVerified:false,netEconomicsBlocked:true}],
+ [scroogeId,"WATCH","WATCH · MARGEN NETO < 40 €",{publicFloorVerified:false,netEconomicsBlocked:true}],
+ [winnieId,"WATCH","NO COMPRAR AHORA · SALIDA INSUFICIENTEMENTE SEGURA",{publicFloorVerified:false}],
+ [pongoId,"WATCH","WATCH · VENDEDOR EXACTO PENDIENTE",{publicFloorVerified:false,exactSellerPending:true}],
+ [arielId,"WATCH","WATCH PRIME · BUEN PRECIO, MARGEN < 40 €",{publicFloorVerified:false}]
+]){
+ const x=state.manualOpportunities.find(o=>o.id===id);
+ if(x){x.approval=approval;x.status=status;Object.assign(x,flags);}
+}
+state.finalOpportunityNormalizationV945=true;save();
+
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1);
  const refs=[trend,avg30,avg7,avg1].filter(v=>v>0);
