@@ -13,6 +13,16 @@ function setEvidence(id,data){
  x.evidenceCheckedAt=at;x.checkedAt=at;x.expiresAt=expires;
  x.sameMarketComparableVerified=true;
  x.exitEvidenceVerified=true;
+ x.activeAskVerified=true;
+ if(data.closedSaleVerified===true){
+  x.closedSaleVerified=true;
+  x.closedSaleIdentityVerified=data.closedSaleIdentityVerified===true;
+  x.closedSaleLanguageVerified=data.closedSaleLanguageVerified===true;
+ }else{
+  x.closedSaleVerified=false;
+  x.closedSaleIdentityVerified=false;
+  x.closedSaleLanguageVerified=false;
+ }
  x.depthPrices=data.depthPrices||[];
  x.available=data.available||x.available;
  x.integrityBlocked=false;x.integrityIssues=[];
@@ -29,14 +39,14 @@ setEvidence("pokemon-gyarados-ex-xy9-089-jp-nm-20260928",{
 setEvidence("lorcana-scrooge-richest-duck-218-it-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_3_218",checkedAt:"2026-09-28T22:12:00+02:00",currentExitEUR:117.48,currentQty:8,available:8,
  depthPrices:[57.99,70,80,95,110,117.48],
- offer:{price:57.99,seller:"Oferta italiana publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Into-the-Inklands/Scrooge-McDuck-Richest-Duck-in-the-World-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",image:"https://cards.tcggraph.io/32/lor_3_218/normal.webp",lastSalePrice:95,lastSaleDate:"2026-09-23",recentSalesCount:24},
+ offer:{price:57.99,seller:"Oferta italiana publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Into-the-Inklands/Scrooge-McDuck-Richest-Duck-in-the-World-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",image:"https://cards.tcggraph.io/32/lor_3_218/normal.webp",observedSalePrice:95,observedSaleDate:"2026-09-23",observedSalesCount:24},
  approval:"WATCH",status:"WATCH · MARGEN NETO < 40 €",
  note:"Entrada 57,99 €. Con salida 117,48 €, recorte prudente, comisión y reserva logística, el margen neto queda por debajo de 40 €."
 });
 setEvidence("lorcana-elsa-spirit-winter-207-fr-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_1_207",checkedAt:"2026-09-28T13:28:00+02:00",currentExitEUR:450,currentQty:36,available:36,
  depthPrices:[279,320,350,400,425,450],
- offer:{price:279,seller:"Oferta francesa publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2",offerLanguage:"French",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Francés",image:"https://cards.tcggraph.io/12/lor_1_207/normal.webp",lastSalePrice:600,lastSaleDate:"2026-09-23",recentSalesCount:19},
+ offer:{price:279,seller:"Oferta francesa publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2",offerLanguage:"French",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Francés",image:"https://cards.tcggraph.io/12/lor_1_207/normal.webp",observedSalePrice:600,observedSaleDate:"2026-09-23",observedSalesCount:19},
  approval:"WATCH",status:"WATCH · ROI NETO < 35%",
  note:"Entrada 279 €. Con salida 450 €, recorte prudente, comisión y reserva logística, el ROI neto queda por debajo del 35%."
 });
@@ -50,7 +60,7 @@ setEvidence("lorcana-winnie-hunny-wizard-227-de-20260928",{
 setEvidence("lorcana-pongo-determined-father-223-it-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_223",currentExitEUR:271.91,currentQty:5,available:5,
  depthPrices:[137.95,149,170,179,245,247,271.91],
- offer:{price:137.95,seller:"Oferta italiana publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Fabled/Pongo-Determined-Father-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",image:"https://cards.tcggraph.io/92/lor_9_223/normal.webp",lastSalePrice:245,lastSaleDate:"2026-09-05",recentSalesCount:17},
+ offer:{price:137.95,seller:"Oferta italiana publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Fabled/Pongo-Determined-Father-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",image:"https://cards.tcggraph.io/92/lor_9_223/normal.webp",observedSalePrice:245,observedSaleDate:"2026-09-05",observedSalesCount:17},
  checkedAt:"2026-09-28T23:21:00+02:00",
  approval:"WATCH",status:"WATCH · VENDEDOR EXACTO PENDIENTE",
  note:"Italiano NM 137,95 € y mediana italiana 271,91 € verificados de nuevo. La economía neta supera el filtro, pero la fuente pública no identifica el vendedor concreto; no se eleva a Compra ya."
@@ -58,7 +68,7 @@ setEvidence("lorcana-pongo-determined-father-223-it-20260928",{
 setEvidence("lorcana-belle-accomplished-mystic-226-it-20260927",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_226",currentExitEUR:245,currentQty:7,available:65,
  depthPrices:[150,240,240,240,244.99,245,249.95],
- offer:{price:150,seller:"Retfird",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Fabled/Belle-Accomplished-Mystic-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",lastSalePrice:230,lastSaleDate:"2026-09-18",recentSalesCount:16,
+ offer:{price:150,seller:"Retfird",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Fabled/Belle-Accomplished-Mystic-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",observedSalePrice:230,observedSaleDate:"2026-09-18",observedSalesCount:16,
  image:"https://cards.lorcast.io/card/digital/large/crd_c51b6a26015b45f298d1664787f37234.avif?1755541561="},
  checkedAt:"2026-09-28T23:21:00+02:00",
  approval:"WATCH",status:"WATCH · ROI NETO < 35%",
