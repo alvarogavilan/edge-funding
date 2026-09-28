@@ -54,7 +54,7 @@ async function candidateRows(){
  for(const x of (state.marketScan||[]))out.push(x);
  try{const all=await window.CVAllMarketSignals?.();for(const x of (all||[]))out.push(x)}catch{}
  const seen=new Set();
- return out.filter(x=>x?.name&&x?.set&&x?.number).filter(x=>{
+ return out.filter(x=>x?.name&&x?.set).filter(x=>{
   const k=[x.universe,norm(x.name),norm(x.set),numKey(x.number)].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
  }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||(eur>=20&&eur<=300)})
@@ -124,7 +124,7 @@ function discoverExpansionDislocations(expansionProducts,bps,universe){
   if(!(median>0))continue;
   const gap=(median-entry.price)/median*100;
   if(gap<35||median-entry.price<40)continue;
-  const fp=entry.bp.fixed_properties||{},number=fp.collector_number||fp.pokemon_number||fp.lorcana_number||fp.number||"";
+  const ph=entry.prod.properties_hash||{},number=ph.collector_number||ph.pokemon_number||ph.lorcana_number||ph.number||"";
   out.push({universe,name:entry.bp.name||"",set:"",number:String(number||""),blueprintId:entry.bp.id,language:entry.lang,condition:entry.condition,
    variant:[entry.bp.version||"",entry.finish].filter(Boolean).join(" · "),price:entry.price,medianSameMarket:Math.round(median*100)/100,gapPct:Math.round(gap*10)/10,
    seller:entry.prod.user?.username||"",url:"https://www.cardtrader.com/cards/"+entry.bp.id,image:entry.bp.image_url||entry.bp.image?.url||"",offers:rows.length,
@@ -144,7 +144,7 @@ async function scan(){
  if(busy||!token())return {ok:false,reason:"no-token"};
  busy=true;
  try{
-  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],discovered=[],marketCache=new Map(),blueprintCacheByExp=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,dislocations:0,pokemon:0,lorcana:0};
+  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],discovered=[],marketCache=new Map(),blueprintCacheByExp=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,ambiguousBlueprint:0,withOffers:0,languageDepth:0,economicPass:0,dislocations:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
    const setNorm=norm(c.set);
@@ -152,14 +152,21 @@ async function scan(){
    if(exps.length!==1)continue;
    diag.expansionExact++;
    const bps=await blueprintsFor(exps[0]);blueprintCacheByExp.set(exps[0].id,bps);
-   const nk=numKey(c.number),nn=norm(String(c.name).replace(/ · Foil$/i,""));
-   const exact=bps.filter(b=>{
-    const fp=b.fixed_properties||{},bn=numKey(fp.collector_number||fp.pokemon_number||fp.lorcana_number||fp.number||"");
-    const nameOk=norm(b.name)===nn||norm([b.name,b.version].filter(Boolean).join(" "))===nn;
-    const numOk=!nk||bn===nk;
-    return nameOk&&numOk;
-   });
-   if(exact.length!==1)continue;
+   const baseName=norm(String(c.name).replace(/ · Foil$/i,"").replace(/ · [^·]+$/,""));
+   const tcgId=Number(c.tcgplayer)||0;
+   let exact=tcgId?bps.filter(b=>Number(b.tcg_player_id)===tcgId):[];
+   if(!exact.length){
+    exact=bps.filter(b=>{
+     const bn=norm(b.name),bv=norm(b.version||""),full=norm([b.name,b.version].filter(Boolean).join(" "));
+     const nameOk=bn===baseName||full===norm(String(c.name).replace(/ · Foil$/i,""));
+     const finish=norm(c.finish||"");
+     const versionOk=!finish||!bv||bv.includes(finish)||finish.includes(bv);
+     return nameOk&&versionOk;
+    });
+   }
+   /* Dentro de una expansión, un único nombre exacto ya identifica el Blueprint.
+      CardTrader no expone collector_number en Blueprint; no se descarta por ese campo inexistente. */
+   if(exact.length!==1){diag.ambiguousBlueprint++;continue}
    diag.blueprintExact++;
    diag[c.universe==="lorcana"?"lorcana":"pokemon"]++;
    const bp=exact[0];
