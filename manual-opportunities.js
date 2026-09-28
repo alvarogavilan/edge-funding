@@ -106,6 +106,19 @@ const espeonId="pokemon-espeon-v-eevee-heroes-081-20260927";
 const arielId="lorcana-ariel-sonic-warrior-220-it-20260927";
 const belleMysticId="lorcana-belle-accomplished-mystic-226-it-20260927";
 const beastGraciousId="lorcana-beast-gracious-prince-224-20260927";
+const pongoId="lorcana-pongo-determined-father-223-it-20260928";
+if(!state.manualOpportunities.some(x=>x.id===pongoId)){
+ state.manualOpportunities.push({
+  id:pongoId,universe:"lorcana",name:"Pongo - Determined Father",set:"Fabled",number:"223/242",
+  variant:"Enchanted · Holofoil · Italian",condition:"NM",shop:"Cardmarket",seller:"Cardmarket · oferta italiana más barata",
+  price:137.95,trend:194.89,avg30:147.66,avg7:166.87,avg1:0,available:5,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Pongo-Determined-Father-V2",
+  checkedAt:"2026-09-28T10:06:00+02:00",expiresAt:"2026-09-29T10:06:00+02:00",
+  status:"COMPRAR AHORA · ITALIAN NM · 1 UNIDAD",approval:"BUY-ONE",
+  offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,
+  note:"Cardmarket/TCGGraph: italiano Holofoil NM desde 137,95 €, mediana italiana 271,91 €, 5+ ofertas. Compra pública por suelo de mercado; el vendedor exacto se selecciona al abrir la ficha."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===beastGraciousId)){
  state.manualOpportunities.push({
   id:beastGraciousId,universe:"lorcana",name:"Beast - Gracious Prince",set:"Fabled",number:"224/242",
