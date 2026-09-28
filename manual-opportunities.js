@@ -465,6 +465,7 @@ state.cardmarketUiLanguageGuardV947=true;save();
    url:"https://pokevalue.de/pokemon/play-pokemon-prize-pack-series-two/folipurba-vmax/008-188",
    pricesEUR:[140],
    language:"English",condition:"NM",
+   transactionType:"closed-sale",transactionVerified:true,
    identityVerified:true,languageVerified:true,conditionVerified:true,
    note:"Venta Cardmarket cerrada mostrada por PokeValue: EN · NM · 140 €. Es evidencia de salida real, NO un anuncio activo."
   };
@@ -494,6 +495,18 @@ state.cardmarketUiLanguageGuardV947=true;save();
  }
 }
 state.verifiedClosedSalesV949=true;save();
+for(const x of state.manualOpportunities){
+ const sold=window.CVPrimeMarket?.closedSaleEvidence?.(x);
+ if(sold?.verified===true){
+  x.salesFirstPriority=true;
+  x.salesFirstScore=Math.min(100,40+sold.sample*15+(sold.recencyDays<=30?20:sold.recencyDays<=90?10:0));
+  x.salesEvidenceClass=sold.sample>=3?"VENTAS REALES · MUESTRA FUERTE":sold.sample===2?"VENTAS REALES · 2 COMPS":"VENTA REAL · 1 COMP";
+ }else{
+  x.salesFirstPriority=false;
+  x.salesFirstScore=0;
+ }
+}
+state.salesFirstPipelineV950=true;save();
 
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1);
