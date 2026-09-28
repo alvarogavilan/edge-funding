@@ -149,13 +149,19 @@ async function scan(){
   await bootstrap();const rows=await candidateRows(),found=[],arbs=[],discovered=[],marketCache=new Map(),blueprintCacheByExp=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,ambiguousBlueprint:0,withOffers:0,languageDepth:0,economicPass:0,dislocations:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
-   const setNorm=norm(c.canonicalSet||c.set);
-   const exps=(cache.expansions||[]).filter(e=>e.game_id===gid&&(norm(e.name)===setNorm||norm(e.name).includes(setNorm)||setNorm.includes(norm(e.name))));
+   const setNorm=norm(c.canonicalSet||c.set),setCode=norm(c.setId||"");
+   const exps=(cache.expansions||[]).filter(e=>{
+    if(e.game_id!==gid)return false;
+    const en=norm(e.name),ec=norm(e.code||"");
+    return (!!setCode&&ec===setCode)||en===setNorm||(setNorm&&en.includes(setNorm))||(en&&setNorm.includes(en));
+   });
    if(exps.length!==1)continue;
    diag.expansionExact++;
    const bps=await blueprintsFor(exps[0]);blueprintCacheByExp.set(exps[0].id,bps);
+   let expansionProducts;try{expansionProducts=await marketplaceForExpansion(exps[0],marketCache)}catch(e){if(String(e.message).includes("429")){await sleep(1100);continue}throw e}
+   diag.uniqueExpansions=marketCache.size;
    const baseName=norm(String(c.canonicalName||c.name).replace(/ · Foil$/i,"").replace(/ · [^·]+$/,""));
-   const tcgId=Number(c.tcgplayer)||0;
+   const tcgId=Number(c.tcgplayer)||0,nk=numKey(c.number);
    let exact=tcgId?bps.filter(b=>Number(b.tcg_player_id)===tcgId):[];
    if(!exact.length){
     exact=bps.filter(b=>{
@@ -166,20 +172,28 @@ async function scan(){
      return nameOk&&versionOk;
     });
    }
-   /* Dentro de una expansión, un único nombre exacto ya identifica el Blueprint.
-      CardTrader no expone collector_number en Blueprint; no se descarta por ese campo inexistente. */
+   /* Fallback Pokémon internacional: el número está en properties_hash del producto real,
+      aunque no exista en Blueprint. Esto rescata JP/promos con nombre localizado. */
+   if(exact.length!==1&&nk){
+    const want=String(c.languageCode||c.language||"").toLowerCase(),aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",korean:"ko",jp:"ja"};
+    const wk=aliases[want]||want,ids=new Set();
+    for(const prod of expansionProducts||[]){
+     const ph=prod.properties_hash||{},pn=numKey(ph.collector_number||ph.pokemon_number||ph.number||"");
+     const rawLang=Object.entries(ph).find(([k])=>/language$/i.test(k))?.[1]||"",got=String(rawLang).toLowerCase(),gk=aliases[got]||got;
+     if(pn===nk&&(!wk||!gk||wk===gk))ids.add(Number(prod.blueprint_id));
+    }
+    if(ids.size===1)exact=bps.filter(b=>ids.has(Number(b.id)));
+   }
    if(exact.length!==1){diag.ambiguousBlueprint++;continue}
    diag.blueprintExact++;
    diag[c.universe==="lorcana"?"lorcana":"pokemon"]++;
    const bp=exact[0];
-   let expansionProducts;try{expansionProducts=await marketplaceForExpansion(exps[0],marketCache)}catch(e){if(String(e.message).includes("429")){await sleep(1100);continue}throw e}
-   diag.uniqueExpansions=marketCache.size;
    const products=(expansionProducts||[]).filter(p=>Number(p.blueprint_id)===Number(bp.id));
    const local=[];
    for(const p of products){
      const o=parseOffer(p,bp,c);if(!o||!/near mint|mint/i.test(o.condition)||p.graded)continue;
      const want=String(c.languageCode||c.language||"").toLowerCase(),got=String(o.language||"").toLowerCase();
-     const aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",jp:"ja"};
+     const aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",korean:"ko",portuguese:"pt",dutch:"nl",polish:"pl",russian:"ru",jp:"ja",kr:"ko","zh-tw":"zh-tw","zh-cn":"zh-cn"};
      const wk=aliases[want]||want,gk=aliases[got]||got;
      if(wk&&gk&&wk!==gk)continue;
      found.push(o);local.push(o);
