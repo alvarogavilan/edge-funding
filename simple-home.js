@@ -83,7 +83,9 @@ function publicVerifiedBuys(){
    language:x.offerLanguage||x.language||"",description:[x.variant,x.condition,N(x.price)>=500?"Capital alto":""].filter(Boolean).join(" · "),
    exit:N(q.econ?.exit),edge:N(q.econ?.edge),roi:N(q.econ?.roi),exitKind:q.econ?.kind||"active-exit-ask",
    checkedAt:x.evidenceCheckedAt||x.checkedAt||"",units:x.approval==="BUY-SCALE"?Math.max(1,N(x.recommendedQty)||1):1,
-   lastSalePrice:N(x.lastSalePrice),lastSaleDate:x.lastSaleDate||"",sameLanguageOffers:N(x.marketEvidence?.currentQty||x.available)};
+   lastSalePrice:(x.closedSaleVerified===true&&x.closedSaleIdentityVerified===true&&x.closedSaleLanguageVerified===true)?N(x.lastSalePrice):0,
+   lastSaleDate:(x.closedSaleVerified===true&&x.closedSaleIdentityVerified===true&&x.closedSaleLanguageVerified===true)?(x.lastSaleDate||""):"",
+   sameLanguageOffers:N(x.marketEvidence?.currentQty||x.available)};
  }).filter(Boolean);
 }
 function euBuys(){
@@ -170,9 +172,9 @@ function card(r,i){
     '<div class="primeBuySeller"><span>Vendedor / origen</span><b>'+E(sellerES(r.seller))+'</b><small>'+E(sourceES(r.source))+'</small></div>'+
    '</div>'+
   '</div>'+
-  '<div class="primeBuyEconomics"><span>Salida neta prudente '+EUR(r.exit)+'</span><span>Margen aprox. +'+EUR(r.edge)+' · Rentabilidad '+r.roi.toFixed(1)+'%</span></div>'+
-  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida prudente: menor entre mercado activo del mismo idioma y venta realizada reciente":r.exitKind==="cross-market-net"?"Salida conservadora neta cruzando mercados y profundidad del mismo idioma":"Salida respaldada por ventas verificadas")+(r.checkedAt?" · Revisado "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
-  ((r.lastSalePrice||r.sameLanguageOffers)?'<div class="primeBuyFacts">'+(r.lastSalePrice?'<span>Última venta observada <b>'+EUR(r.lastSalePrice)+'</b>'+(r.lastSaleDate?' · '+new Date(r.lastSaleDate+"T12:00:00").toLocaleDateString("es-ES"):'')+'</span>':'')+(r.sameLanguageOffers?'<span>Ofertas mismo idioma <b>'+r.sameLanguageOffers+'+</b></span>':'')+'</div>':'')+
+  '<div class="primeBuyEconomics"><span>'+(String(r.exitKind||"")==="active-exit-ask"?"Salida neta estimada por OFERTAS ACTIVAS ":"Salida neta basada en VENTAS CERRADAS ")+EUR(r.exit)+'</span><span>Margen aprox. +'+EUR(r.edge)+' · Rentabilidad '+r.roi.toFixed(1)+'%</span></div>'+
+  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"ESTIMACIÓN: basada en ofertas activas comparables; NO es una venta realizada":r.exitKind==="cross-market-net"?"Salida conservadora neta cruzando mercados; verificar ventas cerradas antes de comprar":"Salida respaldada por VENTAS CERRADAS verificadas")+(r.checkedAt?" · Revisado "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
+  ((r.lastSalePrice||r.sameLanguageOffers)?'<div class="primeBuyFacts">'+(r.lastSalePrice?'<span>Última VENTA CERRADA verificada <b>'+EUR(r.lastSalePrice)+'</b>'+(r.lastSaleDate?' · '+new Date(r.lastSaleDate+"T12:00:00").toLocaleDateString("es-ES"):'')+'</span>':'')+(r.sameLanguageOffers?'<span>Ofertas mismo idioma <b>'+r.sameLanguageOffers+'+</b></span>':'')+'</div>':'')+
   (r.url?'<a class="primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+E((/cardmarket/i.test(r.url)?"COMPRAR EN CARDMARKET":"COMPRAR")+' · '+EUR(r.price))+'</a>':'<button class="primeBuyLink" disabled>SIN ENLACE DE COMPRA</button>')+
   (r.units>1?'<small class="primeBuyUnits">Máximo sugerido: '+r.units+' unidades por liquidez.</small>':'')+
  '</article>';
