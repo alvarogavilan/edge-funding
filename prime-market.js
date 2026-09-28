@@ -10,23 +10,36 @@ function exactOffer(x){
  return !!(N(x.price)>0&&sellerSpecific&&/^https?:\/\//i.test(String(x.url||""))&&
   String(x.variant||"").trim()&&String(x.condition||"").trim()&&lang&&!/pendiente|unknown|desconoc/i.test(lang)&&x.languageVerified===true);
 }
+function closedSaleEvidence(x){
+ const ev=x.closedSaleEvidence||{};
+ const prices=(Array.isArray(ev.pricesEUR)?ev.pricesEUR:[]).map(N).filter(v=>v>0).sort((a,b)=>a-b);
+ const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:(prices[prices.length/2-1]+prices[prices.length/2])/2):0;
+ const source=String(ev.source||"").trim(),url=String(ev.url||"").trim(),lang=String(ev.language||"").trim(),condition=String(ev.condition||"").trim();
+ const sourceOk=!!source&&/^https?:\/\//i.test(url);
+ const identityOk=ev.identityVerified===true;
+ const languageOk=ev.languageVerified===true&&!!lang;
+ const conditionOk=ev.conditionVerified===true&&!!condition;
+ const verified=sourceOk&&identityOk&&languageOk&&conditionOk&&prices.length>0;
+ return {verified,prices,median,last:prices.length?prices[prices.length-1]:0,sample:prices.length,source,url,language:lang,condition,
+  identityOk,languageOk,conditionOk,at:ev.at||""};
+}
 function exitEvidence(x){
  const r=refs(x),ev=x.marketEvidence||{},idNow=window.CVIdentity?.key?.(x)||"",idOk=!!(ev.identityKey&&idNow&&ev.identityKey===idNow);
  const age=window.CVIdentity?.ageHours?.(x.evidenceCheckedAt||ev.at)??Infinity,fresh=age<=24;
  const sameMarket=x.sameMarketComparableVerified===true&&idOk;
- const currentExit=N(ev.currentExitEUR);
- const soldVerified=x.closedSaleVerified===true||ev.closedSaleVerified===true;
- const soldSameIdentity=soldVerified&&(x.closedSaleIdentityVerified===true||ev.closedSaleIdentityVerified===true);
- const soldSameLanguage=soldVerified&&(x.closedSaleLanguageVerified===true||ev.closedSaleLanguageVerified===true);
- const soldUsable=soldVerified&&soldSameIdentity&&soldSameLanguage;
- const sales=soldUsable?N(x.sales30||x.recentSalesCount||ev.sales30):0;
- const lastSale=soldUsable?N(x.lastSalePrice||ev.lastSaleEUR):0;
- const soldMedian=soldUsable?N(x.soldMedianEUR||ev.soldMedianEUR):0;
- const soldSample=soldUsable?N(x.soldSample||ev.soldSample):0;
+ const currentExit=N(ev.currentExitEUR),closed=closedSaleEvidence(x);
+ const soldVerified=closed.verified||(x.closedSaleVerified===true||ev.closedSaleVerified===true);
+ const soldSameIdentity=closed.verified||(soldVerified&&(x.closedSaleIdentityVerified===true||ev.closedSaleIdentityVerified===true));
+ const soldSameLanguage=closed.verified||(soldVerified&&(x.closedSaleLanguageVerified===true||ev.closedSaleLanguageVerified===true));
+ const soldUsable=closed.verified||(soldVerified&&soldSameIdentity&&soldSameLanguage);
+ const sales=closed.verified?closed.sample:(soldUsable?N(x.sales30||x.recentSalesCount||ev.sales30):0);
+ const lastSale=closed.verified?closed.last:(soldUsable?N(x.lastSalePrice||ev.lastSaleEUR):0);
+ const soldMedian=closed.verified?closed.median:(soldUsable?N(x.soldMedianEUR||ev.soldMedianEUR):0);
+ const soldSample=closed.verified?closed.sample:(soldUsable?N(x.soldSample||ev.soldSample):0);
  const askVerified=x.activeAskVerified===true||ev.activeAskVerified===true||currentExit>0;
  const verified=soldUsable||askVerified;
  return {ok:sameMarket&&verified&&fresh,sameMarket,sales,lastSale,soldMedian,soldSample,currentExit,
-  refs:r.length,verified,idOk,fresh,age,soldVerified,soldSameIdentity,soldSameLanguage,soldUsable,askVerified};
+  refs:r.length,verified,idOk,fresh,age,soldVerified,soldSameIdentity,soldSameLanguage,soldUsable,askVerified,closed};
 }
 function absorption(x){
  const sold=x.sales30==null?null:N(x.sales30),qty=x.marketEvidence?.currentQty??x.available??null;
@@ -157,7 +170,7 @@ function render(){
   }).join("")+'</details>';
 }
 function run(){harden();render();try{window.renderOpportunityEngine?.()}catch{}try{window.CVTodaySimple?.render?.()}catch{}try{window.CVReinvestmentCommittee?.render?.()}catch{}try{window.CVFinalOps?.render?.()}catch{}}
-window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,depth,consistency,liquidityBand,evidenceConfidence,absorption};
+window.CVPrimeMarket={run,quality,exactOffer,exitEvidence,closedSaleEvidence,depth,consistency,liquidityBand,evidenceConfidence,absorption};
 setTimeout(run,100);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)run()});
 })();
