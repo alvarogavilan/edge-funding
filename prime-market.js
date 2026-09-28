@@ -14,10 +14,19 @@ function exitEvidence(x){
  const r=refs(x),ev=x.marketEvidence||{},idNow=window.CVIdentity?.key?.(x)||"",idOk=!!(ev.identityKey&&idNow&&ev.identityKey===idNow);
  const age=window.CVIdentity?.ageHours?.(x.evidenceCheckedAt||ev.at)??Infinity,fresh=age<=24;
  const sameMarket=x.sameMarketComparableVerified===true&&idOk;
- const sales=N(x.sales30||x.recentSalesCount),lastSale=N(x.lastSalePrice||ev.lastSaleEUR),currentExit=N(ev.currentExitEUR);
- const soldMedian=N(x.soldMedianEUR||ev.soldMedianEUR),soldSample=N(x.soldSample||ev.soldSample);
- const verified=x.exitEvidenceVerified===true||sales>0||lastSale>0||soldMedian>0||currentExit>0;
- return {ok:sameMarket&&verified&&fresh,sameMarket,sales,lastSale,soldMedian,soldSample,currentExit,refs:r.length,verified,idOk,fresh,age};
+ const currentExit=N(ev.currentExitEUR);
+ const soldVerified=x.closedSaleVerified===true||ev.closedSaleVerified===true;
+ const soldSameIdentity=soldVerified&&(x.closedSaleIdentityVerified===true||ev.closedSaleIdentityVerified===true);
+ const soldSameLanguage=soldVerified&&(x.closedSaleLanguageVerified===true||ev.closedSaleLanguageVerified===true);
+ const soldUsable=soldVerified&&soldSameIdentity&&soldSameLanguage;
+ const sales=soldUsable?N(x.sales30||x.recentSalesCount||ev.sales30):0;
+ const lastSale=soldUsable?N(x.lastSalePrice||ev.lastSaleEUR):0;
+ const soldMedian=soldUsable?N(x.soldMedianEUR||ev.soldMedianEUR):0;
+ const soldSample=soldUsable?N(x.soldSample||ev.soldSample):0;
+ const askVerified=x.activeAskVerified===true||ev.activeAskVerified===true||currentExit>0;
+ const verified=soldUsable||askVerified;
+ return {ok:sameMarket&&verified&&fresh,sameMarket,sales,lastSale,soldMedian,soldSample,currentExit,
+  refs:r.length,verified,idOk,fresh,age,soldVerified,soldSameIdentity,soldSameLanguage,soldUsable,askVerified};
 }
 function absorption(x){
  const sold=x.sales30==null?null:N(x.sales30),qty=x.marketEvidence?.currentQty??x.available??null;
@@ -49,11 +58,11 @@ function consistency(x){
  return {score:Math.round(Math.max(0,100-range*140)),range};
 }
 function conservative(x){
- const ev=x.marketEvidence||{},soldMedian=N(x.soldMedianEUR||ev.soldMedianEUR),soldSample=N(x.soldSample||ev.soldSample),
-  lastSale=N(x.lastSalePrice||ev.lastSaleEUR),currentExit=N(ev.currentExitEUR);
+ const ev=x.marketEvidence||{},ee=exitEvidence(x),
+  soldMedian=ee.soldMedian,soldSample=ee.soldSample,lastSale=ee.lastSale,currentExit=N(ev.currentExitEUR);
  let gross=0,kind="none",haircut=0;
- if(soldMedian>0&&soldSample>=3){gross=soldMedian;kind="closed-sale-median";haircut=.95}
- else if(lastSale>0){gross=lastSale;kind="closed-sale-last";haircut=.90}
+ if(ee.soldUsable&&soldMedian>0&&soldSample>=3){gross=soldMedian;kind="closed-sale-median";haircut=.95}
+ else if(ee.soldUsable&&lastSale>0){gross=lastSale;kind="closed-sale-last";haircut=.90}
  else if(currentExit>0){gross=currentExit;kind="active-exit-ask";haircut=.85}
  const prudentGross=gross*haircut;
  const sellFee=prudentGross*.05;
@@ -77,6 +86,7 @@ function quality(x){
   ["Oferta exacta",ex],
   ["Comparable mismo idioma/mercado",ee.sameMarket],
   ["Evidencia de salida",ee.ok],
+  ["Venta realizada verificada · misma identidad/idioma",ee.soldUsable],
   ["Identidad evidencia intacta",ee.idOk],
   ["Evidencia ≤24h",ee.fresh],
   ["Salida económica basada en evidencia",econ.kind!=="none"],
@@ -121,13 +131,13 @@ function render(){
  const exact=audited.filter(z=>z.q.ex).length,same=audited.filter(z=>z.q.ee.sameMarket).length;
  const deep=audited.filter(z=>z.q.d.units>=2).length,anoms=audited.filter(z=>z.q.c.range!=null&&z.q.c.range>.45).length;
  const best=audited.filter(z=>z.q.passed===z.q.total).sort((a,b)=>b.q.econ.edge-a.q.econ.edge).slice(0,5);
- const soldEvidence=audited.filter(z=>z.q.ee.verified).length;
+ const soldEvidence=audited.filter(z=>z.q.ee.soldUsable).length;
  box.innerHTML='<b>Card Vault PRIME · Calidad de mercado</b>'+
   '<div class="statsGrid">'+
    '<div><span>Ofertas auditadas</span><b>'+rows.length+'</b></div>'+
    '<div><span>Oferta exacta completa</span><b>'+exact+'</b></div>'+
    '<div><span>Comparable mismo mercado</span><b>'+same+'</b></div>'+
-   '<div><span>Salida verificada</span><b>'+soldEvidence+'</b></div>'+
+   '<div><span>Ventas realizadas verificadas</span><b>'+soldEvidence+'</b></div>'+
    '<div><span>Evidencia fresca ≤24h</span><b>'+audited.filter(z=>z.q.ee.fresh).length+'</b></div>'+
    '<div><span>Profundidad ≥2 niveles</span><b>'+deep+'</b></div>'+
    '<div><span>Anomalías de referencia</span><b>'+anoms+'</b></div>'+
@@ -141,8 +151,8 @@ function render(){
    const gap=q.d.gap==null?"sin 2º nivel":q.d.gap.toFixed(1)+"%";
    const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence,supply=q.supply,abs=q.abs;
    return '<article class="microNote"><b>'+E(x.name)+'</b> · '+E(q.label)+'<br>'+
-    'Entrada '+EUR(x.price)+' · salida neta prudente '+EUR(q.econ.exit)+' ('+E(q.econ.kind)+') · comisión '+EUR(q.econ.sellFee)+' · reserva logística '+EUR(q.econ.logisticsReserve)+' · margen '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
-    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · absorción 30d '+(abs.rate==null?'sin dato':abs.rate.toFixed(0)+'% '+abs.label)+' · stock observado '+(abs.days==null?'sin dato':abs.days.toFixed(0)+' días al ritmo 30d')+' · evidencia '+conf.label+' '+conf.score+'/100 · supply/reprint '+(supply.verified?supply.risk.toUpperCase():'SIN EVIDENCIA')+' · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
+    'Entrada '+EUR(x.price)+' · '+(q.econ.kind==="active-exit-ask"?"salida neta ESTIMADA por ofertas activas ":"salida neta basada en VENTAS CERRADAS ")+EUR(q.econ.exit)+' ('+E(q.econ.kind)+') · comisión '+EUR(q.econ.sellFee)+' · reserva logística '+EUR(q.econ.logisticsReserve)+' · margen '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
+    'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · absorción 30d '+(abs.rate==null?'sin dato':abs.rate.toFixed(0)+'% '+abs.label)+' · stock observado '+(abs.days==null?'sin dato':abs.days.toFixed(0)+' días al ritmo 30d')+' · evidencia '+conf.label+' '+conf.score+'/100 · supply/reprint '+(supply.verified?supply.risk.toUpperCase():'SIN EVIDENCIA')+' · mediana VENTAS CERRADAS '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'SIN VENTAS VERIFICADAS')+' · consistencia referencias '+cons+'<br>'+
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
 }
