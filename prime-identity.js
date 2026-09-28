@@ -15,6 +15,20 @@ function tuple(x={}){
 }
 function key(x={}){const t=tuple(x);return [t.universe,t.name,t.set,t.number,t.language,t.variant,t.condition,t.grading,t.grade].join("|")}
 function same(a,b){return !!a&&!!b&&key(a)===key(b)}
+function ownershipTuple(x={}){
+ const t=tuple(x);
+ return {universe:t.universe,name:t.name,set:t.set,number:t.number,language:t.language};
+}
+function ownershipKey(x={}){const t=ownershipTuple(x);return [t.universe,t.name,t.set,t.number,t.language].join("|")}
+function sameOwnedCard(a,b){
+ if(!a||!b)return false;
+ const x=ownershipTuple(a),y=ownershipTuple(b);
+ if(x.universe!==y.universe||x.name!==y.name)return false;
+ if(x.number&&y.number&&x.number!==y.number)return false;
+ if(x.set&&y.set&&x.set!==y.set&&!x.set.includes(y.set)&&!y.set.includes(x.set))return false;
+ if(x.language&&y.language&&x.language!==y.language)return false;
+ return !!(x.number||x.set);
+}
 function ageHours(v){const t=new Date(v||0).getTime();return Number.isFinite(t)?(Date.now()-t)/36e5:Infinity}
-window.CVIdentity={norm,tuple,key,same,ageHours};
+window.CVIdentity={norm,tuple,key,same,ownershipTuple,ownershipKey,sameOwnedCard,ageHours};
 })();
