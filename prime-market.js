@@ -19,9 +19,12 @@ function closedSaleEvidence(x){
  const identityOk=ev.identityVerified===true;
  const languageOk=ev.languageVerified===true&&!!lang;
  const conditionOk=ev.conditionVerified===true&&!!condition;
- const verified=sourceOk&&identityOk&&languageOk&&conditionOk&&prices.length>0;
+ const transactionOk=ev.transactionType==="closed-sale"||ev.transactionVerified===true;
+ const age=window.CVIdentity?.ageHours?.(ev.at)??Infinity,recencyDays=age/24;
+ const recentEnough=Number.isFinite(recencyDays)&&recencyDays<=120;
+ const verified=sourceOk&&identityOk&&languageOk&&conditionOk&&transactionOk&&prices.length>0&&recentEnough;
  return {verified,prices,median,last:prices.length?prices[prices.length-1]:0,sample:prices.length,source,url,language:lang,condition,
-  identityOk,languageOk,conditionOk,at:ev.at||""};
+  identityOk,languageOk,conditionOk,transactionOk,at:ev.at||"",age,recencyDays,recentEnough};
 }
 function exitEvidence(x){
  const r=refs(x),ev=x.marketEvidence||{},idNow=window.CVIdentity?.key?.(x)||"",idOk=!!(ev.identityKey&&idNow&&ev.identityKey===idNow);
@@ -86,7 +89,7 @@ function conservative(x){
 function evidenceConfidence(x){
  const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x);
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
- const signals=[ex,ee.sameMarket,ee.verified,ee.idOk,ee.fresh,d.units>=2,!stale,x.integrityBlocked!==true,ee.soldSample>=3||ee.sales>=3];
+ const signals=[ex,ee.sameMarket,ee.verified,ee.idOk,ee.fresh,d.units>=2,!stale,x.integrityBlocked!==true,ee.soldUsable,ee.soldSample>=2||ee.sales>=2];
  const n=signals.filter(Boolean).length;
  return {label:n>=6?"A":n>=5?"B":n>=3?"C":"NO VERIFICADA",score:Math.round(n/signals.length*100),checks:n,total:signals.length};
 }
@@ -100,6 +103,7 @@ function quality(x){
   ["Comparable mismo idioma/mercado",ee.sameMarket],
   ["Evidencia de salida",ee.ok],
   ["Venta realizada verificada · misma identidad/idioma",ee.soldUsable],
+  ["Venta realizada reciente ≤120 días",ee.closed?.recentEnough===true],
   ["Identidad evidencia intacta",ee.idOk],
   ["Evidencia ≤24h",ee.fresh],
   ["Salida económica basada en evidencia",econ.kind!=="none"],
