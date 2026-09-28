@@ -60,7 +60,7 @@ function ownedCandidate(x){
 async function candidateRows(){
  const out=[];
  const priority=(state.manualOpportunities||[])
-  .filter(x=>x.universe==="pokemon"&&["VERIFY-LANGUAGE","WATCH"].includes(x.approval)&&Number(x.price)>=20&&x.languageMismatchRisk!==true)
+  .filter(x=>x.universe==="pokemon"&&["VERIFY-LANGUAGE","WATCH"].includes(x.approval)&&Number(x.price)>=20&&x.languageMismatchRisk!==true&&x.resolvedMarketNoEdge!==true)
   .map(x=>({...x,score:/leafeon-vmax-pps2|giratina|mew-ex-sv2a205/.test(String(x.id||""))?180:120,source:"Card Vault · investigación prioritaria"}));
  out.push(...priority);
  for(const u of ["pokemon","lorcana"]){
