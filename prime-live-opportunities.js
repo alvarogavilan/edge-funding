@@ -21,9 +21,9 @@ function setEvidence(id,data){
 setEvidence("pokemon-gyarados-ex-xy9-089-jp-nm-20260928",{
  source:"Cardmarket",sourceUrl:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Rage-of-the-Broken-Heavens/Gyarados-EX-V3",currentExitEUR:274.17,currentQty:20,available:20,
  depthPrices:[150,230,250,649,699.90,700],
- offer:{price:150,seller:"AngelD4rk",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Rage-of-the-Broken-Heavens/Gyarados-EX-V3",offerLanguage:"Japanese",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Full Art secreta · Japonés",image:"https://cdn.pooka.app/card/ja-xy9-89.png"},
- approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · JAPONÉS NM · 1 UNIDAD",
- note:"Oferta exacta pública Cardmarket: AngelD4rk NM 150 €. Salida conservadora basada en media 30 días del mismo producto japonés (274,17 €) con recorte PRIME 15%."
+ offer:{price:150,seller:"AngelD4rk",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Rage-of-the-Broken-Heavens/Gyarados-EX-V3",offerLanguage:"Japanese",languageVerified:true,publicFloorVerified:false,condition:"NM",variant:"Full Art secreta · Japonés",image:"https://cdn.pooka.app/card/ja-xy9-89.png",ownedDuplicateBlocked:true},
+ approval:"WATCH",status:"YA EN MI COLECCIÓN · NO REPETIR",
+ note:"Oferta de mercado conservada solo como referencia. Esta identidad ya existe en Mi colección; no se aprueba otra unidad salvo autorización explícita para ampliar posición."
 });
 setEvidence("lorcana-scrooge-richest-duck-218-it-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_3_218",currentExitEUR:117.48,currentQty:8,available:8,
