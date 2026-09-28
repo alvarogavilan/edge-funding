@@ -54,8 +54,11 @@ function conservative(x){
  if(soldMedian>0&&soldSample>=3){gross=soldMedian;kind="closed-sale-median";haircut=.95}
  else if(lastSale>0){gross=lastSale;kind="closed-sale-last";haircut=.90}
  else if(currentExit>0){gross=currentExit;kind="active-exit-ask";haircut=.85}
- const exit=gross*haircut,edge=exit-N(x.price),roi=N(x.price)>0?edge/N(x.price)*100:0;
- return {gross,exit,edge,roi,kind,haircut,soldMedian,soldSample,lastSale,currentExit};
+ const prudentGross=gross*haircut;
+ const sellFee=prudentGross*.05;
+ const logisticsReserve=3;
+ const exit=Math.max(0,prudentGross-sellFee-logisticsReserve),edge=exit-N(x.price),roi=N(x.price)>0?edge/N(x.price)*100:0;
+ return {gross,prudentGross,sellFee,logisticsReserve,exit,edge,roi,kind,haircut,soldMedian,soldSample,lastSale,currentExit};
 }
 function evidenceConfidence(x){
  const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x);
@@ -127,7 +130,7 @@ function render(){
    '<div><span>Anomalías de referencia</span><b>'+anoms+'</b></div>'+
    '<div><span>BUY tras gate PRIME</span><b>'+buy.length+'</b></div>'+
   '</div>'+
-  '<small>La caja no interviene. Un agregado de precios nunca eleva a COMPRAR. BUY admite cualquier idioma, pero exige oferta exacta, idioma/variante/condición, vendedor, URL y comparable del MISMO idioma/mercado, evidencia de salida, +40 € aprox. y ROI ≥35%.</small>'+
+  '<small>La caja no interviene. Un agregado de precios nunca eleva a COMPRAR. BUY admite cualquier idioma, pero exige oferta exacta, idioma/variante/condición, vendedor, URL y comparable del MISMO idioma/mercado, evidencia de salida, +40 € NETOS aprox. y ROI ≥35% después del recorte prudente, 5% de comisión y 3 € de reserva logística.</small>'+
   (best.length?'<div class="sectionHead"><h3>Superan el gate PRIME</h3></div>'+best.map(({x,q})=>
    '<div class="qaRow"><span>'+E(x.name)+'<small> · '+E(x.offerLanguage||x.language||"")+' · '+E(x.condition||"")+'</small></span><b>edge '+EUR(q.econ.edge)+' · '+q.econ.roi.toFixed(0)+'%</b></div>'
   ).join(""):'<div class="qaRow"><span>Compras con evidencia completa</span><b>0 · correcto si no existen</b></div>')+
@@ -135,7 +138,7 @@ function render(){
    const gap=q.d.gap==null?"sin 2º nivel":q.d.gap.toFixed(1)+"%";
    const cons=q.c.score==null?"sin muestra":q.c.score+"/100",liq=liquidityBand(x),conf=q.confidence,supply=q.supply,abs=q.abs;
    return '<article class="microNote"><b>'+E(x.name)+'</b> · '+E(q.label)+'<br>'+
-    'Entrada '+EUR(x.price)+' · salida conservadora '+EUR(q.econ.exit)+' ('+E(q.econ.kind)+') · edge '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
+    'Entrada '+EUR(x.price)+' · salida neta prudente '+EUR(q.econ.exit)+' ('+E(q.econ.kind)+') · comisión '+EUR(q.econ.sellFee)+' · reserva logística '+EUR(q.econ.logisticsReserve)+' · margen '+EUR(q.econ.edge)+' · ROI '+q.econ.roi.toFixed(1)+'%<br>'+
     'Profundidad observable: '+q.d.units+' nivel(es) · gap 1º→2º '+gap+' · liquidez verificada '+liq.label+(liq.score==null?'':' '+liq.score+'/100')+' · absorción 30d '+(abs.rate==null?'sin dato':abs.rate.toFixed(0)+'% '+abs.label)+' · stock observado '+(abs.days==null?'sin dato':abs.days.toFixed(0)+' días al ritmo 30d')+' · evidencia '+conf.label+' '+conf.score+'/100 · supply/reprint '+(supply.verified?supply.risk.toUpperCase():'SIN EVIDENCIA')+' · mediana ventas '+(q.ee.soldMedian>0?EUR(q.ee.soldMedian)+' ('+q.ee.soldSample+' comps)':'sin muestra')+' · consistencia referencias '+cons+'<br>'+
     q.checks.map(([k,ok])=>(ok?'✓ ':'✕ ')+E(k)).join(' · ')+'</article>';
   }).join("")+'</details>';
