@@ -408,6 +408,32 @@ for(const [id,approval,status,flags] of [
  if(x){x.approval=approval;x.status=status;Object.assign(x,flags);}
 }
 state.finalOpportunityNormalizationV945=true;save();
+{
+ const x=state.manualOpportunities.find(o=>o.id===leafeonPps2ResearchId);
+ if(x){
+  x.seller="Impavido";
+  x.condition="NM";
+  x.price=34.99;
+  x.depthPrices=[34.99,65,149.96,174.99,179.94];
+  x.available=3;
+  x.lastSalePrice=140;
+  x.lastSaleDate="";
+  x.soldSample=1;
+  x.soldLanguage="English";
+  x.sameMarketComparableVerified=false;
+  x.exitEvidenceVerified=false;
+  x.languageVerified=false;
+  x.offerLanguage="PENDIENTE";
+  x.publicFloorVerified=false;
+  x.approval="VERIFY-LANGUAGE";
+  x.status="PRIORIDAD MÁXIMA · SOLO FALTA IDIOMA EXACTO";
+  x.evidenceCheckedAt="2026-09-28T23:21:00+02:00";
+  x.checkedAt=x.evidenceCheckedAt;
+  x.expiresAt="2026-09-29T23:21:00+02:00";
+  x.note="Cardmarket: Impavido NM 34,99 €, siguientes ofertas NM 65 / 149,96 / 174,99 / 179,94 €. Evidencia externa: una venta NM inglesa observada a 140 €. No comparar ni aprobar hasta confirmar que la oferta de Impavido es del mismo idioma.";
+ }
+}
+state.leafeonPps2EvidenceV946=true;save();
 
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1);
