@@ -55,7 +55,7 @@ async function candidateRows(){
  try{const all=await window.CVAllMarketSignals?.();for(const x of (all||[]))out.push(x)}catch{}
  const seen=new Set();
  return out.filter(x=>x?.name&&x?.set).filter(x=>{
-  const k=[x.universe,norm(x.name),norm(x.set),numKey(x.number)].join("|");
+  const k=[x.universe,norm(x.canonicalName||x.name),norm(x.canonicalSet||x.set),numKey(x.number),norm(x.language||x.languageCode||""),norm(x.finish||"")].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
  }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||eur>=20})
  .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,320);
@@ -149,12 +149,12 @@ async function scan(){
   await bootstrap();const rows=await candidateRows(),found=[],arbs=[],discovered=[],marketCache=new Map(),blueprintCacheByExp=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,ambiguousBlueprint:0,withOffers:0,languageDepth:0,economicPass:0,dislocations:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
-   const setNorm=norm(c.set);
+   const setNorm=norm(c.canonicalSet||c.set);
    const exps=(cache.expansions||[]).filter(e=>e.game_id===gid&&(norm(e.name)===setNorm||norm(e.name).includes(setNorm)||setNorm.includes(norm(e.name))));
    if(exps.length!==1)continue;
    diag.expansionExact++;
    const bps=await blueprintsFor(exps[0]);blueprintCacheByExp.set(exps[0].id,bps);
-   const baseName=norm(String(c.name).replace(/ · Foil$/i,"").replace(/ · [^·]+$/,""));
+   const baseName=norm(String(c.canonicalName||c.name).replace(/ · Foil$/i,"").replace(/ · [^·]+$/,""));
    const tcgId=Number(c.tcgplayer)||0;
    let exact=tcgId?bps.filter(b=>Number(b.tcg_player_id)===tcgId):[];
    if(!exact.length){
@@ -176,7 +176,14 @@ async function scan(){
    diag.uniqueExpansions=marketCache.size;
    const products=(expansionProducts||[]).filter(p=>Number(p.blueprint_id)===Number(bp.id));
    const local=[];
-   for(const p of products){const o=parseOffer(p,bp,c);if(o&&/near mint|mint/i.test(o.condition)&&!p.graded){found.push(o);local.push(o)}}
+   for(const p of products){
+     const o=parseOffer(p,bp,c);if(!o||!/near mint|mint/i.test(o.condition)||p.graded)continue;
+     const want=String(c.languageCode||c.language||"").toLowerCase(),got=String(o.language||"").toLowerCase();
+     const aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",jp:"ja"};
+     const wk=aliases[want]||want,gk=aliases[got]||got;
+     if(wk&&gk&&wk!==gk)continue;
+     found.push(o);local.push(o);
+   }
    if(local.length)diag.withOffers++;
    const langs=new Map();for(const o of local){const k=norm(o.language||"");if(k)langs.set(k,(langs.get(k)||0)+1)}
    if([...langs.values()].some(n=>n>=5))diag.languageDepth++;
