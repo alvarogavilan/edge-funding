@@ -107,6 +107,19 @@ const arielId="lorcana-ariel-sonic-warrior-220-it-20260927";
 const belleMysticId="lorcana-belle-accomplished-mystic-226-it-20260927";
 const beastGraciousId="lorcana-beast-gracious-prince-224-20260927";
 const pongoId="lorcana-pongo-determined-father-223-it-20260928";
+const winnieId="lorcana-winnie-hunny-wizard-227-de-20260928";
+if(!state.manualOpportunities.some(x=>x.id===winnieId)){
+ state.manualOpportunities.push({
+  id:winnieId,universe:"lorcana",name:"Winnie the Pooh - Hunny Wizard",set:"Fabled",number:"227/242",
+  variant:"Enchanted · Holofoil · German",condition:"NM",shop:"Cardmarket",seller:"Cardmarket · mínimo alemán NM",
+  price:800.00,trend:519.00,avg30:519.00,avg7:519.00,avg1:0,available:13,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Winnie-the-Pooh-Hunny-Wizard-V2",
+  checkedAt:"2026-09-28T10:15:00+02:00",expiresAt:"2026-09-29T10:15:00+02:00",
+  status:"COMPRAR AHORA · GERMAN NM · CAPITAL ALTO",approval:"BUY-ONE",
+  offerLanguage:"German",languageVerified:true,publicFloorVerified:true,
+  note:"TCGGraph/Cardmarket: alemán Holofoil NM desde 800 €, mediana alemana 1.499 €, 13 ofertas. Ticket alto; una sola unidad."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===pongoId)){
  state.manualOpportunities.push({
   id:pongoId,universe:"lorcana",name:"Pongo - Determined Father",set:"Fabled",number:"223/242",
@@ -287,7 +300,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
