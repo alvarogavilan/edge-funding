@@ -102,18 +102,56 @@ function parseOffer(p,bp,c){
   condition,seller:p.user?.username||"",shop:"CardTrader",price,shipping:0,total:price,currency:"EUR",
   url:"https://www.cardtrader.com/cards/"+bp.id,checkedAt:new Date().toISOString(),source:"CardTrader API directa"};
 }
+function discoverExpansionDislocations(expansionProducts,bps,universe){
+ const byBp=new Map(),bpMap=new Map((bps||[]).map(b=>[Number(b.id),b]));
+ for(const prod of expansionProducts||[]){
+  if(prod?.graded)continue;
+  const bpId=Number(prod?.blueprint_id);if(!bpId)continue;
+  const bp=bpMap.get(bpId);if(!bp)continue;
+  const ph=prod.properties_hash||{},lang=Object.entries(ph).find(([k])=>/language$/i.test(k))?.[1]||"",condition=ph.condition||"";
+  const price=(prod.price?.cents||0)/100,currency=prod.price?.currency||"EUR";
+  if(currency!=="EUR"||!(price>=20&&price<=250)||!lang||!/near mint|mint/i.test(String(condition)))continue;
+  const finish=Object.entries(ph).filter(([k,v])=>/foil|reverse|holo|edition/i.test(k)&&v===true).map(([k])=>k).join(",");
+  const k=[bpId,norm(lang),norm(finish)].join("|");
+  if(!byBp.has(k))byBp.set(k,[]);
+  byBp.get(k).push({prod,bp,lang,condition,finish,price});
+ }
+ const out=[];
+ for(const rows of byBp.values()){
+  if(rows.length<5)continue;
+  rows.sort((a,b)=>a.price-b.price);
+  const entry=rows[0],median=pctMedian(rows.map(x=>x.price));
+  if(!(median>0))continue;
+  const gap=(median-entry.price)/median*100;
+  if(gap<35||median-entry.price<40)continue;
+  const fp=entry.bp.fixed_properties||{},number=fp.collector_number||fp.pokemon_number||fp.lorcana_number||fp.number||"";
+  out.push({universe,name:entry.bp.name||"",set:"",number:String(number||""),blueprintId:entry.bp.id,language:entry.lang,condition:entry.condition,
+   variant:[entry.bp.version||"",entry.finish].filter(Boolean).join(" · "),price:entry.price,medianSameMarket:Math.round(median*100)/100,gapPct:Math.round(gap*10)/10,
+   seller:entry.prod.user?.username||"",url:"https://www.cardtrader.com/cards/"+entry.bp.id,image:entry.bp.image_url||entry.bp.image?.url||"",offers:rows.length,
+   source:"CardTrader · anomalía interna",status:"discovered"});
+ }
+ return out.sort((a,b)=>(b.medianSameMarket-b.price)-(a.medianSameMarket-a.price));
+}
+function referenceForDiscovery(x,candidates){
+ const same=(candidates||[]).filter(r=>norm(r.name)===norm(x.name)&&(!x.number||numKey(r.number)===numKey(x.number)));
+ if(!same.length)return null;
+ const best=same.sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0))[0];
+ const cur=String(best.currency||"EUR").toUpperCase(),raw=Number(best.price||best.avg30||best.trend||0);
+ const eur=cur==="USD"&&cache.usdEur?raw*cache.usdEur:raw;
+ return eur>0?{row:best,eur}:null;
+}
 async function scan(){
  if(busy||!token())return {ok:false,reason:"no-token"};
  busy=true;
  try{
-  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],marketCache=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,pokemon:0,lorcana:0};
+  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],discovered=[],marketCache=new Map(),blueprintCacheByExp=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,dislocations:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
    const setNorm=norm(c.set);
    const exps=(cache.expansions||[]).filter(e=>e.game_id===gid&&(norm(e.name)===setNorm||norm(e.name).includes(setNorm)||setNorm.includes(norm(e.name))));
    if(exps.length!==1)continue;
    diag.expansionExact++;
-   const bps=await blueprintsFor(exps[0]);
+   const bps=await blueprintsFor(exps[0]);blueprintCacheByExp.set(exps[0].id,bps);
    const nk=numKey(c.number),nn=norm(String(c.name).replace(/ · Foil$/i,""));
    const exact=bps.filter(b=>{
     const fp=b.fixed_properties||{},bn=numKey(fp.collector_number||fp.pokemon_number||fp.lorcana_number||fp.number||"");
@@ -136,6 +174,32 @@ async function scan(){
    const calc=localArbitrageForCandidate(c,local);arbs.push(...calc);diag.economicPass+=calc.filter(x=>x.pass).length;
    await sleep(30);
   }
+  for(const [expId,products] of marketCache){
+   const bps=blueprintCacheByExp.get(expId)||[];
+   const exp=(cache.expansions||[]).find(e=>Number(e.id)===Number(expId));
+   if(!exp)continue;
+   const sample=rows.find(r=>{
+    const gid=gameId(r.universe==="lorcana"?"lorcana":"pokemon"),setNorm=norm(r.set);
+    return exp.game_id===gid&&(norm(exp.name)===setNorm||norm(exp.name).includes(setNorm)||setNorm.includes(norm(exp.name)));
+   });
+   const universe=sample?.universe||"pokemon";
+   const ds=discoverExpansionDislocations(products,bps,universe);
+   for(const x of ds)x.set=exp.name||sample?.set||"";
+   discovered.push(...ds);
+  }
+  const verified=[];
+  for(const x of discovered){
+   const ref=referenceForDiscovery(x,rows);if(!ref)continue;
+   const grossExit=Math.min(ref.eur,x.medianSameMarket),netExit=grossExit*.88*.95-3,edge=netExit-x.price,roi=edge/x.price*100;
+   if(edge>=40&&roi>=35&&x.gapPct>=35){
+    verified.push({product_id:"disloc:"+x.blueprintId,universe:x.universe,name:x.name,set_name:x.set||ref.row.set||"",number:x.number||ref.row.number||"",
+     image:x.image||ref.row.image||"",blueprint_id:x.blueprintId,lang:x.language,condition:x.condition,finish:x.variant,price_eur:x.price,seller:x.seller,url:x.url,
+     fetched_at:new Date().toISOString(),exit_gross:Math.round(grossExit*100)/100,exit_net:Math.round(netExit*100)/100,edge:Math.round(edge*100)/100,roi:Math.round(roi*10)/10,
+     spread:x.gapPct,pass:true,evidence_refs:4,same_language_offers:x.offers,same_language_median:x.medianSameMarket,exit_basis:"anomalía CardTrader + referencia de mercado externa"});
+   }
+  }
+  diag.dislocations=discovered.length;diag.economicPass+=verified.length;arbs.push(...verified);
+  state.cardTraderDislocations=discovered.slice(0,100);
   state.euOffers=Array.isArray(state.euOffers)?state.euOffers:[];
   state.euOffers=state.euOffers.filter(o=>!String(o.id||"").startsWith("ct-direct:")).concat(found);
   state.crossMarketArbitrageLocal=arbs.filter(x=>x.pass).sort((a,b)=>b.edge-a.edge||b.roi-a.roi);
