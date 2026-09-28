@@ -534,3 +534,8 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 .primeScannerStatus{display:flex;flex-direction:column;gap:5px;margin:0 0 14px;padding:12px 14px;border:1px solid #2a3959;border-radius:16px;background:#10192b}
 .primeScannerStatus b{font-size:14px}.primeScannerStatus span{color:#a9b5cc;font-size:12px;line-height:1.45}
 .primeScannerStatus button{margin-top:6px;min-height:42px;font-weight:900}.primeScannerStatus.warn{border-color:#6d5222}
+
+/* V92.6 · hechos visibles de Compra ya */
+.primeBuyFacts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
+.primeBuyFacts span{display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border-radius:10px;background:#f4f7fb;border:1px solid #d9e1ee;color:#39475d;font-size:11px}
+.primeBuyFacts b{color:#101828}
