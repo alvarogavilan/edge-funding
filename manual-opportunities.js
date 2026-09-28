@@ -111,6 +111,24 @@ const winnieId="lorcana-winnie-hunny-wizard-227-de-20260928";
 const elsaId="lorcana-elsa-spirit-winter-207-fr-20260928";
 const scroogeId="lorcana-scrooge-richest-duck-218-it-20260928";
 const gyaradosBuyId="pokemon-gyarados-ex-xy9-089-jp-nm-20260928";
+const glaceonResearchId="pokemon-glaceon-vmax-s6a091-research-20260928";
+const leafeonResearchId="pokemon-leafeon-vmax-s6a089-research-20260928";
+const pikazekResearchId="pokemon-pikachu-zekrom-gx-sm9101-research-20260928";
+const umbreonResearchId="pokemon-umbreon-vmax-s6a095-research-20260928";
+for(const row of [
+ {id:glaceonResearchId,name:"Glaceon VMAX",set:"Eevee Heroes",number:"091",price:105,trend:448.29,avg30:244.05,avg7:416.49,available:51,seller:"Predatoree",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Eevee-Heroes/Glaceon-VMAX-V3",note:"NM desde 105 €. Varias NM consecutivas 105–130 €. Idioma exacto de la oferta mínima no visible públicamente."},
+ {id:leafeonResearchId,name:"Leafeon VMAX",set:"Eevee Heroes",number:"089",price:110,trend:370.25,avg30:251.95,avg7:279.33,available:42,seller:"DojoTCG",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Eevee-Heroes/Leafeon-VMAX-V3",note:"NM desde 110 €. Varias NM consecutivas 110–120 €. Idioma exacto de la oferta mínima no visible públicamente."},
+ {id:pikazekResearchId,name:"Pikachu & Zekrom GX",set:"Tag Bolt",number:"101",price:199.99,trend:2385.09,avg30:613.67,avg7:1436.40,available:9,seller:"SvenVM",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Tag-Bolt/Pikachu-Zekrom-GX-V3-sm9101",note:"NM desde 199,99 €. Dispersión extrema; exige verificar idioma exacto y salida antes de comprar."},
+ {id:umbreonResearchId,name:"Umbreon VMAX",set:"Eevee Heroes",number:"095",price:769,trend:1869.65,avg30:1817.73,avg7:2305,available:44,seller:"Labilador",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Eevee-Heroes/Umbreon-VMAX-V3",note:"NM desde 769 €. Ticket alto; exige idioma exacto y ventas comparables del mismo idioma."}
+]){
+ if(!state.manualOpportunities.some(x=>x.id===row.id)){
+  state.manualOpportunities.push({...row,universe:"pokemon",variant:"Oriental · acabado exacto por validar",condition:"NM",shop:"Cardmarket",
+   checkedAt:"2026-09-28T22:12:00+02:00",expiresAt:"2026-09-29T22:12:00+02:00",
+   status:"INVESTIGACIÓN PRIORITARIA · VERIFICAR IDIOMA EXACTO",approval:"VERIFY-LANGUAGE",
+   offerLanguage:"PENDIENTE",languageCheckRequired:true,publicFloorVerified:false});
+ }
+}
+save();
 if(!state.manualOpportunities.some(x=>x.id===gyaradosBuyId)){
  state.manualOpportunities.push({
   id:gyaradosBuyId,universe:"pokemon",name:"Gyarados EX",set:"Rage of the Broken Heavens",number:"089/080",
