@@ -647,19 +647,31 @@ function tcgplayerMarket(c){
   if(!vals.length)return null;
   vals.sort((a,b)=>a.price-b.price);return vals[Math.floor(vals.length/2)];
 }
-function buildMarketSignal(c){
-  const cm=c?.pricing?.cardmarket||{},trend=num(cm.trend)||num(cm.avg30)||num(cm.avg7)||num(cm.avg),a1=num(cm.avg1),a7=num(cm.avg7),a30=num(cm.avg30),low=num(cm.low);
+function buildPokemonSignalVariant(c,lang="en",finish="normal"){
+  const cm=c?.pricing?.cardmarket||{},holo=finish==="holo";
+  const get=k=>num(cm[holo?(k+"-holo"):k]);
+  const trend=get("trend")||get("avg30")||get("avg7")||get("avg"),a1=get("avg1"),a7=get("avg7"),a30=get("avg30"),low=get("low");
   if(!trend)return null;
   const m1=a1&&a30?(a1/a30-1):0,m7=a7&&a30?(a7/a30-1):0,discount=low?clamp((trend-low)/trend,0,0.6):0;
   const vals=[a1,a7,a30,trend].filter(Boolean),mean=vals.reduce((s,n)=>s+n,0)/vals.length;
   const vol=vals.length>1?Math.sqrt(vals.reduce((s,n)=>s+Math.pow((n-mean)/mean,2),0)/vals.length):0.18;
-  const global=!!tcgplayerMarket(c),dataCount=[a1,a7,a30,low,trend].filter(Boolean).length;
+  const tp=c?.pricing?.tcgplayer||{};
+  const tpVariant=holo?(tp.holofoil||tp["1st-edition-holofoil"]||tp["unlimited-holofoil"]):(tp.normal||tp["1st-edition"]||tp.unlimited);
+  const global=!!(tpVariant&&num(tpVariant.marketPrice));
+  const dataCount=[a1,a7,a30,low,trend].filter(Boolean).length;
   const analysts={momentum:Math.round(clamp(50+(m1*.35+m7*.65)*100,0,100)),value:Math.round(clamp(discount*170,0,100)),stability:Math.round(clamp(100-vol*360,0,100)),global:global?80:45,data:Math.round(clamp(dataCount/5*100,0,100))};
-  const w=state.analystWeights||{},baseW={momentum:.30,value:.22,stability:.18,global:.12,data:.18};let denom=0,weighted=0;for(const k of Object.keys(baseW)){let wk=Number(w[k]??baseW[k]);denom+=wk;weighted+=(analysts[k]||0)*wk}const score=Math.round(weighted/Math.max(denom,.001));
-  const risk=vol<0.08?"Bajo":vol<0.18?"Medio":"Alto";
-  const scenario12=trend*(1+clamp(m7*3,-0.25,0.35));
-  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}return {id:c.id,sourceId:c.id,universe:"pokemon",name:c.name,set:c.set?.name||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tcgplayerMarket(c),score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc};
+  const w=state.analystWeights||{},baseW={momentum:.30,value:.22,stability:.18,global:.12,data:.18};let denom=0,weighted=0;for(const k of Object.keys(baseW)){let wk=Number(w[k]??baseW[k]);denom+=wk;weighted+=(analysts[k]||0)*wk}
+  const score=Math.round(weighted/Math.max(denom,.001)),risk=vol<0.08?"Bajo":vol<0.18?"Medio":"Alto",scenario12=trend*(1+clamp(m7*3,-0.25,0.35));
+  const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}
+  const baseId=lang==="en"?c.id:(lang+":"+c.id),id=finish==="normal"?baseId:(baseId+":holo");
+  const langNames={en:"English",ja:"Japanese",es:"Spanish",it:"Italian",de:"German",fr:"French"};
+  return {id,sourceId:c.id,universe:"pokemon",language:langNames[lang]||lang,languageCode:lang,finish,name:c.name,set:c.set?.name||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tpVariant?{variant:finish,price:num(tpVariant.marketPrice)}:null,score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc,source:"TCGdex · Cardmarket",catalogOnly:false};
 }
+function buildPokemonSignals(c,lang="en"){
+  const out=[],normal=buildPokemonSignalVariant(c,lang,"normal"),holo=buildPokemonSignalVariant(c,lang,"holo");
+  if(normal)out.push(normal);if(holo)out.push(holo);return out;
+}
+function buildMarketSignal(c){return buildPokemonSignals(c,"en")[0]||null}
 async function mapLimit(items,limit,fn){
   let out=new Array(items.length),i=0;async function worker(){while(true){let n=i++;if(n>=items.length)return;try{out[n]=await fn(items[n],n)}catch{out[n]=null}}}
   await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;
@@ -690,8 +702,8 @@ async function resolveCatalogCard(row){
   if(!row)return null;
   if(row.universe==="pokemon"){
     const full=await tcgdexCard("en",row.sourceId);if(!full)return row;
-    const signal=buildMarketSignal(full),merged={...row,...pokemonCatalogRow(full),price:signal?.price||null,currency:"EUR",marketScore:signal?.score??null,updated:new Date().toISOString()};
-    await catalogPutMany([merged]);if(signal)await marketSignalPutMany([signal]);return merged;
+    const signals=buildPokemonSignals(full,"en"),signal=signals.sort((a,b)=>(b.score-a.score)||(b.price-a.price))[0]||null,merged={...row,...pokemonCatalogRow(full),price:signal?.price||null,currency:"EUR",marketScore:signal?.score??null,updated:new Date().toISOString()};
+    await catalogPutMany([merged]);if(signals.length)await marketSignalPutMany(signals);return merged;
   }
   const signals=(await marketSignalAll().catch(()=>[])).filter(x=>x.universe==="lorcana"&&x.sourceId===row.sourceId),signal=signals.sort((a,b)=>(+b.price||0)-(+a.price||0))[0];
   return {...row,price:row.price??signal?.price??null,currency:"USD",marketScore:signal?.score??row.marketScore??null};
@@ -822,34 +834,37 @@ async function fetchLorcanaUniverse(mode){
 
 async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse()){
   if(universe==="lorcana")return fetchLorcanaUniverse(mode);
-  const list=await tcgdexList("en"),pool=(list||[]).filter(x=>x.id&&x.name);if(pool.length){await catalogPutMany(pool.map(pokemonCatalogRow));state.catalogMeta.pokemon={count:pool.length,at:new Date().toISOString()};save()}
+  const primary=await tcgdexList("en"),pool=(primary||[]).filter(x=>x.id&&x.name);
+  if(pool.length){await catalogPutMany(pool.map(pokemonCatalogRow));state.catalogMeta.pokemon={count:pool.length,at:new Date().toISOString()};save()}
   if(mode==="wide"){
-    const batchSize=120,total=pool.length||0,start=total?state.marketCursor%total:0,briefs=[];
-    for(let n=0;n<Math.min(batchSize,total);n++)briefs.push(pool[(start+n)%total]);
-    const full=await mapLimit(briefs,4,async b=>{
-      const c=await tcgdexCard("en",b.id);
-      if(!c)state.marketFailures[b.id]=(state.marketFailures[b.id]||0)+1;
-      else delete state.marketFailures[b.id];
-      return c;
-    });
-    const fetched=full.filter(Boolean),signals=fetched.map(buildMarketSignal).filter(Boolean),pricedIds=new Set(signals.map(x=>x.id)),lostPrice=fetched.filter(c=>!pricedIds.has(c.id)).map(c=>c.id);
-    if(signals.length)await marketSignalPutMany(signals);if(lostPrice.length)await marketSignalDeleteMany(lostPrice);
-    state.marketCursor=total?((start+briefs.length)%total):0;
-    const prev=state.marketCoverage||{},prior=prev.cycleTotal===total?(+prev.cycleProgress||0):0,rawProgress=prior+briefs.length,completed=total>0&&rawProgress>=total,cycleProgress=total?rawProgress%total:0,everComplete=completed||!!prev.lastCompleteAt,seen=everComplete?total:Math.min(total,rawProgress),cycleComplete=everComplete,lastCompleteAt=completed?new Date().toISOString():(prev.lastCompleteAt||null);
-    const fresh=await activeMarketSignals(45),priced=fresh.all.length;
-    state.marketCoverage={total,seen,priced,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),cursor:state.marketCursor,cycleTotal:total,cycleProgress,cycleComplete,lastCompleteAt};state.coverageByUniverse.pokemon=state.marketCoverage;
-    state.marketUniverse={};state.marketScannedIds={};save();
-    return fresh.active.sort((a,b)=>b.score-a.score).slice(0,400);
+    const langs=["ja","en","es","it","de","fr"],weights={ja:60,en:40,es:20,it:20,de:20,fr:20};
+    state.pokemonCursorByLanguage=state.pokemonCursorByLanguage||{};
+    let allNew=[],seen=0,totalAcross=0,fail=0;
+    for(const lang of langs){
+      const list=(lang==="en"?primary:await tcgdexList(lang)).filter(x=>x.id&&x.name),total=list.length||0;
+      totalAcross+=total;if(!total)continue;
+      const batchSize=Math.min(weights[lang]||20,total),start=(+state.pokemonCursorByLanguage[lang]||0)%total,briefs=[];
+      for(let n=0;n<batchSize;n++)briefs.push(list[(start+n)%total]);
+      const full=await mapLimit(briefs,4,async b=>{
+        const card=await tcgdexCard(lang,b.id);
+        if(!card){fail++;state.marketFailures[lang+":"+b.id]=(state.marketFailures[lang+":"+b.id]||0)+1}
+        else delete state.marketFailures[lang+":"+b.id];
+        return card;
+      });
+      const fetched=full.filter(Boolean),signals=fetched.flatMap(card=>buildPokemonSignals(card,lang));
+      if(signals.length){await marketSignalPutMany(signals);allNew.push(...signals)}
+      state.pokemonCursorByLanguage[lang]=(start+briefs.length)%total;seen+=briefs.length;
+    }
+    const fresh=await activeMarketSignals(45,"pokemon");
+    state.marketCoverage={...(state.marketCoverage||{}),total:totalAcross,seen:(+state.marketCoverage?.seen||0)+seen,priced:fresh.all.length,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),languages:langs,languageBatch:{ja:60,en:40,es:20,it:20,de:20,fr:20},multilingual:true};
+    state.coverageByUniverse.pokemon=state.marketCoverage;save();
+    return fresh.active.sort((a,b)=>b.score-a.score).slice(0,800);
   }
   const wanted=MARKET_NAMES.map(n=>norm(n)),owned=new Set(state.cards.map(c=>c.catalogId).filter(Boolean)),briefs=[];
-  for(const b of pool){
-    const nm=norm(b.name);
-    if(owned.has(b.id)||wanted.some(w=>nm.includes(w)))briefs.push(b);
-    if(briefs.length>=100)break;
-  }
-  for(const c of state.cards)if(c.catalogId&&!briefs.some(b=>b.id===c.catalogId))briefs.unshift({id:c.catalogId,name:c.name});
+  for(const b of pool){const nm=norm(b.name);if(owned.has(b.id)||wanted.some(w=>nm.includes(w)))briefs.push(b);if(briefs.length>=100)break}
+  for(const card of state.cards)if(card.catalogId&&!briefs.some(b=>b.id===card.catalogId))briefs.unshift({id:card.catalogId,name:card.name});
   const full=await mapLimit(briefs.slice(0,100),4,async b=>tcgdexCard("en",b.id));
-  return full.filter(Boolean);
+  return full.filter(Boolean).flatMap(card=>buildPokemonSignals(card,"en"));
 }
 async function ensureCompleteCatalog(){
   const p=state.catalogMeta?.pokemon||{},l=state.catalogMeta?.lorcana||{};
@@ -1198,7 +1213,7 @@ function cardmarketProductLink(x){
     [/lorcana\\|elsa spirit of winter\\|207.*\\|the first chapter|lorcana\\|elsa spirit of winter\\|207.*\\|first chapter/,"https://www.cardmarket.com/en/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2"]
   ];
   for(const [re,url] of known)if(re.test(key))return url;
-  const game=marketUniverseOf(x)==="lorcana"?"Lorcana":"Pokemon",q=[String(x.name||"").replace(/ · Foil$/i,""),x.set||"",x.number?("#"+x.number):""].filter(Boolean).join(" ");
+  const game=marketUniverseOf(x)==="lorcana"?"Lorcana":"Pokemon",q=[String(x.name||"").replace(/ · Foil$/i,""),x.set||"",x.number?("#"+x.number):"",marketUniverseOf(x)==="pokemon"?(x.language||""):""].filter(Boolean).join(" ");
   return "https://www.cardmarket.com/es/"+game+"/Products/Search?searchString="+encodeURIComponent(q);
 }
 
