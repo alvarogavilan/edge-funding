@@ -73,24 +73,18 @@ function manualBuys(){
  exit:N(r.q.econ?.exit),edge:N(r.q.econ?.edge),roi:N(r.q.econ?.roi),exitKind:r.q.econ?.kind||"none",checkedAt:r.x.evidenceCheckedAt||r.x.checkedAt||"",units:r.x.approval==="BUY-SCALE"?Math.max(1,N(r.x.recommendedQty)||1):1}));
 }
 function publicVerifiedBuys(){
- const now=Date.now();
- return (state.manualOpportunities||[]).filter(x=>{
-  if(x.publicFloorVerified!==true||x.languageVerified!==true||x.sameMarketComparableVerified!==true||x.exitEvidenceVerified!==true)return false;
-  const price=N(x.price),exitGross=N(x.marketEvidence?.currentExitEUR),at=new Date(x.evidenceCheckedAt||x.marketEvidence?.at||0).getTime();
-  if(!(price>=20&&exitGross>0&&at&&now-at<=24*3600000))return false;
-  if(!String(x.offerLanguage||x.language||"").trim()||!String(x.condition||"").trim()||!String(x.variant||"").trim()||!String(x.seller||"").trim()||!/^https?:\/\//i.test(String(x.url||"")))return false;
-  const activeExit=exitGross*.85,last=N(x.lastSalePrice),realisedExit=last>0?last*.90:Infinity;
-  const exit=Math.min(activeExit,realisedExit),edge=exit-price,roi=edge/price*100;
-  return edge>=40&&roi>=35;
- }).map(x=>{
-  const activeExit=N(x.marketEvidence.currentExitEUR)*.85,last=N(x.lastSalePrice),realisedExit=last>0?last*.90:Infinity;
-  const exit=Math.min(activeExit,realisedExit),edge=exit-N(x.price),roi=edge/N(x.price)*100;
+ return (state.manualOpportunities||[]).map(x=>{
+  if(!["BUY-ONE","BUY-SCALE"].includes(x.approval))return null;
+  if(x.publicFloorVerified!==true||x.languageVerified!==true)return null;
+  const q=window.CVPrimeMarket?.quality?.(x);
+  if(!q||q.passed!==q.total)return null;
   return {id:"public:"+x.id,name:x.name,set:x.set||"",number:x.number||"",image:img(x),price:N(x.price),
-   seller:x.seller,url:x.url,source:"Mercado público verificado · mismo idioma y estado",
+   seller:x.seller,url:x.url,source:"Mercado público verificado · oferta exacta",
    language:x.offerLanguage||x.language||"",description:[x.variant,x.condition,N(x.price)>=500?"Capital alto":""].filter(Boolean).join(" · "),
-   exit,edge,roi,exitKind:"active-exit-ask",checkedAt:x.evidenceCheckedAt||x.checkedAt||"",units:1,
+   exit:N(q.econ?.exit),edge:N(q.econ?.edge),roi:N(q.econ?.roi),exitKind:q.econ?.kind||"active-exit-ask",
+   checkedAt:x.evidenceCheckedAt||x.checkedAt||"",units:x.approval==="BUY-SCALE"?Math.max(1,N(x.recommendedQty)||1):1,
    lastSalePrice:N(x.lastSalePrice),lastSaleDate:x.lastSaleDate||"",sameLanguageOffers:N(x.marketEvidence?.currentQty||x.available)};
- });
+ }).filter(Boolean);
 }
 function euBuys(){
  const rows=window.CVStrictOpportunity?.euRows?.()||[];
