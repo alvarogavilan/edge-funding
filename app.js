@@ -664,7 +664,7 @@ function buildPokemonSignalVariant(c,lang="en",finish="normal",canonical=null){
   const score=Math.round(weighted/Math.max(denom,.001)),risk=vol<0.08?"Bajo":vol<0.18?"Medio":"Alto",scenario12=trend*(1+clamp(m7*3,-0.25,0.35));
   const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}
   const baseId=lang==="en"?c.id:(lang+":"+c.id),id=finish==="normal"?baseId:(baseId+":holo");
-  const langNames={en:"English",ja:"Japanese",es:"Spanish",it:"Italian",de:"German",fr:"French"};
+  const langNames={en:"English",ja:"Japanese",es:"Spanish",it:"Italian",de:"German",fr:"French",ko:"Korean",pt:"Portuguese",nl:"Dutch",pl:"Polish",ru:"Russian","zh-tw":"Traditional Chinese","zh-cn":"Simplified Chinese",id:"Indonesian",th:"Thai"};
   return {id,sourceId:c.id,universe:"pokemon",language:langNames[lang]||lang,languageCode:lang,finish,name:c.name,canonicalName:canonical?.name||c.name,set:c.set?.name||"",canonicalSet:canonical?.set?.name||c.set?.name||"",setId:c.set?.id||canonical?.set?.id||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tpVariant?{variant:finish,price:num(tpVariant.marketPrice)}:null,score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc,source:"TCGdex · Cardmarket",catalogOnly:false};
 }
 function buildPokemonSignals(c,lang="en",canonical=null){
@@ -837,7 +837,10 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
   const primary=await tcgdexList("en"),pool=(primary||[]).filter(x=>x.id&&x.name);
   if(pool.length){await catalogPutMany(pool.map(pokemonCatalogRow));state.catalogMeta.pokemon={count:pool.length,at:new Date().toISOString()};save()}
   if(mode==="wide"){
-    const langs=["ja","en","es","it","de","fr"],weights={ja:60,en:40,es:20,it:20,de:20,fr:20};
+    state.pokemonWorldRotation=(+state.pokemonWorldRotation||0)+1;
+    const secondaryGroups=[["ko","zh-tw","zh-cn"],["pt","nl","pl"],["ru","id","th"]];
+    const secondary=secondaryGroups[(state.pokemonWorldRotation-1)%secondaryGroups.length];
+    const langs=["ja","en","es","it","de","fr",...secondary],weights={ja:60,en:40,es:20,it:20,de:20,fr:20,ko:12,"zh-tw":12,"zh-cn":12,pt:12,nl:10,pl:10,ru:10,id:10,th:10};
     state.pokemonCursorByLanguage=state.pokemonCursorByLanguage||{};
     let allNew=[],seen=0,totalAcross=0,fail=0;
     const languageStats={};
@@ -866,7 +869,7 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
       state.pokemonCursorByLanguage[lang]=(start+briefs.length)%total;seen+=briefs.length;
     }
     const fresh=await activeMarketSignals(45,"pokemon");
-    state.marketCoverage={...(state.marketCoverage||{}),total:totalAcross,seen:(+state.marketCoverage?.seen||0)+seen,priced:fresh.all.length,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),languages:langs,languageBatch:{ja:60,en:40,es:20,it:20,de:20,fr:20},languageStats,multilingual:true,holoAware:true};
+    state.marketCoverage={...(state.marketCoverage||{}),total:totalAcross,seen:(+state.marketCoverage?.seen||0)+seen,priced:fresh.all.length,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),languages:langs,languageBatch:weights,languageStats,worldRotation:state.pokemonWorldRotation,secondaryLanguages:secondary,multilingual:true,holoAware:true};
     state.coverageByUniverse.pokemon=state.marketCoverage;save();
     return fresh.active.sort((a,b)=>b.score-a.score).slice(0,800);
   }
