@@ -18,6 +18,13 @@ function setEvidence(id,data){
  if(data.approval)x.approval=data.approval;
  if(data.status)x.status=data.status;
 }
+setEvidence("lorcana-scrooge-richest-duck-218-it-20260928",{
+ source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_3_218",currentExitEUR:117.48,currentQty:8,available:8,
+ depthPrices:[57.99,70,80,95,110,117.48],
+ offer:{price:57.99,seller:"Oferta italiana publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Into-the-Inklands/Scrooge-McDuck-Richest-Duck-in-the-World-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",image:"https://cards.tcggraph.io/32/lor_3_218/normal.webp",lastSalePrice:95,lastSaleDate:"2026-09-23",recentSalesCount:24},
+ approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · ITALIANO NM · 1 UNIDAD",
+ note:"Entrada italiana NM 57,99 €. Mediana italiana 117,48 € con 8+ ofertas. Última venta global visible 23/09: 95 €. Salida económica aplica recorte PRIME 15%."
+});
 setEvidence("lorcana-elsa-spirit-winter-207-fr-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_1_207",currentExitEUR:450,currentQty:36,available:36,
  depthPrices:[279,320,350,400,425,450],
