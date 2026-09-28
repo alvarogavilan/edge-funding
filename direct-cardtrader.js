@@ -193,7 +193,7 @@ async function scan(){
    for(const p of products){
      const o=parseOffer(p,bp,c);if(!o||!/near mint|mint/i.test(o.condition)||p.graded)continue;
      const want=String(c.languageCode||c.language||"").toLowerCase(),got=String(o.language||"").toLowerCase();
-     const aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",korean:"ko",portuguese:"pt",dutch:"nl",polish:"pl",russian:"ru",jp:"ja",kr:"ko","zh-tw":"zh-tw","zh-cn":"zh-cn"};
+     const aliases={japanese:"ja",english:"en",spanish:"es",italian:"it",german:"de",french:"fr",korean:"ko",portuguese:"pt",dutch:"nl",polish:"pl",russian:"ru","traditional chinese":"zh-tw","simplified chinese":"zh-cn",indonesian:"id",thai:"th",jp:"ja",kr:"ko","zh-tw":"zh-tw","zh-cn":"zh-cn"};
      const wk=aliases[want]||want,gk=aliases[got]||got;
      if(wk&&gk&&wk!==gk)continue;
      found.push(o);local.push(o);
