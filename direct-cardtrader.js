@@ -94,23 +94,25 @@ function localArbitrageForCandidate(c,offers){
  return out;
 }
 function parseOffer(p,bp,c){
+ if(p?.on_vacation)return null;
  const ph=p.properties_hash||{},lang=Object.entries(ph).find(([k])=>/language$/i.test(k))?.[1]||"";
- const condition=ph.condition||"",price=(p.price?.cents||0)/100,currency=p.price?.currency||"EUR";
- if(!(price>0)||currency!=="EUR")return null;
+ const condition=ph.condition||"",raw=(p.price?.cents||0)/100,currency=String(p.price?.currency||"EUR").toUpperCase();
+ const price=currency==="USD"&&cache.usdEur?raw*cache.usdEur:currency==="EUR"?raw:0;
+ if(!(price>0))return null;
  return {id:"ct-direct:"+bp.id+":"+p.id,externalId:"ct:"+bp.id,universe:c.universe||"pokemon",name:c.name,set:c.set,number:c.number,
   language:lang,variant:[bp.version||"",Object.entries(ph).filter(([k,v])=>/foil|reverse|holo|edition/i.test(k)&&v===true).map(([k])=>k).join(",")].filter(Boolean).join(" · "),
-  condition,seller:p.user?.username||"",shop:"CardTrader",price,shipping:0,total:price,currency:"EUR",
+  condition,seller:p.user?.username||"",shop:"CardTrader",price:Math.round(price*100)/100,shipping:0,total:Math.round(price*100)/100,currency:"EUR",
   url:"https://www.cardtrader.com/cards/"+bp.id,checkedAt:new Date().toISOString(),source:"CardTrader API directa"};
 }
 function discoverExpansionDislocations(expansionProducts,bps,universe){
  const byBp=new Map(),bpMap=new Map((bps||[]).map(b=>[Number(b.id),b]));
  for(const prod of expansionProducts||[]){
-  if(prod?.graded)continue;
+  if(prod?.graded||prod?.on_vacation)continue;
   const bpId=Number(prod?.blueprint_id);if(!bpId)continue;
   const bp=bpMap.get(bpId);if(!bp)continue;
   const ph=prod.properties_hash||{},lang=Object.entries(ph).find(([k])=>/language$/i.test(k))?.[1]||"",condition=ph.condition||"";
-  const price=(prod.price?.cents||0)/100,currency=prod.price?.currency||"EUR";
-  if(currency!=="EUR"||!(price>=20&&price<=250)||!lang||!/near mint|mint/i.test(String(condition)))continue;
+  const raw=(prod.price?.cents||0)/100,currency=String(prod.price?.currency||"EUR").toUpperCase(),price=currency==="USD"&&cache.usdEur?raw*cache.usdEur:currency==="EUR"?raw:0;
+  if(!(price>=20&&price<=250)||!lang||!/near mint|mint/i.test(String(condition)))continue;
   const finish=Object.entries(ph).filter(([k,v])=>/foil|reverse|holo|edition/i.test(k)&&v===true).map(([k])=>k).join(",");
   const k=[bpId,norm(lang),norm(finish)].join("|");
   if(!byBp.has(k))byBp.set(k,[]);
