@@ -108,6 +108,19 @@ const belleMysticId="lorcana-belle-accomplished-mystic-226-it-20260927";
 const beastGraciousId="lorcana-beast-gracious-prince-224-20260927";
 const pongoId="lorcana-pongo-determined-father-223-it-20260928";
 const winnieId="lorcana-winnie-hunny-wizard-227-de-20260928";
+const elsaId="lorcana-elsa-spirit-winter-207-fr-20260928";
+if(!state.manualOpportunities.some(x=>x.id===elsaId)){
+ state.manualOpportunities.push({
+  id:elsaId,universe:"lorcana",name:"Elsa - Spirit of Winter",set:"The First Chapter",number:"207/204",
+  variant:"Encantada · Holofoil · Francés",condition:"NM",shop:"Cardmarket",seller:"Oferta francesa publicada en Cardmarket",
+  price:279.00,trend:773.87,avg30:761.10,avg7:811.63,avg1:0,available:36,sellerQty:1,
+  url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2",
+  checkedAt:"2026-09-28T13:28:00+02:00",expiresAt:"2026-09-29T13:28:00+02:00",
+  status:"COMPRAR AHORA · FRANCÉS NM · 1 UNIDAD",approval:"BUY-ONE",
+  offerLanguage:"French",languageVerified:true,publicFloorVerified:true,
+  note:"Francés Holofoil NM desde 279 €, mediana francesa 450 €, 36+ ofertas. Última venta global visible 23/09: 600 €. Una unidad."
+ });save();
+}
 if(!state.manualOpportunities.some(x=>x.id===winnieId)){
  state.manualOpportunities.push({
   id:winnieId,universe:"lorcana",name:"Winnie the Pooh - Hunny Wizard",set:"Fabled",number:"227/242",
@@ -119,6 +132,15 @@ if(!state.manualOpportunities.some(x=>x.id===winnieId)){
   offerLanguage:"German",languageVerified:true,publicFloorVerified:true,
   note:"TCGGraph/Cardmarket: alemán Holofoil NM desde 800 €, mediana alemana 1.499 €, 13 ofertas. Ticket alto; una sola unidad."
  });save();
+}
+{
+ const x=state.manualOpportunities.find(o=>o.id===winnieId);
+ if(x){
+  x.approval="WATCH";
+  x.status="NO COMPRAR AHORA · SALIDA INSUFICIENTEMENTE SEGURA";
+  x.publicFloorVerified=false;
+  x.note=((x.note||"")+" · Revisión 28/09: última venta global visible 22/09 a 697 €, por debajo de la entrada alemana de 800 €. Se retira de Compra ya.").trim();
+ }
 }
 if(!state.manualOpportunities.some(x=>x.id===pongoId)){
  state.manualOpportunities.push({
@@ -300,7 +322,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[elsaId,winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
