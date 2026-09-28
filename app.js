@@ -647,7 +647,7 @@ function tcgplayerMarket(c){
   if(!vals.length)return null;
   vals.sort((a,b)=>a.price-b.price);return vals[Math.floor(vals.length/2)];
 }
-function buildPokemonSignalVariant(c,lang="en",finish="normal"){
+function buildPokemonSignalVariant(c,lang="en",finish="normal",canonical=null){
   const cm=c?.pricing?.cardmarket||{},holo=finish==="holo";
   const get=k=>num(cm[holo?(k+"-holo"):k]);
   const trend=get("trend")||get("avg30")||get("avg7")||get("avg"),a1=get("avg1"),a7=get("avg7"),a30=get("avg30"),low=get("low");
@@ -665,10 +665,10 @@ function buildPokemonSignalVariant(c,lang="en",finish="normal"){
   const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}
   const baseId=lang==="en"?c.id:(lang+":"+c.id),id=finish==="normal"?baseId:(baseId+":holo");
   const langNames={en:"English",ja:"Japanese",es:"Spanish",it:"Italian",de:"German",fr:"French"};
-  return {id,sourceId:c.id,universe:"pokemon",language:langNames[lang]||lang,languageCode:lang,finish,name:c.name,set:c.set?.name||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tpVariant?{variant:finish,price:num(tpVariant.marketPrice)}:null,score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc,source:"TCGdex · Cardmarket",catalogOnly:false};
+  return {id,sourceId:c.id,universe:"pokemon",language:langNames[lang]||lang,languageCode:lang,finish,name:c.name,canonicalName:canonical?.name||c.name,set:c.set?.name||"",canonicalSet:canonical?.set?.name||c.set?.name||"",setId:c.set?.id||canonical?.set?.id||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tpVariant?{variant:finish,price:num(tpVariant.marketPrice)}:null,score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc,source:"TCGdex · Cardmarket",catalogOnly:false};
 }
-function buildPokemonSignals(c,lang="en"){
-  const out=[],normal=buildPokemonSignalVariant(c,lang,"normal"),holo=buildPokemonSignalVariant(c,lang,"holo");
+function buildPokemonSignals(c,lang="en",canonical=null){
+  const out=[],normal=buildPokemonSignalVariant(c,lang,"normal",canonical),holo=buildPokemonSignalVariant(c,lang,"holo",canonical);
   if(normal)out.push(normal);if(holo)out.push(holo);return out;
 }
 function buildMarketSignal(c){return buildPokemonSignals(c,"en")[0]||null}
@@ -853,8 +853,14 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
         else delete state.marketFailures[lang+":"+b.id];
         return card;
       });
-      const fetched=full.filter(Boolean),signals=fetched.flatMap(card=>buildPokemonSignals(card,lang));
-      languageStats[lang].scanned=fetched.length;languageStats[lang].signals=signals.length;
+      const fetched=full.filter(Boolean);
+      const canonicalMap=new Map();
+      if(lang!=="en"){
+        const englishMatches=await mapLimit(fetched,4,async card=>{const en=await tcgdexCard("en",card.id);return en?[card.id,en]:null});
+        for(const pair of englishMatches.filter(Boolean))canonicalMap.set(pair[0],pair[1]);
+      }
+      const signals=fetched.flatMap(card=>buildPokemonSignals(card,lang,canonicalMap.get(card.id)||null));
+      languageStats[lang].scanned=fetched.length;languageStats[lang].canonicalMatched=canonicalMap.size;languageStats[lang].signals=signals.length;
       languageStats[lang].normal=signals.filter(x=>x.finish==="normal").length;languageStats[lang].holo=signals.filter(x=>x.finish==="holo").length;
       if(signals.length){await marketSignalPutMany(signals);allNew.push(...signals)}
       state.pokemonCursorByLanguage[lang]=(start+briefs.length)%total;seen+=briefs.length;
