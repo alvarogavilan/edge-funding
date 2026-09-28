@@ -111,6 +111,17 @@ const winnieId="lorcana-winnie-hunny-wizard-227-de-20260928";
 const elsaId="lorcana-elsa-spirit-winter-207-fr-20260928";
 const scroogeId="lorcana-scrooge-richest-duck-218-it-20260928";
 const gyaradosBuyId="pokemon-gyarados-ex-xy9-089-jp-nm-20260928";
+{
+ const x=state.manualOpportunities.find(o=>o.id===gyaradosBuyId);
+ if(x){
+  x.approval="WATCH";
+  x.status="YA EN MI COLECCIÓN · NO REPETIR";
+  x.publicFloorVerified=false;
+  x.ownedDuplicateBlocked=true;
+  x.note=((x.note||"")+" · Bloqueada: Gyarados EX XY9 089/080 japonés ya está en Mi colección. No volver a proponer salvo autorización explícita para ampliar posición.").trim();
+ }
+}
+
 const glaceonResearchId="pokemon-glaceon-vmax-s6a091-research-20260928";
 const leafeonResearchId="pokemon-leafeon-vmax-s6a089-research-20260928";
 const pikazekResearchId="pokemon-pikachu-zekrom-gx-sm9101-research-20260928";
