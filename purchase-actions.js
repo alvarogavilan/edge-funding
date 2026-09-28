@@ -84,6 +84,10 @@ function addSealedPurchase(src,row,qty=1,costs={shipping:0,fees:0}){
 function buy(key){
   const row=strictRow(key),src=sourceFor(key);
   if(!row||!src?.row){alert("La oportunidad ya no está disponible o necesita volver a verificarse.");return}
+  if(src.kind!=="sealed"&&src.row.allowScaleOwned!==true){
+    const owned=(state.cards||[]).filter(c=>!c.archivedSold).some(c=>{try{return window.CVIdentity?.sameOwnedCard?.(c,src.row)===true}catch{return false}});
+    if(owned){alert("Compra bloqueada: esta carta ya está en Mi colección. Solo puede repetirse con una autorización explícita de ampliar posición.");return}
+  }
   if(row.status!=="buy"){alert("Esta oportunidad ya no cumple COMPRAR AHORA. Refresca el mercado antes de registrar la compra.");return}
   if(src.kind==="manual"){
     const q=window.CVPrimeMarket?.quality?.(src.row);
