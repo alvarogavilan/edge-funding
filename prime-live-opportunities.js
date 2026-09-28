@@ -35,7 +35,7 @@ setEvidence("lorcana-pongo-determined-father-223-it-20260928",{
 setEvidence("lorcana-belle-accomplished-mystic-226-it-20260927",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_226",currentExitEUR:245,currentQty:7,available:65,
  depthPrices:[150,240,240,240,244.99,245,249.95],
- offer:{price:150,seller:"Retfird",url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Belle-Accomplished-Mystic-V2",offerLanguage:"Italian",languageVerified:true,condition:"NM",variant:"Enchanted · Holofoil · Italian",
+ offer:{price:150,seller:"Retfird",url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Belle-Accomplished-Mystic-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Enchanted · Holofoil · Italian",
  image:"https://cards.lorcast.io/card/digital/large/crd_c51b6a26015b45f298d1664787f37234.avif?1755541561="},
  approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · ITALIAN NM · 1 UNIDAD",
  note:"Entrada exacta Cardmarket 150 € (Retfird). Salida económica usa mediana de anuncios italianos 245 € con recorte PRIME 15%; no equivale a venta cerrada."
