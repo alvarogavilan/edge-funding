@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const now="2026-09-28T13:28:00+02:00";
+const now="2026-09-28T22:12:00+02:00";
 function seal(x){return window.CVIdentity?.key?.(x)||""}
 function setEvidence(id,data){
  const x=(state.manualOpportunities||[]).find(o=>o.id===id);if(!x)return;
@@ -21,7 +21,7 @@ function setEvidence(id,data){
 setEvidence("lorcana-elsa-spirit-winter-207-fr-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_1_207",currentExitEUR:450,currentQty:36,available:36,
  depthPrices:[279,320,350,400,425,450],
- offer:{price:279,seller:"Oferta francesa publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2",offerLanguage:"French",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Francés"},
+ offer:{price:279,seller:"Oferta francesa publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2",offerLanguage:"French",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Francés",image:"https://cards.tcggraph.io/12/lor_1_207/normal.webp",lastSalePrice:600,lastSaleDate:"2026-09-23",recentSalesCount:19},
  approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · FRANCÉS NM · 1 UNIDAD",
  note:"Entrada francesa NM 279 €. Mediana francesa 450 € con 36+ ofertas. Última venta global visible 23/09: 600 €. Salida económica aplica recorte PRIME 15%."
 });
@@ -35,14 +35,14 @@ setEvidence("lorcana-winnie-hunny-wizard-227-de-20260928",{
 setEvidence("lorcana-pongo-determined-father-223-it-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_223",currentExitEUR:271.91,currentQty:5,available:5,
  depthPrices:[137.95,149,170,179,245,247,271.91],
- offer:{price:137.95,seller:"Cardmarket · oferta italiana más barata",url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Pongo-Determined-Father-V2",offerLanguage:"Italian",languageVerified:true,condition:"NM",variant:"Enchanted · Holofoil · Italian"},
+ offer:{price:137.95,seller:"Oferta italiana publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Fabled/Pongo-Determined-Father-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",image:"https://cards.tcggraph.io/92/lor_9_223/normal.webp",lastSalePrice:245,lastSaleDate:"2026-09-05",recentSalesCount:17},
  approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · ITALIAN NM · 1 UNIDAD",
  note:"Entrada pública Cardmarket italiana NM 137,95 €. Mediana italiana 271,91 € con 5+ ofertas. Salida económica aplica recorte PRIME 15%; no equivale a venta cerrada."
 });
 setEvidence("lorcana-belle-accomplished-mystic-226-it-20260927",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_226",currentExitEUR:245,currentQty:7,available:65,
  depthPrices:[150,240,240,240,244.99,245,249.95],
- offer:{price:150,seller:"Retfird",url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Belle-Accomplished-Mystic-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Enchanted · Holofoil · Italian",
+ offer:{price:150,seller:"Retfird",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Fabled/Belle-Accomplished-Mystic-V2",offerLanguage:"Italian",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Italiano",lastSalePrice:230,lastSaleDate:"2026-09-18",recentSalesCount:16,
  image:"https://cards.lorcast.io/card/digital/large/crd_c51b6a26015b45f298d1664787f37234.avif?1755541561="},
  approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · ITALIAN NM · 1 UNIDAD",
  note:"Entrada exacta Cardmarket 150 € (Retfird). Salida económica usa mediana de anuncios italianos 245 € con recorte PRIME 15%; no equivale a venta cerrada."
