@@ -11,7 +11,7 @@ function textoES(v){
  const reps=[
   [/\bEnchanted\b/gi,"Encantada"],[/\bItalian\b/gi,"Italiano"],[/\bGerman\b/gi,"Alemán"],[/\bFrench\b/gi,"Francés"],
   [/\bEnglish\b/gi,"Inglés"],[/\bJapanese\b/gi,"Japonés"],[/\bSpanish\b/gi,"Español"],
-  [/\bNear Mint\b/gi,"Casi nueva (NM)"],[/\bNM\b/g,"Casi nueva (NM)"],
+  [/\bNear Mint\b/gi,"Casi nueva"],[/\bNM\b/g,"Casi nueva (NM)"],
   [/\bMint\b/gi,"Impecable (MT)"],[/\bExcellent\b/gi,"Excelente (EX)"],
   [/\bGood\b/gi,"Buena (GD)"],[/\bPlayed\b/gi,"Jugada (PL)"],
   [/\bHolofoil\b/gi,"Holofoil"],[/\bFoil\b/gi,"Foil"],[/\bCapital alto\b/gi,"Capital alto"]
