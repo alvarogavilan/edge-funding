@@ -32,6 +32,19 @@ async function blueprintsFor(exp){
  const rows=Array.isArray(j)?j:(j?.array||j?.results||j?.data||[]);
  cache.blueprints.set(exp.id,rows);return rows;
 }
+async function marketplaceForExpansion(exp,marketCache){
+ if(marketCache.has(exp.id))return marketCache.get(exp.id);
+ const j=await ct("/marketplace/products?expansion_id="+encodeURIComponent(exp.id));
+ let rows=[];
+ if(Array.isArray(j))rows=j;
+ else if(j&&typeof j==="object"){
+  if(Array.isArray(j.array))rows=j.array;
+  else if(Array.isArray(j.results))rows=j.results;
+  else rows=Object.values(j).flatMap(v=>Array.isArray(v)?v:[]);
+ }
+ marketCache.set(exp.id,rows);
+ return rows;
+}
 async function candidateRows(){
  const out=[];
  for(const u of ["pokemon","lorcana"]){
@@ -45,7 +58,7 @@ async function candidateRows(){
   const k=[x.universe,norm(x.name),norm(x.set),numKey(x.number)].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
  }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||(eur>=20&&eur<=300)})
- .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,140);
+ .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(b.price)||0)-(Number(a.price)||0)).slice(0,320);
 }
 function pctMedian(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[Math.floor(s.length/2)]}
 function localArbitrageForCandidate(c,offers){
@@ -93,7 +106,7 @@ async function scan(){
  if(busy||!token())return {ok:false,reason:"no-token"};
  busy=true;
  try{
-  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],diag={candidates:rows.length,expansionExact:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,pokemon:0,lorcana:0};
+  await bootstrap();const rows=await candidateRows(),found=[],arbs=[],marketCache=new Map(),diag={candidates:rows.length,expansionExact:0,uniqueExpansions:0,blueprintExact:0,withOffers:0,languageDepth:0,economicPass:0,pokemon:0,lorcana:0};
   for(const c of rows){
    const gid=gameId(c.universe==="lorcana"?"lorcana":"pokemon");if(!gid)continue;
    const setNorm=norm(c.set);
@@ -112,15 +125,16 @@ async function scan(){
    diag.blueprintExact++;
    diag[c.universe==="lorcana"?"lorcana":"pokemon"]++;
    const bp=exact[0];
-   let j;try{j=await ct("/marketplace/products?blueprint_id="+bp.id)}catch(e){if(String(e.message).includes("429")){await sleep(600);continue}throw e}
-   const products=Array.isArray(j)?j:(j?.[String(bp.id)]||j?.array||j?.results||[]);
+   let expansionProducts;try{expansionProducts=await marketplaceForExpansion(exps[0],marketCache)}catch(e){if(String(e.message).includes("429")){await sleep(1100);continue}throw e}
+   diag.uniqueExpansions=marketCache.size;
+   const products=(expansionProducts||[]).filter(p=>Number(p.blueprint_id)===Number(bp.id));
    const local=[];
-   for(const p of products||[]){const o=parseOffer(p,bp,c);if(o&&/near mint|mint/i.test(o.condition)&&!p.graded){found.push(o);local.push(o)}}
+   for(const p of products){const o=parseOffer(p,bp,c);if(o&&/near mint|mint/i.test(o.condition)&&!p.graded){found.push(o);local.push(o)}}
    if(local.length)diag.withOffers++;
    const langs=new Map();for(const o of local){const k=norm(o.language||"");if(k)langs.set(k,(langs.get(k)||0)+1)}
    if([...langs.values()].some(n=>n>=5))diag.languageDepth++;
    const calc=localArbitrageForCandidate(c,local);arbs.push(...calc);diag.economicPass+=calc.filter(x=>x.pass).length;
-   await sleep(120);
+   await sleep(30);
   }
   state.euOffers=Array.isArray(state.euOffers)?state.euOffers:[];
   state.euOffers=state.euOffers.filter(o=>!String(o.id||"").startsWith("ct-direct:")).concat(found);
