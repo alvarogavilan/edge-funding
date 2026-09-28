@@ -133,6 +133,16 @@ for(const row of [
  }
 }
 save();
+for(const [id,status,note] of [
+ [giratinaResearchId,"DESCARTADA · MÍNIMO COREANO, NO JAPONÉS","La referencia separada por idioma sitúa JP muy por encima (~1.100–1.560 €) y KR alrededor de 399,99 €. Las ofertas 344,90–399,99 € encajan con coreano; no comparar contra JP."],
+ [mew151ResearchId,"DESCARTADA · MÍNIMO COMPATIBLE CON COREANO","Referencia por idioma: japonés ~297,19 €, coreano ~151,06 €. Las NM 119,55–130 € no justifican salida japonesa; con referencia coreana no supera el gate neto."],
+ [glaceonResearchId,"DESCARTADA · MÍNIMO COREANO, NO JAPONÉS","Referencia separada por idioma: JP NM ~429 €, KR ~105 €. El mínimo de 105 € coincide con coreano; no es arbitraje japonés."]
+]){
+ const x=state.manualOpportunities.find(o=>o.id===id);
+ if(x){x.approval="WATCH";x.status=status;x.publicFloorVerified=false;x.languageMismatchRisk=true;x.note=((x.note||"")+" · "+note).trim();}
+}
+state.pokemonLanguageSpreadAuditV939=true;
+save();
 if(!state.manualOpportunities.some(x=>x.id===gyaradosBuyId)){
  state.manualOpportunities.push({
   id:gyaradosBuyId,universe:"pokemon",name:"Gyarados EX",set:"Rage of the Broken Heavens",number:"089/080",
