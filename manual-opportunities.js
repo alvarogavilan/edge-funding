@@ -495,6 +495,30 @@ state.cardmarketUiLanguageGuardV947=true;save();
  }
 }
 state.verifiedClosedSalesV949=true;save();
+const umbreonPps2ResearchId="pokemon-umbreon-vmax-pps2-evs095-research-20260929";
+if(!state.manualOpportunities.some(x=>x.id===umbreonPps2ResearchId)){
+ state.manualOpportunities.push({
+  id:umbreonPps2ResearchId,universe:"pokemon",name:"Umbreon VMAX",set:"Play! Pokémon Prize Pack Series Two",number:"EVS 095",
+  variant:"Prize Pack stamp · idioma exacto pendiente",condition:"NM",shop:"Cardmarket",seller:"ChimeraTrading",
+  price:159.99,trend:510.45,avg30:144.19,avg7:486.25,avg1:450,available:10,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-Two/Umbreon-VMAX-PPS2EVS-095",
+  status:"WATCH PRIORITARIA · VENTA CERRADA EN/NM · FALTA IDIOMA Y FRESCURA DE OFERTA",approval:"VERIFY-LANGUAGE",
+  offerLanguage:"PENDIENTE",languageVerified:false,publicFloorVerified:false,languageCheckRequired:true,
+  sourceFreshnessVerified:false,
+  depthPrices:[159.99,160,165,169.95,200,200,222.22,400,500,850,1600],
+  closedSaleEvidence:{
+   at:"2026-09-29T01:55:00+02:00",
+   source:"PokeValue · venta cerrada Cardmarket",
+   url:"https://pokevalue.es/pokemon/play-pokemon-prize-pack-series-two/umbreon-vmax/095-188",
+   pricesEUR:[550],language:"English",condition:"NM",
+   transactionType:"closed-sale",transactionVerified:true,
+   identityVerified:true,languageVerified:true,conditionVerified:true,
+   note:"Venta Cardmarket cerrada: EN · NM · 550 € · hace aproximadamente 2 meses."
+  },
+  note:"Cardmarket indexa ChimeraTrading NM a 159,99 € y 10 artículos, pero el idioma exacto de esa copia no queda demostrado y la captura indexada de la oferta no es suficientemente fresca para PRIME. PokeValue registra una venta cerrada Cardmarket EN NM a 550 €. Mantener WATCH hasta verificar oferta actual + idioma exacto; no comprar todavía."
+ });save();
+}
+
 for(const x of state.manualOpportunities){
  const sold=window.CVPrimeMarket?.closedSaleEvidence?.(x);
  if(sold?.verified===true){
