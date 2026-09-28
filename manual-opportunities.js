@@ -129,6 +129,10 @@ const umbreonResearchId="pokemon-umbreon-vmax-s6a095-research-20260928";
 const giratinaResearchId="pokemon-giratina-v-s11-111-research-20260928";
 const mew151ResearchId="pokemon-mew-ex-sv2a205-research-20260928";
 const leafeonPps2ResearchId="pokemon-leafeon-vmax-pps2-evs008-research-20260928";
+const rayquaza217AuditId="pokemon-rayquaza-vmax-evs217-audit-20260928";
+const giratina186AuditId="pokemon-giratina-v-lor186-audit-20260928";
+const gengar271AuditId="pokemon-gengar-vmax-fst271-audit-20260928";
+const mew251AuditId="pokemon-mew-v-fst251-audit-20260928";
 for(const row of [
  {id:leafeonPps2ResearchId,name:"Leafeon VMAX",set:"Play! Pokémon Prize Pack Series Two",number:"EVS 008",price:34.99,trend:115.87,avg30:36.42,avg7:103.57,avg1:140,available:3,seller:"Impavido",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-Two/Leafeon-VMAX-PPS2EVS-008",note:"NM 34,99 €, siguiente 65 €, luego ~149,96–179,94 €. Venta NM inglesa externa observada a 140 €. Idioma exacto de la oferta 34,99 € pendiente; no aprobar hasta aislar mismo idioma."},
  {id:giratinaResearchId,name:"Giratina V",set:"Lost Abyss",number:"111",price:349,trend:1592.81,avg30:1069.53,avg7:1563.78,available:47,seller:"ananaskiwi28",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Lost-Abyss/Giratina-V-V3-s11111",note:"NM desde 349 €. Varias NM consecutivas 349–449 €. Margen potencial muy alto; idioma exacto de la oferta mínima debe verificarse antes de comprar."},
@@ -155,6 +159,19 @@ for(const [id,status,note] of [
  if(x){x.approval="WATCH";x.status=status;x.publicFloorVerified=false;x.languageMismatchRisk=true;x.note=((x.note||"")+" · "+note).trim();}
 }
 state.pokemonLanguageSpreadAuditV939=true;
+for(const row of [
+ {id:rayquaza217AuditId,name:"Rayquaza VMAX",set:"Evolving Skies",number:"217/203",price:54,status:"DESCARTADA · MISMO IDIOMA SIN MARGEN",note:"Separación por idioma: IT ~54 €, EN ~80 €, DE ~80,99 €, FR ~85 €, ES ~100 €. El mínimo no es arbitraje; es el suelo italiano."},
+ {id:giratina186AuditId,name:"Giratina V",set:"Lost Origin",number:"186/196",price:490,status:"DESCARTADA · MISMO IDIOMA SIN MARGEN",note:"NM por idioma aprox.: DE ~490 €, IT ~539,99 €, EN ~650 €, ES ~700 €, FR ~1.100 €. La NM ~500 € es el propio suelo alemán."},
+ {id:gengar271AuditId,name:"Gengar VMAX",set:"Fusion Strike",number:"271/264",price:600,status:"DESCARTADA · MISMO IDIOMA SIN MARGEN",note:"NM por idioma aprox.: FR ~600 €, DE ~625 €, EN ~700 €, ES ~750 €, IT ~910 €. Los mínimos globales bajos son cartas PO/PL; NM no deja +40 € netos del mismo idioma."},
+ {id:mew251AuditId,name:"Mew V",set:"Fusion Strike",number:"251/264",price:81,status:"DESCARTADA · MISMO IDIOMA SIN MARGEN",note:"NM por idioma aprox.: EN ~81 €, IT ~98,99 €, DE ~100 €, FR ~158 €, ES ~350 €. No usar media global como salida de otro idioma."}
+]){
+ if(!state.manualOpportunities.some(x=>x.id===row.id)){
+  state.manualOpportunities.push({...row,universe:"pokemon",variant:"RAW · idioma occidental",condition:"NM",shop:"Cardmarket",
+   checkedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+24*3600000).toISOString(),
+   approval:"WATCH",publicFloorVerified:false,resolvedMarketNoEdge:true,languageVerified:false});
+ }
+}
+
 for(const [id,status,why] of [
  [belleMysticId,"WATCH · ROI NETO < 35%","Con salida 245 €, recorte 15%, comisión 5% y 3 € de reserva: salida neta ~194,84 €, margen ~44,84 €, ROI ~29,9%."],
  [elsaId,"WATCH · ROI NETO < 35%","Con salida 450 €, recorte 15%, comisión 5% y 3 € de reserva: salida neta ~360,38 €, margen ~81,38 €, ROI ~29,2%."],
