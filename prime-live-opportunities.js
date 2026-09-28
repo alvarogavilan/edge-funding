@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const now="2026-09-28T10:15:00+02:00";
+const now="2026-09-28T13:28:00+02:00";
 function seal(x){return window.CVIdentity?.key?.(x)||""}
 function setEvidence(id,data){
  const x=(state.manualOpportunities||[]).find(o=>o.id===id);if(!x)return;
@@ -18,12 +18,19 @@ function setEvidence(id,data){
  if(data.approval)x.approval=data.approval;
  if(data.status)x.status=data.status;
 }
+setEvidence("lorcana-elsa-spirit-winter-207-fr-20260928",{
+ source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_1_207",currentExitEUR:450,currentQty:36,available:36,
+ depthPrices:[279,320,350,400,425,450],
+ offer:{price:279,seller:"Oferta francesa publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/The-First-Chapter/Elsa-Spirit-of-Winter-V2",offerLanguage:"French",languageVerified:true,publicFloorVerified:true,condition:"NM",variant:"Encantada · Holofoil · Francés"},
+ approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · FRANCÉS NM · 1 UNIDAD",
+ note:"Entrada francesa NM 279 €. Mediana francesa 450 € con 36+ ofertas. Última venta global visible 23/09: 600 €. Salida económica aplica recorte PRIME 15%."
+});
 setEvidence("lorcana-winnie-hunny-wizard-227-de-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_227",currentExitEUR:1499,currentQty:13,available:13,
  depthPrices:[800,900,1000,1200,1300,1499],
- offer:{price:800,seller:"Cardmarket · mínimo alemán NM",url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Winnie-the-Pooh-Hunny-Wizard-V2",offerLanguage:"German",languageVerified:true,condition:"NM",variant:"Enchanted · Holofoil · German"},
- approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · GERMAN NM · CAPITAL ALTO",
- note:"Entrada alemana NM 800 €. Mediana alemana 1.499 € con 13 ofertas. Salida económica aplica recorte PRIME 15%; una sola unidad por ticket y liquidez."
+ offer:{price:800,seller:"Oferta alemana publicada en Cardmarket",url:"https://www.cardmarket.com/es/Lorcana/Products/Singles/Fabled/Winnie-the-Pooh-Hunny-Wizard-V2",offerLanguage:"German",languageVerified:true,publicFloorVerified:false,condition:"NM",variant:"Encantada · Holofoil · Alemán"},
+ approval:"WATCH",status:"NO COMPRAR AHORA · SALIDA INSUFICIENTEMENTE SEGURA",
+ note:"Revisión 28/09: la mediana alemana publicada es alta, pero la última venta global visible del 22/09 fue 697 €, por debajo de la entrada alemana de 800 €. No se aprueba."
 });
 setEvidence("lorcana-pongo-determined-father-223-it-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_223",currentExitEUR:271.91,currentQty:5,available:5,
