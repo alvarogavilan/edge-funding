@@ -840,8 +840,10 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
     const langs=["ja","en","es","it","de","fr"],weights={ja:60,en:40,es:20,it:20,de:20,fr:20};
     state.pokemonCursorByLanguage=state.pokemonCursorByLanguage||{};
     let allNew=[],seen=0,totalAcross=0,fail=0;
+    const languageStats={};
     for(const lang of langs){
       const list=(lang==="en"?primary:await tcgdexList(lang)).filter(x=>x.id&&x.name),total=list.length||0;
+      languageStats[lang]={catalog:total,scanned:0,signals:0,normal:0,holo:0};
       totalAcross+=total;if(!total)continue;
       const batchSize=Math.min(weights[lang]||20,total),start=(+state.pokemonCursorByLanguage[lang]||0)%total,briefs=[];
       for(let n=0;n<batchSize;n++)briefs.push(list[(start+n)%total]);
@@ -852,11 +854,13 @@ async function fetchMarketUniverse(mode="quick",universe=currentRadarUniverse())
         return card;
       });
       const fetched=full.filter(Boolean),signals=fetched.flatMap(card=>buildPokemonSignals(card,lang));
+      languageStats[lang].scanned=fetched.length;languageStats[lang].signals=signals.length;
+      languageStats[lang].normal=signals.filter(x=>x.finish==="normal").length;languageStats[lang].holo=signals.filter(x=>x.finish==="holo").length;
       if(signals.length){await marketSignalPutMany(signals);allNew.push(...signals)}
       state.pokemonCursorByLanguage[lang]=(start+briefs.length)%total;seen+=briefs.length;
     }
     const fresh=await activeMarketSignals(45,"pokemon");
-    state.marketCoverage={...(state.marketCoverage||{}),total:totalAcross,seen:(+state.marketCoverage?.seen||0)+seen,priced:fresh.all.length,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),languages:langs,languageBatch:{ja:60,en:40,es:20,it:20,de:20,fr:20},multilingual:true};
+    state.marketCoverage={...(state.marketCoverage||{}),total:totalAcross,seen:(+state.marketCoverage?.seen||0)+seen,priced:fresh.all.length,active:fresh.active.length,stale:fresh.stale.length,failed:Object.keys(state.marketFailures).length,at:new Date().toISOString(),languages:langs,languageBatch:{ja:60,en:40,es:20,it:20,de:20,fr:20},languageStats,multilingual:true,holoAware:true};
     state.coverageByUniverse.pokemon=state.marketCoverage;save();
     return fresh.active.sort((a,b)=>b.score-a.score).slice(0,800);
   }
@@ -1160,7 +1164,7 @@ function modeledUpside(x){
 }
 function investmentGate(x){
   const p=investmentProfileFor(x),price=+x.price||0,up=modeledUpside(x),reasons=[],policy=state.operationPolicy||{minPurchaseEUR:20,minProfitEUR:50,minROI:35};
-  const hardMin=Math.max(20,+policy.minPurchaseEUR||20),hardProfit=Math.max(50,+policy.minProfitEUR||50),hardROI=Math.max(35,+policy.minROI||35),roi=price>0?up/price*100:0;
+  const hardMin=Math.max(20,+policy.minPurchaseEUR||20),hardProfit=Math.max(40,+policy.minProfitEUR||40),hardROI=Math.max(35,+policy.minROI||35),roi=price>0?up/price*100:0;
   if(marketUniverseOf(x)==="lorcana"&&String(x.currency||"USD").toUpperCase()!=="EUR")reasons.push("sin precio EUR verificable");
   if(price<Math.max(p.min,hardMin))reasons.push("desembolso < "+money(Math.max(p.min,hardMin),p.currency));
   if(price>p.max)reasons.push("precio por encima del rango");
@@ -1178,7 +1182,7 @@ function renderInvestmentProfile(){
     state.investmentProfile=state.investmentProfile||{};
     state.investmentProfile.minPriceEUR=Math.max(20,+a.value||20);
     state.investmentProfile.maxPriceEUR=Math.max(state.investmentProfile.minPriceEUR,+b.value||150);
-    state.investmentProfile.minUpsideEUR=Math.max(50,+c.value||50);
+    state.investmentProfile.minUpsideEUR=Math.max(40,+c.value||40);
     save();renderTopBuyCandidates(state.marketScan||[]);renderDecisionBoard(state.marketScan||[]);
   }});
 }
