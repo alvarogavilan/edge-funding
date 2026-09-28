@@ -1,5 +1,5 @@
 (()=>{"use strict";
-const now="2026-09-28T10:06:00+02:00";
+const now="2026-09-28T10:15:00+02:00";
 function seal(x){return window.CVIdentity?.key?.(x)||""}
 function setEvidence(id,data){
  const x=(state.manualOpportunities||[]).find(o=>o.id===id);if(!x)return;
@@ -18,6 +18,13 @@ function setEvidence(id,data){
  if(data.approval)x.approval=data.approval;
  if(data.status)x.status=data.status;
 }
+setEvidence("lorcana-winnie-hunny-wizard-227-de-20260928",{
+ source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_227",currentExitEUR:1499,currentQty:13,available:13,
+ depthPrices:[800,900,1000,1200,1300,1499],
+ offer:{price:800,seller:"Cardmarket · mínimo alemán NM",url:"https://www.cardmarket.com/en/Lorcana/Products/Singles/Fabled/Winnie-the-Pooh-Hunny-Wizard-V2",offerLanguage:"German",languageVerified:true,condition:"NM",variant:"Enchanted · Holofoil · German"},
+ approval:"BUY-ONE",status:"COMPRAR AHORA · PRIME · GERMAN NM · CAPITAL ALTO",
+ note:"Entrada alemana NM 800 €. Mediana alemana 1.499 € con 13 ofertas. Salida económica aplica recorte PRIME 15%; una sola unidad por ticket y liquidez."
+});
 setEvidence("lorcana-pongo-determined-father-223-it-20260928",{
  source:"Cardmarket + TCGGraph",sourceUrl:"https://tcggraph.com/cards/lor_9_223",currentExitEUR:271.91,currentQty:5,available:5,
  depthPrices:[137.95,149,170,179,245,247,271.91],
