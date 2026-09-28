@@ -72,7 +72,8 @@ function publicVerifiedBuys(){
   return {id:"public:"+x.id,name:x.name,set:x.set||"",number:x.number||"",image:img(x),price:N(x.price),
    seller:x.seller,url:x.url,source:"Mercado público verificado · mismo idioma/estado",
    language:x.offerLanguage||x.language||"",description:[x.variant,x.condition,N(x.price)>=500?"Capital alto":""].filter(Boolean).join(" · "),
-   exit,edge,roi,exitKind:"active-exit-ask",checkedAt:x.evidenceCheckedAt||x.checkedAt||"",units:1};
+   exit,edge,roi,exitKind:"active-exit-ask",checkedAt:x.evidenceCheckedAt||x.checkedAt||"",units:1,
+   lastSalePrice:N(x.lastSalePrice),lastSaleDate:x.lastSaleDate||"",sameLanguageOffers:N(x.marketEvidence?.currentQty||x.available)};
  });
 }
 function euBuys(){
@@ -159,7 +160,8 @@ function card(r,i){
    '</div>'+
   '</div>'+
   '<div class="primeBuyEconomics"><span>Salida prudente '+EUR(r.exit)+'</span><span>Margen aprox. +'+EUR(r.edge)+' · Rentabilidad '+r.roi.toFixed(1)+'%</span></div>'+
-  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida basada en mercado activo; no es una venta cerrada":r.exitKind==="cross-market-net"?"Salida conservadora neta cruzando mercados y profundidad del mismo idioma":"Salida respaldada por ventas verificadas")+(r.checkedAt?" · "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
+  '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida basada en mercado activo del mismo idioma":r.exitKind==="cross-market-net"?"Salida conservadora neta cruzando mercados y profundidad del mismo idioma":"Salida respaldada por ventas verificadas")+(r.checkedAt?" · Revisado "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
+  ((r.lastSalePrice||r.sameLanguageOffers)?'<div class="primeBuyFacts">'+(r.lastSalePrice?'<span>Última venta observada <b>'+EUR(r.lastSalePrice)+'</b>'+(r.lastSaleDate?' · '+new Date(r.lastSaleDate+"T12:00:00").toLocaleDateString("es-ES"):'')+'</span>':'')+(r.sameLanguageOffers?'<span>Ofertas mismo idioma <b>'+r.sameLanguageOffers+'+</b></span>':'')+'</div>':'')+
   (r.url?'<a class="primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+E((/cardmarket/i.test(r.url)?"COMPRAR EN CARDMARKET":"COMPRAR")+' · '+EUR(r.price))+'</a>':'<button class="primeBuyLink" disabled>SIN ENLACE DE COMPRA</button>')+
   (r.units>1?'<small class="primeBuyUnits">Máximo sugerido: '+r.units+' unidades por liquidez.</small>':'')+
  '</article>';
