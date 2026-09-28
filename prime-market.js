@@ -70,7 +70,9 @@ function evidenceConfidence(x){
 function quality(x){
  const ex=exactOffer(x),ee=exitEvidence(x),d=depth(x),c=consistency(x),econ=conservative(x),supply=window.CVSupplyRisk?.stateOf?.(x)||{risk:"unknown",verified:false},abs=absorption(x);
  const stale=x.expiresAt?new Date(x.expiresAt)<=new Date():false;
+ const owned=(state.cards||[]).filter(card=>!card.archivedSold).some(card=>{try{return window.CVIdentity?.sameOwnedCard?.(card,x)===true}catch{return false}});
  const checks=[
+  ["No está ya en Mi colección",!owned||x.allowScaleOwned===true],
   ["Oferta exacta",ex],
   ["Comparable mismo idioma/mercado",ee.sameMarket],
   ["Evidencia de salida",ee.ok],
