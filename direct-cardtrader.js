@@ -48,7 +48,7 @@ async function marketplaceForExpansion(exp,marketCache){
 async function candidateRows(){
  const out=[];
  const priority=(state.manualOpportunities||[])
-  .filter(x=>x.universe==="pokemon"&&["VERIFY-LANGUAGE","WATCH"].includes(x.approval)&&Number(x.price)>=20)
+  .filter(x=>x.universe==="pokemon"&&["VERIFY-LANGUAGE","WATCH"].includes(x.approval)&&Number(x.price)>=20&&x.languageMismatchRisk!==true)
   .map(x=>({...x,score:/giratina|mew-ex-sv2a205/.test(String(x.id||""))?180:120,source:"Card Vault · investigación prioritaria"}));
  out.push(...priority);
  for(const u of ["pokemon","lorcana"]){
@@ -81,18 +81,19 @@ function localArbitrageForCandidate(c,offers){
   const rawRef=Number(c.price||c.avg30||c.trend||0);
   const marketRefEUR=refCurrency==="USD"&&cache.usdEur?rawRef*cache.usdEur:rawRef;
   if(!(marketRefEUR>0)||!(sameMedian>0))continue;
+  const languageSpreadRisk=marketRefEUR>sameMedian*1.8;
   const grossExit=Math.min(marketRefEUR,sameMedian);
   const prudentGross=grossExit*.88,netExit=prudentGross*.95-3;
   const edge=netExit-Number(entry.total),roi=Number(entry.total)>0?edge/Number(entry.total)*100:0;
   const spread=grossExit>0?(grossExit-Number(entry.total))/grossExit*100:0;
-  const pass=Number(entry.total)>=20&&edge>=40&&roi>=35&&spread>=25;
+  const pass=Number(entry.total)>=20&&edge>=40&&roi>=35&&spread>=25&&!languageSpreadRisk;
   out.push({
    product_id:"local:"+String(entry.externalId||entry.id||c.id||c.name),universe:c.universe||"pokemon",name:c.name,set_name:c.set||"",number:c.number||"",
    image:c.image||"",blueprint_id:String(entry.externalId||"").replace(/^ct:/,""),lang:entry.language||"",condition:entry.condition||"Near Mint",
    finish:entry.variant||"",price_eur:Number(entry.total),seller:entry.seller||"",url:entry.url||"",fetched_at:entry.checkedAt||new Date().toISOString(),
    exit_gross:Math.round(grossExit*100)/100,exit_net:Math.round(netExit*100)/100,edge:Math.round(edge*100)/100,roi:Math.round(roi*10)/10,
    spread:Math.round(spread*10)/10,pass,evidence_refs:4,same_language_offers:rows.length,same_language_median:Math.round(sameMedian*100)/100,
-   exit_basis:"mínimo entre referencia Cardmarket actual y mediana CardTrader del mismo idioma"
+   exit_basis:"mínimo entre referencia Cardmarket actual y mediana CardTrader del mismo idioma",language_spread_risk:languageSpreadRisk
   });
  }
  return out;
