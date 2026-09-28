@@ -647,6 +647,12 @@ function tcgplayerMarket(c){
   if(!vals.length)return null;
   vals.sort((a,b)=>a.price-b.price);return vals[Math.floor(vals.length/2)];
 }
+function pokemonSetLanguageLock(setName){
+ const s=norm(setName||"");
+ if(/traditional chinese products/.test(s))return {code:"zh-tw",name:"Traditional Chinese",label:"Chino tradicional"};
+ if(/simplified chinese/.test(s)||/nine colors gathering|shining synergy|return of the dragon/.test(s))return {code:"zh-cn",name:"Simplified Chinese",label:"Chino simplificado"};
+ return null;
+}
 function buildPokemonSignalVariant(c,lang="en",finish="normal",canonical=null){
   const cm=c?.pricing?.cardmarket||{},holo=finish==="holo";
   const get=k=>num(cm[holo?(k+"-holo"):k]);
@@ -668,7 +674,8 @@ function buildPokemonSignalVariant(c,lang="en",finish="normal",canonical=null){
   const owned=state.cards.find(x=>x.catalogId===c.id),sc=owned?scarcitySignal(owned):null;let finalScore=score;if(sc){analysts.scarcity=sc.score;let sw=Number(state.analystWeights?.scarcity??.12);finalScore=Math.round((score+sc.score*sw)/(1+sw))}
   const baseId=lang==="en"?c.id:(lang+":"+c.id),id=finish==="normal"?baseId:(baseId+":holo");
   const langNames={en:"English",ja:"Japanese",es:"Spanish",it:"Italian",de:"German",fr:"French",ko:"Korean",pt:"Portuguese",nl:"Dutch",pl:"Polish",ru:"Russian","zh-tw":"Traditional Chinese","zh-cn":"Simplified Chinese",id:"Indonesian",th:"Thai"};
-  return {id,sourceId:c.id,universe:"pokemon",language:langNames[lang]||lang,languageCode:lang,finish,name:c.name,canonicalName:canonical?.name||c.name,set:c.set?.name||"",canonicalSet:canonical?.set?.name||c.set?.name||"",setId:c.set?.id||canonical?.set?.id||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low:observedLow,lowConditionUnverified:true,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tpVariant?{variant:finish,price:num(tpVariant.marketPrice)}:null,score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc,source:"TCGdex · Cardmarket",catalogOnly:false};
+  const lock=pokemonSetLanguageLock(c.set?.name||canonical?.set?.name||""),effectiveLang=lock?.code||lang;
+  return {id,sourceId:c.id,universe:"pokemon",language:langNames[effectiveLang]||lock?.name||effectiveLang,languageCode:effectiveLang,languageLockedBySet:!!lock,languageLockLabel:lock?.label||"",finish,name:c.name,canonicalName:canonical?.name||c.name,set:c.set?.name||"",canonicalSet:canonical?.set?.name||c.set?.name||"",setId:c.set?.id||canonical?.set?.id||"",number:c.localId||c.printed_number||c.number||"",image:c.image?c.image+"/low.webp":"",price:trend,low:observedLow,lowConditionUnverified:true,avg1:a1,avg7:a7,avg30:a30,momentum1:m1,momentum7:m7,discount,volatility:vol,global,tcgplayer:tpVariant?{variant:finish,price:num(tpVariant.marketPrice)}:null,score:finalScore,risk,scenario12,rarity:c.rarity||"",updated:cm.updated||null,scannedAt:new Date().toISOString(),analysts,scarcity:sc,source:"TCGdex · Cardmarket",catalogOnly:false};
 }
 function buildPokemonSignals(c,lang="en",canonical=null){
   const out=[],normal=buildPokemonSignalVariant(c,lang,"normal",canonical),holo=buildPokemonSignalVariant(c,lang,"holo",canonical);
