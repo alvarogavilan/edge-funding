@@ -6,6 +6,31 @@ function idioma(v){
  const map={it:["🇮🇹","Italiano"],italian:["🇮🇹","Italiano"],italiano:["🇮🇹","Italiano"],en:["🇬🇧","Inglés"],english:["🇬🇧","Inglés"],ingles:["🇬🇧","Inglés"],"inglés":["🇬🇧","Inglés"],es:["🇪🇸","Español"],spanish:["🇪🇸","Español"],espanol:["🇪🇸","Español"],"español":["🇪🇸","Español"],fr:["🇫🇷","Francés"],french:["🇫🇷","Francés"],frances:["🇫🇷","Francés"],"francés":["🇫🇷","Francés"],de:["🇩🇪","Alemán"],german:["🇩🇪","Alemán"],aleman:["🇩🇪","Alemán"],"alemán":["🇩🇪","Alemán"],jp:["🇯🇵","Japonés"],ja:["🇯🇵","Japonés"],japanese:["🇯🇵","Japonés"],japones:["🇯🇵","Japonés"],"japonés":["🇯🇵","Japonés"],pt:["🇵🇹","Portugués"],portuguese:["🇵🇹","Portugués"],portugues:["🇵🇹","Portugués"],"portugués":["🇵🇹","Portugués"],kr:["🇰🇷","Coreano"],ko:["🇰🇷","Coreano"],korean:["🇰🇷","Coreano"],coreano:["🇰🇷","Coreano"]};
  return map[k]||["🌐",v||"Idioma sin verificar"];
 }
+function textoES(v){
+ let s=String(v||"");
+ const reps=[
+  [/\bEnchanted\b/gi,"Encantada"],[/\bItalian\b/gi,"Italiano"],[/\bGerman\b/gi,"Alemán"],[/\bFrench\b/gi,"Francés"],
+  [/\bEnglish\b/gi,"Inglés"],[/\bJapanese\b/gi,"Japonés"],[/\bSpanish\b/gi,"Español"],
+  [/\bNear Mint\b/gi,"Casi nueva (NM)"],[/\bNM\b/g,"Casi nueva (NM)"],
+  [/\bMint\b/gi,"Impecable (MT)"],[/\bExcellent\b/gi,"Excelente (EX)"],
+  [/\bGood\b/gi,"Buena (GD)"],[/\bPlayed\b/gi,"Jugada (PL)"],
+  [/\bHolofoil\b/gi,"Holofoil"],[/\bFoil\b/gi,"Foil"],[/\bCapital alto\b/gi,"Capital alto"]
+ ];
+ for(const [re,to] of reps)s=s.replace(re,to);
+ return s.replace(/\s+·\s+/g," · ").trim();
+}
+function sellerES(v){
+ const s=String(v||"").trim();
+ if(/^Cardmarket\s*·/i.test(s))return "Oferta publicada en Cardmarket";
+ return s||"Vendedor verificado";
+}
+function sourceES(v){
+ const s=String(v||"").trim();
+ if(/Cardmarket/i.test(s)&&/oferta/i.test(s))return "Oferta publicada en Cardmarket";
+ if(/Mercado público verificado/i.test(s))return "Mercado público verificado · mismo idioma y estado";
+ if(/Sellado PRIME/i.test(s))return "Producto sellado verificado";
+ return s||"Mercado verificado";
+}
 function img(x){
  const direct=x?.image||x?.referenceImage||x?.photoURL||x?.photo;if(direct)return direct;
  const rows=[...(state.marketScan||[]),...(state.marketCandidates||[]),...(state.globalRadar?.scored||[]).map(z=>z.x||z)].filter(Boolean);
@@ -129,13 +154,13 @@ function card(r,i){
   '<div class="primeBuyTop"><span class="primeBuyBadge">COMPRAR AHORA</span><strong class="primeBuyPrice">'+EUR(r.price)+'</strong></div>'+
   '<div class="primeBuyMain">'+
    (r.image?'<img class="primeBuyImage" src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy">':'<div class="primeBuyImage primeBuyNoImage"><span class="autoImageLoader"></span><small>Cargando imagen automática…</small></div>')+
-   '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><div class="primeLanguageBadge">'+E(l[0]+' '+l[1])+'</div><h3>'+E(r.name)+'</h3><small class="primeBuyMeta">'+E([r.number,r.set,r.description].filter(Boolean).join(" · "))+'</small>'+
-    '<div class="primeBuySeller"><span>Vendedor</span><b>'+E(r.seller)+'</b><small>'+E(r.source)+'</small></div>'+
+   '<div class="primeBuyInfo"><div class="primeBuyRank">#'+(i+1)+'</div><div class="primeLanguageBadge">'+E(l[0]+' '+l[1])+'</div><h3>'+E(r.name)+'</h3><small class="primeBuyMeta">'+E([r.number,r.set,textoES(r.description)].filter(Boolean).join(" · "))+'</small>'+
+    '<div class="primeBuySeller"><span>Vendedor / origen</span><b>'+E(sellerES(r.seller))+'</b><small>'+E(sourceES(r.source))+'</small></div>'+
    '</div>'+
   '</div>'+
-  '<div class="primeBuyEconomics"><span>Salida prudente '+EUR(r.exit)+'</span><span>Margen aprox. +'+EUR(r.edge)+' · ROI '+r.roi.toFixed(1)+'%</span></div>'+
+  '<div class="primeBuyEconomics"><span>Salida prudente '+EUR(r.exit)+'</span><span>Margen aprox. +'+EUR(r.edge)+' · Rentabilidad '+r.roi.toFixed(1)+'%</span></div>'+
   '<small class="primeBuyEvidence">'+(r.exitKind==="active-exit-ask"?"Salida basada en mercado activo; no es una venta cerrada":r.exitKind==="cross-market-net"?"Salida conservadora neta cruzando mercados y profundidad del mismo idioma":"Salida respaldada por ventas verificadas")+(r.checkedAt?" · "+new Date(r.checkedAt).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"")+'</small>'+
-  (r.url?'<a class="primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+E((/cardmarket/i.test(r.url)?"CARDMARKET":"COMPRAR")+' · '+r.seller.toUpperCase()+' · '+EUR(r.price))+'</a>':'<button class="primeBuyLink" disabled>SIN ENLACE EJECUTABLE</button>')+
+  (r.url?'<a class="primeBuyLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+E((/cardmarket/i.test(r.url)?"COMPRAR EN CARDMARKET":"COMPRAR")+' · '+EUR(r.price))+'</a>':'<button class="primeBuyLink" disabled>SIN ENLACE DE COMPRA</button>')+
   (r.units>1?'<small class="primeBuyUnits">Máximo sugerido: '+r.units+' unidades por liquidez.</small>':'')+
  '</article>';
 }
