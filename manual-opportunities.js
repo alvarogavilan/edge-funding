@@ -115,7 +115,11 @@ const glaceonResearchId="pokemon-glaceon-vmax-s6a091-research-20260928";
 const leafeonResearchId="pokemon-leafeon-vmax-s6a089-research-20260928";
 const pikazekResearchId="pokemon-pikachu-zekrom-gx-sm9101-research-20260928";
 const umbreonResearchId="pokemon-umbreon-vmax-s6a095-research-20260928";
+const giratinaResearchId="pokemon-giratina-v-s11-111-research-20260928";
+const mew151ResearchId="pokemon-mew-ex-sv2a205-research-20260928";
 for(const row of [
+ {id:giratinaResearchId,name:"Giratina V",set:"Lost Abyss",number:"111",price:349,trend:1592.81,avg30:1069.53,avg7:1563.78,available:47,seller:"ananaskiwi28",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Lost-Abyss/Giratina-V-V3-s11111",note:"NM desde 349 €. Varias NM consecutivas 349–449 €. Margen potencial muy alto; idioma exacto de la oferta mínima debe verificarse antes de comprar."},
+ {id:mew151ResearchId,name:"Mew ex",set:"Pokémon Card 151",number:"205",price:119.55,trend:225.99,avg30:249.91,avg7:257.63,available:129,seller:"magma-cards",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Pokemon-Card-151/Mew-ex-V3-sv2a205",note:"Primera NM observada 119,55 €. Varias NM 120–130 €. Media 30d 249,91 €. Idioma exacto pendiente."},
  {id:glaceonResearchId,name:"Glaceon VMAX",set:"Eevee Heroes",number:"091",price:105,trend:448.29,avg30:244.05,avg7:416.49,available:51,seller:"Predatoree",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Eevee-Heroes/Glaceon-VMAX-V3",note:"NM desde 105 €. Varias NM consecutivas 105–130 €. Idioma exacto de la oferta mínima no visible públicamente."},
  {id:leafeonResearchId,name:"Leafeon VMAX",set:"Eevee Heroes",number:"089",price:110,trend:370.25,avg30:251.95,avg7:279.33,available:42,seller:"DojoTCG",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Eevee-Heroes/Leafeon-VMAX-V3",note:"NM desde 110 €. Varias NM consecutivas 110–120 €. Idioma exacto de la oferta mínima no visible públicamente."},
  {id:pikazekResearchId,name:"Pikachu & Zekrom GX",set:"Tag Bolt",number:"101",price:199.99,trend:2385.09,avg30:613.67,avg7:1436.40,available:9,seller:"SvenVM",url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Tag-Bolt/Pikachu-Zekrom-GX-V3-sm9101",note:"NM desde 199,99 €. Dispersión extrema; exige verificar idioma exacto y salida antes de comprar."},
