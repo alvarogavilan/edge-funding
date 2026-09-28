@@ -45,6 +45,18 @@ async function marketplaceForExpansion(exp,marketCache){
  marketCache.set(exp.id,rows);
  return rows;
 }
+function ownedCandidate(x){
+ const cleanName=v=>norm(v).replace(/\s+#?\d+(?:\/\d+)?\s*$/,"").trim();
+ const number=v=>{const direct=numKey(v?.number);if(direct)return direct;const m=String(v?.name||"").match(/#?([A-Za-z]*\d+(?:\/\d+)?)\s*$/);return m?numKey(m[1]):""};
+ const xn=cleanName(x?.canonicalName||x?.name),xnum=number(x),xl=norm(x?.language||x?.offerLanguage||"");
+ return (state.cards||[]).filter(c=>!c.archivedSold).some(c=>{
+  if(norm(c.universe||"pokemon")!==norm(x.universe||"pokemon"))return false;
+  if(cleanName(c.name)!==xn)return false;
+  const cn=number(c);if(cn&&xnum&&cn!==xnum)return false;
+  const cl=norm(c.language||"");if(cl&&xl&&cl!==xl)return false;
+  return !!(cn||xnum||c.set||x.set);
+ });
+}
 async function candidateRows(){
  const out=[];
  const priority=(state.manualOpportunities||[])
@@ -58,7 +70,7 @@ async function candidateRows(){
  for(const x of (state.marketScan||[]))out.push(x);
  try{const all=await window.CVAllMarketSignals?.();for(const x of (all||[]))out.push(x)}catch{}
  const seen=new Set();
- return out.filter(x=>x?.name&&x?.set).filter(x=>{
+ return out.filter(x=>x?.name&&x?.set&&!ownedCandidate(x)&&x.allowScaleOwned!==true).filter(x=>{
   const k=[x.universe,norm(x.canonicalName||x.name),norm(x.canonicalSet||x.set),numKey(x.number),norm(x.language||x.languageCode||""),norm(x.finish||"")].join("|");
   if(seen.has(k))return false;seen.add(k);return true;
  }).filter(x=>{const p=Number(x.price)||0,cur=String(x.currency||"EUR").toUpperCase(),eur=cur==="USD"&&cache.usdEur?p*cache.usdEur:p;return !p||eur>=20})
