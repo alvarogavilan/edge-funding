@@ -456,6 +456,44 @@ state.leafeonPps2EvidenceV946=true;save();
  }
 }
 state.cardmarketUiLanguageGuardV947=true;save();
+{
+ const x=state.manualOpportunities.find(o=>o.id===leafeonPps2ResearchId);
+ if(x){
+  x.closedSaleEvidence={
+   at:"2026-09-29T00:33:00+02:00",
+   source:"PokeValue · venta cerrada Cardmarket",
+   url:"https://pokevalue.de/pokemon/play-pokemon-prize-pack-series-two/folipurba-vmax/008-188",
+   pricesEUR:[140],
+   language:"English",condition:"NM",
+   identityVerified:true,languageVerified:true,conditionVerified:true,
+   note:"Venta Cardmarket cerrada mostrada por PokeValue: EN · NM · 140 €. Es evidencia de salida real, NO un anuncio activo."
+  };
+  x.closedSaleVerified=true;
+  x.closedSaleIdentityVerified=true;
+  x.closedSaleLanguageVerified=true;
+  x.lastSalePrice=140;
+  x.soldMedianEUR=140;
+  x.soldSample=1;
+  x.salesEvidenceSource=x.closedSaleEvidence.source;
+  x.salesEvidenceUrl=x.closedSaleEvidence.url;
+  x.note=((x.note||"")+" · Venta cerrada verificada: Cardmarket EN NM 140 € vía PokeValue. La entrada de Impavido sigue bloqueada hasta confirmar que también sea inglesa.").trim();
+ }
+}
+{
+ const x=state.manualOpportunities.find(o=>o.id===pikachuPps1ResearchId);
+ if(x){
+  x.supportingClosedSales={
+   at:"2026-09-29T00:33:00+02:00",
+   source:"PriceCharting · ventas completadas",
+   url:"https://www.pricecharting.com/game/pokemon-vivid-voltage/pikachu-vmax-prize-pack-44",
+   pricesUSD:[634.08,688.66],
+   identityVerified:true,languageVerified:false,
+   note:"Ventas completadas 02/08/2026 y 06/08/2026 de Pikachu VMAX 044/185 Prize Pack stamped. Idioma de los ejemplares no demostrado en la fuente indexada, por lo que NO cuenta todavía como evidencia PRIME del mismo idioma."
+  };
+  x.note=((x.note||"")+" · PriceCharting confirma dos ventas completadas de la impresión exacta por 634,08 y 688,66 USD, pero sin idioma verificable; se guardan solo como apoyo.").trim();
+ }
+}
+state.verifiedClosedSalesV949=true;save();
 
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1);
@@ -483,7 +521,7 @@ function top5Rank(x){
 function render(){
  const host=document.querySelector("#todaySimple");if(!host)return;
  let box=document.querySelector("#manualOpportunityPanel");if(!box){box=document.createElement("section");box.id="manualOpportunityPanel";box.className="simpleSection";host.prepend(box)}
- const rows=state.manualOpportunities.filter(z=>[gyaradosBuyId,scroogeId,elsaId,winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
+ const rows=state.manualOpportunities.filter(z=>[leafeonPps2ResearchId,pikachuPps1ResearchId,gyaradosBuyId,scroogeId,elsaId,winnieId,pongoId,belleMysticId,arielId,tinkerId,auroraId,belleId,simbaId,artfulId,ladyId,trumpeterId,nurseId,hoohId,espeonId,stitchSurferId,stitchRockId,mickeyId,id,caravanId].includes(z.id)).sort((a,b)=>top5Rank(b)-top5Rank(a));
  if(!rows.length)return;const c=cash();
  box.innerHTML='<div class="simpleTitle"><h3>Oportunidades verificadas manualmente</h3><span>'+rows.length+'</span></div>'+rows.map(x=>{const stale=new Date(x.expiresAt)<=new Date(),ps=positionSizing(x,c),netExit=ps.conservativeExit,potential=ps.netEdge,isPolicyFail=!ps.passes,isWatch=x.approval==="WATCH"||isPolicyFail,isLang=x.approval==="VERIFY-LANGUAGE",isScale=x.approval==="BUY-SCALE"&&!isPolicyFail,isOne=x.approval==="BUY-ONE"&&!isPolicyFail;
  if(x.approval==="VERIFY-LANGUAGE"){ps.maxUnits=0;ps.recommended=0;ps.reason="Bloqueada hasta confirmar idioma y estado exactos de la oferta.";}
