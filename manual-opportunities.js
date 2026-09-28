@@ -129,6 +129,7 @@ const umbreonResearchId="pokemon-umbreon-vmax-s6a095-research-20260928";
 const giratinaResearchId="pokemon-giratina-v-s11-111-research-20260928";
 const mew151ResearchId="pokemon-mew-ex-sv2a205-research-20260928";
 const leafeonPps2ResearchId="pokemon-leafeon-vmax-pps2-evs008-research-20260928";
+const pikachuPps1ResearchId="pokemon-pikachu-vmax-pps1-viv044-research-20260929";
 const rayquaza217AuditId="pokemon-rayquaza-vmax-evs217-audit-20260928";
 const giratina186AuditId="pokemon-giratina-v-lor186-audit-20260928";
 const gengar271AuditId="pokemon-gengar-vmax-fst271-audit-20260928";
@@ -434,6 +435,24 @@ state.finalOpportunityNormalizationV945=true;save();
  }
 }
 state.leafeonPps2EvidenceV946=true;save();
+{
+ const id=pikachuPps1ResearchId;
+ let x=state.manualOpportunities.find(o=>o.id===id);
+ if(!x){
+  x={id,universe:"pokemon",name:"Pikachu VMAX",set:"Play! Pokémon Prize Pack Series One",number:"VIV 044",
+   variant:"Prize Pack stamp · idioma exacto pendiente",condition:"NM",shop:"Cardmarket",seller:"LeCashClubStJean",
+   price:449.90,trend:392.69,avg30:246.17,avg7:340,avg1:499.99,available:4,sellerQty:1,
+   url:"https://www.cardmarket.com/es/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-One/Pikachu-VMAX-PPS1VIV-044",
+   checkedAt:"2026-09-29T00:33:00+02:00",expiresAt:"2026-09-30T00:33:00+02:00",
+   status:"INVESTIGACIÓN PRIORITARIA · VERIFICAR IDIOMA EXACTO",approval:"VERIFY-LANGUAGE",
+   offerLanguage:"PENDIENTE",languageVerified:false,publicFloorVerified:false,languageCheckRequired:true,
+   depthPrices:[449.90,999.99,1500],
+   note:"Cardmarket: LeCashClubStJean NM 449,90 €. Otras NM observadas 999,99 € y 1.500 €. La interfaz de Cardmarket puede mostrar English/Deutsch/etc. sin indicar idioma del artículo; NO inferir idioma desde la UI."
+  };
+  state.manualOpportunities.push(x);
+ }
+}
+state.cardmarketUiLanguageGuardV947=true;save();
 
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1);
