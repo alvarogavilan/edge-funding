@@ -1276,7 +1276,8 @@ function renderBuyNow(ranked){
       try{sold=window.CVPrimeMarket?.closedSaleEvidence?.(x)||sold}catch{}
       const rawEv=x.closedSaleEvidence||{},prices=Array.isArray(rawEv.pricesEUR)?rawEv.pricesEUR.map(Number).filter(v=>v>0):[];
       const sup=x.supportingClosedSales||{},usd=Array.isArray(sup.pricesUSD)?sup.pricesUSD.map(Number).filter(v=>v>0):[];
-      const usdRobust=usd.length?[...usd].sort((a,b)=>a-b)[Math.floor(usd.length/2)]:0;
+      const usdSorted=[...usd].sort((a,b)=>a-b);
+      const usdRobust=usdSorted.length?(usdSorted.length%2?usdSorted[(usdSorted.length-1)/2]:(usdSorted[usdSorted.length/2-1]+usdSorted[usdSorted.length/2])/2):0;
       const fx=Number(sup.fxEURPerUSD||0.8794),supportEUR=usdRobust>0?usdRobust*fx:0;
       const saleRef=sold.median||((prices.length&&prices.reduce((a,b)=>a+b,0)/prices.length)||0)||supportEUR;
       const netExit=saleRef>0?saleRef*.85*.95-3:0,edge=netExit-Number(x.price||0),roi=Number(x.price)>0?edge/Number(x.price)*100:0;
