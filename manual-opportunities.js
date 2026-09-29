@@ -544,6 +544,32 @@ if(!state.pokemonSeries3AuditV957){
 }
 
 
+
+const sylveonPps1ResearchId="pokemon-sylveon-vmax-pps1-evs075-research-20260929";
+if(!state.manualOpportunities.some(x=>x.id===sylveonPps1ResearchId)){
+ state.manualOpportunities.push({
+  id:sylveonPps1ResearchId,universe:"pokemon",name:"Sylveon VMAX",set:"Play! Pokémon Prize Pack Series One",number:"EVS 075",
+  variant:"Prize Pack stamp · idioma exacto de la oferta pendiente",condition:"NM",shop:"Cardmarket",seller:"saucas12",
+  price:40,trend:203.93,avg30:61.12,avg7:168.65,avg1:50,available:10,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-One/Sylveon-VMAX-PPS1EVS-075",
+  checkedAt:"2026-09-29T12:18:00+02:00",expiresAt:"2026-09-30T12:18:00+02:00",
+  status:"WATCH MÁXIMA PRIORIDAD · VENTAS CERRADAS EN/NM · FALTA IDIOMA DE OFERTA",approval:"VERIFY-LANGUAGE",
+  offerLanguage:"PENDIENTE",languageVerified:false,publicFloorVerified:false,languageCheckRequired:true,
+  depthPrices:[40,109,129.94,215.75,240,249.99,250,279.99,900],
+  supportingClosedSales:{
+   at:"2026-09-29T12:18:00+02:00",
+   source:"PriceCharting · ventas completadas TCGPlayer",
+   url:"https://www.pricecharting.com/game/pokemon-evolving-skies/sylveon-vmax-prize-pack-75",
+   currency:"USD",fxEURPerUSD:0.8794,fxAt:"2026-09-29",fxSource:"Wise · USD/EUR mid-market",
+   pricesUSD:[216.22,199.97,199.97,176.88,171.89,171.89,171.89,170.17,199.99,160.24,198.98,198.76,196.99,150],
+   saleDates:["2026-09-04","2026-08-02","2026-06-24","2026-06-16","2026-06-09","2026-06-06","2026-06-03","2026-05-24","2026-04-27","2026-04-26","2026-04-15","2026-04-02","2026-03-15","2026-03-13"],
+   language:"English",condition:"NM",
+   identityVerified:true,languageVerified:true,conditionVerified:true,transactionVerified:true,
+   note:"Ventas cerradas TCGPlayer Near Mint English Prize Pack. Se excluyen registros eBay y la fila *SPANISH*."
+  },
+  note:"Cardmarket indexa saucas12 NM a 40 €. PriceCharting conserva múltiples ventas TCGPlayer cerradas EN/NM entre 150 y 216,22 USD. Mantener WATCH hasta confirmar que la oferta concreta de saucas12 es inglesa."
+ });save();
+}
 const mewPps2ResearchId="pokemon-mew-vmax-pps2-fst114-research-20260929";
 const rayquazaPps2ResearchId="pokemon-rayquaza-vmax-pps2-evs111-research-20260929";
 if(!state.manualOpportunities.some(x=>x.id===mewPps2ResearchId)){
