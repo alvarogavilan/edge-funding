@@ -1275,18 +1275,22 @@ function renderBuyNow(ranked){
       let sold={verified:false,median:0,sample:0};
       try{sold=window.CVPrimeMarket?.closedSaleEvidence?.(x)||sold}catch{}
       const rawEv=x.closedSaleEvidence||{},prices=Array.isArray(rawEv.pricesEUR)?rawEv.pricesEUR.map(Number).filter(v=>v>0):[];
-      const saleRef=sold.median||((prices.length&&prices.reduce((a,b)=>a+b,0)/prices.length)||0);
+      const sup=x.supportingClosedSales||{},usd=Array.isArray(sup.pricesUSD)?sup.pricesUSD.map(Number).filter(v=>v>0):[];
+      const usdRobust=usd.length?[...usd].sort((a,b)=>a-b)[Math.floor(usd.length/2)]:0;
+      const fx=Number(sup.fxEURPerUSD||0.8794),supportEUR=usdRobust>0?usdRobust*fx:0;
+      const saleRef=sold.median||((prices.length&&prices.reduce((a,b)=>a+b,0)/prices.length)||0)||supportEUR;
       const netExit=saleRef>0?saleRef*.85*.95-3:0,edge=netExit-Number(x.price||0),roi=Number(x.price)>0?edge/Number(x.price)*100:0;
       const missing=[];
       if(!x.languageVerified||!/^(english|spanish|german|french|italian|japanese|korean|portuguese|traditional chinese|simplified chinese)$/i.test(String(x.offerLanguage||x.language||"")))missing.push("idioma exacto de la oferta");
       if(rawEv&&Object.keys(rawEv).length&&!sold.verified)missing.push("venta cerrada aún no comparable al 100%");
-      if(!rawEv||!Object.keys(rawEv).length)missing.push("venta cerrada comparable");
+      if((!rawEv||!Object.keys(rawEv).length)&&(!sup||!Object.keys(sup).length))missing.push("venta cerrada comparable");
+      if((!rawEv||!Object.keys(rawEv).length)&&sup&&Object.keys(sup).length)missing.push("normalizar evidencia externa a PRIME");
       const age=x.checkedAt?((Date.now()-new Date(x.checkedAt).getTime())/3600000):999;if(!(age<=24))missing.push("oferta fresca ≤24 h");
-      return {x,saleRef,netExit,edge,roi,missing};
+      return {x,saleRef,netExit,edge,roi,missing,supportUSD:usdRobust,supportFX:fx};
     }).filter(o=>o.saleRef>0&&o.edge>=40&&o.roi>=35)
       .sort((a,b)=>b.edge-a.edge||b.roi-a.roi).slice(0,5);
   const nearHtml=nearPrime.length?'<div class="nearPrimeBox"><div class="buyHead"><h3>A UN PASO DE COMPRA YA</h3><span>'+nearPrime.length+' Pokémon con economía PRIME, bloqueados por un dato</span></div>'+
-    nearPrime.map((o,i)=>'<article class="topTenRow nearPrimeRow"><div class="topTenBody"><b>#'+(i+1)+' 🟡 '+esc(o.x.name)+'</b><small>'+esc([o.x.set,o.x.number,o.x.condition].filter(Boolean).join(" · "))+'</small><div class="buyMetrics"><span>Entrada <strong>'+money(o.x.price,"EUR")+'</strong></span><span>Venta cerrada ref. <strong>'+money(o.saleRef,"EUR")+'</strong></span><span>Neto prudente <strong>'+money(o.netExit,"EUR")+'</strong></span><span>Margen <strong>+'+money(o.edge,"EUR")+'</strong></span><span>ROI <strong>'+o.roi.toFixed(0)+'%</strong></span></div><small><b>Falta solo:</b> '+esc(o.missing.join(" · "))+'</small><div class="topTenLinks"><a class="buyLink mini" href="'+esc(o.x.url||cardmarketProductLink(o.x))+'" target="_blank" rel="noopener">Comprobar oferta exacta</a>'+(o.x.salesEvidenceUrl||o.x.closedSaleEvidence?.url?'<a class="buyLink mini psa" href="'+esc(o.x.salesEvidenceUrl||o.x.closedSaleEvidence.url)+'" target="_blank" rel="noopener">Ver venta cerrada</a>':'')+'</div></div></article>').join("")+
+    nearPrime.map((o,i)=>'<article class="topTenRow nearPrimeRow"><div class="topTenBody"><b>#'+(i+1)+' 🟡 '+esc(o.x.name)+'</b><small>'+esc([o.x.set,o.x.number,o.x.condition].filter(Boolean).join(" · "))+'</small><div class="buyMetrics"><span>Entrada <strong>'+money(o.x.price,"EUR")+'</strong></span><span>Venta cerrada ref. <strong>'+money(o.saleRef,"EUR")+(o.supportUSD>0?' aprox.':'')+'</strong></span><span>Neto prudente <strong>'+money(o.netExit,"EUR")+'</strong></span><span>Margen <strong>+'+money(o.edge,"EUR")+'</strong></span><span>ROI <strong>'+o.roi.toFixed(0)+'%</strong></span></div><small><b>Falta solo:</b> '+esc(o.missing.join(" · "))+'</small><div class="topTenLinks"><a class="buyLink mini" href="'+esc(o.x.url||cardmarketProductLink(o.x))+'" target="_blank" rel="noopener">Comprobar oferta exacta</a>'+(o.x.salesEvidenceUrl||o.x.closedSaleEvidence?.url?'<a class="buyLink mini psa" href="'+esc(o.x.salesEvidenceUrl||o.x.closedSaleEvidence.url)+'" target="_blank" rel="noopener">Ver venta cerrada</a>':'')+'</div></div></article>').join("")+
     '<small class="buyFoot">No son “Compra ya” todavía. Se muestran porque ya superan +40 € netos y ROI 35% usando ventas cerradas, pero falta una comprobación exigida por tu política. En cuanto se complete, pasan automáticamente al bloque ejecutable.</small></div>':'';
   const best=(ranked||[])[0];
   if(!best){box.innerHTML='<div class="buyNow none"><b>COMPRA YA · PRIME</b><strong>0 compras 100% verificadas</strong><span>No voy a convertir anuncios o idiomas dudosos en una compra falsa.</span></div>'+nearHtml;return}
