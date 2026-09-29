@@ -531,6 +531,33 @@ for(const x of state.manualOpportunities){
  }
 }
 state.salesFirstPipelineV950=true;save();
+const gengarPps2ResearchId="pokemon-gengar-vmax-pps2-fst157-research-20260929";
+if(!state.manualOpportunities.some(x=>x.id===gengarPps2ResearchId)){
+ state.manualOpportunities.push({
+  id:gengarPps2ResearchId,universe:"pokemon",name:"Gengar VMAX",set:"Play! Pokémon Prize Pack Series Two",number:"FST 157",
+  variant:"Prize Pack stamp · idioma exacto de la oferta pendiente",condition:"NM",shop:"Cardmarket",seller:"gioggio144",
+  price:220,trend:1055.39,avg30:244.06,avg7:935.71,avg1:1300,available:18,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-Two/Gengar-VMAX-PPS2FST-157",
+  checkedAt:"2026-09-29T11:55:00+02:00",expiresAt:"2026-09-30T11:55:00+02:00",
+  status:"WATCH PRIORITARIA · VENTAS CERRADAS EN/NM · FALTA IDIOMA DE OFERTA",approval:"VERIFY-LANGUAGE",
+  offerLanguage:"PENDIENTE",languageVerified:false,publicFloorVerified:false,languageCheckRequired:true,
+  depthPrices:[220,260,300,300,349.99,350,370,430,450,500,600,750,799,799.99,800],
+  supportingClosedSales:{
+   at:"2026-09-29T11:55:00+02:00",
+   source:"PriceCharting · ventas completadas TCGPlayer",
+   url:"https://www.pricecharting.com/game/pokemon-fusion-strike/gengar-vmax-prize-pack-157",
+   currency:"USD",
+   pricesUSD:[1499.99,42,1499.99,1550,1000],
+   saleDates:["2026-09-16","2026-08-11","2026-08-02","2026-06-11","2026-04-04"],
+   language:"English",condition:"NM",
+   identityVerified:true,languageVerified:true,conditionVerified:true,
+   transactionVerified:true,
+   note:"Ventas completadas de la impresión Prize Pack exacta. Incluye un outlier de 42 USD que se conserva en bruto y no debe ocultarse. No convertir en PRIME hasta verificar el idioma de la oferta Cardmarket."
+  },
+  note:"Cardmarket indexa gioggio144 NM a 220 €. PriceCharting registra ventas TCGPlayer completadas EN/NM de la impresión exacta: 1499,99 USD (16/09/2026), 42 USD (11/08, outlier), 1499,99 USD (02/08), 1550 USD (11/06) y 1000 USD (04/04). Mantener WATCH hasta confirmar idioma exacto de la oferta."
+ });save();
+}
+
 
 function positionSizing(x,c){
  const unit=N(x.price),trend=N(x.trend),avg30=N(x.avg30),avg7=N(x.avg7),avg1=N(x.avg1);
