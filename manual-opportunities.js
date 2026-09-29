@@ -531,6 +531,56 @@ for(const x of state.manualOpportunities){
  }
 }
 state.salesFirstPipelineV950=true;save();
+
+const mewPps2ResearchId="pokemon-mew-vmax-pps2-fst114-research-20260929";
+const rayquazaPps2ResearchId="pokemon-rayquaza-vmax-pps2-evs111-research-20260929";
+if(!state.manualOpportunities.some(x=>x.id===mewPps2ResearchId)){
+ state.manualOpportunities.push({
+  id:mewPps2ResearchId,universe:"pokemon",name:"Mew VMAX",set:"Play! Pokémon Prize Pack Series Two",number:"FST 114",
+  variant:"Prize Pack stamp · idioma exacto de la oferta pendiente",condition:"NM",shop:"Cardmarket",seller:"Spiccol",
+  price:60,trend:178.31,avg30:55.48,avg7:164.93,avg1:200,available:16,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-Two/Mew-VMAX-PPS2FST-114",
+  checkedAt:"2026-09-29T12:05:00+02:00",expiresAt:"2026-09-30T12:05:00+02:00",
+  status:"WATCH MÁXIMA PRIORIDAD · VENTAS CERRADAS EN/NM · FALTA IDIOMA DE OFERTA",approval:"VERIFY-LANGUAGE",
+  offerLanguage:"PENDIENTE",languageVerified:false,publicFloorVerified:false,languageCheckRequired:true,
+  depthPrices:[60,80,90,90,97.99,100,100,500,800,999.99,1200,2000],
+  supportingClosedSales:{
+   at:"2026-09-29T12:05:00+02:00",
+   source:"PriceCharting · ventas completadas TCGPlayer",
+   url:"https://www.pricecharting.com/game/pokemon-fusion-strike/mew-vmax-prize-pack-114",
+   currency:"USD",fxEURPerUSD:0.8794,fxAt:"2026-09-29",fxSource:"Wise · USD/EUR mid-market",
+   pricesUSD:[400,222],saleDates:["2026-09-05","2026-05-24"],
+   language:"English",condition:"NM",
+   identityVerified:true,languageVerified:true,conditionVerified:true,transactionVerified:true,
+   note:"TCGPlayer completadas de la impresión Prize Pack exacta: 400 USD (05/09/2026) y 222 USD (24/05/2026), ambas etiquetadas Near Mint English Prize Pack."
+  },
+  note:"Cardmarket indexa Spiccol NM a 60 €. PriceCharting registra ventas TCGPlayer cerradas EN/NM de 400 USD y 222 USD para la impresión exacta. No elevar a PRIME hasta confirmar que la copia de Spiccol es inglesa."
+ });save();
+}
+if(!state.manualOpportunities.some(x=>x.id===rayquazaPps2ResearchId)){
+ state.manualOpportunities.push({
+  id:rayquazaPps2ResearchId,universe:"pokemon",name:"Rayquaza VMAX",set:"Play! Pokémon Prize Pack Series Two",number:"EVS 111",
+  variant:"Prize Pack stamp · idioma exacto de la oferta pendiente",condition:"NM",shop:"Cardmarket",seller:"piante97",
+  price:119,trend:127.34,avg30:48.92,avg7:83.68,avg1:95,available:5,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-Two/Rayquaza-VMAX-PPS2EVS-111",
+  checkedAt:"2026-09-29T12:05:00+02:00",expiresAt:"2026-09-30T12:05:00+02:00",
+  status:"WATCH MÁXIMA PRIORIDAD · VENTAS CERRADAS EN/NM · FALTA IDIOMA DE OFERTA",approval:"VERIFY-LANGUAGE",
+  offerLanguage:"PENDIENTE",languageVerified:false,publicFloorVerified:false,languageCheckRequired:true,
+  depthPrices:[119,119.89,119.99,119.99,250],
+  supportingClosedSales:{
+   at:"2026-09-29T12:05:00+02:00",
+   source:"PriceCharting · ventas completadas TCGPlayer",
+   url:"https://www.pricecharting.com/game/pokemon-evolving-skies/rayquaza-vmax-prize-pack-111",
+   currency:"USD",fxEURPerUSD:0.8794,fxAt:"2026-09-29",fxSource:"Wise · USD/EUR mid-market",
+   pricesUSD:[600,347.45,499.98,600,499.99,660],
+   saleDates:["2026-09-10","2026-08-16","2026-08-01","2026-07-29","2026-05-20","2026-05-04"],
+   language:"English",condition:"NM",
+   identityVerified:true,languageVerified:true,conditionVerified:true,transactionVerified:true,
+   note:"Ventas TCGPlayer cerradas etiquetadas Near Mint English Prize Pack. Se excluye expresamente la fila 'Spanish NOT ENGLISH' de 94,99 USD."
+  },
+  note:"Cardmarket indexa piante97 NM a 119 €. PriceCharting tiene múltiples ventas TCGPlayer cerradas EN/NM recientes de la impresión exacta. No elevar a PRIME hasta confirmar idioma de la oferta."
+ });save();
+}
 const gengarPps2ResearchId="pokemon-gengar-vmax-pps2-fst157-research-20260929";
 if(!state.manualOpportunities.some(x=>x.id===gengarPps2ResearchId)){
  state.manualOpportunities.push({
