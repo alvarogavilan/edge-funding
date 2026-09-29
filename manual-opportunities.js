@@ -545,6 +545,32 @@ if(!state.pokemonSeries3AuditV957){
 
 
 
+
+const flareonPps1ResearchId="pokemon-flareon-vmax-pps1-evs018-research-20260929";
+if(!state.manualOpportunities.some(x=>x.id===flareonPps1ResearchId)){
+ state.manualOpportunities.push({
+  id:flareonPps1ResearchId,universe:"pokemon",name:"Flareon VMAX",set:"Play! Pokémon Prize Pack Series One",number:"EVS 018",
+  variant:"Prize Pack stamp · idioma exacto de la oferta pendiente",condition:"NM",shop:"Cardmarket",seller:"alexgross1987",
+  price:45,trend:155.99,avg30:65.66,avg7:114.24,avg1:348.90,available:16,sellerQty:1,
+  url:"https://www.cardmarket.com/en/Pokemon/Products/Singles/Play-Pokemon-Prize-Pack-Series-One/Flareon-VMAX-PPS1EVS-018",
+  checkedAt:"2026-09-29T12:19:00+02:00",expiresAt:"2026-09-30T12:19:00+02:00",
+  status:"WATCH · VENTAS CERRADAS EN/NM · FALTA IDIOMA DE OFERTA",approval:"VERIFY-LANGUAGE",
+  offerLanguage:"PENDIENTE",languageVerified:false,publicFloorVerified:false,languageCheckRequired:true,
+  depthPrices:[45,59.99,60,75,125,130,166.66,180,250,300,350,500,900],
+  supportingClosedSales:{
+   at:"2026-09-29T12:19:00+02:00",
+   source:"PriceCharting · ventas completadas TCGPlayer",
+   url:"https://www.pricecharting.com/game/pokemon-evolving-skies/flareon-vmax-prize-pack-18",
+   currency:"USD",fxEURPerUSD:0.8794,fxAt:"2026-09-29",fxSource:"Wise · USD/EUR mid-market",
+   pricesUSD:[116.92,147,95.13,129.99,114.95,102.88,93.68],
+   saleDates:["2026-09-12","2026-06-18","2026-06-06","2026-05-29","2026-05-16","2026-04-30","2026-04-21"],
+   language:"English",condition:"NM",
+   identityVerified:true,languageVerified:true,conditionVerified:true,transactionVerified:true,
+   note:"Ventas cerradas TCGPlayer Near Mint English Prize Pack; registros eBay excluidos del conjunto."
+  },
+  note:"Cardmarket indexa alexgross1987 NM a 45 €. PriceCharting registra varias ventas TCGPlayer cerradas EN/NM. WATCH secundaria hasta confirmar idioma exacto de la oferta."
+ });save();
+}
 const sylveonPps1ResearchId="pokemon-sylveon-vmax-pps1-evs075-research-20260929";
 if(!state.manualOpportunities.some(x=>x.id===sylveonPps1ResearchId)){
  state.manualOpportunities.push({
