@@ -531,6 +531,18 @@ for(const x of state.manualOpportunities){
  }
 }
 state.salesFirstPipelineV950=true;save();
+if(!state.pokemonSeries3AuditV957){
+ state.rejectedPokemonResearch=Array.isArray(state.rejectedPokemonResearch)?state.rejectedPokemonResearch:[];
+ const rows=[
+  {id:"pokemon-mimikyu-ex-pps3-svp004-audit-20260929",name:"Mimikyu ex",set:"Play! Pokémon Prize Pack Series Three",number:"SVP 004",price:30,status:"DESCARTADA · NETO < +40 €",reason:"Cardmarket NM desde 30 €. TCGPlayer EN/NM cerradas recientes ~75,25–87,60 USD; incluso usando referencia robusta y recorte prudente no alcanza +40 € netos."},
+  {id:"pokemon-mewtwo-vstar-pps3-pgo031-audit-20260929",name:"Mewtwo VSTAR",set:"Play! Pokémon Prize Pack Series Three",number:"PGO 031",price:25,status:"WATCH · EVIDENCIA NO ADMISIBLE PARA PRIME",reason:"Cardmarket NM desde 25 €. Las ventas cerradas individualizadas localizadas en PriceCharting son eBay/eBay AU; no se usan para autorizar Compra ya bajo la política actual."},
+  {id:"pokemon-lugia-vstar-pps3-sit139-audit-20260929",name:"Lugia VSTAR",set:"Play! Pokémon Prize Pack Series Three",number:"SIT 139",price:11.50,status:"DESCARTADA · PRECIO < 20 €",reason:"Cardmarket NM ~11,50 €. Aunque hay ventas TCGPlayer EN/NM cerradas, queda por debajo del precio mínimo operativo de 20 €."},
+  {id:"pokemon-giratina-vstar-prize-lor131-audit-20260929",name:"Giratina VSTAR",set:"Prize Pack",number:"LOR 131",price:0,status:"DESCARTADA · VALOR INSUFICIENTE",reason:"PriceCharting sitúa ventas RAW/TCGPlayer alrededor de 10–12 USD; no puede satisfacer +40 € netos con el perfil actual."}
+ ];
+ for(const r of rows)if(!state.rejectedPokemonResearch.some(x=>x.id===r.id))state.rejectedPokemonResearch.push(r);
+ state.pokemonSeries3AuditV957=true;save();
+}
+
 
 const mewPps2ResearchId="pokemon-mew-vmax-pps2-fst114-research-20260929";
 const rayquazaPps2ResearchId="pokemon-rayquaza-vmax-pps2-evs111-research-20260929";
