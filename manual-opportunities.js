@@ -546,7 +546,7 @@ if(!state.manualOpportunities.some(x=>x.id===gengarPps2ResearchId)){
    at:"2026-09-29T11:55:00+02:00",
    source:"PriceCharting · ventas completadas TCGPlayer",
    url:"https://www.pricecharting.com/game/pokemon-fusion-strike/gengar-vmax-prize-pack-157",
-   currency:"USD",
+   currency:"USD",fxEURPerUSD:0.8794,fxAt:"2026-09-29",fxSource:"Wise · USD/EUR mid-market",
    pricesUSD:[1499.99,42,1499.99,1550,1000],
    saleDates:["2026-09-16","2026-08-11","2026-08-02","2026-06-11","2026-04-04"],
    language:"English",condition:"NM",
