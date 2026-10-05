@@ -4,6 +4,14 @@ const EUR=v=>(Number(v)||0).toLocaleString("es-ES",{style:"currency",currency:"E
 const Q=s=>document.querySelector(s);
 const qty=c=>Math.max(1,Number(c?.quantity)||1);
 function img(c){
+ // Catálogos contrastados visualmente: nombre, número, edición e idioma.
+ const local={
+  "own-machamp-gx-154-bus-es":["Machamp GX","154/147","Sombras Ardientes","Español","machamp-gx-154-es.png"],
+  "own-metang-094-cri-es":["Metang","094/086","Caos Creciente","Español","metang-094-es.png"],
+  "own-toxtricity-089-m2-jp":["Toxtricity","089/080","Inferno X","Japonés","toxtricity-089-ja.jpg"]
+ };
+ const card=local[c?.id];
+ if(card&&[c.name,c.number,c.set,c.language].every((v,i)=>v===card[i]))return "assets/cards/"+card[4];
  const exact={
   "own-hitmonlee-106-jp-fossil-psa5":"https://cdn.pooka.app/card/ja-mystery-of-the-fossils-39.png",
   "own-gyarados-ex-089-xy9-jp":"https://cdn.pooka.app/card/ja-xy9-89.png",
