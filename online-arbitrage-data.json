@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-05T23:56:00Z",
+  "checkedAt": "2026-10-06T00:16:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas. Se amplía el universo de arbitraje, pero ninguna pareja observada supera todavía el filtro estricto de salida ejecutable + misma variante + margen neto + cero condiciones materiales pendientes.",
+  "summary": "0 compras autorizadas ahora mismo. Estrategia prioritaria: FLASH de lanzamiento limitado a puja activa, con salida inmediata y sin inventario. Se bloquean productos sin talla/variante exacta, payout neto y stock retail simultáneamente verificados.",
   "lanes": [
     {
       "id": "market-bid",
@@ -237,6 +237,34 @@
   ],
   "cases": [
     {
+      "id": "jacquemus-moon-2026-10-06",
+      "name": "Nike x Jacquemus Moon Shoe · lanzamiento 6 octubre",
+      "buyPriceEUR": 0,
+      "buyCondition": "Nike confirma disponibilidad desde el 6 de octubre en SNKRS y algunas tiendas Nike; precio/talla española ejecutable debe comprobarse en el momento del drop.",
+      "buyUrl": "https://about.nike.com/es-ES/newsroom/releases/nike-and-jacquemus-join-forces-to-reimagine-the-iconic-moon-shoe-for-todays-generation",
+      "exitCeilingEUR": 0,
+      "exitCondition": "No se ha verificado una puja StockX neta positiva para una talla exacta.",
+      "exitUrl": "https://stockx.com/es-es/search?s=Jacquemus%20Moon%20Shoe",
+      "ceilingDifferenceEUR": 0,
+      "recommendBuy": false,
+      "missingCosts": true,
+      "finding": "VIGILAR HOY, NO COMPRAR A CIEGAS: es exactamente el tipo de drop que debe escanearse talla por talla contra la puja antes de pagar."
+    },
+    {
+      "id": "one-piece-ope-ope-flash-pattern",
+      "name": "Nike Air Max Plus x One Piece Ope Ope · IW1282-600",
+      "buyPriceEUR": 210,
+      "buyCondition": "Precio retail europeo de lanzamiento observado; el comparador revisado ya no mostraba stock retail disponible.",
+      "buyUrl": "https://www.nike.com/ro/a/nike-one-piece-collection-release-info",
+      "exitCeilingEUR": 381,
+      "exitCondition": "StockX mostró recientemente «Vende ahora por 381 €» para US 10.5, pero no existe hoy una compra retail verificada de esa misma talla a 210 €.",
+      "exitUrl": "https://stockx.com/es-es/nike-air-max-plus-one-piece-ope-ope?size=10.5",
+      "ceilingDifferenceEUR": 171,
+      "recommendBuy": false,
+      "missingCosts": true,
+      "finding": "PATRÓN IDEAL, OPORTUNIDAD ACTUAL NO EJECUTABLE: demuestra por qué el carril de drops puede generar márgenes grandes, pero hoy falta stock retail de la talla exacta. Solo activar si reaparece stock y el payout neto de la puja sigue por encima del coste total."
+    },
+    {
       "id": "stockx-jordan3-animal-instinct",
       "name": "Jordan 3 Retro SE Animal Instinct · CK4344-002",
       "buyPriceEUR": 149,
@@ -264,5 +292,24 @@
       "missingCosts": true,
       "finding": "Incluso el techo publicado queda 94 € por debajo de la compra antes de costes. No comprar."
     }
-  ]
+  ],
+  "flashStrategy": {
+    "id": "release-to-bid",
+    "name": "FLASH · lanzamiento limitado → puja existente",
+    "rank": 1,
+    "objective": "Comprar únicamente durante la ventana retail y vender de inmediato contra una puja activa de la misma variante exacta.",
+    "preferredExit": "StockX · Vender ahora",
+    "stockPolicy": "No acumular inventario. Si no existe salida neta positiva revalidada para talla/variante exacta, NO comprar.",
+    "categories": [
+      "Sneakers de colaboración",
+      "streetwear limitado",
+      "coleccionables sellados con puja activa"
+    ],
+    "rejectedPrimaryLanes": [
+      "Entradas: necesitan comprador",
+      "Electrónica: inspección/recompra revisable",
+      "Relojes: tasación/inspección",
+      "LEGO generalista: salida demasiado lenta"
+    ]
+  }
 }
