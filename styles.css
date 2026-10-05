@@ -547,3 +547,7 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 #primeSimpleHome .nearPrimeBox .buyMetrics{display:flex;flex-wrap:wrap;gap:10px;background:transparent;color:#252017}
 #primeSimpleHome .nearPrimeBox .buyMetrics span{color:#252017}
 #primeSimpleHome .nearPrimeBox .buyHead{display:block}
+
+#primeSimpleHome .nearPrimeBox .topTenRow,#primeSimpleHome .nearPrimeBox .topTenBody{background:transparent!important;color:#252017!important}
+#primeSimpleHome .nearPrimeBox .topTenBody b,#primeSimpleHome .nearPrimeBox .buyMetrics strong{color:#252017!important}
+#primeSimpleHome .nearPrimeBox .buyLink{background:#252017!important;color:#fff9ec!important}
