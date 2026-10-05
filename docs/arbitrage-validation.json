@@ -1,0 +1,9 @@
+{
+  "executedAt": "2026-10-05T23:45:07.438Z",
+  "syntheticScenarios": 2000000,
+  "positiveArithmeticCases": 264775,
+  "marketTransactions": 0,
+  "guaranteedProfitCases": 0,
+  "passed": true,
+  "meaning": "Validation of arithmetic and rejection rules only; no market probability or profitability evidence."
+}

@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-05T23:42:00Z",
+  "timezone": "Europe/Madrid",
+  "continuousMonitoring": false,
+  "excludedMarkets": [
+    "eBay"
+  ],
+  "purchaseRecommendation": null,
+  "summary": "Ninguna compra con beneficio cerrado demostrada. Las rutas de recompra no equivalen a ofertas vinculantes.",
+  "routes": [
+    {
+      "id": "mpb",
+      "category": "Fotografía",
+      "name": "Cámaras y objetivos → MPB",
+      "status": "conditional",
+      "logistics": "Recogida gratuita en domicilio UE y pago bancario, tras revisión.",
+      "finding": "La valoración inicial no es vinculante; pueden ajustar el precio o rechazar el equipo. Es la ruta con mejor logística verificada para operar desde casa.",
+      "missing": "Falta un producto exacto y una salida vinculante superior al coste total.",
+      "sources": [
+        {
+          "label": "Proceso de venta",
+          "url": "https://www.mpb.com/es-es/vender-o-intercambiar"
+        },
+        {
+          "label": "Términos · 7.1–7.5",
+          "url": "https://www.mpb.com/es-es/ayuda/terminos-y-condiciones-generales"
+        }
+      ]
+    },
+    {
+      "id": "swappie",
+      "category": "Móviles",
+      "name": "iPhone → Swappie",
+      "status": "conditional",
+      "logistics": "Envío gratuito y pago por banco. Recogida en domicilio pendiente de confirmar para el pedido.",
+      "finding": "Presupuesto válido 14 días si coincide el estado declarado; la oferta final se confirma tras inspección.",
+      "missing": "No existe una tasación concreta que cierre beneficio para el iPhone estudiado.",
+      "sources": [
+        {
+          "label": "Condiciones de tasación",
+          "url": "https://help.swappie.com/es/article/obtener-un-precio-e-iniciar-la-venta"
+        }
+      ]
+    },
+    {
+      "id": "rebuy",
+      "category": "Electrónica",
+      "name": "Consolas, tablets y audio → reBuy / Back Market",
+      "status": "conditional",
+      "logistics": "Envío prepagado y pago bancario. Las páginas revisadas indican entrega del paquete al transportista.",
+      "finding": "El precio es provisional y puede haber contraoferta tras inspección. Back Market admite dispositivos ya reparados; reBuy puede rechazar móviles con componentes cambiados.",
+      "missing": "Faltan pareja de precios para la misma unidad, oferta vinculante y recogida en casa.",
+      "sources": [
+        {
+          "label": "reBuy · vender",
+          "url": "https://www.rebuy.es/vender/"
+        },
+        {
+          "label": "reBuy · iPhone y piezas",
+          "url": "https://www.rebuy.es/vender/apple-iphone-13-128gb-medianoche_12216196"
+        },
+        {
+          "label": "Back Market · renove",
+          "url": "https://www.backmarket.es/es-es/buyback/home"
+        }
+      ]
+    },
+    {
+      "id": "cex",
+      "category": "Videojuegos",
+      "name": "Videojuegos y consolas → CeX",
+      "status": "conditional",
+      "logistics": "Envío gratuito estándar por GLS Parcel Shop; recogida domiciliaria sin confirmar.",
+      "finding": "Clasificación por estado y accesorios. No debe confundirse el vale de tienda con el precio en efectivo.",
+      "missing": "Falta una diferencia de precios ejecutable y logística totalmente desde casa.",
+      "sources": [
+        {
+          "label": "Venta online y envíos",
+          "url": "https://es.support.webuy.com/support/solutions/folders/43000262910"
+        },
+        {
+          "label": "Condiciones del equipo",
+          "url": "https://es.support.webuy.com/support/solutions/articles/43000073244--en-qu%C3%A9-condici%C3%B3n-deber%C3%ADan-estar-mis-art%C3%ADculos-"
+        }
+      ]
+    },
+    {
+      "id": "vintage",
+      "category": "LEGO y objetos",
+      "name": "LEGO y objetos usados → Vintage.com",
+      "status": "excluded",
+      "logistics": "Recogida disponible solo en determinadas regiones.",
+      "finding": "Tasación posterior a recibir los objetos; no hay recompra previa por set exacto. No cierra una salida antes de comprar.",
+      "missing": "Oferta previa vinculante inexistente en la evidencia revisada.",
+      "sources": [
+        {
+          "label": "Términos y logística",
+          "url": "https://www.vintage.com/es/terms-conditions"
+        }
+      ]
+    },
+    {
+      "id": "hamelyn",
+      "category": "Libros",
+      "name": "Libros y videojuegos → Hamelyn",
+      "status": "excluded",
+      "logistics": "Recogida a domicilio y pago tras revisión.",
+      "finding": "Sus términos definen al vendedor como consumidor final que vende fuera de actividades comerciales, empresariales o profesionales.",
+      "missing": "Descartado como circuito de comprar para revender de forma comercial.",
+      "sources": [
+        {
+          "label": "Términos · apartado 6",
+          "url": "https://blog.hamelyn.com/terminos-y-condiciones/"
+        }
+      ]
+    },
+    {
+      "id": "bullion",
+      "category": "Metales",
+      "name": "Oro custodiado → BullionVault",
+      "status": "excluded",
+      "logistics": "Operación digital y retirada bancaria.",
+      "finding": "Tarifa inicial 0,5% al comprar y 0,5% al vender; custodia de oro con mínimo de 4 USD al mes y retirada SEPA de 5 €. No se encontró una cotización cruzada con margen.",
+      "missing": "Liquidabilidad no demuestra beneficio; el diferencial y los costes deben cubrirse.",
+      "sources": [
+        {
+          "label": "Tarifas oficiales",
+          "url": "https://oro.bullionvault.es/help/tariff.html"
+        }
+      ]
+    },
+    {
+      "id": "skins",
+      "category": "Digital",
+      "name": "Skins → Skinport",
+      "status": "excluded",
+      "logistics": "Mercado online. Encontrar comprador y cumplir plazos sigue siendo necesario.",
+      "finding": "Comisión pública ordinaria 8%, 6% para artículos superiores a 1.000 € y 2% en ventas privadas. Una publicación no es una venta contratada.",
+      "missing": "No se encontró una salida firme por encima del coste; no se recomienda comprar.",
+      "sources": [
+        {
+          "label": "Comisiones permanentes",
+          "url": "https://skinport.com/blog/lower-fees-for-everybody"
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "iphone13",
+      "name": "iPhone 13 · 128 GB · Medianoche",
+      "buyPriceEUR": 265,
+      "buyCondition": "Satisfactorio: arañazos visibles",
+      "buyUrl": "https://swappie.com/es/iphone/iphone-13/iphone-13-128gb-medianoche-7/",
+      "exitCeilingEUR": 171,
+      "exitCondition": "Máximo publicado para estado perfecto; NO es oferta para esta unidad.",
+      "exitUrl": "https://nomophone.com/es/buyback/apple/iphone-13/128",
+      "ceilingDifferenceEUR": -94,
+      "recommendBuy": false,
+      "missingCosts": true,
+      "finding": "Incluso el máximo publicado para un ejemplar perfecto está 94 € por debajo de la compra, antes de gastos. No es una comparación de condiciones equivalentes ni una tasación aceptada. La referencia anterior de 354 € no queda validada."
+    }
+  ]
+}
