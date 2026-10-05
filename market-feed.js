@@ -222,7 +222,8 @@ document.addEventListener("click",e=>{
  const t=e.target.closest("[data-mf-connect],[data-mf-sync],[data-mf-search],[data-mf-custom],[data-mf-link],[data-mf-ct],[data-mf-relink],[data-mf-ct-track],[data-mf-cert],[data-mf-local-ct]");if(!t)return;
  e.preventDefault();
  const d=t.dataset;
- if(d.mfLocalCt){const cur=window.CVCardTraderDirect?.hasToken?.()?"(guardado)":"";const v=(prompt("Token API de CardTrader "+cur+" · se guarda SOLO en este iPhone:","")||"").trim();if(v){window.CVCardTraderDirect?.setToken?.(v);window.CVCardTraderDirect?.verify?.().then(r=>{alert(r.ok?"CardTrader conectado. Escaneando mercado…":"Token no válido o Safari bloqueó la llamada: "+r.error);if(r.ok)window.CVCardTraderDirect?.scan?.()})}}\n else if(d.mfConnect)connect();
+ if(d.mfLocalCt){const cur=window.CVCardTraderDirect?.hasToken?.()?"(guardado)":"";const v=(prompt("Token API de CardTrader "+cur+" · se guarda SOLO en este iPhone:","")||"").trim();if(v){window.CVCardTraderDirect?.setToken?.(v);window.CVCardTraderDirect?.verify?.().then(r=>{alert(r.ok?"CardTrader conectado. Escaneando mercado…":"Token no válido o Safari bloqueó la llamada: "+r.error);if(r.ok)window.CVCardTraderDirect?.scan?.()})}}
+ else if(d.mfConnect)connect();
  else if(d.mfSync)sync(true);
  else if(d.mfSearch)search(d.mfSearch);
  else if(d.mfCustom){const v=prompt("Nombre a buscar (mejor en inglés):","");if(v)search(d.mfCustom,v)}

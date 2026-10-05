@@ -539,3 +539,11 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 .primeBuyFacts{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
 .primeBuyFacts span{display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border-radius:10px;background:#f4f7fb;border:1px solid #d9e1ee;color:#39475d;font-size:11px}
 .primeBuyFacts b{color:#101828}
+
+/* Candidatas visibles dentro de la portada simple; nunca acciones de compra. */
+#primeSimpleHome .nearPrimeBox{margin:18px 0;padding:16px;border:1px solid #d9ad55;border-radius:18px;background:#fff9ec;color:#252017}
+#primeSimpleHome .nearPrimeBox small{display:block;color:#655337;line-height:1.5;margin:8px 0}
+#primeSimpleHome .nearPrimeBox .topTenRow{display:block;border-bottom:1px solid #ddcfb1;padding:14px 0}
+#primeSimpleHome .nearPrimeBox .buyMetrics{display:flex;flex-wrap:wrap;gap:10px;background:transparent;color:#252017}
+#primeSimpleHome .nearPrimeBox .buyMetrics span{color:#252017}
+#primeSimpleHome .nearPrimeBox .buyHead{display:block}

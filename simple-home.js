@@ -219,12 +219,13 @@ function render(){
  simple.innerHTML=marketStatus+pokemonStatus+'<div class="primeHomeHeader"><span>HOY</span><h2>QUÉ COMPRAR</h2><p>Compras ejecutables separadas por tipo. Solo entran si superan PRIME con oferta exacta, vendedor, identidad, salida y evidencia vigente.</p></div>'+
   section("CARTAS","Pokémon y Lorcana · cartas individuales RAW o graduadas",cards)+
   section("SETS / OTROS PRODUCTOS","ETB, booster boxes, colecciones, blísteres, troves y demás sellado",products)+
+  (window.CVNearPrime?.renderHTML?.()||"" )+
   '<section class="primeFunnel"><div class="primeBuyGroupHead"><div><span>COBERTURA</span><h3>Por qué no aparecen miles como “Compra ya”</h3></div></div><div class="statsGrid">'+
    '<div><span>Oportunidades auditadas</span><b>'+f.total+'</b></div>'+
    '<div><span>Oferta exacta</span><b>'+f.exact+'</b></div>'+
    '<div><span>Economía ≥ +40 € y ROI ≥35%</span><b>'+f.economic+'</b></div>'+
    '<div><span>Compra PRIME final</span><b>'+f.prime+'</b></div>'+
-  '</div><small>El catálogo puede contener decenas de miles de cartas, pero “Compra ya” exige una unidad realmente comprable ahora. No se muestran candidatos, watches ni oportunidades sin aprobar.</small></section>'
+  '</div><small>El catálogo puede contener decenas de miles de cartas, pero “Compra ya” exige una unidad realmente comprable ahora. Las candidatas pendientes se muestran por separado, sin habilitar una recomendación de compra.</small></section>'
 }
 function installGuard(){
  const api=window.CVTodaySimple;

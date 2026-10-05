@@ -74,6 +74,6 @@ function sameOwnedCard(a,b){
  if(x.number&&y.number&&x.number===y.number&&x.number.includes("/"))return true;
  return false;
 }
-function ageHours(v){const t=new Date(v||0).getTime();return Number.isFinite(t)?(Date.now()-t)/36e5:Infinity}
+function ageHours(v){const t=new Date(v||0).getTime();return Number.isFinite(t)&&t<=Date.now()?(Date.now()-t)/36e5:Infinity}
 window.CVIdentity={norm,tuple,key,same,cleanCardName,collectorNumber,canonicalSet,productFingerprint,ownershipTuple,ownershipKey,sameOwnedCard,ageHours};
 })();

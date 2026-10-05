@@ -12,27 +12,31 @@ function exactOffer(x){
 }
 function closedSaleEvidence(x){
  const ev=x.closedSaleEvidence||{};
- const prices=(Array.isArray(ev.pricesEUR)?ev.pricesEUR:[]).map(N).filter(v=>v>0).sort((a,b)=>a-b);
+ const observations=(Array.isArray(ev.pricesEUR)?ev.pricesEUR:[]).map((price,i)=>({price:N(price),date:ev.saleDates?.[i]||ev.soldAt||""}));
+ const dated=observations.filter(o=>o.price>0&&window.CVIdentity?.ageHours?.(o.date)>=0&&window.CVIdentity?.ageHours?.(o.date)<=120*24);
+ const prices=dated.map(o=>o.price).sort((a,b)=>a-b);
+ const latest=dated.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
  const median=prices.length?(prices.length%2?prices[(prices.length-1)/2]:(prices[prices.length/2-1]+prices[prices.length/2])/2):0;
  const source=String(ev.source||"").trim(),url=String(ev.url||"").trim(),lang=String(ev.language||"").trim(),condition=String(ev.condition||"").trim();
  const canonLang=v=>{const k=String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");return ({en:"english",ingles:"english",english:"english",fr:"french",frances:"french",french:"french",de:"german",aleman:"german",german:"german",es:"spanish",espanol:"spanish",spanish:"spanish",it:"italian",italiano:"italian",italian:"italian",pt:"portuguese",portugues:"portuguese",portuguese:"portuguese",ja:"japanese",jp:"japanese",japones:"japanese",japanese:"japanese",ko:"korean",kr:"korean",coreano:"korean",korean:"korean","zh-tw":"traditional chinese","traditional chinese":"traditional chinese","chino-t":"traditional chinese","zh-cn":"simplified chinese","simplified chinese":"simplified chinese","chino-s":"simplified chinese"}[k]||k)};
  const canonCondition=v=>{const k=String(v||"").trim().toLowerCase().replace(/[^a-z]/g,"");return ({mint:"mt",mt:"mt",nearmint:"nm",nm:"nm",excellent:"ex",ex:"ex",good:"gd",gd:"gd",lightplayed:"lp",lightlyplayed:"lp",lp:"lp",played:"pl",pl:"pl",poor:"po",po:"po"}[k]||k)};
  const offerLang=canonLang(x.offerLanguage||x.language||""),saleLang=canonLang(lang);
  const offerCondition=canonCondition(x.condition||""),saleCondition=canonCondition(condition);
- const sourceOk=!!source&&/^https?:\/\//i.test(url);
+ let sourceOk=false;
+ try{const u=new URL(url);sourceOk=!!source&&u.protocol==="https:"&&!/(^|\.)ebay\.[a-z.]+$/i.test(u.hostname)&&!/\bebay\b/i.test(source)}catch{}
  const identityOk=ev.identityVerified===true;
  const languageOk=ev.languageVerified===true&&!!saleLang&&!!offerLang&&saleLang===offerLang;
  const conditionOk=ev.conditionVerified===true&&!!saleCondition&&!!offerCondition&&saleCondition===offerCondition;
  const transactionOk=ev.transactionType==="closed-sale"||ev.transactionVerified===true;
  const age=window.CVIdentity?.ageHours?.(ev.at)??Infinity,recencyDays=age/24;
- const recentEnough=Number.isFinite(recencyDays)&&recencyDays<=120;
+ const recentEnough=dated.length>0&&Number.isFinite(recencyDays)&&recencyDays>=0&&recencyDays<=120;
  const verified=sourceOk&&identityOk&&languageOk&&conditionOk&&transactionOk&&prices.length>0&&recentEnough;
- return {verified,prices,median,last:prices.length?prices[prices.length-1]:0,sample:prices.length,source,url,language:lang,condition,
+ return {verified,prices,median,last:latest?.price||0,lastDate:latest?.date||"",sample:prices.length,source,url,language:lang,condition,
   identityOk,languageOk,conditionOk,transactionOk,offerLanguage:offerLang,saleLanguage:saleLang,offerCondition,saleCondition,at:ev.at||"",age,recencyDays,recentEnough};
 }
 function exitEvidence(x){
  const r=refs(x),ev=x.marketEvidence||{},idNow=window.CVIdentity?.key?.(x)||"",idOk=!!(ev.identityKey&&idNow&&ev.identityKey===idNow);
- const age=window.CVIdentity?.ageHours?.(x.evidenceCheckedAt||ev.at)??Infinity,fresh=age<=24;
+ const age=window.CVIdentity?.ageHours?.(x.evidenceCheckedAt||ev.at)??Infinity,fresh=age>=0&&age<=24;
  const sameMarket=x.sameMarketComparableVerified===true&&idOk;
  const currentExit=N(ev.currentExitEUR),closed=closedSaleEvidence(x);
  const hasStructured=!!(x.closedSaleEvidence&&Object.keys(x.closedSaleEvidence).length);
@@ -82,8 +86,8 @@ function conservative(x){
  const ev=x.marketEvidence||{},ee=exitEvidence(x),
   soldMedian=ee.soldMedian,soldSample=ee.soldSample,lastSale=ee.lastSale,currentExit=N(ev.currentExitEUR);
  let gross=0,kind="none",haircut=0;
- if(ee.soldUsable&&soldMedian>0&&soldSample>=3){gross=soldMedian;kind="closed-sale-median";haircut=.95}
- else if(ee.soldUsable&&lastSale>0){gross=lastSale;kind="closed-sale-last";haircut=.90}
+ if(ee.soldUsable&&soldMedian>0&&soldSample>=3){gross=soldMedian;kind="closed-sale-median";haircut=.85}
+ else if(ee.soldUsable&&lastSale>0){gross=lastSale;kind="closed-sale-last";haircut=.85}
  else if(currentExit>0){gross=currentExit;kind="active-exit-ask";haircut=.85}
  const prudentGross=gross*haircut;
  const sellFee=prudentGross*.05;
