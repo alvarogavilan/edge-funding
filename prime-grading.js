@@ -15,7 +15,7 @@ function evaluate({rawValue=0,landedCost=0,gradeCost=0,sellFeePct=0,psa9=0,psa10
  return {rawValue,landedCost,gradeCost,cost,psa9,psa10,sellFeePct,profit9,profit10,roi9,roi10,prob10,expected,verdict};
 }
 function fromCard(c){
- const g=state.gradingEconomics||{},raw=N(c.value),landed=N(c.landedCostUnit)||N(c.purchase)||raw;
+ const g=state.gradingEconomics||{},raw=N(window.CVPSARawValue?.(c)),landed=N(c.landedCostUnit)||N(c.purchase)||raw;
  const v=c.gradedValuation||{};
  return evaluate({rawValue:raw,landedCost:landed,gradeCost:N(g.gradeCost),sellFeePct:N(g.sellFeePct),psa9:N(v.psa9||g.psa9),psa10:N(v.psa10||g.psa10),p10:c.pregrade?.p10??c.pregradeProbability10??null});
 }
@@ -61,12 +61,17 @@ function render(){
  const c=(state.cards||[]).find(x=>x.id===id);
  document.querySelector("#primeGradingDecision")?.remove();
  if(!c)return;
+ if(window.CVPSARawValue?.(c)==null){
+  const host=document.querySelector("#collectionPSADecision");
+  if(host){const box=document.createElement("div");box.id="primeGradingDecision";box.className="qaPanel";box.textContent="Economía PSA pendiente: falta una valoración RAW comparable de tu ejemplar y su condición. La referencia general no se usa como valor de esta carta.";host.appendChild(box)}
+  return;
+ }
  const inp=q=>N(document.querySelector(q)?.value);
  const g=state.gradingEconomics||{},feeRaw=String(document.querySelector("#gradeSellFee")?.value??"").trim(),fee=feeRaw!==""?N(feeRaw):(window.CVPrimeExitPricing?.policy?.().feePct??5),gradeCost=inp("#gradeCost")||N(g.gradeCost);
  const c9=soldComps(c,"PSA","9"),c10=soldComps(c,"PSA","10");
  const psa9=c9?c9.median:(inp("#gradePSA9")||N(c.gradedValuation?.psa9)),psa10=c10?c10.median:(inp("#gradePSA10")||N(c.gradedValuation?.psa10));
  const src9=c9?c9.n+" ventas reales":(psa9>0?"manual · verificar que sea venta real":"sin dato"),src10=c10?c10.n+" ventas reales":(psa10>0?"manual · verificar que sea venta real":"sin dato");
- const b=window.CVPrimeValuation?.bucket?.(c),rawVal=N(c.value),basis=window.CVPrimeValuation?.basisUnit?.(c);
+ const b=window.CVPrimeValuation?.bucket?.(c),rawVal=N(window.CVPSARawValue?.(c)),basis=window.CVPrimeValuation?.basisUnit?.(c);
  const landed=basis!=null?basis:rawVal;
  const r=evaluate({rawValue:rawVal,landedCost:landed,gradeCost,sellFeePct:fee,psa9,psa10,p10:c.pregrade?.p10??c.pregradeProbability10??null});
  const keep=1-fee/100,breakEven=keep>0?r.cost/keep:null;
