@@ -12,6 +12,17 @@ function img(c){
  };
  if(exact[c?.id])return exact[c.id];
  if(c?.referenceImage&&c.referenceImageIdentityExact===true)return c.referenceImage;
+ /* Las referencias de catálogo con ID exacto no dependen del radar cargado. */
+ if(c?.catalogId&&c?.referenceImage){
+  const match=String(c.catalogId).match(/^([a-z0-9]+)-(\d+)$/i);
+  if(match){
+   const expected="https://images.pokemontcg.io/"+match[1]+"/"+Number(match[2])+"_hires.png";
+   if(c.referenceImage===expected)return expected;
+  }
+ }
+ const graded={vap149:["Vaporeon ex #149/131","sv8pt5/149"],cha228:["Charizard ex #228/197","sv3/228"],cha074:["Charizard ex #074","svp/74"]};
+ const ref=graded[c?.id];
+ if(ref&&c.name===ref[0])return "https://images.pokemontcg.io/"+ref[1]+"_hires.png";
  /* Nunca usamos una coincidencia solo por nombre/número para vintage: puede devolver otra impresión con el mismo nº. */
  try{
   const x=typeof catalogImageFor==="function"?catalogImageFor(c):"";
