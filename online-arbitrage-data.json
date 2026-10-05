@@ -1,44 +1,142 @@
 {
-  "schemaVersion": 1,
-  "checkedAt": "2026-10-05T23:42:00Z",
+  "schemaVersion": 2,
+  "checkedAt": "2026-10-05T23:56:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
     "eBay"
   ],
+  "strictPolicy": {
+    "label": "SALIDA EJECUTABLE O BLOQUEO",
+    "rule": "Solo puede aparecer COMPRAR si existe comprador/puja ejecutable para la misma referencia, variante, estado y cantidad; el cobro neto supera el coste total; todos los costes están documentados; la operación sigue vigente al confirmar; y no queda inspección, autenticación o condición material pendiente.",
+    "guaranteeClaim": false,
+    "reason": "No se promete beneficio absoluto: transporte, contraparte, autenticación, impuestos y cambios entre clics impiden una garantía universal."
+  },
   "purchaseRecommendation": null,
-  "summary": "Ninguna compra con beneficio cerrado demostrada. Las rutas de recompra no equivalen a ofertas vinculantes.",
+  "readyCount": 0,
+  "summary": "0 compras autorizadas. Se amplía el universo de arbitraje, pero ninguna pareja observada supera todavía el filtro estricto de salida ejecutable + misma variante + margen neto + cero condiciones materiales pendientes.",
+  "lanes": [
+    {
+      "id": "market-bid",
+      "name": "Mercado con comprador ya existente",
+      "priority": 1,
+      "examples": [
+        "StockX · Vender ahora"
+      ],
+      "rule": "Puja/oferta de compra activa para la misma variante exacta."
+    },
+    {
+      "id": "professional-buyback",
+      "name": "Recompra profesional",
+      "priority": 2,
+      "examples": [
+        "CeX",
+        "MPB",
+        "Swappie",
+        "reBuy",
+        "Back Market"
+      ],
+      "rule": "Bloqueada si la cifra puede cambiar tras inspección."
+    },
+    {
+      "id": "market-listing",
+      "name": "Marketplace / anuncio",
+      "priority": 3,
+      "examples": [
+        "Wallapop",
+        "Vinted",
+        "Chrono24",
+        "Ticketmaster Fan-to-Fan"
+      ],
+      "rule": "Nunca equivale a venta hasta existir comprador comprometido."
+    },
+    {
+      "id": "sevilla-source",
+      "name": "Compra física Sevilla → venta online",
+      "priority": 4,
+      "examples": [
+        "Liquidaciones, outlet, segunda mano y comercio local"
+      ],
+      "rule": "Se permite como origen; la salida online debe cumplir exactamente el mismo filtro estricto."
+    }
+  ],
   "routes": [
+    {
+      "id": "stockx",
+      "category": "Moda, relojes y coleccionables",
+      "origin": "Online",
+      "name": "Retail / segunda mano verificada → StockX · Vender ahora",
+      "status": "candidate",
+      "exitType": "Puja ejecutable",
+      "logistics": "Venta online; el artículo vendido pasa por el proceso de verificación de StockX salvo programas específicos.",
+      "finding": "Es la ruta más próxima al arbitraje exigido: «Vender ahora» iguala la puja más alta y el artículo se considera vendido. Aun así, faltan autenticación y cálculo exacto de comisiones/pago neto.",
+      "missing": "Para autorizar compra: misma referencia + talla/variante exacta, stock de compra vigente, puja vigente, payout neto de la cuenta española y autenticación/condición sin incertidumbre material.",
+      "sources": [
+        {
+          "label": "StockX · Vender ahora vs Oferta",
+          "url": "https://stockx.com/help/es-US/articles/What-is-the-difference-between-sell-now-and-an-ask?QTM_FID=_UIRemoteView-0"
+        },
+        {
+          "label": "StockX · comisiones vendedor",
+          "url": "https://stockx.com/help/es-ES/articles/What-are-StockXs-fees-for-Sellers"
+        }
+      ]
+    },
+    {
+      "id": "cex",
+      "category": "Videojuegos y electrónica",
+      "origin": "Online / Sevilla",
+      "name": "Compra barata → CeX España",
+      "status": "conditional",
+      "exitType": "Recompra condicionada",
+      "logistics": "Venta online; GLS Parcel Shop gratuito en condiciones publicadas. CeX indica que si no puedes acudir a un Parcel Shop puedes contactar con soporte.",
+      "finding": "CeX compra juegos, consolas, móviles, informática y otros electrónicos, pero prueba estado/accesorios y puede rechazar. El precio web no debe tratarse como cobro irrevocable.",
+      "missing": "Inspección/aceptación final y coincidencia exacta de grado. Mantener bloqueado hasta que esas condiciones estén resueltas.",
+      "sources": [
+        {
+          "label": "CeX · venta online",
+          "url": "https://es.support.webuy.com/support/solutions/folders/43000262910"
+        },
+        {
+          "label": "CeX · envío",
+          "url": "https://es.support.webuy.com/support/solutions/articles/43000788562--c%C3%B3mo-puedo-enviaros-mis-productos-para-vender-a-cex-"
+        }
+      ]
+    },
     {
       "id": "mpb",
       "category": "Fotografía",
+      "origin": "Online / Sevilla",
       "name": "Cámaras y objetivos → MPB",
       "status": "conditional",
-      "logistics": "Recogida gratuita en domicilio UE y pago bancario, tras revisión.",
-      "finding": "La valoración inicial no es vinculante; pueden ajustar el precio o rechazar el equipo. Es la ruta con mejor logística verificada para operar desde casa.",
-      "missing": "Falta un producto exacto y una salida vinculante superior al coste total.",
+      "exitType": "Tasación + inspección",
+      "logistics": "Recogida gratuita en domicilio o entrega a transportista; pago bancario.",
+      "finding": "La valoración es instantánea, pero MPB inspecciona de 8 a 10 puntos y confirma el precio después de recibir el equipo.",
+      "missing": "La inspección puede modificar el importe; no es salida cerrada antes de comprar.",
       "sources": [
         {
-          "label": "Proceso de venta",
+          "label": "MPB · vender",
           "url": "https://www.mpb.com/es-es/vender-o-intercambiar"
         },
         {
-          "label": "Términos · 7.1–7.5",
-          "url": "https://www.mpb.com/es-es/ayuda/terminos-y-condiciones-generales"
+          "label": "MPB · fijación de precios",
+          "url": "https://es.help.mpb.com/es/articles/10869499-como-funciona-la-fijacion-de-precios-de-mpb"
         }
       ]
     },
     {
       "id": "swappie",
       "category": "Móviles",
-      "name": "iPhone → Swappie",
+      "origin": "Online / Sevilla",
+      "name": "iPhone / iPad → Swappie",
       "status": "conditional",
-      "logistics": "Envío gratuito y pago por banco. Recogida en domicilio pendiente de confirmar para el pedido.",
-      "finding": "Presupuesto válido 14 días si coincide el estado declarado; la oferta final se confirma tras inspección.",
-      "missing": "No existe una tasación concreta que cierre beneficio para el iPhone estudiado.",
+      "exitType": "Presupuesto 14 días + inspección",
+      "logistics": "España admitida; etiqueta gratuita; pago bancario después de inspección.",
+      "finding": "El presupuesto puede fijarse 14 días si el estado coincide, pero Swappie puede emitir una oferta revisada tras inspección.",
+      "missing": "Inspección pendiente; no cumple salida absoluta previa a la compra.",
       "sources": [
         {
-          "label": "Condiciones de tasación",
+          "label": "Swappie · precio y venta",
           "url": "https://help.swappie.com/es/article/obtener-un-precio-e-iniciar-la-venta"
         }
       ]
@@ -46,107 +144,112 @@
     {
       "id": "rebuy",
       "category": "Electrónica",
-      "name": "Consolas, tablets y audio → reBuy / Back Market",
+      "origin": "Online / Sevilla",
+      "name": "Electrónica → reBuy",
       "status": "conditional",
-      "logistics": "Envío prepagado y pago bancario. Las páginas revisadas indican entrega del paquete al transportista.",
-      "finding": "El precio es provisional y puede haber contraoferta tras inspección. Back Market admite dispositivos ya reparados; reBuy puede rechazar móviles con componentes cambiados.",
-      "missing": "Faltan pareja de precios para la misma unidad, oferta vinculante y recogida en casa.",
+      "exitType": "Oferta provisional + inspección",
+      "logistics": "Envío gratuito asegurado; pago o contraoferta después de revisar.",
+      "finding": "La propia plataforma indica que el precio inicial es provisional y puede cambiar si el estado real difiere.",
+      "missing": "Contraoferta/inspección pendiente.",
       "sources": [
         {
           "label": "reBuy · vender",
-          "url": "https://www.rebuy.es/vender/"
-        },
-        {
-          "label": "reBuy · iPhone y piezas",
-          "url": "https://www.rebuy.es/vender/apple-iphone-13-128gb-medianoche_12216196"
-        },
-        {
-          "label": "Back Market · renove",
-          "url": "https://www.backmarket.es/es-es/buyback/home"
+          "url": "https://www.rebuy.es/vender"
         }
       ]
     },
     {
-      "id": "cex",
-      "category": "Videojuegos",
-      "name": "Videojuegos y consolas → CeX",
+      "id": "backmarket",
+      "category": "Electrónica",
+      "origin": "Online / Sevilla",
+      "name": "Móviles, consolas y audio → Back Market Renove",
       "status": "conditional",
-      "logistics": "Envío gratuito estándar por GLS Parcel Shop; recogida domiciliaria sin confirmar.",
-      "finding": "Clasificación por estado y accesorios. No debe confundirse el vale de tienda con el precio en efectivo.",
-      "missing": "Falta una diferencia de precios ejecutable y logística totalmente desde casa.",
+      "exitType": "Oferta de reacondicionador + revisión",
+      "logistics": "Envío gratuito; transferencia tras recepción/revisión.",
+      "finding": "Permite vender productos no comprados allí y paga por transferencia, pero el proceso incluye revisión del dispositivo.",
+      "missing": "Revisión física pendiente; no se presenta como salida 100% cerrada.",
       "sources": [
         {
-          "label": "Venta online y envíos",
-          "url": "https://es.support.webuy.com/support/solutions/folders/43000262910"
+          "label": "Back Market · móviles",
+          "url": "https://www.backmarket.es/es-es/buyback/smartphones"
         },
         {
-          "label": "Condiciones del equipo",
-          "url": "https://es.support.webuy.com/support/solutions/articles/43000073244--en-qu%C3%A9-condici%C3%B3n-deber%C3%ADan-estar-mis-art%C3%ADculos-"
+          "label": "Back Market · consolas",
+          "url": "https://www.backmarket.es/es-es/buyback/consoles"
         }
       ]
     },
     {
-      "id": "vintage",
-      "category": "LEGO y objetos",
-      "name": "LEGO y objetos usados → Vintage.com",
+      "id": "ticketmaster",
+      "category": "Entradas",
+      "origin": "Online",
+      "name": "Entradas → Ticketmaster Fan-to-Fan",
       "status": "excluded",
-      "logistics": "Recogida disponible solo en determinadas regiones.",
-      "finding": "Tasación posterior a recibir los objetos; no hay recompra previa por set exacto. No cierra una salida antes de comprar.",
-      "missing": "Oferta previa vinculante inexistente en la evidencia revisada.",
+      "exitType": "Anuncio hasta encontrar comprador",
+      "logistics": "Gestión digital; pago después del evento según condiciones.",
+      "finding": "No es arbitraje cerrado: no todos los eventos habilitan reventa y una entrada Fan-to-Fan comprada a otro fan no puede revenderse de nuevo.",
+      "missing": "No existe comprador previo garantizado para una compra nueva; excluido de COMPRAR.",
       "sources": [
         {
-          "label": "Términos y logística",
-          "url": "https://www.vintage.com/es/terms-conditions"
-        }
-      ]
-    },
-    {
-      "id": "hamelyn",
-      "category": "Libros",
-      "name": "Libros y videojuegos → Hamelyn",
-      "status": "excluded",
-      "logistics": "Recogida a domicilio y pago tras revisión.",
-      "finding": "Sus términos definen al vendedor como consumidor final que vende fuera de actividades comerciales, empresariales o profesionales.",
-      "missing": "Descartado como circuito de comprar para revender de forma comercial.",
-      "sources": [
+          "label": "Ticketmaster · Fan-to-Fan",
+          "url": "https://www.ticketmaster.es/feature/vender-entradas/"
+        },
         {
-          "label": "Términos · apartado 6",
-          "url": "https://blog.hamelyn.com/terminos-y-condiciones/"
+          "label": "Ticketmaster · no reventa de Fan-to-Fan",
+          "url": "https://help.ticketmaster.es/hc/es/articles/8065782981777--Puedo-vender-un-entrada-comprada-de-Fan-a-Fan"
         }
       ]
     },
     {
       "id": "bullion",
       "category": "Metales",
+      "origin": "Online",
       "name": "Oro custodiado → BullionVault",
       "status": "excluded",
+      "exitType": "Mercado líquido, no margen fijado",
       "logistics": "Operación digital y retirada bancaria.",
-      "finding": "Tarifa inicial 0,5% al comprar y 0,5% al vender; custodia de oro con mínimo de 4 USD al mes y retirada SEPA de 5 €. No se encontró una cotización cruzada con margen.",
-      "missing": "Liquidabilidad no demuestra beneficio; el diferencial y los costes deben cubrirse.",
+      "finding": "Comprar y vender es posible, pero liquidez no equivale a beneficio. Comisiones, diferencial, custodia y retirada deben quedar cubiertos simultáneamente.",
+      "missing": "No se ha observado cruce ejecutable positivo neto.",
       "sources": [
         {
-          "label": "Tarifas oficiales",
+          "label": "BullionVault · tarifas",
           "url": "https://oro.bullionvault.es/help/tariff.html"
         }
       ]
     },
     {
-      "id": "skins",
+      "id": "skinport",
       "category": "Digital",
+      "origin": "Online",
       "name": "Skins → Skinport",
       "status": "excluded",
-      "logistics": "Mercado online. Encontrar comprador y cumplir plazos sigue siendo necesario.",
-      "finding": "Comisión pública ordinaria 8%, 6% para artículos superiores a 1.000 € y 2% en ventas privadas. Una publicación no es una venta contratada.",
-      "missing": "No se encontró una salida firme por encima del coste; no se recomienda comprar.",
+      "exitType": "Marketplace",
+      "logistics": "Operación online.",
+      "finding": "Publicar no crea comprador. Las comisiones reducen cualquier diferencial.",
+      "missing": "Sin comprador comprometido previo; bloqueado.",
       "sources": [
         {
-          "label": "Comisiones permanentes",
+          "label": "Skinport · comisiones",
           "url": "https://skinport.com/blog/lower-fees-for-everybody"
         }
       ]
     }
   ],
   "cases": [
+    {
+      "id": "stockx-jordan3-animal-instinct",
+      "name": "Jordan 3 Retro SE Animal Instinct · CK4344-002",
+      "buyPriceEUR": 149,
+      "buyCondition": "StockX mostraba «Comprar ahora» desde 149 € en vista agregada.",
+      "buyUrl": "https://stockx.com/es-es/air-jordan-3-retro-animal-pack",
+      "exitCeilingEUR": 219,
+      "exitCondition": "La misma vista agregada mostraba «Vende ahora por 219 €», pero sin talla exacta fijada en la evidencia recuperada.",
+      "exitUrl": "https://stockx.com/es-es/air-jordan-3-retro-animal-pack",
+      "ceilingDifferenceEUR": 70,
+      "recommendBuy": false,
+      "missingCosts": true,
+      "finding": "FALSO POSITIVO BLOQUEADO: el menor precio de compra y la mayor puja pueden corresponder a tallas distintas. Además faltan payout neto y comisiones de la cuenta. No comprar hasta igualar talla/variante exacta."
+    },
     {
       "id": "iphone13",
       "name": "iPhone 13 · 128 GB · Medianoche",
@@ -159,7 +262,7 @@
       "ceilingDifferenceEUR": -94,
       "recommendBuy": false,
       "missingCosts": true,
-      "finding": "Incluso el máximo publicado para un ejemplar perfecto está 94 € por debajo de la compra, antes de gastos. No es una comparación de condiciones equivalentes ni una tasación aceptada. La referencia anterior de 354 € no queda validada."
+      "finding": "Incluso el techo publicado queda 94 € por debajo de la compra antes de costes. No comprar."
     }
   ]
 }
