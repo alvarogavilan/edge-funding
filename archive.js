@@ -217,7 +217,7 @@ function renderLearning(rows){
   '<div class="qaRow"><span>Ventas con control postventa exacto</span><b>'+tracked.length+'</b></div>'+
   '<div class="qaRow"><span>Mercado posterior vs nuestra venta (mediana)</span><b>'+(tracked.length>=LEARN_MIN?(medianAfter>=0?'+':'')+medianAfter.toFixed(1)+'%':'Necesita ≥'+LEARN_MIN)+'</b></div>';
  if(known.length<LEARN_MIN){
-  box.innerHTML=head+'<small>No se muestran tasas, segmentos ni sesgos hasta tener ≥'+LEARN_MIN+' ventas cerradas con coste conocido. Las reglas BUY/SELL nunca se ajustan solas.</small>';
+  box.innerHTML=head+'<small>No se muestran tasas, segmentos ni sesgos hasta tener ≥'+LEARN_MIN+' ventas cerradas con coste conocido. Las reglas COMPRA/VENTA nunca se ajustan solas.</small>';
   return;
  }
  const rois=known.map(x=>x.result/N(x.basis)*100),avgRoi=rois.reduce((a,b)=>a+b,0)/rois.length,wins=known.filter(x=>x.result>0).length;
