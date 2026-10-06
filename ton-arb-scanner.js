@@ -319,10 +319,14 @@ function render(){
  const ready=state.results.filter(r=>r.eval.ready&&now-r.quoteAt<=RULES.maxQuoteAgeSec*1000);
  const errs=Object.entries(state.sourceErr).map(([k,v])=>k+": "+v);
  const status=!state.scanAt?"Cotizando en STON.fi…":ready.length?"🟢 VERDE REAL ENCONTRADO":"🔴 NO EXISTE VERDE EJECUTABLE AHORA";
+ const verifiedAssets=Object.entries(state.assets).filter(function(e){return !!e[1]}).map(function(e){return e[0]});
+ const blockedTop=state.results.filter(function(r){return !r.eval.ready}).slice(0,3);
  host.innerHTML='<section class="tonScanner">'+
  '<div class="arbAgentHead"><div><span class="arbKicker">ESCÁNER SAME-WALLET TON · FUENTES PRIMARIAS</span><h3>'+status+'</h3></div><span class="arbAgentMode">'+(state.fast?"MODO RÁPIDO 8 s":"CADA 60 s")+'</span></div>'+
  '<p class="tonMeta">Último barrido: '+(state.scanAt?new Date(state.scanAt).toLocaleTimeString("es-ES"):"—")+' · '+state.results.length+' rutas · capital por operación '+eur(cap.limit)+' (tramo '+cap.tier+') · disponible '+eur(cap.available)+(fx?' · 1 USD = '+fx.toFixed(4)+' €':'')+'</p>'+
  (errs.length?'<p class="tonWarn">Fuente no accesible desde este dispositivo: '+esc(errs.join(" · "))+'. Sin quote primario no se marca nada en verde.</p>':'')+
+ '<div class="tonHealth"><span>STON.fi: '+(state.sourceErr.ston?'ERROR':'OK')+'</span><span>DeDust: '+(state.sourceErr.dedust?'ERROR':'OK / opcional')+'</span><span>Activos verificados: '+esc(verifiedAssets.join(", ")||"ninguno")+'</span></div>'+
+ (!ready.length&&blockedTop.length?'<div class="tonBlockers"><b>Por qué no hay verde ahora</b>'+blockedTop.map(function(r){return '<span>'+esc(r.route.id)+' · '+esc((r.eval.reasons||[]).join("; "))+'</span>'}).join("")+'</div>':'')+
  ready.slice(0,1).map(readyCard).join("")+(ready.length>1?'<p class="tonMeta">+'+(ready.length-1)+' rutas verdes más en la tabla.</p>':'')+
  '<div class="tonStats">'+
  stat(fs.lastHour,"oportunidades ≥1% última hora")+stat(fs.day,"oportunidades ≥1% en 24 h")+
