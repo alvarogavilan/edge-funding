@@ -1,7 +1,7 @@
 {
-  "endpoint": "",
+  "endpoint": "https://angry-little-kilobyte--dhprjz79cr.replit.app",
   "mode": "auto",
   "proxyPath": "/proxy",
   "healthPath": "/health",
-  "note": "Se completa automáticamente al desplegar un backend gratuito."
+  "note": "Puente Replit para Card Vault. Solo datos; sin wallets ni movimiento de fondos."
 }
