@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T00:58:00Z",
+  "checkedAt": "2026-10-06T01:12:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas. Se corrige CS2: no sirve para arbitraje de minutos por el bloqueo de 7 días de Steam. Prioridad real: 1) MTGO bot→buylist, 2) Courtyard si existe oferta transferible/aceptable sobre el activo exacto, 3) gift cards solo tras validar contraparte y payout. Sin salida preexistente, no se compra.",
+  "summary": "0 compras autorizadas. Nuevo candidato fuerte: Phygitals standing claw buyback → USDC, pero todavía no está demostrado que una carta comprada en su marketplace herede esa recompra. MTGO sigue siendo la mecánica de arbitraje más pura; Courtyard queda condicionado a una oferta real de tercero sobre el activo exacto.",
   "lanes": [
     {
       "id": "market-bid",
@@ -61,6 +61,27 @@
     }
   ],
   "routes": [
+    {
+      "id": "phygitals-claw-buyback",
+      "category": "Coleccionables custodiados",
+      "origin": "Online",
+      "name": "Phygitals · standing claw buyback → USDC",
+      "status": "candidate",
+      "exitType": "Oferta de recompra on-chain ya existente",
+      "logistics": "Activo físico custodiado y representado digitalmente; la recompra elegible se liquida mediante transacción que entrega USDC, sin enviar la carta a casa.",
+      "finding": "La API oficial documenta una oferta de buyback vigente por mint y una operación de sellback que liquida al propietario. Técnicamente es uno de los mecanismos más cercanos a comprar→vender en minutos.",
+      "missing": "No se autoriza arbitraje secundario hasta demostrar que una oferta de claw buyback permanece válida para el nuevo propietario después de comprar ese mismo mint en marketplace. Los términos solo prometen que un comprador de pack puede recibir una oferta.",
+      "sources": [
+        {
+          "label": "Phygitals · API pública",
+          "url": "https://www.phygitals.com/docs/public-api"
+        },
+        {
+          "label": "Phygitals · términos",
+          "url": "https://docs.phygitals.com/logistics-and-legal/user-agreements/terms-of-service"
+        }
+      ]
+    },
     {
       "id": "mtgo-bot-arbitrage",
       "category": "Cartas digitales",
@@ -157,11 +178,11 @@
       "category": "Coleccionables custodiados",
       "origin": "Online",
       "name": "Courtyard · cartas físicas custodiadas / propiedad digital",
-      "status": "candidate",
+      "status": "conditional",
       "exitType": "Reventa inmediata dentro del vault",
       "logistics": "La carta física permanece en vault; la propiedad cambia digitalmente y puede relistarse inmediatamente sin envío entre comprador y vendedor.",
-      "finding": "Courtyard permite comprar, vender y aceptar ofertas sobre coleccionables ya custodiados con 0% de comisión marketplace y liquidación interna instantánea. Es el mejor candidato móvil/web sin logística física.",
-      "missing": "Antes de autorizar una compra debemos demostrar que una oferta existente sobre el activo exacto sigue siendo aceptable por el nuevo propietario tras la transferencia. No asumirlo sin prueba.",
+      "finding": "Courtyard permite comprar y transferir propiedad de cartas custodiadas al instante y aceptar ofertas de otros usuarios con 0% de comisión marketplace.",
+      "missing": "El buyback instantáneo de Courtyard se aplica a pulls de Vending Machine; no es una recompra universal para cualquier carta comprada en marketplace. Solo verde si ya existe una oferta aceptable de tercero sobre el activo exacto.",
       "sources": [
         {
           "label": "Courtyard · cómo funciona",
@@ -536,5 +557,47 @@
         "url": "https://blog.noones.com/en/blog/noones-gift-card-store-buy-discounted-gift-cards"
       }
     ]
-  }
+  },
+  "instantDigitalResearch": {
+    "updatedAt": "2026-10-06T01:12:00Z",
+    "thesis": "Prioridad absoluta a activos digitales/custodiados con orden de compra o buyback preexistente y liquidación sin envío.",
+    "candidates": [
+      {
+        "rank": 1,
+        "id": "mtgo-bot-arbitrage",
+        "verdict": "MEJOR MECÁNICA PURA",
+        "execution": "Bot vendedor → buylist bot comprador → Event Tickets",
+        "speed": "Minutos dentro de MTGO",
+        "caveat": "Cashing-out de tickets introduce descuento y MTGO requiere cliente de escritorio."
+      },
+      {
+        "rank": 2,
+        "id": "phygitals-claw-buyback",
+        "verdict": "MEJOR RAIL ON-CHAIN / MÓVIL EN INVESTIGACIÓN",
+        "execution": "Carta elegible → standing claw buyback → USDC",
+        "speed": "Transacción on-chain tras aceptar oferta",
+        "caveat": "La documentación liga la oferta a cartas obtenidas por claw/pack. No asumir que una compra secundaria hereda esa oferta."
+      },
+      {
+        "rank": 3,
+        "id": "courtyard-vaulted",
+        "verdict": "EXCELENTE CUSTODIA, NO BUYBACK UNIVERSAL",
+        "execution": "Activo vaulted → aceptar oferta de otro usuario",
+        "speed": "Instantáneo cuando existe oferta",
+        "caveat": "El buyback instantáneo es para pulls de Vending Machine; una compra normal del marketplace sigue necesitando oferta de tercero."
+      }
+    ]
+  },
+  "rejectedImmediateLanes": [
+    {
+      "id": "cardcj",
+      "name": "CardCJ",
+      "reason": "Tiene standing buy offers, pero exige poseer físicamente la carta, enviarla con seguimiento y el pago queda en escrow hasta recepción/14 días. No es arbitraje inmediato."
+    },
+    {
+      "id": "collectorcredits",
+      "name": "CollectorCredits",
+      "reason": "Standing offers reales, pero liquidación por correo físico y en créditos; no cumple salida inmediata a dinero."
+    }
+  ]
 }
