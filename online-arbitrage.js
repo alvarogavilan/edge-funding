@@ -1,84 +1,157 @@
 (function(root){
 "use strict";
 
-const minuteIds=new Set(["mtgo-bot-arbitrage","phygitals-claw-buyback","courtyard-vaulted","giftcard-cross","dmarket-cs2","csfloat","fanatics-vault"]);
+const MINUTE_IDS=new Set(["mtgo-bot-arbitrage","phygitals-claw-buyback","courtyard-vaulted","giftcard-cross","dmarket-cs2","csfloat","fanatics-vault"]);
+const FREQ_KEY="cv_arb_live_frequency_v2";
+const AGENT_KEY="cv_arb_agent_v1";
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=v=>new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"}).format(Number(v||0));
 const allowedUrl=value=>{try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password&&!/(^|\.)ebay\.[a-z.]+$/i.test(u.hostname)}catch{return false}};
 const links=sources=>(sources||[]).filter(s=>allowedUrl(s.url)).map(s=>'<a href="'+esc(s.url)+'" target="_blank" rel="noopener noreferrer">'+esc(s.label)+'</a>').join("");
 const statusLabel=s=>s==="candidate"?"RUTA PRIORITARIA":s==="conditional"?"CONDICIONADA":s==="research"?"INVESTIGACIÓN":"DESCARTADA";
-const costKeys=["purchaseCents","shippingCents","feesCents","withdrawalCents","taxesCents","contingencyCents"];
 
-function evaluate(record,now=Date.now()){
- const r=record||{},reasons=[];
- const monetary=[...costKeys,"saleCents"].every(k=>Number.isSafeInteger(r[k])&&r[k]>=0);
- const total=monetary?costKeys.reduce((s,k)=>s+r[k],0):null;
- const net=monetary?r.saleCents-total:null;
- if(!monetary)reasons.push("Faltan importes o costes válidos.");
- if(!(r.purchaseCents>0))reasons.push("Falta precio de compra.");
- if(!(net>0))reasons.push("No hay margen neto positivo demostrado.");
- [["sameUnitVerified","Activo exacto sin verificar."],["stockVerified","Stock sin verificar."],["spainAllowed","España sin verificar."],["cashWithdrawalVerified","Salida a dinero sin verificar."],["bindingExitVerified","No existe comprador/orden ejecutable."],["inspectionResolved","Queda inspección o autenticación material."],["costsComplete","Costes incompletos."],["accountEligibleVerified","Cuenta/elegibilidad sin verificar."],["variantLocked","Variante exacta sin bloquear."],["quoteLiveVerified","Salida no revalidada."]].forEach(([k,m])=>{if(r[k]!==true)reasons.push(m)});
- return {status:reasons.length?"BLOCKED":"HUMAN_REVIEW",netCents:net,reasons,guaranteed:false,autoPurchase:false,humanReviewRequired:true};
+let report=null, liveFeed=null, liveTimer=null;
+
+function readJson(key,fallback){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch{return fallback}}
+function writeJson(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
+
+function agentState(){
+ return {...{
+   enabled:true,
+   mode:"AUTO_READY",
+   capitalLimitEUR:100,
+   minNetPct:1,
+   minDepthUSD:10000,
+   maxQuoteAgeSec:15,
+   dailyStopLossEUR:5,
+   consecutiveFailuresLimit:2,
+   tradesPrepared:0,
+   tradesExecuted:0,
+   realizedProfitEUR:0,
+   lastDecision:null
+ },...readJson(AGENT_KEY,{})};
+}
+function saveAgent(next){writeJson(AGENT_KEY,next);return next}
+
+function readFreq(){return readJson(FREQ_KEY,{samples:[]})}
+function recordFrequency(feed){
+ const now=Date.now(),cut=now-86400000,f=readFreq();
+ f.samples=(f.samples||[]).filter(x=>x.at>=cut);
+ const best=(feed?.rows||[])
+  .filter(x=>x.executable===true&&x.route_available===true&&x.depth_status==="ok")
+  .sort((a,b)=>Number(b.net_spread_pct||0)-Number(a.net_spread_pct||0))[0];
+ f.samples.push({at:now,ok:!!best,net:best?Number(best.net_spread_pct||0):0,coin:best?.coin||null});
+ writeJson(FREQ_KEY,f);
+}
+function frequencyStats(){
+ const s=readFreq().samples||[];
+ const a=agentState();
+ const positive=s.filter(x=>x.ok&&x.net>=a.minNetPct);
+ return {samples:s.length,positive:positive.length,availability:s.length?positive.length/s.length:0};
 }
 
-root.CVOnlineArbitrage={evaluate,allowedUrl};
-let report=null,liveFeed=null,liveTimer=null;
-const freqKey="cv_arb_live_frequency_v1";
-function readFreq(){try{return JSON.parse(localStorage.getItem(freqKey)||"{\"samples\":[]}")}catch{return {samples:[]}}}
-function writeFreq(x){try{localStorage.setItem(freqKey,JSON.stringify(x))}catch{}}
-function recordFrequency(feed){const now=Date.now(),cut=now-86400000,f=readFreq();f.samples=(f.samples||[]).filter(x=>x.at>=cut);const usde=(feed?.rows||[]).find(x=>String(x.coin).toUpperCase()==="USDE"&&x.buy_exchange==="STON.fi"&&/Bybit/i.test(x.sell_exchange||"")&&x.executable===true&&x.route_available===true);f.samples.push({at:now,ok:!!usde,net:usde?Number(usde.net_spread_pct||0):0});writeFreq(f);return f}
-function frequencyStats(){const f=readFreq(),samples=f.samples||[],positive=samples.filter(x=>x.ok&&x.net>=1);const observedMinutes=samples.length;return {samples:samples.length,positive:positive.length,availability:samples.length?positive.length/samples.length:0,observedMinutes};}
+function evaluateLiveRow(x){
+ const a=agentState();
+ const ageSec=liveFeed?.updated_at?Math.max(0,(Date.now()-Date.parse(liveFeed.updated_at))/1000):9999;
+ const scannerNet=Number(x.net_spread_pct||0);
+ const conservative=Math.max(0,scannerNet-0.75);
+ const reasons=[];
+ if(x.executable!==true)reasons.push("feed no ejecutable");
+ if(x.route_available!==true)reasons.push("ruta cerrada");
+ if(x.depth_status!=="ok")reasons.push("profundidad insuficiente");
+ if(Number(x.depth_usdt||0)<a.minDepthUSD)reasons.push("profundidad < mínimo");
+ if(conservative<a.minNetPct)reasons.push("neto conservador < mínimo");
+ if(ageSec>a.maxQuoteAgeSec)reasons.push("quote antiguo");
+ return {ready:reasons.length===0,reasons,scannerNet,conservative,ageSec};
+}
 
+function bestLive(){
+ const rows=(liveFeed?.rows||[]).map(x=>({row:x,eval:evaluateLiveRow(x)}));
+ rows.sort((a,b)=>b.eval.conservative-a.eval.conservative);
+ return rows[0]||null;
+}
+
+function agentDecision(){
+ const a=agentState(),best=bestLive();
+ let decision={at:new Date().toISOString(),status:"WAIT",reason:"Sin oportunidad viva"};
+ if(!a.enabled)decision={...decision,status:"OFF",reason:"Agente desactivado"};
+ else if(best?.eval.ready){
+   const expectedEUR=a.capitalLimitEUR*(best.eval.conservative/100);
+   decision={
+     at:new Date().toISOString(),
+     status:"AUTO_READY",
+     reason:"Cumple filtros; requiere aprobación humana antes de mover fondos.",
+     coin:best.row.coin,
+     buy:best.row.buy_exchange,
+     sell:best.row.sell_exchange,
+     netPct:best.eval.conservative,
+     expectedProfitEUR:expectedEUR,
+     capitalEUR:a.capitalLimitEUR
+   };
+ }
+ a.lastDecision=decision;
+ saveAgent(a);
+ return decision;
+}
+
+function renderAgent(){
+ const a=agentState(),d=agentDecision(),fs=frequencyStats();
+ const status=d.status==="AUTO_READY"?"LISTO PARA APROBAR":d.status==="OFF"?"DESACTIVADO":"VIGILANDO";
+ return '<section class="arbAgent">'+
+ '<div class="arbAgentHead"><div><span class="arbKicker">AGENTE 24/7 · AUTO READY</span><h3>'+status+'</h3></div><span class="arbAgentMode">'+esc(a.mode)+'</span></div>'+
+ '<div class="arbAgentGrid">'+
+ '<label>Capital máximo €<input id="arbAgentCapital" type="number" min="10" step="10" value="'+esc(a.capitalLimitEUR)+'"></label>'+
+ '<label>Neto mínimo %<input id="arbAgentMinNet" type="number" min="0.1" step="0.1" value="'+esc(a.minNetPct)+'"></label>'+
+ '<label>Profundidad mínima $<input id="arbAgentDepth" type="number" min="100" step="100" value="'+esc(a.minDepthUSD)+'"></label>'+
+ '<label>Quote máximo s<input id="arbAgentAge" type="number" min="3" step="1" value="'+esc(a.maxQuoteAgeSec)+'"></label>'+
+ '</div>'+
+ '<div class="arbAgentDecision"><b>'+esc(d.status)+'</b><span>'+esc(d.reason)+'</span>'+
+ (d.status==="AUTO_READY"?'<span>'+esc(d.coin)+' · '+esc(d.buy)+' → '+esc(d.sell)+' · ≈'+d.netPct.toFixed(2)+'% · '+money(d.expectedProfitEUR)+' potencial sobre '+money(d.capitalEUR)+'</span>':'')+
+ '</div>'+
+ '<div class="arbFrequency"><b>Frecuencia observada</b><span>'+fs.positive+'/'+fs.samples+' muestras por encima del umbral · '+(fs.samples?Math.round(fs.availability*100):0)+'% del tiempo observado</span><small>Solo cuenta mientras la app está abierta en este dispositivo.</small></div>'+
+ '<div class="arbAgentActions"><button id="arbAgentToggle">'+(a.enabled?"Pausar agente":"Activar agente")+'</button><button id="arbAgentSave">Guardar límites</button></div>'+
+ '<small>El agente no firma ni mueve fondos. Prepara únicamente oportunidades que superan filtros de frescura, profundidad y margen. Ejecución automática real requeriría una wallet/API separada con permisos limitados.</small>'+
+ '</section>';
+}
+
+function bindAgent(){
+ const a=agentState();
+ const save=()=>{
+   const n={...a,
+     capitalLimitEUR:Math.max(10,Number(document.getElementById("arbAgentCapital")?.value||a.capitalLimitEUR)),
+     minNetPct:Math.max(.1,Number(document.getElementById("arbAgentMinNet")?.value||a.minNetPct)),
+     minDepthUSD:Math.max(100,Number(document.getElementById("arbAgentDepth")?.value||a.minDepthUSD)),
+     maxQuoteAgeSec:Math.max(3,Number(document.getElementById("arbAgentAge")?.value||a.maxQuoteAgeSec))
+   };
+   saveAgent(n);renderMode("minutes");
+ };
+ const saveBtn=document.getElementById("arbAgentSave");if(saveBtn)saveBtn.onclick=save;
+ const toggle=document.getElementById("arbAgentToggle");if(toggle)toggle.onclick=()=>{saveAgent({...agentState(),enabled:!agentState().enabled});renderMode("minutes")};
+}
 
 function splitRoutes(mode){
  const rows=report?.routes||[];
- return rows.filter(r=>mode==="minutes"?minuteIds.has(r.id):!minuteIds.has(r.id));
+ return rows.filter(r=>mode==="minutes"?MINUTE_IDS.has(r.id):!MINUTE_IDS.has(r.id));
 }
 function splitCases(mode){
  const rows=report?.cases||[];
- if(mode==="minutes") return rows.filter(c=>/phygitals|courtyard|mtgo|gift|cs2|skin|digital|crypto|usde/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
+ if(mode==="minutes")return rows.filter(c=>/phygitals|courtyard|mtgo|gift|cs2|skin|digital|crypto|usde/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
  return rows.filter(c=>!/phygitals|courtyard|mtgo|gift|cs2|skin|digital|crypto|usde/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
 }
 function renderCapacity(){
  const c=report?.capacityEngine;if(!c)return"";
  const rows=(c.scenarios||[]).filter(x=>[100,500,1000].includes(x.capitalEUR)&&[1,2].includes(x.netPct));
- return '<section class="arbCapacity"><span class="arbKicker">POTENCIAL CONDICIONADO</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.principle)+'</p><div class="arbCapGrid">'+rows.map(x=>'<div><b>'+money(x.capitalEUR)+' · '+x.netPct+'%</b><span>1 cruce: '+money(x.profitPerTradeEUR)+'</span><span>3: '+money(x.profit3TradesEUR)+'</span><span>6: '+money(x.profit6TradesEUR)+'</span><span>12: '+money(x.profit12TradesEUR)+'</span></div>').join("")+'</div><small>'+esc(c.currentReality)+'</small></section>';
+ return '<section class="arbCapacity"><span class="arbKicker">POTENCIAL CONDICIONADO</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.principle)+'</p><div class="arbCapGrid">'+rows.map(x=>'<div><b>'+money(x.capitalEUR)+' · '+x.netPct+'%</b><span>1 cruce: '+money(x.profitPerTradeEUR)+'</span><span>3: '+money(x.profit3TradesEUR)+'</span><span>6: '+money(x.profit6TradesEUR)+'</span><span>12: '+money(x.profit12TradesEUR)+'</span></div>').join("")+'</div></section>';
 }
 function renderSwarm(){
  const s=report?.virtualResearchSwarm;if(!s)return"";
- return '<section class="arbSwarm"><div><span class="arbKicker">'+esc(s.label)+'</span><h3>'+Number(s.syntheticProfiles||0).toLocaleString("es-ES")+' perfiles sintéticos</h3><p>'+esc(s.description)+'</p></div><div class="arbRoleGrid">'+(s.expertRoles||[]).map(x=>'<span>'+esc(x)+'</span>').join("")+'</div><small>'+esc(s.rule)+'</small></section>';
+ return '<section class="arbSwarm"><span class="arbKicker">'+esc(s.label)+'</span><h3>'+Number(s.syntheticProfiles||0).toLocaleString("es-ES")+' perfiles sintéticos</h3><p>'+esc(s.description)+'</p><div class="arbRoleGrid">'+(s.expertRoles||[]).map(x=>'<span>'+esc(x)+'</span>').join("")+'</div></section>';
 }
 function liveMinutesBlock(){
- const fs=frequencyStats();
- if(!liveFeed?.rows?.length){
-   return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>Sin señal ejecutable cargada</h3><p>El resto del informe sigue disponible, pero ninguna compra se autoriza sin datos vivos.</p></section>';
- }
- const rows=liveFeed.rows
-   .filter(x=>x.executable===true&&x.route_available===true&&x.depth_status==="ok"&&Number(x.net_spread_pct)>0)
-   .sort((a,b)=>b.net_spread_pct-a.net_spread_pct);
- if(!rows.length){
-   return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>0 cruces positivos verificados</h3><p>No comprar.</p></section>';
- }
- const cards=rows.slice(0,5).map(x=>{
-   const gross=Number(x.spread||0);
-   const baseNet=Number(x.net_spread_pct||0);
-   const conservative=Math.max(0,baseNet-0.75);
-   const green=conservative>=1&&Number(x.depth_usdt||0)>=10000;
-   return '<article class="arbLiveCard '+(green?"liveGreen":"liveWatch")+'">'+
-     '<span class="arbBadge">'+(green?"VERDE OPERATIVO PREFONDEADO · REVALIDAR":"VIGILAR")+'</span>'+
-     '<h4>'+esc(x.coin)+' · '+esc(x.buy_exchange)+' → '+esc(x.sell_exchange)+'</h4>'+
-     '<div class="arbLiveNumbers"><b>'+gross.toFixed(2)+'%</b><span>spread bruto</span><b>'+baseNet.toFixed(2)+'%</b><span>neto scanner</span><b>≈'+conservative.toFixed(2)+'%</b><span>neto conservador*</span></div>'+
-     '<p>Compra: $'+Number(x.buy_price).toFixed(6)+' · Venta: $'+Number(x.sell_price).toFixed(6)+' · Red: '+esc(x.route||"")+'.</p>'+
-     '<p>Profundidad: ≈$'+Number(x.depth_usdt||0).toLocaleString("es-ES",{maximumFractionDigits:0})+' · Ruta: '+(x.route_available?"abierta":"cerrada")+'.</p>'+
-     '<small>*Estimación conservadora: resta adicional de 0,75 puntos al neto del scanner. No es garantía; la cotización final y las comisiones reales mandan.</small>'+
-   '</article>';
- }).join("");
- return '<section class="arbLive">'+
-   '<div class="arbLiveHead"><div><span class="arbKicker">RADAR EN VIVO · APIs OFICIALES AGREGADAS</span><h3>Oportunidades ejecutables detectadas</h3></div>'+
-   '<small>Actualizado: '+esc(liveFeed.updated_at||"")+' · posición base del feed: $'+esc(liveFeed.position_usd||"")+'.</small></div>'+
-   '<div class="arbFrequency"><b>Frecuencia observada en este dispositivo</b><span>'+fs.positive+'/'+fs.samples+' muestras ≥1% neto · '+(fs.samples?Math.round(fs.availability*100):0)+'% del tiempo observado</span><small>Se mide cada minuto mientras la app está abierta. No se extrapola a 24 h sin suficientes muestras.</small></div>'+
-   cards+
-   '<small>Fuente: Yieldo (yieldo.me) — datos de mercado agregados desde APIs públicas. La app aplica un colchón adicional.</small>'+
+ if(!liveFeed?.rows?.length)return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>Sin señal viva cargada</h3><p>No se autoriza ninguna operación sin datos actuales.</p></section>';
+ const rows=liveFeed.rows.map(x=>({x,e:evaluateLiveRow(x)})).sort((a,b)=>b.e.conservative-a.e.conservative).slice(0,5);
+ return '<section class="arbLive"><div class="arbLiveHead"><div><span class="arbKicker">RADAR EN VIVO</span><h3>Spreads ejecutables detectados</h3></div><small>'+esc(liveFeed.updated_at||"")+'</small></div>'+
+ rows.map(({x,e})=>'<article class="arbLiveCard '+(e.ready?"liveGreen":"liveWatch")+'"><span class="arbBadge">'+(e.ready?"AUTO READY":"VIGILAR")+'</span><h4>'+esc(x.coin)+' · '+esc(x.buy_exchange)+' → '+esc(x.sell_exchange)+'</h4><div class="arbLiveNumbers"><b>'+Number(x.spread||0).toFixed(2)+'%</b><span>bruto</span><b>'+e.scannerNet.toFixed(2)+'%</b><span>scanner</span><b>≈'+e.conservative.toFixed(2)+'%</b><span>conservador</span></div><p>Compra: $'+Number(x.buy_price||0).toFixed(6)+' · Venta: $'+Number(x.sell_price||0).toFixed(6)+' · Profundidad ≈$'+Number(x.depth_usdt||0).toLocaleString("es-ES",{maximumFractionDigits:0})+'.</p><small>'+(e.ready?"Cumple filtros actuales.":"Bloqueos: "+esc(e.reasons.join(", ")))+'</small></article>').join("")+
  '</section>';
 }
 function renderMode(mode){
@@ -88,111 +161,43 @@ function renderMode(mode){
  const host=document.getElementById(physical?"physicalArbitrageContent":"onlineArbitrageContent");if(!host)return;
  const cat=document.getElementById(prefix+"Category")?.value||"";
  const st=document.getElementById(prefix+"Status")?.value||"";
- let routes=splitRoutes(mode).filter(r=>(!cat||r.category===cat)&&(!st||r.status===st));
+ const routes=splitRoutes(mode).filter(r=>(!cat||r.category===cat)&&(!st||r.status===st));
  const cases=splitCases(mode);
  const cfg=physical?report.tabs?.physical:report.tabs?.minutes;
- const date=new Date(report.checkedAt).toLocaleString("es-ES",{timeZone:"Europe/Madrid"});
- const ready=routes.filter(r=>r.ready===true).length;
- const candidates=routes.filter(r=>r.status==="candidate").length;
- const headline=physical?"Compra física / Sevilla → venta online":"Sin stock físico · compra y salida en minutos";
- host.innerHTML=(physical?"":liveMinutesBlock())+
- '<section class="arbCommand '+(physical?'physical':'minutes')+'"><div><span class="arbKicker">'+(physical?'ESCALADO':'PRIORIDAD ABSOLUTA')+'</span><h3>'+esc(headline)+'</h3><p>'+esc(cfg?.objective||"")+'</p></div><div class="arbKpis"><div><b>'+ready+'</b><span>verdes reales</span></div><div><b>'+candidates+'</b><span>rutas prioritarias</span></div><div><b>'+routes.length+'</b><span>rutas visibles</span></div></div></section>'+
- renderCapacity()+renderSwarm()+
- '<div class="arbSummary"><strong>'+ready+' operaciones autorizadas ahora</strong><p>'+esc(report.summary)+'</p><small>Revisión: '+esc(date)+' · España · eBay excluido</small><p><b>Regla:</b> '+esc(cfg?.hardGate||"")+'</p></div>'+
- (cases.length?'<h3>Casos concretos</h3>'+cases.map(c=>'<article class="arbCase"><span class="arbBadge">'+(c.recommendBuy?"COMPRAR":"BLOQUEADO")+'</span><h4>'+esc(c.name)+'</h4><dl><div><dt>Compra</dt><dd>'+money(c.buyPriceEUR)+'</dd></div><div><dt>Salida / techo</dt><dd>'+money(c.exitCeilingEUR)+'</dd></div><div><dt>Diferencia bruta</dt><dd>'+money(c.ceilingDifferenceEUR)+'</dd></div></dl><p>'+esc(c.finding)+'</p><div class="arbLinks">'+links([{label:"Compra",url:c.buyUrl},{label:"Salida",url:c.exitUrl}])+'</div></article>').join(""):"")+
- '<h3>Rutas · '+routes.length+'</h3><div class="arbRoutes">'+routes.map(r=>'<article class="arbRoute arb-'+esc(r.status)+'"><div class="arbRouteTop"><span class="arbBadge">'+statusLabel(r.status)+'</span><span class="arbOrigin">'+esc(r.origin||"Online")+'</span></div><h4>'+esc(r.name)+'</h4><div class="arbExitType">'+esc(r.exitType||"")+'</div><p>'+esc(r.finding)+'</p><p><b>Qué falta:</b> '+esc(r.missing)+'</p><p><b>Logística:</b> '+esc(r.logistics)+'</p><div class="arbLinks">'+links(r.sources)+'</div></article>').join("")+'</div>'+
- '<div class="arbNoGuarantee"><b>Control antifalso-positivo:</b> ninguna estimación, listing o beneficio futuro se trata como salida cerrada.</div>';
+ host.innerHTML=(physical?"":renderAgent()+liveMinutesBlock())+
+ '<section class="arbCommand '+(physical?'physical':'minutes')+'"><div><span class="arbKicker">'+(physical?'ESCALADO':'PRIORIDAD ABSOLUTA')+'</span><h3>'+(physical?'Compra física / Sevilla → venta online':'Sin stock físico · compra y salida en minutos')+'</h3><p>'+esc(cfg?.objective||"")+'</p></div><div class="arbKpis"><div><b>'+routes.filter(r=>r.ready===true).length+'</b><span>verdes reales</span></div><div><b>'+routes.filter(r=>r.status==="candidate").length+'</b><span>rutas prioritarias</span></div><div><b>'+routes.length+'</b><span>rutas visibles</span></div></div></section>'+
+ (physical?"":renderCapacity())+renderSwarm()+
+ (cases.length?'<h3>Casos concretos</h3>'+cases.map(c=>'<article class="arbCase"><span class="arbBadge">'+(c.recommendBuy?"COMPRAR":"BLOQUEADO")+'</span><h4>'+esc(c.name)+'</h4><p>'+esc(c.finding)+'</p><div class="arbLinks">'+links([{label:"Compra",url:c.buyUrl},{label:"Salida",url:c.exitUrl}])+'</div></article>').join(""):"")+
+ '<h3>Rutas · '+routes.length+'</h3><div class="arbRoutes">'+routes.map(r=>'<article class="arbRoute arb-'+esc(r.status)+'"><div class="arbRouteTop"><span class="arbBadge">'+statusLabel(r.status)+'</span><span class="arbOrigin">'+esc(r.origin||"Online")+'</span></div><h4>'+esc(r.name)+'</h4><div class="arbExitType">'+esc(r.exitType||"")+'</div><p>'+esc(r.finding)+'</p><p><b>Qué falta:</b> '+esc(r.missing)+'</p><div class="arbLinks">'+links(r.sources)+'</div></article>').join("")+'</div>';
+ if(!physical)bindAgent();
 }
 function setupSelects(mode){
  const physical=mode==="physical",prefix=physical?"physicalArbitrage":"arbitrage";
  const rows=splitRoutes(mode),cat=document.getElementById(prefix+"Category"),st=document.getElementById(prefix+"Status");
  if(cat){const cats=[...new Set(rows.map(r=>r.category))].sort();cat.innerHTML='<option value="">Todas</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");cat.onchange=()=>renderMode(mode)}
  if(st)st.onchange=()=>renderMode(mode);
- const btn=document.getElementById(physical?"physicalArbitrageCopy":"arbitrageCopy");
- if(btn){btn.disabled=false;btn.onclick=()=>copyMode(mode)}
 }
-function copyMode(mode){
- const physical=mode==="physical",rows=splitRoutes(mode),status=document.getElementById(physical?"physicalArbitrageCopyStatus":"arbitrageCopyStatus");
- const txt=[physical?"ARBITRAJE FÍSICO · CARD VAULT":"ARBITRAJE MINUTOS · CARD VAULT","Revisión: "+report.checkedAt,"eBay: EXCLUIDO",...rows.map(r=>r.name+"\nEstado: "+statusLabel(r.status)+"\n"+r.finding+"\nFalta: "+r.missing+"\n"+(r.sources||[]).map(s=>s.url).join("\n"))].join("\n\n");
- const done=()=>{if(status)status.textContent="Informe copiado."};
- if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).then(done).catch(()=>fallback(txt,status));else fallback(txt,status);
+async function refreshLive(){
+ try{
+   const x=await fetch("https://yieldo.me/arbitrage/live.json?ts="+Date.now(),{cache:"no-store"});
+   if(x.ok){liveFeed=await x.json();recordFrequency(liveFeed);renderMode("minutes")}
+ }catch{}
 }
-function fallback(txt,status){const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand("copy");t.remove();if(status)status.textContent="Informe copiado."}catch{if(status)status.textContent="Selecciona el texto para copiarlo."}}
 async function start(){
  try{
   const [r,live]=await Promise.all([
-   fetch("online-arbitrage-data.json?v=3.1",{cache:"no-store"}),
-   fetch("https://yieldo.me/arbitrage/live.json",{cache:"no-store"}).catch(()=>null)
+   fetch("online-arbitrage-data.json?v=4.0",{cache:"no-store"}),
+   fetch("https://yieldo.me/arbitrage/live.json?ts="+Date.now(),{cache:"no-store"}).catch(()=>null)
   ]);
-  if(!r.ok)throw 0;
+  if(!r.ok)throw new Error("data");
   report=await r.json();
   try{if(live?.ok){liveFeed=await live.json();recordFrequency(liveFeed)}}catch{}
-  setupSelects("minutes");setupSelects("physical");renderMode("minutes");renderMode("physical");
-  if(!liveTimer)liveTimer=setInterval(async()=>{try{const x=await fetch("https://yieldo.me/arbitrage/live.json?ts="+Date.now(),{cache:"no-store"});if(x.ok){liveFeed=await x.json();recordFrequency(liveFeed);renderMode("minutes")}}catch{}},60000);
+  setupSelects("minutes");setupSelects("physical");
+  renderMode("minutes");renderMode("physical");
+  if(!liveTimer)liveTimer=setInterval(refreshLive,60000);
  }catch{
-  ["onlineArbitrageContent","physicalArbitrageContent"].forEach(id=>{const h=document.getElementById(id);if(h)h.textContent="No se pudo cargar el informe. No hay compras autorizadas."});
+  ["onlineArbitrageContent","physicalArbitrageContent"].forEach(id=>{const h=document.getElementById(id);if(h)h.textContent="No se pudo cargar el motor de arbitraje."});
  }
- if(location.hash==="#arbitraje")root.CVSimpleNav?.showTab("arbitraje");
- if(location.hash==="#arbitraje-fisico")root.CVSimpleNav?.showTab("arbitraje-fisico");
-}
-start();
-})(typeof globalThis!=="undefined"?globalThis:this);
-+esc(liveFeed.position_usd||"")+'.</small></div>'+
- '<div class="arbFrequency"><b>Frecuencia observada en este dispositivo</b><span>'+fs.positive+'/'+fs.samples+' muestras ≥1% neto · '+(fs.samples?Math.round(fs.availability*100):0)+'% del tiempo observado</span><small>Se mide mientras la app está abierta; no se extrapola a 24 h hasta tener suficientes muestras.</small></div>'+
- cards+'<small>Fuente: Yieldo (yieldo.me) — datos de mercado en tiempo real agregados desde APIs oficiales · CC BY 4.0.</small></section>';
-}
-function renderMode(mode){
- if(!report)return;
- const physical=mode==="physical";
- const prefix=physical?"physicalArbitrage":"arbitrage";
- const host=document.getElementById(physical?"physicalArbitrageContent":"onlineArbitrageContent");if(!host)return;
- const cat=document.getElementById(prefix+"Category")?.value||"";
- const st=document.getElementById(prefix+"Status")?.value||"";
- let routes=splitRoutes(mode).filter(r=>(!cat||r.category===cat)&&(!st||r.status===st));
- const cases=splitCases(mode);
- const cfg=physical?report.tabs?.physical:report.tabs?.minutes;
- const date=new Date(report.checkedAt).toLocaleString("es-ES",{timeZone:"Europe/Madrid"});
- const ready=routes.filter(r=>r.ready===true).length;
- const candidates=routes.filter(r=>r.status==="candidate").length;
- const headline=physical?"Compra física / Sevilla → venta online":"Sin stock físico · compra y salida en minutos";
- host.innerHTML=(physical?"":liveMinutesBlock())+
- '<section class="arbCommand '+(physical?'physical':'minutes')+'"><div><span class="arbKicker">'+(physical?'ESCALADO':'PRIORIDAD ABSOLUTA')+'</span><h3>'+esc(headline)+'</h3><p>'+esc(cfg?.objective||"")+'</p></div><div class="arbKpis"><div><b>'+ready+'</b><span>verdes reales</span></div><div><b>'+candidates+'</b><span>rutas prioritarias</span></div><div><b>'+routes.length+'</b><span>rutas visibles</span></div></div></section>'+
- renderCapacity()+renderSwarm()+
- '<div class="arbSummary"><strong>'+ready+' operaciones autorizadas ahora</strong><p>'+esc(report.summary)+'</p><small>Revisión: '+esc(date)+' · España · eBay excluido</small><p><b>Regla:</b> '+esc(cfg?.hardGate||"")+'</p></div>'+
- (cases.length?'<h3>Casos concretos</h3>'+cases.map(c=>'<article class="arbCase"><span class="arbBadge">'+(c.recommendBuy?"COMPRAR":"BLOQUEADO")+'</span><h4>'+esc(c.name)+'</h4><dl><div><dt>Compra</dt><dd>'+money(c.buyPriceEUR)+'</dd></div><div><dt>Salida / techo</dt><dd>'+money(c.exitCeilingEUR)+'</dd></div><div><dt>Diferencia bruta</dt><dd>'+money(c.ceilingDifferenceEUR)+'</dd></div></dl><p>'+esc(c.finding)+'</p><div class="arbLinks">'+links([{label:"Compra",url:c.buyUrl},{label:"Salida",url:c.exitUrl}])+'</div></article>').join(""):"")+
- '<h3>Rutas · '+routes.length+'</h3><div class="arbRoutes">'+routes.map(r=>'<article class="arbRoute arb-'+esc(r.status)+'"><div class="arbRouteTop"><span class="arbBadge">'+statusLabel(r.status)+'</span><span class="arbOrigin">'+esc(r.origin||"Online")+'</span></div><h4>'+esc(r.name)+'</h4><div class="arbExitType">'+esc(r.exitType||"")+'</div><p>'+esc(r.finding)+'</p><p><b>Qué falta:</b> '+esc(r.missing)+'</p><p><b>Logística:</b> '+esc(r.logistics)+'</p><div class="arbLinks">'+links(r.sources)+'</div></article>').join("")+'</div>'+
- '<div class="arbNoGuarantee"><b>Control antifalso-positivo:</b> ninguna estimación, listing o beneficio futuro se trata como salida cerrada.</div>';
-}
-function setupSelects(mode){
- const physical=mode==="physical",prefix=physical?"physicalArbitrage":"arbitrage";
- const rows=splitRoutes(mode),cat=document.getElementById(prefix+"Category"),st=document.getElementById(prefix+"Status");
- if(cat){const cats=[...new Set(rows.map(r=>r.category))].sort();cat.innerHTML='<option value="">Todas</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");cat.onchange=()=>renderMode(mode)}
- if(st)st.onchange=()=>renderMode(mode);
- const btn=document.getElementById(physical?"physicalArbitrageCopy":"arbitrageCopy");
- if(btn){btn.disabled=false;btn.onclick=()=>copyMode(mode)}
-}
-function copyMode(mode){
- const physical=mode==="physical",rows=splitRoutes(mode),status=document.getElementById(physical?"physicalArbitrageCopyStatus":"arbitrageCopyStatus");
- const txt=[physical?"ARBITRAJE FÍSICO · CARD VAULT":"ARBITRAJE MINUTOS · CARD VAULT","Revisión: "+report.checkedAt,"eBay: EXCLUIDO",...rows.map(r=>r.name+"\nEstado: "+statusLabel(r.status)+"\n"+r.finding+"\nFalta: "+r.missing+"\n"+(r.sources||[]).map(s=>s.url).join("\n"))].join("\n\n");
- const done=()=>{if(status)status.textContent="Informe copiado."};
- if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).then(done).catch(()=>fallback(txt,status));else fallback(txt,status);
-}
-function fallback(txt,status){const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand("copy");t.remove();if(status)status.textContent="Informe copiado."}catch{if(status)status.textContent="Selecciona el texto para copiarlo."}}
-async function start(){
- try{
-  const [r,live]=await Promise.all([
-   fetch("online-arbitrage-data.json?v=3.1",{cache:"no-store"}),
-   fetch("https://yieldo.me/arbitrage/live.json",{cache:"no-store"}).catch(()=>null)
-  ]);
-  if(!r.ok)throw 0;
-  report=await r.json();
-  try{if(live?.ok)liveFeed=await live.json()}catch{}
-  setupSelects("minutes");setupSelects("physical");renderMode("minutes");renderMode("physical");
- }catch{
-  ["onlineArbitrageContent","physicalArbitrageContent"].forEach(id=>{const h=document.getElementById(id);if(h)h.textContent="No se pudo cargar el informe. No hay compras autorizadas."});
- }
- if(location.hash==="#arbitraje")root.CVSimpleNav?.showTab("arbitraje");
- if(location.hash==="#arbitraje-fisico")root.CVSimpleNav?.showTab("arbitraje-fisico");
 }
 start();
 })(typeof globalThis!=="undefined"?globalThis:this);
