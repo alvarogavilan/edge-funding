@@ -4,6 +4,7 @@
 // y cruce STON.fi↔DeDust (solo indicativo). Nunca ejecuta: solo prepara la tarjeta.
 
 const STON_API="https://api.ston.fi/v1";
+let BRIDGE_API="";
 const DEDUST_API="https://api.dedust.io/v2";
 const FX_API="https://api.frankfurter.app/latest?from=USD&to=EUR";
 const TON_ADDRS=["EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c","EQCM3B12QK1e4yZSf8GtBRT0aLMNyEsBc_DhVfRRtOEffLez"];
@@ -129,10 +130,40 @@ const writeJson=(k,v)=>{try{store.write(k,JSON.stringify(v))}catch{}};
 
 const state={assets:{},assetErr:{},pools:{},noPool:{},dedust:null,dedustAt:0,fx:null,fxAt:0,results:[],scanAt:0,busy:false,fast:false,sourceErr:{},timer:null};
 
-async function getJson(url,opts){
+function bridgeUrl(url){
+ if(!BRIDGE_API)return "";
+ try{
+  const u=new URL(url);
+  let source="",path=u.pathname;
+  if(u.hostname==="api.ston.fi")source="ston";
+  else if(u.hostname==="api.dedust.io")source="dedust";
+  else if(u.hostname==="api.frankfurter.app")source="fx";
+  else return "";
+  const q=new URLSearchParams(u.search);
+  q.set("source",source);q.set("path",path);
+  return BRIDGE_API.replace(/\/$/,"")+"/api/proxy?"+q.toString();
+ }catch{return ""}
+}
+async function rawFetchJson(url,opts){
  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
  try{const r=await fetch(url,{...(typeof document!=="undefined"?{cache:"no-store"}:{}),...(opts||{}),signal:ctl.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
  finally{clearTimeout(to)}
+}
+async function getJson(url,opts){
+ try{return await rawFetchJson(url,opts)}
+ catch(primary){
+  const b=bridgeUrl(url);
+  if(!b)throw primary;
+  try{return await rawFetchJson(b,opts)}
+  catch(secondary){throw new Error("directo: "+String(primary.message||primary)+" · puente: "+String(secondary.message||secondary))}
+ }
+}
+async function loadBridge(){
+ if(typeof document==="undefined")return;
+ try{
+  const r=await fetch("bridge-config.json?ts="+Date.now(),{cache:"no-store"});
+  if(r.ok){const j=await r.json();if(j&&j.endpoint)BRIDGE_API=String(j.endpoint)}
+ }catch{}
 }
 async function loadFx(){
  if(state.fx&&Date.now()-state.fxAt<3600000)return state.fx;
@@ -388,8 +419,9 @@ function registerResult(r){
  writeJson(TRADES_KEY,trades);render();
  alert("Resultado registrado: "+eur(resultEUR)+". Nuevo límite: "+eur(capitalLimit(trades).limit)+".");
 }
-function start(){
+async function start(){
  if(!document.getElementById("tonArbScanner"))return;
+ await loadBridge();
  state.lastFull=Date.now();render();scan();setInterval(tick,1000);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-state.scanAt>60000)scan()});
 }
