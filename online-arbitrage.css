@@ -1,18 +1,45 @@
-body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snapshot{display:none!important}
-#arbitraje{max-width:1040px;margin:0 auto;line-height:1.5;color:#f4f7ff}
-#arbitraje h2{font-size:28px;line-height:1.15;margin:14px 0 8px}
-#arbitraje h4{font-size:18px;margin:10px 0}
+body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snapshot,body[data-active-tab="arbitraje-fisico"] .hero,body[data-active-tab="arbitraje-fisico"] #snapshot{display:none!important}
+#arbitraje,#arbitraje-fisico{max-width:1040px;margin:0 auto;line-height:1.5;color:#f4f7ff}
+#arbitraje,#arbitraje-fisico h2{font-size:28px;line-height:1.15;margin:14px 0 8px}
+#arbitraje,#arbitraje-fisico h4{font-size:18px;margin:10px 0}
 .arbIntro p{color:#bcc9e2;margin:8px 0 16px}
 .arbToolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0}
 .arbToolbar select{max-width:100%;padding:12px;border:1px solid #486080;border-radius:12px;background:#162238;color:#fff;font-size:16px}
 .arbToolbar button,.arbLinks a{min-height:44px}
 .arbSummary,.arbCase,.arbRoute,.arbThesis{padding:18px;border:1px solid #3b4d69;border-radius:18px;background:#111b2c;margin-bottom:14px}
 .arbSummary strong{font-size:20px}.arbSummary p,.arbRoute p,.arbCase p{color:#ccd6e9}
-#arbitraje small,.arbFreshness{color:#aebed6}
+#arbitraje,#arbitraje-fisico small,.arbFreshness{color:#aebed6}
 .arbCase{border-color:#805b61}.arbBadge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.03em;color:#ffe0aa}
 .arbRoutes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.arbRoute{margin:0;min-width:0}
 .arbLinks{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.arbLinks a{display:flex;align-items:center;padding:10px 12px;background:#263b5b;border-radius:10px;color:#edf4ff;text-decoration:none;overflow-wrap:anywhere}
 .arbCase dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.arbCase dt{font-size:12px;color:#aebed6}.arbCase dd{font-size:22px;font-weight:800;margin:6px 0}
 .arbThesis summary{cursor:pointer;font-weight:750;padding:6px 0}.arbThesis p,.arbThesis li{color:#ccd6e9}
-#arbitraje :focus-visible{outline:3px solid #8dc7ff;outline-offset:3px}
+#arbitraje,#arbitraje-fisico :focus-visible{outline:3px solid #8dc7ff;outline-offset:3px}
 @media(max-width:640px){.arbRoutes{grid-template-columns:1fr}.arbCase dl{grid-template-columns:1fr}.arbCase dl>div{display:flex;justify-content:space-between;gap:10px;align-items:center}.arbCase dd{font-size:19px}.mainNav button[data-tab="arbitraje"]{font-size:12px;padding:10px 12px}}
+
+#arbitraje .arbCommand.minutes{border-color:#3e6b96}
+#arbitraje-fisico .arbCommand.physical{border-color:#7a5d3a}
+.arbCommand{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;padding:18px;border:1px solid #3b4d69;border-radius:18px;background:#0d1727;margin-bottom:14px}
+.arbKicker{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.08em;color:#9fd2ff;margin-bottom:6px}
+.arbCommand h3{margin:0 0 8px;font-size:22px}
+.arbCommand p{margin:0;color:#c9d6e9}
+.arbKpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.arbKpis>div{padding:12px;border-radius:14px;background:#17243a;text-align:center}
+.arbKpis b{display:block;font-size:24px}
+.arbKpis span{display:block;font-size:11px;color:#aebed6}
+.arbSwarm{padding:18px;border:1px solid #3b4d69;border-radius:18px;background:#111b2c;margin-bottom:14px}
+.arbSwarm h3{margin:2px 0 8px}
+.arbSwarm p{color:#ccd6e9}
+.arbRoleGrid{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+.arbRoleGrid span{padding:7px 9px;border-radius:999px;background:#1c2b44;color:#dce8f8;font-size:12px}
+.arbExitType{display:inline-block;padding:6px 8px;border-radius:8px;background:#1c2b44;color:#dce8f8;font-size:12px;margin:0 0 8px}
+.arbRouteTop{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.arbOrigin{font-size:11px;color:#aebed6}
+.arbNoGuarantee{margin:14px 0;padding:14px;border:1px dashed #536a89;border-radius:14px;color:#ccd6e9}
+.mainNav button[data-tab="arbitraje"],.mainNav button[data-tab="arbitraje-fisico"]{font-weight:800}
+@media(max-width:640px){
+ .arbCommand{grid-template-columns:1fr}
+ .arbKpis{grid-template-columns:repeat(3,1fr)}
+ .arbKpis b{font-size:20px}
+ .mainNav button[data-tab="arbitraje"],.mainNav button[data-tab="arbitraje-fisico"]{font-size:11px;padding:9px 10px}
+}
