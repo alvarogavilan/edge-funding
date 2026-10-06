@@ -186,8 +186,8 @@ function renderSwarm(){
 function liveMinutesBlock(){
  if(!liveFeed?.rows?.length)return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>Sin señal viva cargada</h3><p>No se autoriza ninguna operación sin datos actuales.</p></section>';
  const rows=liveFeed.rows.map(x=>({x,e:evaluateLiveRow(x)})).sort((a,b)=>b.e.conservative-a.e.conservative).slice(0,5);
- return '<section class="arbLive"><div class="arbLiveHead"><div><span class="arbKicker">RADAR EN VIVO</span><h3>Spreads ejecutables detectados</h3></div><small>'+esc(liveFeed.updated_at||"")+'</small></div>'+
- rows.map(({x,e})=>'<article class="arbLiveCard '+(e.ready?"liveGreen":"liveWatch")+'"><span class="arbBadge">'+(e.ready?"AUTO READY":"VIGILAR")+'</span><h4>'+esc(x.coin)+' · '+esc(x.buy_exchange)+' → '+esc(x.sell_exchange)+'</h4><div class="arbLiveNumbers"><b>'+Number(x.spread||0).toFixed(2)+'%</b><span>bruto</span><b>'+e.scannerNet.toFixed(2)+'%</b><span>scanner</span><b>≈'+e.conservative.toFixed(2)+'%</b><span>conservador</span></div><p>Compra: $'+Number(x.buy_price||0).toFixed(6)+' · Venta: $'+Number(x.sell_price||0).toFixed(6)+' · Profundidad ≈$'+Number(x.depth_usdt||0).toLocaleString("es-ES",{maximumFractionDigits:0})+'.</p><small>'+(e.ready?"Cumple filtros actuales.":"Bloqueos: "+esc(e.reasons.join(", ")))+'</small></article>').join("")+
+ return '<section class="arbLive"><div class="arbLiveHead"><div><span class="arbKicker">AGREGADOR EXTERNO · SOLO REFERENCIA</span><h3>Spreads CEX de un feed agregado (nunca verde)</h3></div><small>'+esc(liveFeed.updated_at||"")+'</small></div>'+
+ rows.map(({x,e})=>'<article class="arbLiveCard '+(e.ready?"liveGreen":"liveWatch")+'"><span class="arbBadge">REFERENCIA</span><h4>'+esc(x.coin)+' · '+esc(x.buy_exchange)+' → '+esc(x.sell_exchange)+'</h4><div class="arbLiveNumbers"><b>'+Number(x.spread||0).toFixed(2)+'%</b><span>bruto</span><b>'+e.scannerNet.toFixed(2)+'%</b><span>scanner</span><b>≈'+e.conservative.toFixed(2)+'%</b><span>conservador</span></div><p>Compra: $'+Number(x.buy_price||0).toFixed(6)+' · Venta: $'+Number(x.sell_price||0).toFixed(6)+' · Profundidad ≈$'+Number(x.depth_usdt||0).toLocaleString("es-ES",{maximumFractionDigits:0})+'.</p><small>'+"No es fuente primaria: el verde solo lo da el escáner STON.fi de arriba."+'</small></article>').join("")+
  '</section>';
 }
 function renderMode(mode){
@@ -200,12 +200,11 @@ function renderMode(mode){
  const routes=splitRoutes(mode).filter(r=>(!cat||r.category===cat)&&(!st||r.status===st));
  const cases=splitCases(mode);
  const cfg=physical?report.tabs?.physical:report.tabs?.minutes;
- host.innerHTML=(physical?"":renderAgent()+liveMinutesBlock())+
+ host.innerHTML=(physical?"":liveMinutesBlock())+
  '<section class="arbCommand '+(physical?'physical':'minutes')+'"><div><span class="arbKicker">'+(physical?'ESCALADO':'PRIORIDAD ABSOLUTA')+'</span><h3>'+(physical?'Compra física / Sevilla → venta online':'Sin stock físico · compra y salida en minutos')+'</h3><p>'+esc(cfg?.objective||"")+'</p></div><div class="arbKpis"><div><b>'+routes.filter(r=>r.ready===true).length+'</b><span>verdes reales</span></div><div><b>'+routes.filter(r=>r.status==="candidate").length+'</b><span>rutas prioritarias</span></div><div><b>'+routes.length+'</b><span>rutas visibles</span></div></div></section>'+
  (physical?"":renderCapacity())+renderSwarm()+
  (cases.length?'<h3>Casos concretos</h3>'+cases.map(c=>'<article class="arbCase"><span class="arbBadge">'+(c.recommendBuy?"COMPRAR":"BLOQUEADO")+'</span><h4>'+esc(c.name)+'</h4><p>'+esc(c.finding)+'</p><div class="arbLinks">'+links([{label:"Compra",url:c.buyUrl},{label:"Salida",url:c.exitUrl}])+'</div></article>').join(""):"")+
  '<h3>Rutas · '+routes.length+'</h3><div class="arbRoutes">'+routes.map(r=>'<article class="arbRoute arb-'+esc(r.status)+'"><div class="arbRouteTop"><span class="arbBadge">'+statusLabel(r.status)+'</span><span class="arbOrigin">'+esc(r.origin||"Online")+'</span></div><h4>'+esc(r.name)+'</h4><div class="arbExitType">'+esc(r.exitType||"")+'</div><p>'+esc(r.finding)+'</p><p><b>Qué falta:</b> '+esc(r.missing)+'</p><div class="arbLinks">'+links(r.sources)+'</div></article>').join("")+'</div>';
- if(!physical)bindAgent();
 }
 function setupSelects(mode){
  const physical=mode==="physical",prefix=physical?"physicalArbitrage":"arbitrage";

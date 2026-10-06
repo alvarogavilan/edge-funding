@@ -93,3 +93,26 @@ body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snaps
 .arbExecActions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:10px;background:#263b5b;color:#fff;text-decoration:none;font-weight:800}
 .arbExecActions a.primaryAction{background:#245d43}
 @media(max-width:640px){.arbExecGrid{grid-template-columns:1fr 1fr}.arbExecActions{flex-direction:column}.arbExecActions a{width:100%;box-sizing:border-box}}
+.tonScanner{padding:18px;border:1px solid #3e6b96;border-radius:18px;background:#0b1626;margin-bottom:14px}
+.tonMeta{color:#aebed6;font-size:13px;margin:6px 0}
+.tonWarn{padding:10px 12px;border-radius:10px;background:#3a1d1d;color:#ffd2d2;font-size:13px}
+.tonReady{padding:16px;border:2px solid #3fbf7f;border-radius:16px;background:#0f2a1c;margin:12px 0}
+.tonReady.expired{border-color:#8a6a2a;background:#2a2312;opacity:.75}
+.tonReady h3{margin:4px 0 10px;font-size:20px}
+.tonGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;margin:0}
+.tonGrid dt{font-size:11px;color:#9fb4cc}
+.tonGrid dd{margin:2px 0 0;font-weight:700;overflow-wrap:anywhere}
+.tonLegs{font-size:13px;color:#cfe0f2;padding-left:18px}
+.tonReady .arbExecActions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.tonReady .arbExecActions>*{min-height:44px;display:flex;align-items:center;padding:10px 12px;border-radius:10px;background:#263b5b;color:#fff;text-decoration:none;border:0;font:inherit;font-weight:700}
+.tonReady .arbExecActions .primaryAction{background:#1f8f57}
+.tonStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.tonStats div{display:grid;gap:3px;padding:10px;border-radius:12px;background:#132238}
+.tonStats b{font-size:17px}
+.tonStats span{font-size:11px;color:#a9bbd2}
+.tonTable{margin:8px 0}
+.tonTable summary{cursor:pointer;font-weight:700;padding:6px 0}
+.tonTable table{width:100%;border-collapse:collapse;font-size:12px;display:block;overflow-x:auto}
+.tonTable td,.tonTable th{padding:6px;border-bottom:1px solid #22344e;text-align:left;vertical-align:top}
+.tonTable tr.g td{background:#103322}
+@media(max-width:640px){.tonGrid{grid-template-columns:1fr}.tonStats{grid-template-columns:1fr 1fr}}
