@@ -298,6 +298,29 @@ const total=()=>confirmedTotal()+provisionalTotal();
 const invested=()=>activeCards().reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase||0)*qty(x)),0);const confirmedInvested=()=>activeCards().filter(x=>x.valuationStatus!=="reference").reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase||0)*qty(x)),0);
 const drafts=()=>activeCards().filter(x=>x.draft).length;
 const gain=()=>{const p=primePortfolio();return p?p.latentPrudent:confirmedTotal()-confirmedInvested()};function save(){localStorage.setItem(KEY,JSON.stringify(state))}window.CVStateBridge={get:()=>state,save:()=>save(),key:KEY};
+let __cvBridgeCfg=null;
+async function __cvLoadBridgeCfg(){
+ if(__cvBridgeCfg!==null)return __cvBridgeCfg;
+ try{const r=await fetch("bridge-config.json?ts="+Date.now(),{cache:"no-store"});__cvBridgeCfg=r.ok?await r.json():{}}catch{__cvBridgeCfg={}}
+ return __cvBridgeCfg;
+}
+window.CVBridgeFetch=async function(url,opts){
+ try{
+  const r=await fetch(url,opts||{});
+  if(r.ok)return r;
+  throw new Error("HTTP "+r.status);
+ }catch(primary){
+  const cfg=await __cvLoadBridgeCfg();
+  if(!cfg?.endpoint)throw primary;
+  const u=new URL(url),map={"api.tcgdex.net":"tcgdex","api.lorcast.com":"lorcast"};
+  const source=map[u.hostname];if(!source)throw primary;
+  const q=new URLSearchParams(u.search);q.set("source",source);q.set("path",u.pathname);
+  const target=String(cfg.endpoint).replace(/\/$/,"")+(cfg.proxyPath||"/proxy")+"?"+q.toString();
+  const r=await fetch(target,opts||{});
+  if(!r.ok)throw new Error("directo: "+String(primary.message||primary)+" · puente HTTP "+r.status);
+  return r;
+ }
+};
 function universeLabel(u){return u==="lorcana"?"Lorcana":"Pokémon"}
 function universeIcon(u){return u==="lorcana"?"✨":"⚡"}
 function currentRadarUniverse(){const u=document.querySelector("#radarUniverse")?.value||"pokemon";return u==="lorcana"?"lorcana":"pokemon"}
@@ -628,12 +651,12 @@ function guessFromOCR(text){
 async function tcgdexList(lang){
   if(catalogCache[lang])return catalogCache[lang];
   try{
-    let r=await fetch("https://api.tcgdex.net/v2/"+lang+"/cards");if(!r.ok)return[];
+    let r=await window.CVBridgeFetch("https://api.tcgdex.net/v2/"+lang+"/cards");if(!r.ok)return[];
     let data=await r.json();catalogCache[lang]=data;return data;
   }catch{return[]}
 }
 async function tcgdexCard(lang,id){
-  try{let r=await fetch("https://api.tcgdex.net/v2/"+lang+"/cards/"+encodeURIComponent(id));if(!r.ok)return null;return await r.json()}catch{return null}
+  try{let r=await window.CVBridgeFetch("https://api.tcgdex.net/v2/"+lang+"/cards/"+encodeURIComponent(id));if(!r.ok)return null;return await r.json()}catch{return null}
 }
 function normNum(v){return String(v||"").replace(/\s/g,"").replace(/^0+(?=\d)/,"").toLowerCase()}
 
@@ -791,11 +814,11 @@ window.CVRunMarketScan=runMarketScan;window.CVAllMarketSignals=()=>marketSignalA
 let lorcastSetsCache=null;
 async function lorcastSets(){
   if(lorcastSetsCache)return lorcastSetsCache;
-  const r=await fetch("https://api.lorcast.com/v0/sets");if(!r.ok)throw new Error("Lorcast sets");
+  const r=await window.CVBridgeFetch("https://api.lorcast.com/v0/sets");if(!r.ok)throw new Error("Lorcast sets");
   const j=await r.json();lorcastSetsCache=j.results||[];return lorcastSetsCache;
 }
 async function lorcastSetCards(code){
-  const r=await fetch("https://api.lorcast.com/v0/sets/"+encodeURIComponent(code)+"/cards");if(!r.ok)throw new Error("Lorcast set");
+  const r=await window.CVBridgeFetch("https://api.lorcast.com/v0/sets/"+encodeURIComponent(code)+"/cards");if(!r.ok)throw new Error("Lorcast set");
   const j=await r.json();return Array.isArray(j)?j:(j.results||[]);
 }
 function lorcanaHistoryStats(id,currentPrice){
