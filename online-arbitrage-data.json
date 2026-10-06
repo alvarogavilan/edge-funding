@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T00:44:00Z",
+  "checkedAt": "2026-10-06T00:58:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas. El mejor carril móvil identificado es libro de órdenes digital: comprar únicamente cuando un vendedor ejecutable esté por debajo de una orden de compra/Instant Sell existente después de todos los costes. CS2/DMarket es el candidato móvil nº1; MTGO sigue siendo el candidato estructural nº1 pero requiere escritorio.",
+  "summary": "0 compras autorizadas. Se corrige CS2: no sirve para arbitraje de minutos por el bloqueo de 7 días de Steam. Prioridad real: 1) MTGO bot→buylist, 2) Courtyard si existe oferta transferible/aceptable sobre el activo exacto, 3) gift cards solo tras validar contraparte y payout. Sin salida preexistente, no se compra.",
   "lanes": [
     {
       "id": "market-bid",
@@ -95,11 +95,11 @@
       "category": "Objetos digitales",
       "origin": "Online",
       "name": "CS2 · marketplace barato → Target / Instant Sell en DMarket",
-      "status": "conditional",
-      "exitType": "Orden de compra existente",
+      "status": "excluded",
+      "exitType": "Instant Sell tras desbloqueo",
       "logistics": "DMarket permite venta instantánea contra un Target ya existente. No hay envío físico.",
-      "finding": "DMarket confirma venta instantánea, operación móvil iOS/Android y múltiples métodos de retirada. Desde agosto de 2026 el saldo de Instant Sell puede reutilizarse inmediatamente dentro del marketplace, aunque la retirada externa sigue sujeta a Trade Protection.",
-      "missing": "Para cash-out inmediato real seguimos bloqueando mientras la retirada esté protegida. Para arbitraje interno DMarket→DMarket el capital puede rotar antes, pero no se contará como beneficio cobrado hasta ser retirable.",
+      "finding": "DMarket tiene Instant Sell real, pero NO puede usarse para comprar en un mercado y vender minutos después: Steam bloquea 7 días los objetos CS2 recibidos.",
+      "missing": "Esperar 7 días rompe el requisito de arbitraje inmediato; eliminado de la prioridad.",
       "sources": [
         {
           "label": "DMarket · Instant Sell",
@@ -108,6 +108,30 @@
         {
           "label": "DMarket · saldo protegido",
           "url": "https://support.dmarket.com/hc/en-us/articles/50280203883025-Tradable-balance-how-can-I-use-it"
+        }
+      ]
+    },
+    {
+      "id": "giftcard-cross",
+      "category": "Códigos digitales",
+      "origin": "Online",
+      "name": "Gift card con descuento → comprador instantáneo de códigos",
+      "status": "research",
+      "exitType": "Cotización instantánea tras verificación",
+      "finding": "Existen compradores que publicitan payout instantáneo para tarjetas EUR/GBP y aceptan marcas como Steam, Amazon, Apple, Xbox o PlayStation. También existen tiendas de gift cards con descuento y entrega digital.",
+      "missing": "No se ha validado todavía una pareja concreta con mismo país, moneda y marca cuyo payout neto supere el coste de compra y cuyo comprador sea suficientemente sólido para autorizar capital. Riesgo de código inválido, KYC, región y contraparte.",
+      "sources": [
+        {
+          "label": "GetGiftCash · Europa/EUR",
+          "url": "https://getgiftcash.com/blog/sell-gift-cards-uk-europe"
+        },
+        {
+          "label": "Eisy · vender gift cards en España",
+          "url": "https://www.eisyglobal.com/sell-gift-card/spain"
+        },
+        {
+          "label": "NoOnes · gift cards con descuento",
+          "url": "https://blog.noones.com/en/blog/noones-gift-card-store-buy-discounted-gift-cards"
         }
       ]
     },
@@ -133,11 +157,11 @@
       "category": "Coleccionables custodiados",
       "origin": "Online",
       "name": "Courtyard · cartas físicas custodiadas / propiedad digital",
-      "status": "conditional",
+      "status": "candidate",
       "exitType": "Reventa inmediata dentro del vault",
       "logistics": "La carta física permanece en vault; la propiedad cambia digitalmente y puede relistarse inmediatamente sin envío entre comprador y vendedor.",
-      "finding": "Courtyard permite propiedad instantánea de cartas custodiadas, 0% de comisión marketplace y aceptación de ofertas. La transacción puede ser final al aceptar una oferta, sin movimiento físico.",
-      "missing": "Solo verde si existe una oferta recibida/puja aceptable ANTES de comprar la carta exacta. Un simple listing sigue bloqueado.",
+      "finding": "Courtyard permite comprar, vender y aceptar ofertas sobre coleccionables ya custodiados con 0% de comisión marketplace y liquidación interna instantánea. Es el mejor candidato móvil/web sin logística física.",
+      "missing": "Antes de autorizar una compra debemos demostrar que una oferta existente sobre el activo exacto sigue siendo aceptable por el nuevo propietario tras la transferencia. No asumirlo sin prueba.",
       "sources": [
         {
           "label": "Courtyard · cómo funciona",
@@ -437,5 +461,80 @@
       }
     ],
     "observation": "Los diferenciales casi se cierran en algunos activos. Esto valida el tipo de motor, no una oportunidad actual. El sistema debe detectar únicamente cruces positivos reales y ejecutables."
+  },
+  "rankings": [
+    {
+      "rank": 1,
+      "id": "mtgo-bot-arbitrage",
+      "title": "MTGO · bot vendedor → buylist bot comprador",
+      "fit": "MEJOR ENCAJE ESTRUCTURAL",
+      "immediacy": "Minutos",
+      "stock": "Digital",
+      "cashout": "Indirecto vía Event Tickets → dealer",
+      "blocker": "Requiere escritorio y hay que validar conversión final de tickets a EUR."
+    },
+    {
+      "rank": 2,
+      "id": "courtyard-vaulted",
+      "title": "Courtyard · activo ya custodiado → oferta existente",
+      "fit": "MEJOR ENCAJE WEB/MÓVIL",
+      "immediacy": "Potencialmente inmediata dentro del vault",
+      "stock": "Custodiado; no pasa por casa",
+      "cashout": "Cuenta Courtyard → banco/tarjeta según disponibilidad",
+      "blocker": "Solo sirve si la oferta sigue siendo válida tras adquirir exactamente ese activo; no asumir persistencia."
+    },
+    {
+      "rank": 3,
+      "id": "giftcard-cross",
+      "title": "Gift cards digitales · descuento → recompra instantánea",
+      "fit": "INVESTIGACIÓN",
+      "immediacy": "Minutos si código y payout pasan verificación",
+      "stock": "Código digital",
+      "cashout": "PayPal/cripto/wallet según comprador",
+      "blocker": "Riesgo alto de fraude, región, KYC y rechazo de código; no autorizado aún."
+    },
+    {
+      "rank": 4,
+      "id": "dmarket-cs2",
+      "title": "CS2 cross-market",
+      "fit": "NO INMEDIATO",
+      "immediacy": "Mínimo ~7 días entre trades",
+      "stock": "Digital pero bloqueado",
+      "cashout": "Sí en varios mercados",
+      "blocker": "Steam Trade Protection impide volver a transferir el item durante 7 días."
+    }
+  ],
+  "cs2Correction": {
+    "decisiveFinding": "CS2 queda descartado como arbitraje de minutos.",
+    "reason": "Steam confirma que todos los objetos CS2 recibidos en un trade quedan Trade Protected durante 7 días y no pueden transferirse de nuevo durante ese periodo.",
+    "consequence": "Los grandes gaps entre CSFloat/DMarket son leads de arbitraje temporal, no compra→venta inmediata.",
+    "instantSellSnapshot": {
+      "quotedItems": 31239,
+      "observation": "La tabla de instant-sell mostraba un único cruce positivo visible de +0,6%, pero era crédito interno de CS.Money, no cash. Los mejores cash visibles seguían por debajo del vendedor más barato."
+    }
+  },
+  "giftCardLane": {
+    "id": "giftcard-cross",
+    "category": "Códigos digitales",
+    "origin": "Online",
+    "name": "Gift card con descuento → comprador instantáneo de códigos",
+    "status": "research",
+    "exitType": "Cotización instantánea tras verificación",
+    "finding": "Existen compradores que publicitan payout instantáneo para tarjetas EUR/GBP y aceptan marcas como Steam, Amazon, Apple, Xbox o PlayStation. También existen tiendas de gift cards con descuento y entrega digital.",
+    "missing": "No se ha validado todavía una pareja concreta con mismo país, moneda y marca cuyo payout neto supere el coste de compra y cuyo comprador sea suficientemente sólido para autorizar capital. Riesgo de código inválido, KYC, región y contraparte.",
+    "sources": [
+      {
+        "label": "GetGiftCash · Europa/EUR",
+        "url": "https://getgiftcash.com/blog/sell-gift-cards-uk-europe"
+      },
+      {
+        "label": "Eisy · vender gift cards en España",
+        "url": "https://www.eisyglobal.com/sell-gift-card/spain"
+      },
+      {
+        "label": "NoOnes · gift cards con descuento",
+        "url": "https://blog.noones.com/en/blog/noones-gift-card-store-buy-discounted-gift-cards"
+      }
+    ]
   }
 }
