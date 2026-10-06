@@ -14,8 +14,7 @@ const TOKENS={
  USDT:{addr:"EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs",dec:6,symbols:["USD₮","USDT","jUSDT"],stable:true},
  TON:{addr:TON_ADDRS[0],dec:9,symbols:["TON","pTON"],native:true},
  USDe:{addr:"EQAIb6KmdfdDR7CN1GBqVJuP25iCnLKCvBlJ07Evuu2dzP5f",dec:6,symbols:["USDe"],stable:true},
- STON:{addr:"EQA2kCVNwVsil2EM2mB0SkXytxCqQjS4mttjDpnXmwG9T6bO",dec:9,symbols:["STON"]},
- NOT:{addr:"EQAvlWFDxGF2lXm67y4yzC17wYKD9A0guwPkMs1gOsM__NOT",dec:9,symbols:["NOT"]}
+ STON:{addr:"EQA2kCVNwVsil2EM2mB0SkXytxCqQjS4mttjDpnXmwG9T6bO",dec:9,symbols:["STON"]}
 };
 const RULES={minNetPct:1,maxQuoteAgeSec:10,slippage:0.002,maxImpactPct:0.5,minPoolTvlUSD:20000,baseCapitalEUR:100};
 const LOG_KEY="cv_ton_arb_log_v1",TRADES_KEY="cv_ton_arb_trades_v1";
