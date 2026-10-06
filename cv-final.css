@@ -1,0 +1,41 @@
+.cyBoard{max-width:1040px;margin:0 auto 18px;color:#f4f7ff;line-height:1.45}
+.cyHead{padding:16px;border:1px solid #3b4d69;border-radius:18px;background:#0d1727;margin-bottom:12px}
+.cyHead h2{font-size:22px;line-height:1.2;margin:6px 0 8px}
+.cyHead p{color:#c6d2e6;margin:6px 0}
+.cyKicker{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.08em;color:#9fd2ff}
+.cyNote{font-size:12px;color:#a9bbd2}
+.cyFilters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.cyFilters button{min-height:40px;padding:8px 14px;border-radius:999px;border:1px solid #456078;background:#152235;color:#fff;font:inherit;font-weight:700}
+.cyFilters button.on{background:#e8f1ff;color:#0b1626;border-color:#e8f1ff}
+.cyList,.cySealed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cyCard{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:14px;border:1px solid #33465f;border-radius:16px;background:#111b2c;min-width:0}
+.cyCard.sealed{grid-template-columns:minmax(0,1fr)}
+.cyImg{width:96px;aspect-ratio:63/88;border-radius:8px;background:#1a2a40;display:flex;align-items:center;justify-content:center;overflow:hidden;text-align:center;font-size:11px;color:#8ea3bf}
+.cyImg img{width:100%;height:100%;object-fit:contain}
+.cyBody{min-width:0}
+.cyBody h4{margin:6px 0 4px;font-size:17px;overflow-wrap:anywhere}
+.cyMeta{margin:2px 0;font-size:13px;color:#c6d2e6;overflow-wrap:anywhere}
+.cyBadge{display:inline-block;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px;margin-right:6px}
+.cyBadge.buy{background:#1f8f57;color:#fff}
+.cyBadge.watch{background:#4a3c12;color:#ffe08a}
+.cyGame{font-size:11px;color:#9fb4cc;font-weight:700}
+.cyGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;margin:10px 0}
+.cyGrid div.wide{grid-column:1/-1}
+.cyGrid dt{font-size:11px;color:#9fb4cc}
+.cyGrid dd{margin:1px 0 0;font-weight:750;overflow-wrap:anywhere}
+.cyGrid dd.pos{color:#7ee2a8}.cyGrid dd.neg{color:#ff9d9d}
+.cyMissing{font-size:12px;color:#ffd9a0;margin:6px 0}
+.cyCalc{font-size:11px;color:#8ea3bf;margin:4px 0}
+.cyActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cyBtn{min-height:44px;display:inline-flex;align-items:center;padding:10px 12px;border-radius:10px;background:#263b5b;color:#fff;text-decoration:none;border:0;font:inherit;font-weight:700;font-size:14px}
+.cyBtn.primary{background:#1f8f57}.cyBtn.off{background:#2a2f38;color:#8b95a5}
+.cyDisc{margin:12px 0;padding:10px 14px;border:1px solid #33465f;border-radius:14px;background:#0f1828}
+.cyDisc summary{cursor:pointer;font-weight:700;min-height:32px}
+.cyDiscRow{font-size:13px;color:#c6d2e6;padding:6px 0;border-top:1px solid #22344e}
+.cyArbGreen{display:block;width:100%;min-height:52px;margin:0 0 12px;padding:12px;border:2px solid #3fbf7f;border-radius:14px;background:#0f2a1c;color:#bff5d6;font:inherit;font-weight:900;text-align:left}
+.cySub{font-size:17px;margin:14px 0 8px}
+.cyTable{display:grid;gap:8px}
+.cyRow{display:grid;gap:2px;padding:10px 12px;border:1px solid #2b3d56;border-radius:12px;background:#111b2c;font-size:13px}
+.cyRow span{color:#c6d2e6}
+.plPos{color:#7ee2a8}.plNeg{color:#ff9d9d}
+@media(max-width:700px){.cyList,.cySealed{grid-template-columns:1fr}.cyCard{grid-template-columns:84px minmax(0,1fr)}.cyImg{width:84px}.cyHead h2{font-size:19px}}

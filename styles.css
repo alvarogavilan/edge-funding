@@ -423,11 +423,6 @@ main button,dialog button,.buyButton,.sealedActions a,.sealedActions button,.min
 }
 
 /* V87.4 · navegación diaria */
-.mainNav button[data-tab="sealed"],
-.mainNav button[data-tab="pregrade"],
-.mainNav button[data-tab="rebalance"],
-.mainNav button[data-tab="archive"]{display:none!important}
-.mainNav{grid-template-columns:repeat(3,1fr)!important}
 .simpleMoreHub{padding:8px 0 18px}.simpleMoreHub h2{margin:0 0 4px;font-size:28px}.simpleMoreHub p{margin:0 0 14px;opacity:.7}
 .simpleMoreGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .simpleMoreGrid button{min-height:54px;border-radius:14px;font-weight:800}

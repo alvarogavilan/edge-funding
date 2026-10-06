@@ -44,6 +44,8 @@ function buildCycles(symbols){
   out.push({id:"TON>USDT>USDe>TON",kind:"triangular",path:["TON","USDT","USDe","TON"],start:"TON"});
   out.push({id:"TON>USDe>USDT>TON",kind:"triangular",path:["TON","USDe","USDT","TON"],start:"TON"});
  }
+ // Ida y vuelta en el mismo DEX: referencia del coste mínimo (comisiones + gas), nunca debería ser verde.
+ for(const x of ["TON","USDe"])if(symbols.includes(x))out.push({id:"USDT>"+x+">USDT",kind:"roundtrip",path:["USDT",x,"USDT"],start:"USDT"});
  for(const x of ["TON","USDe"])if(symbols.includes(x)){
   out.push({id:"USDT>"+x+"@STON>USDT@DeDust",kind:"cross",path:["USDT",x,"USDT"],venues:["STON.fi","DeDust"],start:"USDT"});
   out.push({id:"USDT>"+x+"@DeDust>USDT@STON",kind:"cross",path:["USDT",x,"USDT"],venues:["DeDust","STON.fi"],start:"USDT"});
@@ -270,6 +272,7 @@ function schedule(){
 const core={TOKENS,RULES,friendlyToRaw,cpOut,buildCycles,evaluateCycle,capitalLimit,episodes,frequencyStats,stonSwapUrl,
  scan,state,setStore:x=>{store=x},readLog:()=>readJson(LOG_KEY,[]),readTrades:()=>readJson(TRADES_KEY,[])};
 if(typeof module!=="undefined"&&module.exports)module.exports=core;
+root.CVTonArb=core;
 if(typeof document==="undefined")return;
 
 /* ---------- interfaz ---------- */
@@ -303,9 +306,10 @@ function readyCard(r){
  '</dl><ol class="tonLegs">'+r.legs.map(l=>legLine(l)).join("")+'</ol>'+
  '<div class="arbExecActions">'+
  '<button class="primaryAction" data-act="buy">1 · ABRIR COMPRA</button>'+
- rest.map((l,i)=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener">2'+(rest.length>1?String.fromCharCode(97+i):"")+' · ABRIR VENTA / CONFIRMAR RUTA ('+esc(l.from+"→"+l.to)+')</a>').join("")+
- '<button data-act="log">3 · REGISTRAR RESULTADO</button></div>'+
- '<small>Al pulsar 1 la app vuelve a cotizar; si deja de cumplir ≥'+RULES.minNetPct+'% neto o el quote supera '+RULES.maxQuoteAgeSec+' s, cancela y no abre nada. Las patas se ejecutan una tras otra (no es atómico): si una se revierte por slippage, el contrato devuelve los fondos y quedas en el activo intermedio.</small>'+
+ rest.slice(0,-1).map((l,i)=>'<a href="'+esc(l.url)+'" target="_blank" rel="noopener">2 · ABRIR SIGUIENTE PATA ('+esc(l.from+"→"+l.to)+')</a>').join("")+
+ (rest.length?'<a href="'+esc(rest[rest.length-1].url)+'" target="_blank" rel="noopener">3 · FINALIZAR ('+esc(rest[rest.length-1].from+"→"+rest[rest.length-1].to)+')</a>':'')+
+ '<button data-act="log">4 · REGISTRAR RESULTADO</button></div>'+
+ '<small>Al pulsar 1 la app vuelve a cotizar; si deja de cumplir ≥'+RULES.minNetPct+'% neto o el quote supera '+RULES.maxQuoteAgeSec+' s, cancela y no abre nada. Ningún verde es 100 % seguro. Las patas se ejecutan una tras otra (no es atómico): si una se revierte por slippage, el contrato devuelve los fondos y quedas en el activo intermedio.</small>'+
  '</article>';
 }
 function render(){
@@ -333,6 +337,7 @@ function render(){
  state.results.map(r=>'<tr class="'+(r.eval.ready?"g":"")+'"><td>'+esc(r.route.id)+'</td><td>'+pct(r.eval.grossPct)+'</td><td>'+pct(r.eval.netPct)+'</td><td>'+pct(r.eval.netExpPct)+'</td><td>'+(r.eval.depth?'$'+Math.round(r.eval.depth).toLocaleString("es-ES"):"—")+'</td><td>'+esc(r.eval.ready?"VERDE":r.eval.reasons.join("; "))+'</td></tr>').join("")+
  '</tbody></table></details>'+
  '<div class="arbAgentActions"><button id="tonScanNow">Barrer ahora</button><button id="tonExportLog">Exportar registro 24 h</button>'+(trades.length?'':'')+'</div>'+
+ '<p class="tonWarn">Medición 24 h: este escáner solo cotiza y registra mientras Card Vault está abierta en primer plano (iPhone suspende las pestañas en segundo plano). Para medir 24 h reales sin coste ni servidores: deja <code>node tools/ton-arb-scan.cjs</code> corriendo en un ordenador.</p>'+
  '<small>Reglas: neto mínimo '+RULES.minNetPct+'% tras gas y slippage máximo · quote ≤ '+RULES.maxQuoteAgeSec+' s · impacto ≤ '+RULES.maxImpactPct+'% por pata · pool ≥ $'+RULES.minPoolTvlUSD.toLocaleString("es-ES")+' · tokens verificados en STON.fi (no lista negra). DeDust se calcula desde reservas de su API oficial y nunca marca verde por sí solo. El registro solo crece mientras la app está abierta. Nunca se mueve dinero sin tu confirmación en la wallet.</small>'+
  '</section>';
  bind();tick();

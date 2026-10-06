@@ -259,6 +259,7 @@ function render(){
   const result=x.result==null?"ROI no calculado · coste individual desconocido":("Resultado "+(x.result>=0?"+":"")+EUR(x.result)+" · ROI "+(x.basis>0?(x.result/x.basis*100).toFixed(1)+"%":"—"));
   return '<article class="sealedCard archiveCard"><div class="sealedMain"><div class="thumb">'+(x.referenceImage?'<img src="'+x.referenceImage+'" alt="">':"🗃️")+'</div><div><span class="pill">'+x.payment+'</span><h4>'+String(x.name||"")+'</h4><small>'+detail+'</small></div><div class="sealedNumbers"><b>'+EUR(x.unitPrice)+' / ud</b><span>'+N(x.qty||1)+' ud · neto '+EUR(x.net)+'</span></div></div>'+
    '<div class="microNote"><b>Venta:</b> '+String(x.soldAt||"")+" · "+String(x.channel||"")+(x.saleOrder?" · Pedido #"+x.saleOrder:"")+' · '+x.workflow+'</div>'+
+   '<div class="microNote"><b>Marketplace:</b> '+E(x.channel||"—")+' · <b>Precio de venta real:</b> '+EUR(x.unitPrice)+' · <b>Comisión:</b> '+(N(x.fees)>0?EUR(x.fees):'no registrada')+' · <b>Neto:</b> '+EUR(x.net)+' · <button type="button" data-archive-fee="'+E(x.id)+'">Corregir comisión</button></div>'+
    '<div class="microNote"><b>Procedencia:</b> '+String(origin||"Sin documentar")+(x.parentProductCostEUR?" · producto origen ~"+EUR(x.parentProductCostEUR):"")+'</div>'+
    '<div class="microNote"><b>Contabilidad:</b> '+result+(x.heldDays!=null?" · "+x.heldDays+" días en cartera":"")+'</div>'+
    (x.acquisitionNotes?'<div class="microNote">'+String(x.acquisitionNotes)+'</div>':"")+
@@ -271,6 +272,14 @@ function render(){
     '<div class="sealedActions">'+(x.marketUrl?'<a href="'+x.marketUrl+'" target="_blank" rel="noopener">Ficha mercado</a>':"")+'<button data-archive-watch="'+x.id+'">Volver a vigilar</button><button data-post-sale="'+x.id+'">Registrar control postventa</button></div></details></article>';
  }).join(""):'<div class="emptyState"><b>Sin resultados para estos filtros.</b><span>El Archivo completo sigue conservado.</span></div>');
  document.querySelectorAll("[data-archive-watch]").forEach(b=>b.onclick=()=>watchAgain(b.dataset.archiveWatch));
+ document.querySelectorAll("[data-archive-fee]").forEach(b=>b.onclick=()=>{
+  const id=b.dataset.archiveFee,sale=(state.saleHistory||[]).find(r=>r.id===id);if(!sale)return;
+  const v=prompt("Comisión real cobrada por "+(sale.channel||"el marketplace")+" en este pedido (€):",String(N(sale.fees)));if(v==null)return;
+  const fee=N(String(v).replace(",","."));if(!(fee>=0)){alert("Importe no válido.");return}
+  sale.fees=fee;sale.net=N(sale.unitPrice)*N(sale.qty||1)-fee-N(sale.shipping);
+  const l=(state.investmentLedger||[]).find(r=>r.id===id);if(l)l.fees=fee;
+  save();render();
+ });
  const ex=Q("#archiveExport");if(ex)ex.onclick=exportCsv;
 }
 window.CVArchive={render,records,exportCsv,auditFields};setTimeout(()=>{try{render()}catch{}},450);ensureEeveeArchive();migrateLegacySnapshots();render();
