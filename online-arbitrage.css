@@ -116,3 +116,9 @@ body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snaps
 .tonTable td,.tonTable th{padding:6px;border-bottom:1px solid #22344e;text-align:left;vertical-align:top}
 .tonTable tr.g td{background:#103322}
 @media(max-width:640px){.tonGrid{grid-template-columns:1fr}.tonStats{grid-template-columns:1fr 1fr}}
+
+.tonHealth,.tonBlockers{display:grid;gap:6px;margin:10px 0;padding:10px 12px;border-radius:12px;background:#101c2b;font-size:12px}
+.tonHealth{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tonHealth span,.tonBlockers span{overflow-wrap:anywhere}
+.tonBlockers{border:1px solid #5b4830;background:#2a2114}
+@media(max-width:640px){.tonHealth{grid-template-columns:1fr}}
