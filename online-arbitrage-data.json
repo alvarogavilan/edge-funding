@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T00:16:00Z",
+  "checkedAt": "2026-10-06T00:31:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas ahora mismo. Estrategia prioritaria: FLASH de lanzamiento limitado a puja activa, con salida inmediata y sin inventario. Se bloquean productos sin talla/variante exacta, payout neto y stock retail simultáneamente verificados.",
+  "summary": "0 compras autorizadas en este instante. Nuevo foco: arbitraje digital con buylist/orden de compra preexistente. MTGO es el mejor encaje estructural; DMarket/CS2 es casi inmediato pero la retirada puede quedar bloqueada; Courtyard elimina envíos pero no garantiza comprador.",
   "lanes": [
     {
       "id": "market-bid",
@@ -61,6 +61,94 @@
     }
   ],
   "routes": [
+    {
+      "id": "mtgo-bot-arbitrage",
+      "category": "Cartas digitales",
+      "origin": "Online",
+      "name": "Magic Online (MTGO) · bot A → buylist bot B",
+      "status": "candidate",
+      "exitType": "Buylist automatizada 24/7",
+      "logistics": "Activo 100% digital dentro de Magic Online. La carta se compra a un bot y puede venderse a otro bot por Event Tickets; los Tickets pueden venderse posteriormente a un dealer por dinero.",
+      "finding": "Es el circuito más parecido al arbitraje puro solicitado: inventario digital, bots automáticos y precios de compra reales. Cardhoarder afirma que su buylist es el precio real que pagan sus Buy Bots; GoatBots publica precios y bots de compra/venta 24/7.",
+      "missing": "Necesitamos escanear simultáneamente precio vendedor A, buylist B, cantidad realmente comprada y descuento de Event Ticket→EUR. Además MTGO requiere cliente de escritorio, por lo que no es ideal para operar solo desde iPhone.",
+      "sources": [
+        {
+          "label": "Cardhoarder · buylist real",
+          "url": "https://help.cardhoarder.com/en/articles/8695362-selling-your-cards-to-cardhoarder"
+        },
+        {
+          "label": "Cardhoarder · bots 24/7",
+          "url": "https://help.cardhoarder.com/en/articles/8792589-our-automated-trading-bots"
+        },
+        {
+          "label": "GoatBots · trading bots",
+          "url": "https://www.goatbots.com/trade-guide"
+        },
+        {
+          "label": "Cardhoarder · cash out MTGO",
+          "url": "https://help.cardhoarder.com/en/articles/8674937-economy-cashing-out"
+        }
+      ]
+    },
+    {
+      "id": "dmarket-cs2",
+      "category": "Objetos digitales",
+      "origin": "Online",
+      "name": "CS2 · marketplace barato → Target / Instant Sell en DMarket",
+      "status": "conditional",
+      "exitType": "Orden de compra existente",
+      "logistics": "DMarket permite venta instantánea contra un Target ya existente. No hay envío físico.",
+      "finding": "Muy parecido a una orden de compra: si existe precio Instant Sell, hay un comprador/Target preexistente. Sin embargo Steam Trade Protection puede bloquear temporalmente la retirada del dinero.",
+      "missing": "No cumple salida bancaria inmediata mientras dure Trade Protection. Hay que añadir tiempo de desbloqueo y riesgo de reversión al cálculo.",
+      "sources": [
+        {
+          "label": "DMarket · Instant Sell",
+          "url": "https://support.dmarket.com/hc/en-us/articles/43415249131665-Sell-an-item-instantly"
+        },
+        {
+          "label": "DMarket · saldo protegido",
+          "url": "https://support.dmarket.com/hc/en-us/articles/50280203883025-Tradable-balance-how-can-I-use-it"
+        }
+      ]
+    },
+    {
+      "id": "csfloat",
+      "category": "Objetos digitales",
+      "origin": "Online",
+      "name": "CS2 · CSFloat",
+      "status": "conditional",
+      "exitType": "Marketplace P2P + retirada",
+      "logistics": "Operación digital P2P; CSFloat publica comisión de venta del 2% y retirada bancaria/cripto con comisión variable.",
+      "finding": "Interesante para comparar precios y cash-out; su modelo P2P evita custodiar mediante bot, pero no convierte una publicación en comprador garantizado.",
+      "missing": "Solo autorizar si existe oferta/comprador ejecutable para el mismo skin y el artículo está ya libre de restricciones de intercambio.",
+      "sources": [
+        {
+          "label": "CSFloat · mercado y comisiones",
+          "url": "https://csfloat.com/"
+        }
+      ]
+    },
+    {
+      "id": "courtyard-vaulted",
+      "category": "Coleccionables custodiados",
+      "origin": "Online",
+      "name": "Courtyard · cartas físicas custodiadas / propiedad digital",
+      "status": "conditional",
+      "exitType": "Reventa inmediata dentro del vault",
+      "logistics": "La carta física permanece en vault; la propiedad cambia digitalmente y puede relistarse inmediatamente sin envío entre comprador y vendedor.",
+      "finding": "Elimina completamente el transporte físico entre operaciones. Marketplace estándar sin comisión de vendedor, pero una reventa sigue necesitando comprador. Los buybacks de Vending Machine son otra cosa y no constituyen arbitraje positivo por sí solos.",
+      "missing": "Necesitamos una oferta de compra existente superior al precio de adquisición; sin ella es inventario aunque sea digital.",
+      "sources": [
+        {
+          "label": "Courtyard · cómo funciona",
+          "url": "https://www.courtyard.io/about"
+        },
+        {
+          "label": "Courtyard · buyback garantizado solo en promociones",
+          "url": "https://help.courtyard.io/en/articles/17222932-how-guaranteed-value-pack-codes-work"
+        }
+      ]
+    },
     {
       "id": "stockx",
       "category": "Moda, relojes y coleccionables",
@@ -311,5 +399,12 @@
       "Relojes: tasación/inspección",
       "LEGO generalista: salida demasiado lenta"
     ]
+  },
+  "instantArbitrage": {
+    "title": "INMEDIATO · activo digital → comprador ya existente",
+    "objective": "Evitar inventario físico y reducir el tiempo entre compra y salida a minutos.",
+    "hardRule": "Solo señal COMPRAR si el precio de compra y la buylist/orden de compra están vivos al mismo tiempo, la referencia es idéntica y el beneficio neto sigue positivo tras conversión a dinero.",
+    "guarantee": false,
+    "note": "Ningún mercado de consumo ofrece beneficio absoluto garantizado: precios, límites, cuenta, fraude, liquidez y ejecución pueden cambiar antes de completar ambos lados."
   }
 }
