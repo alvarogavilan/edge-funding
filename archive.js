@@ -66,6 +66,25 @@ function migrateLegacySnapshots(){
  }
  if(changed)save();
 }
+function fixEeveeSaleAmount(){
+ let changed=false;
+ for(const h of state.saleHistory||[]){
+  if(h.id==="sale-cardmarket-1304093225"||h.cardId==="eev174"){
+   if(Number(h.unitPrice)!==100){h.unitPrice=100;changed=true}
+   if(Number(h.qty||1)===1&&Number(h.net)!==100){h.net=100;changed=true}
+   if(h.cardSnapshot&&Number(h.cardSnapshot.unitPrice||0)!==100){h.cardSnapshot.unitPrice=100;changed=true}
+   h.archiveNotes="Venta real Cardmarket confirmada por el usuario por 100 €. No se calcula ROI porque el coste individual de esta carta no fue asignado dentro del producto completo.";
+  }
+ }
+ const r=(state.investmentLedger||[]).find(x=>x.id==="sale-cardmarket-1304093225");
+ if(r){
+  if("unitPrice" in r&&Number(r.unitPrice)!==100){r.unitPrice=100;changed=true}
+  if("price" in r&&Number(r.price)!==100){r.price=100;changed=true}
+  if("amount" in r&&Number(r.amount)!==100){r.amount=100;changed=true}
+  if("net" in r&&Number(r.net)!==100){r.net=100;changed=true}
+ }
+ if(changed)save();
+}
 function ensureEeveeArchive(){
  const card=(state.cards||[]).find(c=>c.id==="eev174");
  const ledger=(state.investmentLedger||[]).find(r=>r.id==="sale-cardmarket-1304093225");
@@ -81,7 +100,7 @@ function ensureEeveeArchive(){
    marketUrl:"https://www.cardmarket.com/es/Pokemon/Products/Singles/SV-Black-Star-Promos/Eevee-ex-SVP174"
   };
   state.saleHistory.push({
-   id:"sale-cardmarket-1304093225",cardId:"eev174",...snap,cardSnapshot:snap,qty:1,unitPrice:60,shipping:0,fees:0,net:60,
+   id:"sale-cardmarket-1304093225",cardId:"eev174",...snap,cardSnapshot:snap,qty:1,unitPrice:100,shipping:0,fees:0,net:100,
    soldAt:"2026-09-27",channel:"Cardmarket",saleOrder:"1304093225",fulfillmentStatus:ledger?.fulfillmentStatus||"sold-awaiting-shipment",
    purchase:null,basisUnknown:true,archiveSnapshotAt:new Date().toISOString(),
    rawMarketSnapshot:{checkedAt:"2026-09-27",trend:16.56,avg30:18.78,avg7:20.37,avg1:17.24,currency:"EUR",scope:"RAW only · no comparable directamente con PSA 9"},
@@ -107,7 +126,7 @@ function paymentStatus(h){
  return ["paid","paid-confirmed","completed","settled"].includes(s)?"COBRADA":"PENDIENTE";
 }
 function records(){
- ensureEeveeArchive();migrateLegacySnapshots();freezeAudits();
+ fixEeveeSaleAmount();ensureEeveeArchive();migrateLegacySnapshots();freezeAudits();
  return [...state.saleHistory].map(h=>{
   const s=h.cardSnapshot||{};
   const purchase=h.purchase??s.purchase??null,landed=h.landedCostUnit??s.landedCostUnit??null,basis=landed!=null?N(landed)*N(h.qty||1):(purchase==null?null:N(purchase)*N(h.qty||1));
