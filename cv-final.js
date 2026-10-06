@@ -126,7 +126,7 @@ function arbBanner(){
  try{
   const r=(window.CVTonArb?.state?.results||[]).find(z=>z.eval.ready&&Date.now()-z.quoteAt<=10000);
   if(!r)return "";
-  return '<button type="button" class="cyArbGreen" data-goto-tab="arbitraje">🟢 VERDE REAL ENCONTRADO · Arbitraje '+E(r.route.id)+' · mín. '+r.eval.netPct.toFixed(2)+' % · Abrir</button>';
+  return '<button type="button" class="cyArbGreen" data-goto-tab="arbitraje">🟢 VERDE REVALIDADO AHORA · Arbitraje '+E(r.route.id)+' · mín. '+r.eval.netPct.toFixed(2)+' % · Abrir</button>';
  }catch{return ""}
 }
 function renderBuy(){
