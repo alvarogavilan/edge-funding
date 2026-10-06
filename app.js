@@ -297,7 +297,7 @@ const provisionalTotal=()=>{const p=primePortfolio();return p?p.provisional:acti
 const total=()=>confirmedTotal()+provisionalTotal();
 const invested=()=>activeCards().reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase||0)*qty(x)),0);const confirmedInvested=()=>activeCards().filter(x=>x.valuationStatus!=="reference").reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase||0)*qty(x)),0);
 const drafts=()=>activeCards().filter(x=>x.draft).length;
-const gain=()=>{const p=primePortfolio();return p?p.latentPrudent:confirmedTotal()-confirmedInvested()};function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+const gain=()=>{const p=primePortfolio();return p?p.latentPrudent:confirmedTotal()-confirmedInvested()};function save(){localStorage.setItem(KEY,JSON.stringify(state))}window.CVStateBridge={get:()=>state,save:()=>save(),key:KEY};
 function universeLabel(u){return u==="lorcana"?"Lorcana":"Pokémon"}
 function universeIcon(u){return u==="lorcana"?"✨":"⚡"}
 function currentRadarUniverse(){const u=document.querySelector("#radarUniverse")?.value||"pokemon";return u==="lorcana"?"lorcana":"pokemon"}
