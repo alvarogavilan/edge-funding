@@ -52,10 +52,10 @@ function render(){
  let box=document.querySelector("#recoverySafetyNet");
  if(!box){box=document.createElement("div");box.id="recoverySafetyNet";box.className="qaPanel";host.after(box)}
  const rows=read(),r=rows[0];
- box.innerHTML='<b>Safety Net PRIME</b>'+
+ box.innerHTML='<b>Red de seguridad PRIME</b>'+
   '<div class="qaRow"><span>Snapshots ligeros</span><b>'+rows.length+'/3</b></div>'+
   '<div class="qaRow"><span>Último</span><b>'+(r?new Date(r.at).toLocaleString("es-ES"):"Pendiente")+'</b></div>'+
-  '<small>Protege colección, ventas, Archivo, libro, watchlist y sellado sin duplicar catálogos ni fotos. El backup completo manual sigue siendo la copia principal.</small>'+
+  '<small>Protege colección, ventas, Archivo, libro, watchlist y sellado sin duplicar catálogos ni fotos. El copia de seguridad completa manual sigue siendo la copia principal.</small>'+
   '<div class="testActions"><button type="button" id="recoveryNow">Crear snapshot</button><button type="button" id="recoveryDownload">Descargar</button><button type="button" id="recoveryRestore">Restaurar último</button></div>';
  document.querySelector("#recoveryNow").onclick=()=>{write("manual");alert("Snapshot de recuperación creado.")};
  document.querySelector("#recoveryDownload").onclick=download;
