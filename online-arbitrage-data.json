@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T00:07:00Z",
+  "checkedAt": "2026-10-06T00:18:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas. Se añade filtro obligatorio España. PSA Partner Offers sería técnicamente ideal pero queda excluido por elegibilidad geográfica. MTGO se degrada para cash-out: Cardhoarder publica 0,68 USD/tix y mínimo 25. Fanatics Vault es rápido y sin logística física, pero necesita una oferta de comprador preexistente.",
+  "summary": "0 compras autorizadas en este instante. Nuevo carril prioritario: NFT on-chain floor ask → top bid agregado mediante Reservoir. Ya se detectó una ventana aparente de +26% que se cerró antes de ejecución; confirma que estas anomalías existen y duran poco. Solo se marcará verde tras revalidación primaria simultánea y costes completos.",
   "lanes": [
     {
       "id": "market-bid",
@@ -61,6 +61,31 @@
     }
   ],
   "routes": [
+    {
+      "id": "reservoir-nft-cross",
+      "category": "NFT / activos on-chain",
+      "origin": "Online",
+      "name": "Reservoir · floor ask → top bid agregado",
+      "status": "candidate",
+      "exitType": "Top bid ejecutable agregado",
+      "logistics": "Activo on-chain; sin producto físico. Reservoir agrega asks y bids de múltiples marketplaces y permite ejecutar compras y aceptar bids.",
+      "finding": "Es la infraestructura más directa encontrada para detectar cruces ask→bid en tiempo real. Expone órdenes de venta, ofertas, floor ask y top bid de múltiples mercados.",
+      "missing": "El feed directo requiere API key y la app no guardará secretos en frontend. Hasta disponer de un acceso seguro, cualquier candidato detectado por agregadores se revalida en el marketplace primario antes de marcar verde.",
+      "sources": [
+        {
+          "label": "Reservoir · API overview",
+          "url": "https://nft.reservoir.tools/reference/overview"
+        },
+        {
+          "label": "Reservoir · bids",
+          "url": "https://nft.reservoir.tools/reference/getordersbidsv6"
+        },
+        {
+          "label": "Reservoir · asks",
+          "url": "https://nft.reservoir.tools/reference/getordersasksv5"
+        }
+      ]
+    },
     {
       "id": "nft-orderbook-cross",
       "category": "NFT / activos on-chain",
@@ -744,7 +769,8 @@
         "giftcard-cross",
         "dmarket-cs2",
         "csfloat",
-        "fanatics-vault"
+        "fanatics-vault",
+        "reservoir-nft-cross"
       ],
       "hardGate": "Comprador u orden existente antes de comprar; salida a dinero; España admitida; beneficio neto positivo."
     },
