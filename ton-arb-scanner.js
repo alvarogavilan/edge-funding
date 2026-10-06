@@ -6,6 +6,7 @@
 const STON_API="https://api.ston.fi/v1";
 let BRIDGE_API="";
 let BRIDGE_PROXY_PATH="/api/proxy";
+let BRIDGE_HEALTH_PATH="/health";
 const DEDUST_API="https://api.dedust.io/v2";
 const FX_API="https://api.frankfurter.app/latest?from=USD&to=EUR";
 const TON_ADDRS=["EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c","EQCM3B12QK1e4yZSf8GtBRT0aLMNyEsBc_DhVfRRtOEffLez"];
@@ -159,11 +160,23 @@ async function getJson(url,opts){
   catch(secondary){throw new Error("directo: "+String(primary.message||primary)+" · puente: "+String(secondary.message||secondary))}
  }
 }
+async function probeBridgeHealth(){
+ if(!BRIDGE_API){state.bridgeHealth={ok:false,msg:"sin configurar"};return state.bridgeHealth}
+ const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
+ try{
+  const r=await fetch(BRIDGE_API.replace(/\/$/,"")+BRIDGE_HEALTH_PATH,{cache:"no-store",signal:ctl.signal});
+  const j=await r.json().catch(()=>null);
+  const ok=!!(r.ok&&j&&(j.ok!==false));
+  state.bridgeHealth={ok:ok,msg:ok?"operativo":("HTTP "+r.status)};
+ }catch(e){state.bridgeHealth={ok:false,msg:String(e.message||e)}}
+ finally{clearTimeout(to)}
+ return state.bridgeHealth;
+}
 async function loadBridge(){
  if(typeof document==="undefined")return;
  try{
   const r=await fetch("bridge-config.json?ts="+Date.now(),{cache:"no-store"});
-  if(r.ok){const j=await r.json();if(j&&j.endpoint)BRIDGE_API=String(j.endpoint);if(j&&j.proxyPath)BRIDGE_PROXY_PATH=String(j.proxyPath)}
+  if(r.ok){const j=await r.json();if(j&&j.endpoint)BRIDGE_API=String(j.endpoint);if(j&&j.proxyPath)BRIDGE_PROXY_PATH=String(j.proxyPath);if(j&&j.healthPath)BRIDGE_HEALTH_PATH=String(j.healthPath)}
  }catch{}
 }
 async function loadFx(){
@@ -357,7 +370,7 @@ function render(){
  '<div class="arbAgentHead"><div><span class="arbKicker">ESCÁNER SAME-WALLET TON · FUENTES PRIMARIAS</span><h3>'+status+'</h3></div><span class="arbAgentMode">'+(state.fast?"MODO RÁPIDO 8 s":"CADA 60 s")+'</span></div>'+
  '<p class="tonMeta">Último barrido: '+(state.scanAt?new Date(state.scanAt).toLocaleTimeString("es-ES"):"—")+' · '+state.results.length+' rutas · capital por operación '+eur(cap.limit)+' (tramo '+cap.tier+') · disponible '+eur(cap.available)+(fx?' · 1 USD = '+fx.toFixed(4)+' €':'')+'</p>'+
  (errs.length?'<p class="tonWarn">Fuente no accesible desde este dispositivo: '+esc(errs.join(" · "))+'. Sin quote primario no se marca nada en verde.</p>':'')+
- '<div class="tonHealth"><span>STON.fi: '+(state.sourceErr.ston?'ERROR':'OK')+'</span><span>DeDust: '+(state.sourceErr.dedust?'ERROR':'OK / opcional')+'</span><span>Activos verificados: '+esc(verifiedAssets.join(", ")||"ninguno")+'</span></div>'+
+ '<div class="tonHealth"><span>Bridge: '+(state.bridgeHealth&&state.bridgeHealth.ok?'OK':'ERROR')+(state.bridgeHealth&&state.bridgeHealth.msg?' · '+esc(state.bridgeHealth.msg):'')+'</span><span>STON.fi: '+(state.sourceErr.ston?'ERROR':'OK')+'</span><span>DeDust: '+(state.sourceErr.dedust?'ERROR':'OK / opcional')+'</span><span>Activos verificados: '+esc(verifiedAssets.join(", ")||"ninguno")+'</span></div>'+
  (!ready.length&&blockedTop.length?'<div class="tonBlockers"><b>Por qué no hay verde ahora</b>'+blockedTop.map(function(r){return '<span>'+esc(r.route.id)+' · '+esc((r.eval.reasons||[]).join("; "))+'</span>'}).join("")+'</div>':'')+
  ready.slice(0,1).map(readyCard).join("")+(ready.length>1?'<p class="tonMeta">+'+(ready.length-1)+' rutas verdes más en la tabla.</p>':'')+
  '<div class="tonStats">'+
@@ -423,6 +436,7 @@ function registerResult(r){
 async function start(){
  if(!document.getElementById("tonArbScanner"))return;
  await loadBridge();
+ await probeBridgeHealth();
  state.lastFull=Date.now();render();scan();setInterval(tick,1000);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-state.scanAt>60000)scan()});
 }
