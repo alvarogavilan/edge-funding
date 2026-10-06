@@ -62,6 +62,8 @@ function evaluateLiveRow(x){
  if(Number(x.depth_usdt||0)<a.minDepthUSD)reasons.push("profundidad < mínimo");
  if(conservative<a.minNetPct)reasons.push("neto conservador < mínimo");
  if(ageSec>a.maxQuoteAgeSec)reasons.push("quote antiguo");
+ if(x.primary_buy_verified!==true)reasons.push("compra no confirmada en fuente primaria");
+ if(x.primary_sell_verified!==true)reasons.push("venta no confirmada en fuente primaria");
  return {ready:reasons.length===0,reasons,scannerNet,conservative,ageSec};
 }
 
@@ -94,6 +96,35 @@ function agentDecision(){
  return decision;
 }
 
+function venueUrl(name,side){
+ const n=String(name||"").toLowerCase();
+ if(n.includes("ston")) return "https://app.ston.fi/swap";
+ if(n.includes("bybit")) return "https://www.bybit.eu/en-EU/trade/spot/USDE/USDT";
+ if(n.includes("dedust")) return "https://dedust.io/swap/TON/EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c";
+ return "";
+}
+function executionPackage(d){
+ if(d.status!=="AUTO_READY")return "";
+ const buyUrl=venueUrl(d.buy,"buy"),sellUrl=venueUrl(d.sell,"sell");
+ return '<section class="arbExecute">'+
+  '<span class="arbKicker">EJECUCIÓN GUIADA · TODO PREPARADO</span>'+
+  '<h3>Solo revisar y confirmar</h3>'+
+  '<div class="arbExecGrid">'+
+   '<div><span>Capital</span><b>'+money(d.capitalEUR)+'</b></div>'+
+   '<div><span>Activo</span><b>'+esc(d.coin)+'</b></div>'+
+   '<div><span>Comprar en</span><b>'+esc(d.buy)+'</b></div>'+
+   '<div><span>Vender en</span><b>'+esc(d.sell)+'</b></div>'+
+   '<div><span>Neto conservador</span><b>≈'+d.netPct.toFixed(2)+'%</b></div>'+
+   '<div><span>Beneficio potencial</span><b>'+money(d.expectedProfitEUR)+'</b></div>'+
+  '</div>'+
+  '<ol class="arbExecSteps"><li>Pulsa <b>1 · Abrir compra</b>. La app ya te indica activo e importe.</li><li>Comprueba que el precio final no empeora respecto al verde.</li><li>Confirma la compra.</li><li>Pulsa <b>2 · Abrir venta</b> y confirma la salida preparada.</li><li>Vuelve a Card Vault y registra el resultado real.</li></ol>'+
+  '<div class="arbExecActions">'+
+   (buyUrl?'<a class="primaryAction" href="'+esc(buyUrl)+'" target="_blank" rel="noopener">1 · Abrir compra</a>':'')+
+   (sellUrl?'<a href="'+esc(sellUrl)+'" target="_blank" rel="noopener">2 · Abrir venta</a>':'')+
+  '</div>'+
+  '<small>No se mostrará esta tarjeta si falta verificación primaria de cualquiera de las dos patas.</small>'+
+ '</section>';
+}
 function renderAgent(){
  const a=agentState(),d=agentDecision(),fs=frequencyStats();
  const status=d.status==="AUTO_READY"?"LISTO PARA APROBAR":d.status==="OFF"?"DESACTIVADO":"VIGILANDO";
@@ -109,6 +140,7 @@ function renderAgent(){
  (d.status==="AUTO_READY"?'<span>'+esc(d.coin)+' · '+esc(d.buy)+' → '+esc(d.sell)+' · ≈'+d.netPct.toFixed(2)+'% · '+money(d.expectedProfitEUR)+' potencial sobre '+money(d.capitalEUR)+'</span>':'')+
  '</div>'+
  '<div class="arbFrequency"><b>Frecuencia observada</b><span>'+fs.positive+'/'+fs.samples+' muestras por encima del umbral · '+(fs.samples?Math.round(fs.availability*100):0)+'% del tiempo observado</span><small>Solo cuenta mientras la app está abierta en este dispositivo.</small></div>'+
+ executionPackage(d)+
  '<div class="arbAgentActions"><button id="arbAgentToggle">'+(a.enabled?"Pausar agente":"Activar agente")+'</button><button id="arbAgentSave">Guardar límites</button></div>'+
  '<small>El agente no firma ni mueve fondos. Prepara únicamente oportunidades que superan filtros de frescura, profundidad y margen. Ejecución automática real requeriría una wallet/API separada con permisos limitados.</small>'+
  '</section>';
