@@ -67,3 +67,7 @@ body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snaps
 .arbCapGrid b{grid-column:1/-1}
 .arbCapGrid span{font-size:12px;color:#cbd7ea}
 @media(max-width:640px){.arbCapGrid{grid-template-columns:1fr}}
+
+.arbFrequency{display:grid;gap:4px;padding:12px;border-radius:12px;background:#142437;margin:10px 0}
+.arbFrequency span{color:#e6eef9}
+.arbFrequency small{color:#aebed6}
