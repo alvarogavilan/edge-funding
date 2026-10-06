@@ -2,6 +2,8 @@
 // Card Vault · tableros finales: Compra YA, Sellado y PSA.
 // Regla: nada aparece como "COMPRAR YA" sin venta cerrada verificada, idioma exacto,
 // oferta ≤24 h y enlace directo al producto. El resto se muestra como VIGILAR con su motivo.
+const state=window.CVStateBridge?.get?.()||JSON.parse(localStorage.getItem("cardvault.v2")||"{\"cards\":[],\"manualOpportunities\":[]}");
+const save=()=>{if(window.CVStateBridge?.save)window.CVStateBridge.save();else localStorage.setItem("cardvault.v2",JSON.stringify(state))};
 const N=v=>Number(v)||0;
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
