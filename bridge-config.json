@@ -1,5 +1,7 @@
 {
   "endpoint": "",
   "mode": "auto",
-  "note": "Se completa al desplegar el backend gratuito."
+  "proxyPath": "/proxy",
+  "healthPath": "/health",
+  "note": "Se completa automáticamente al desplegar un backend gratuito."
 }
