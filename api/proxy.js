@@ -2,7 +2,7 @@ const ALLOWED={
   ston:{host:"api.ston.fi",base:"https://api.ston.fi",paths:[/^\/v1\/assets\//,/^\/v1\/pools\//,/^\/v1\/swap\/simulate$/]},
   dedust:{host:"api.dedust.io",base:"https://api.dedust.io",paths:[/^\/v2\/pools$/]},
   fx:{host:"api.frankfurter.app",base:"https://api.frankfurter.app",paths:[/^\/latest$/]},
-  lorcast:{host:"api.lorcast.com",base:"https://api.lorcast.com",paths:[/^\/v0\/cards\/search$/]},
+  lorcast:{host:"api.lorcast.com",base:"https://api.lorcast.com",paths:[/^\/v0\/cards\/search$/,/^\/v0\/sets$/,/^\/v0\/sets\/[^/]+\/cards$/]},
   tcgdex:{host:"api.tcgdex.net",base:"https://api.tcgdex.net",paths:[/^\/v2\//]}
 };
 const cors={
