@@ -50,23 +50,36 @@ function renderSwarm(){
 }
 function liveMinutesBlock(){
  const fs=frequencyStats();
- if(!liveFeed?.rows?.length)return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>Sin señal ejecutable cargada</h3><p>El resto del informe sigue disponible, pero ninguna compra se autoriza sin datos vivos.</p></section>';
- const rows=liveFeed.rows.filter(x=>x.executable===true&&x.route_available===true&&x.depth_status==="ok"&&Number(x.net_spread_pct)>0).sort((a,b)=>b.net_spread_pct-a.net_spread_pct);
- if(!rows.length)return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>0 cruces positivos verificados</h3><p>No comprar.</p></section>';
+ if(!liveFeed?.rows?.length){
+   return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>Sin señal ejecutable cargada</h3><p>El resto del informe sigue disponible, pero ninguna compra se autoriza sin datos vivos.</p></section>';
+ }
+ const rows=liveFeed.rows
+   .filter(x=>x.executable===true&&x.route_available===true&&x.depth_status==="ok"&&Number(x.net_spread_pct)>0)
+   .sort((a,b)=>b.net_spread_pct-a.net_spread_pct);
+ if(!rows.length){
+   return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>0 cruces positivos verificados</h3><p>No comprar.</p></section>';
+ }
  const cards=rows.slice(0,5).map(x=>{
-   const gross=Number(x.spread||0),baseNet=Number(x.net_spread_pct||0);
-   const conservative=Math.max(0,baseNet-0.55-0.20);
+   const gross=Number(x.spread||0);
+   const baseNet=Number(x.net_spread_pct||0);
+   const conservative=Math.max(0,baseNet-0.75);
    const green=conservative>=1&&Number(x.depth_usdt||0)>=10000;
    return '<article class="arbLiveCard '+(green?"liveGreen":"liveWatch")+'">'+
-    '<span class="arbBadge">'+(green?"CRUCE VIVO · REVALIDAR ANTES DE PAGAR":"VIGILAR")+'</span>'+
-    '<h4>'+esc(x.coin)+' · '+esc(x.buy_exchange)+' → '+esc(x.sell_exchange)+'</h4>'+
-    '<div class="arbLiveNumbers"><b>'+gross.toFixed(2)+'%</b><span>spread bruto</span><b>'+baseNet.toFixed(2)+'%</b><span>neto scanner</span><b>≈'+conservative.toFixed(2)+'%</b><span>neto conservador*</span></div>'+
-    '<p>Compra: $'+Number(x.buy_price).toFixed(6)+' · Venta: $'+Number(x.sell_price).toFixed(6)+' · Red: '+esc(x.route||"")+'.</p>'+
-    '<p>Profundidad: ≈$'+Number(x.depth_usdt||0).toLocaleString("es-ES",{maximumFractionDigits:0})+' · Ruta: '+(x.route_available?"abierta":"cerrada")+'.</p>'+
-    '<small>*Resta adicional conservadora de 0,55 pp por trading/DEX + 0,20 pp de colchón, además del coste de red ya reflejado por el feed. La comisión exacta de la cuenta y el quote final mandan.</small>'+
-    '</article>';
+     '<span class="arbBadge">'+(green?"VERDE OPERATIVO PREFONDEADO · REVALIDAR":"VIGILAR")+'</span>'+
+     '<h4>'+esc(x.coin)+' · '+esc(x.buy_exchange)+' → '+esc(x.sell_exchange)+'</h4>'+
+     '<div class="arbLiveNumbers"><b>'+gross.toFixed(2)+'%</b><span>spread bruto</span><b>'+baseNet.toFixed(2)+'%</b><span>neto scanner</span><b>≈'+conservative.toFixed(2)+'%</b><span>neto conservador*</span></div>'+
+     '<p>Compra: $'+Number(x.buy_price).toFixed(6)+' · Venta: $'+Number(x.sell_price).toFixed(6)+' · Red: '+esc(x.route||"")+'.</p>'+
+     '<p>Profundidad: ≈$'+Number(x.depth_usdt||0).toLocaleString("es-ES",{maximumFractionDigits:0})+' · Ruta: '+(x.route_available?"abierta":"cerrada")+'.</p>'+
+     '<small>*Estimación conservadora: resta adicional de 0,75 puntos al neto del scanner. No es garantía; la cotización final y las comisiones reales mandan.</small>'+
+   '</article>';
  }).join("");
- return '<section class="arbLive"><div class="arbLiveHead"><div><span class="arbKicker">RADAR EN VIVO · APIs OFICIALES AGREGADAS</span><h3>Oportunidades ejecutables detectadas</h3></div><small>Actualizado: '+esc(liveFeed.updated_at||"")+' · posición base del feed: 
+ return '<section class="arbLive">'+
+   '<div class="arbLiveHead"><div><span class="arbKicker">RADAR EN VIVO · APIs OFICIALES AGREGADAS</span><h3>Oportunidades ejecutables detectadas</h3></div>'+
+   '<small>Actualizado: '+esc(liveFeed.updated_at||"")+' · posición base del feed: $'+esc(liveFeed.position_usd||"")+'.</small></div>'+
+   '<div class="arbFrequency"><b>Frecuencia observada en este dispositivo</b><span>'+fs.positive+'/'+fs.samples+' muestras ≥1% neto · '+(fs.samples?Math.round(fs.availability*100):0)+'% del tiempo observado</span><small>Se mide cada minuto mientras la app está abierta. No se extrapola a 24 h sin suficientes muestras.</small></div>'+
+   cards+
+   '<small>Fuente: Yieldo (yieldo.me) — datos de mercado agregados desde APIs públicas. La app aplica un colchón adicional.</small>'+
+ '</section>';
 }
 function renderMode(mode){
  if(!report)return;
