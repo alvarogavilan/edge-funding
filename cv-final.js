@@ -85,7 +85,8 @@ async function resolveLorcanaImages(rows){
  for(const x of rows.filter(r=>r.universe==="lorcana"&&!officialImage(r)).slice(0,12)){
   try{
    const nm=String(x.name||"").replace(/\s*\(V\.\d\)\s*$/,"");
-   const r=await fetch("https://api.lorcast.com/v0/cards/search?q="+encodeURIComponent('name:"'+nm.split(" - ")[0]+'"'));
+   const lorcastUrl="https://api.lorcast.com/v0/cards/search?q="+encodeURIComponent('name:"'+nm.split(" - ")[0]+'"');
+   const r=window.CVBridgeFetch?await window.CVBridgeFetch(lorcastUrl):await fetch(lorcastUrl);
    if(!r.ok)continue;const j=await r.json();
    const num=String(x.number||"").split("/")[0].replace(/^0+/,"");
    const hit=(j.results||[]).find(c=>String(c.collector_number).replace(/^0+/,"")===num&&String(c.set?.name||"").toLowerCase()===String(x.set||"").toLowerCase());
