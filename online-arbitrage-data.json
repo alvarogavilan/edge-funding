@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T03:02:00+02:00",
+  "checkedAt": "2026-10-06T03:28:00+02:00",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras manuales autorizadas todavía. La señal USDe→Bybit queda fuera del modo estricto por depender de acreditación CEX. Nuevo estándar: Tonkeeper + ejecución únicamente on-chain en la misma wallet, usando STON.fi/Omniston y DeDust; sin registros adicionales ni depósitos/retiros.",
+  "summary": "Capital real declarado: 106 €. El motor no lo expone completo desde el inicio: escala 20→50→106 € únicamente tras resultados reales positivos y ejecución estable.",
   "lanes": [
     {
       "id": "market-bid",
@@ -1015,5 +1015,29 @@
       "measuredSameWalletCyclesPerDay": 0,
       "note": "No se ha observado todavía ningún ciclo same-wallet ≥1% neto verificable; no inventar frecuencia."
     }
+  },
+  "userCapitalPlan": {
+    "totalCapitalEUR": 106,
+    "hardCapEUR": 106,
+    "principle": "No exponer todo el capital hasta validar el circuito con resultados reales.",
+    "ladder": [
+      {
+        "stage": 1,
+        "capitalEUR": 20,
+        "unlock": "1 operación real positiva sin incidencias"
+      },
+      {
+        "stage": 2,
+        "capitalEUR": 50,
+        "unlock": "2 operaciones reales positivas y costes medidos"
+      },
+      {
+        "stage": 3,
+        "capitalEUR": 106,
+        "unlock": "circuito repetible, slippage y tiempos verificados"
+      }
+    ],
+    "preservePrincipalRule": "Si una operación deja de cumplir el margen mínimo antes de confirmar, se cancela.",
+    "dailyTargetPolicy": "Usar como máximo el capital realmente disponible; no apalancamiento ni fondos prestados."
   }
 }
