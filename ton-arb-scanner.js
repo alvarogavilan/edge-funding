@@ -77,7 +77,7 @@ function evaluateCycle(input,rules){
  if(!(px>0))reasons.push("sin precio del activo inicial");
  if(legs.some(l=>!l.binding))reasons.push("alguna pata no tiene quote vinculante (solo reservas)");
  if(legs.some(l=>Number(l.impactPct)>r.maxImpactPct))reasons.push("price impact > "+r.maxImpactPct+"%");
- if(!(depth>=r.minPoolTvlUSD))reasons.push("profundidad < $"+r.minPoolTvlUSD.toLocaleString("es-ES"));
+ if(!(depth>=r.minPoolTvlUSD))reasons.push("valor LP/profundidad < $"+r.minPoolTvlUSD.toLocaleString("es-ES"));
  if(!(age>=0&&age<=r.maxQuoteAgeSec))reasons.push("quote con más de "+r.maxQuoteAgeSec+" s");
  if(!(netPct>=r.minNetPct))reasons.push("neto mínimo "+(netPct==null?"—":netPct.toFixed(3)+"%")+" < "+r.minNetPct+"%");
  const ready=reasons.length===0;
@@ -217,7 +217,7 @@ async function stonLeg(fromSym,toSym,units){
  let j;
  try{j=await getJson(STON_API+"/swap/simulate?"+q,{method:"POST"})}
  catch(e){if(/HTTP 4/.test(e.message))state.noPool[key]=Date.now();throw new Error("STON.fi simulate "+key+": "+e.message)}
- const ask=Number(j.ask_units),min=Number(j.min_ask_units);
+ const ask=Number(j.ask_units),baseMin=Number(j.min_ask_units),recMin=Number(j.recommended_min_ask_units),min=(recMin>0?Math.min(baseMin||recMin,recMin):baseMin);
  if(!(ask>0&&min>0))throw new Error("STON.fi sin salida real "+key);
  const tvl=j.pool_address?await poolTvl(j.pool_address):0;
  return {venue:"STON.fi",from:fromSym,to:toSym,offerUnits:Math.floor(units),askUnits:ask,minAskUnits:min,impactPct:Number(j.price_impact||0)*100,
@@ -323,7 +323,7 @@ if(typeof document==="undefined")return;
 /* ---------- interfaz ---------- */
 function legLine(l,dec){
  const fmt=(u,s)=>(Number(u)/10**(state.assets[s]?.dec??TOKENS[s].dec)).toLocaleString("es-ES",{maximumFractionDigits:6})+" "+s;
- return '<li><b>'+esc(l.venue)+'</b> · '+fmt(l.offerUnits,l.from)+' → '+fmt(l.askUnits,l.to)+' (mín. '+fmt(l.minAskUnits,l.to)+') · impacto '+l.impactPct.toFixed(3)+'% · gas ≈'+(l.gasNano/1e9).toFixed(3)+' TON · pool $'+Math.round(l.tvlUSD).toLocaleString("es-ES")+(l.binding?'':' · <i>indicativo (reservas)</i>')+'</li>';
+ return '<li><b>'+esc(l.venue)+'</b> · '+fmt(l.offerUnits,l.from)+' → '+fmt(l.askUnits,l.to)+' (mín. '+fmt(l.minAskUnits,l.to)+') · impacto '+l.impactPct.toFixed(3)+'% · gas ≈'+(l.gasNano/1e9).toFixed(3)+' TON · valor LP $'+Math.round(l.tvlUSD).toLocaleString("es-ES")+(l.binding?'':' · <i>indicativo (reservas)</i>')+'</li>';
 }
 function readyCard(r){
  const e=r.eval,fx=r.fx,st=r.startSym,dec=r.startDec;
@@ -363,7 +363,7 @@ function render(){
  const fs=frequencyStats(readJson(LOG_KEY,[]),now,cap.limit);
  const ready=state.results.filter(r=>r.eval.ready&&now-r.quoteAt<=RULES.maxQuoteAgeSec*1000);
  const errs=Object.entries(state.sourceErr).map(([k,v])=>k+": "+v);
- const status=!state.scanAt?"Cotizando en STON.fi…":ready.length?"🟢 VERDE REAL ENCONTRADO":"🔴 NO EXISTE VERDE EJECUTABLE AHORA";
+ const status=!state.scanAt?"Cotizando en STON.fi…":ready.length?"🟢 VERDE REVALIDADO AHORA":"🔴 NO EXISTE VERDE EJECUTABLE AHORA";
  const verifiedAssets=Object.entries(state.assets).filter(function(e){return !!e[1]}).map(function(e){return e[0]});
  const blockedTop=state.results.filter(function(r){return !r.eval.ready}).slice(0,3);
  host.innerHTML='<section class="tonScanner">'+
