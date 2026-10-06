@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T02:31:00+02:00",
+  "checkedAt": "2026-10-06T00:44:00.000Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -876,6 +876,111 @@
       "STON.fi indica swaps en segundos y conexión directa con Tonkeeper.",
       "Omniston agrega liquidez de STON.fi, DeDust, TonCo y resolvers con quotes en tiempo real.",
       "DeDust V2 soporta multi-hop y minimalAmountOut/deadline; si el mínimo no se alcanza la operación se aborta y se reembolsa."
+    ]
+  },
+  "capacityEngine": {
+    "title": "MOTOR DE CAPACIDAD · ARBITRAJE MINUTOS",
+    "principle": "Beneficio esperado = capital ejecutado × margen neto real × número de cruces realmente ejecutados. No se asume que exista una oportunidad cada minuto.",
+    "scenarios": [
+      {
+        "capitalEUR": 100,
+        "netPct": 0.5,
+        "profitPerTradeEUR": 0.5,
+        "profit3TradesEUR": 1.5,
+        "profit6TradesEUR": 3,
+        "profit12TradesEUR": 6
+      },
+      {
+        "capitalEUR": 100,
+        "netPct": 1,
+        "profitPerTradeEUR": 1,
+        "profit3TradesEUR": 3,
+        "profit6TradesEUR": 6,
+        "profit12TradesEUR": 12
+      },
+      {
+        "capitalEUR": 100,
+        "netPct": 2,
+        "profitPerTradeEUR": 2,
+        "profit3TradesEUR": 6,
+        "profit6TradesEUR": 12,
+        "profit12TradesEUR": 24
+      },
+      {
+        "capitalEUR": 250,
+        "netPct": 1,
+        "profitPerTradeEUR": 2.5,
+        "profit3TradesEUR": 7.5,
+        "profit6TradesEUR": 15,
+        "profit12TradesEUR": 30
+      },
+      {
+        "capitalEUR": 500,
+        "netPct": 1,
+        "profitPerTradeEUR": 5,
+        "profit3TradesEUR": 15,
+        "profit6TradesEUR": 30,
+        "profit12TradesEUR": 60
+      },
+      {
+        "capitalEUR": 500,
+        "netPct": 2,
+        "profitPerTradeEUR": 10,
+        "profit3TradesEUR": 30,
+        "profit6TradesEUR": 60,
+        "profit12TradesEUR": 120
+      },
+      {
+        "capitalEUR": 1000,
+        "netPct": 1,
+        "profitPerTradeEUR": 10,
+        "profit3TradesEUR": 30,
+        "profit6TradesEUR": 60,
+        "profit12TradesEUR": 120
+      },
+      {
+        "capitalEUR": 1000,
+        "netPct": 2,
+        "profitPerTradeEUR": 20,
+        "profit3TradesEUR": 60,
+        "profit6TradesEUR": 120,
+        "profit12TradesEUR": 240
+      }
+    ],
+    "hourlyCeilingRule": "No mostrar €/hora salvo que el feed observe y ejecute cruces suficientes durante esa hora. La app debe medir frecuencia real antes de extrapolar.",
+    "dailyCeilingRule": "No anualizar ni prometer crecimiento compuesto; registrar únicamente beneficio realizado y capital realmente rotado.",
+    "currentReality": "Todavía no existe un ciclo TON same-wallet verificado y vivo que permita asignar una ganancia real por hora/día."
+  },
+  "maxEngine": {
+    "title": "MOTOR PRIME · BÚSQUEDA MÁXIMA",
+    "priority": "ABSOLUTA",
+    "layers": [
+      "Omniston RFQ en tiempo real",
+      "STON.fi AMM pools",
+      "DeDust V2 multi-hop",
+      "triangular cycles A→B→C→A",
+      "cross-DEX same-wallet STON.fi↔DeDust",
+      "stablecoin depeg/repeg",
+      "minimalAmountOut + deadline",
+      "gas real por ruta",
+      "price impact y profundidad",
+      "toxic-token/honeypot veto",
+      "quote freshness <10 s",
+      "simulación previa",
+      "profit floor configurable",
+      "registro de resultados realizados"
+    ],
+    "greenGate": "Solo verde si el amountOut mínimo final supera amountIn + gas + fees + buffer + profitFloor y el ciclo no requiere CEX, puente custodial, envío físico ni espera de comprador.",
+    "defaultProfitFloorPct": 0.5,
+    "preferredProfitFloorPct": 1,
+    "hardVeto": [
+      "CEX deposit",
+      "CEX withdrawal",
+      "physical delivery",
+      "unverified token",
+      "unknown fee",
+      "stale quote",
+      "negative or zero minimum profit"
     ]
   }
 }
