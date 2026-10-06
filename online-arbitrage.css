@@ -81,3 +81,15 @@ body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snaps
 .arbAgentDecision{display:grid;gap:4px;padding:12px;border-radius:12px;background:#13291f;margin:10px 0}
 .arbAgentActions button{min-height:42px}
 @media(max-width:640px){.arbAgentGrid{grid-template-columns:1fr 1fr}.arbAgentHead{align-items:flex-start}.arbAgentActions{flex-direction:column}.arbAgentActions button{width:100%}}
+
+.arbExecute{padding:16px;border:1px solid #4f8b6d;border-radius:14px;background:#10251b;margin:12px 0}
+.arbExecute h3{margin:4px 0 12px}
+.arbExecGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.arbExecGrid>div{display:grid;gap:3px;padding:10px;border-radius:10px;background:#173126}
+.arbExecGrid span{font-size:11px;color:#aebed6}
+.arbExecGrid b{font-size:16px}
+.arbExecSteps{padding-left:22px;color:#dce7f5}
+.arbExecActions{display:flex;gap:10px;flex-wrap:wrap}
+.arbExecActions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:10px;background:#263b5b;color:#fff;text-decoration:none;font-weight:800}
+.arbExecActions a.primaryAction{background:#245d43}
+@media(max-width:640px){.arbExecGrid{grid-template-columns:1fr 1fr}.arbExecActions{flex-direction:column}.arbExecActions a{width:100%;box-sizing:border-box}}
