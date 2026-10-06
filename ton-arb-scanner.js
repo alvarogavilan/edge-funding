@@ -331,7 +331,7 @@ function readyCard(r){
  const feeTxt=r.legs.map(l=>l.venue+" "+(l.feePct*100).toFixed(2)+"%").join(" + ");
  const l1=r.legs[0],rest=r.legs.slice(1);
  return '<article class="tonReady" data-route="'+esc(r.route.id)+'" data-quote="'+r.quoteAt+'">'+
- '<span class="arbKicker">🟢 AUTO READY — EJECUTAR</span><h3>'+esc(r.route.path.join(" → "))+'</h3>'+
+ '<span class="arbKicker">🟢 LISTO TRAS REVALIDACIÓN — EJECUTAR</span><h3>'+esc(r.route.path.join(" → "))+'</h3>'+
  '<dl class="tonGrid">'+
  '<div><dt>Activo</dt><dd>'+esc(r.route.path.slice(1,-1).join(" + "))+'</dd></div>'+
  '<div><dt>Capital</dt><dd>'+eur(r.capEUR)+' = '+u(r.startUnits)+'</dd></div>'+
