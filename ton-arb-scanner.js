@@ -5,6 +5,7 @@
 
 const STON_API="https://api.ston.fi/v1";
 let BRIDGE_API="";
+let BRIDGE_PROXY_PATH="/api/proxy";
 const DEDUST_API="https://api.dedust.io/v2";
 const FX_API="https://api.frankfurter.app/latest?from=USD&to=EUR";
 const TON_ADDRS=["EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c","EQCM3B12QK1e4yZSf8GtBRT0aLMNyEsBc_DhVfRRtOEffLez"];
@@ -141,7 +142,7 @@ function bridgeUrl(url){
   else return "";
   const q=new URLSearchParams(u.search);
   q.set("source",source);q.set("path",path);
-  return BRIDGE_API.replace(/\/$/,"")+"/api/proxy?"+q.toString();
+  return BRIDGE_API.replace(/\/$/,"")+BRIDGE_PROXY_PATH+"?"+q.toString();
  }catch{return ""}
 }
 async function rawFetchJson(url,opts){
@@ -162,7 +163,7 @@ async function loadBridge(){
  if(typeof document==="undefined")return;
  try{
   const r=await fetch("bridge-config.json?ts="+Date.now(),{cache:"no-store"});
-  if(r.ok){const j=await r.json();if(j&&j.endpoint)BRIDGE_API=String(j.endpoint)}
+  if(r.ok){const j=await r.json();if(j&&j.endpoint)BRIDGE_API=String(j.endpoint);if(j&&j.proxyPath)BRIDGE_PROXY_PATH=String(j.proxyPath)}
  }catch{}
 }
 async function loadFx(){
