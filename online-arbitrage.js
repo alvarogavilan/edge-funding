@@ -33,6 +33,11 @@ function splitCases(mode){
  if(mode==="minutes") return rows.filter(c=>/phygitals|courtyard|mtgo|gift|cs2|skin|digital|crypto|usde/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
  return rows.filter(c=>!/phygitals|courtyard|mtgo|gift|cs2|skin|digital|crypto|usde/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
 }
+function renderCapacity(){
+ const c=report?.capacityEngine;if(!c)return"";
+ const rows=(c.scenarios||[]).filter(x=>[100,500,1000].includes(x.capitalEUR)&&[1,2].includes(x.netPct));
+ return '<section class="arbCapacity"><span class="arbKicker">POTENCIAL CONDICIONADO</span><h3>'+esc(c.title)+'</h3><p>'+esc(c.principle)+'</p><div class="arbCapGrid">'+rows.map(x=>'<div><b>'+money(x.capitalEUR)+' · '+x.netPct+'%</b><span>1 cruce: '+money(x.profitPerTradeEUR)+'</span><span>3: '+money(x.profit3TradesEUR)+'</span><span>6: '+money(x.profit6TradesEUR)+'</span><span>12: '+money(x.profit12TradesEUR)+'</span></div>').join("")+'</div><small>'+esc(c.currentReality)+'</small></section>';
+}
 function renderSwarm(){
  const s=report?.virtualResearchSwarm;if(!s)return"";
  return '<section class="arbSwarm"><div><span class="arbKicker">'+esc(s.label)+'</span><h3>'+Number(s.syntheticProfiles||0).toLocaleString("es-ES")+' perfiles sintéticos</h3><p>'+esc(s.description)+'</p></div><div class="arbRoleGrid">'+(s.expertRoles||[]).map(x=>'<span>'+esc(x)+'</span>').join("")+'</div><small>'+esc(s.rule)+'</small></section>';
@@ -72,7 +77,7 @@ function renderMode(mode){
  const headline=physical?"Compra física / Sevilla → venta online":"Sin stock físico · compra y salida en minutos";
  host.innerHTML=(physical?"":liveMinutesBlock())+
  '<section class="arbCommand '+(physical?'physical':'minutes')+'"><div><span class="arbKicker">'+(physical?'ESCALADO':'PRIORIDAD ABSOLUTA')+'</span><h3>'+esc(headline)+'</h3><p>'+esc(cfg?.objective||"")+'</p></div><div class="arbKpis"><div><b>'+ready+'</b><span>verdes reales</span></div><div><b>'+candidates+'</b><span>rutas prioritarias</span></div><div><b>'+routes.length+'</b><span>rutas visibles</span></div></div></section>'+
- renderSwarm()+
+ renderCapacity()+renderSwarm()+
  '<div class="arbSummary"><strong>'+ready+' operaciones autorizadas ahora</strong><p>'+esc(report.summary)+'</p><small>Revisión: '+esc(date)+' · España · eBay excluido</small><p><b>Regla:</b> '+esc(cfg?.hardGate||"")+'</p></div>'+
  (cases.length?'<h3>Casos concretos</h3>'+cases.map(c=>'<article class="arbCase"><span class="arbBadge">'+(c.recommendBuy?"COMPRAR":"BLOQUEADO")+'</span><h4>'+esc(c.name)+'</h4><dl><div><dt>Compra</dt><dd>'+money(c.buyPriceEUR)+'</dd></div><div><dt>Salida / techo</dt><dd>'+money(c.exitCeilingEUR)+'</dd></div><div><dt>Diferencia bruta</dt><dd>'+money(c.ceilingDifferenceEUR)+'</dd></div></dl><p>'+esc(c.finding)+'</p><div class="arbLinks">'+links([{label:"Compra",url:c.buyUrl},{label:"Salida",url:c.exitUrl}])+'</div></article>').join(""):"")+
  '<h3>Rutas · '+routes.length+'</h3><div class="arbRoutes">'+routes.map(r=>'<article class="arbRoute arb-'+esc(r.status)+'"><div class="arbRouteTop"><span class="arbBadge">'+statusLabel(r.status)+'</span><span class="arbOrigin">'+esc(r.origin||"Online")+'</span></div><h4>'+esc(r.name)+'</h4><div class="arbExitType">'+esc(r.exitType||"")+'</div><p>'+esc(r.finding)+'</p><p><b>Qué falta:</b> '+esc(r.missing)+'</p><p><b>Logística:</b> '+esc(r.logistics)+'</p><div class="arbLinks">'+links(r.sources)+'</div></article>').join("")+'</div>'+
