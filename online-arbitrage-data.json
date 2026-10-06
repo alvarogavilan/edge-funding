@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T01:40:00Z",
+  "checkedAt": "2026-10-06T01:53:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -686,5 +686,62 @@
         "url": "https://support.fanaticscollect.com/en_us/buy-now-fees-ry33QCXaxe"
       }
     ]
+  },
+  "virtualResearchSwarm": {
+    "label": "MESA IA · COBERTURA MASIVA",
+    "syntheticProfiles": 1000000,
+    "realPeople": 0,
+    "description": "Un millón de perfiles sintéticos de decisión, no personas contratadas: combinan mercado, liquidez, costes, velocidad, contraparte, fiscalidad, fraude, geografía y salida.",
+    "priorityWeights": {
+      "arbitraje-minutos": 70,
+      "arbitraje-fisico": 30
+    },
+    "expertRoles": [
+      "microestructura y libro de órdenes",
+      "buylists y recompras",
+      "fraude y contraparte",
+      "cash-out y pagos",
+      "comisiones e impuestos",
+      "liquidez y velocidad",
+      "custodia y settlement",
+      "España y elegibilidad",
+      "Sevilla y sourcing físico",
+      "QA antifalso-positivo"
+    ],
+    "rule": "Ningún perfil puede convertir una hipótesis en verde: la evidencia ejecutable manda."
+  },
+  "tabs": {
+    "minutes": {
+      "title": "Arbitraje minutos",
+      "priority": 1,
+      "allocationPercent": 70,
+      "objective": "Crear capital rápido con activos digitales o ya custodiados, sin recibir ni enviar producto.",
+      "allowedRouteIds": [
+        "mtgo-bot-arbitrage",
+        "phygitals-claw-buyback",
+        "courtyard-vaulted",
+        "giftcard-cross",
+        "dmarket-cs2",
+        "csfloat",
+        "fanatics-vault"
+      ],
+      "hardGate": "Comprador u orden existente antes de comprar; salida a dinero; España admitida; beneficio neto positivo."
+    },
+    "physical": {
+      "title": "Arbitraje físico",
+      "priority": 2,
+      "allocationPercent": 30,
+      "objective": "Escalar capital con productos físicos comprados online o en Sevilla y vendidos siempre online.",
+      "excludedRouteIds": [
+        "mtgo-bot-arbitrage",
+        "phygitals-claw-buyback",
+        "courtyard-vaulted",
+        "giftcard-cross",
+        "dmarket-cs2",
+        "csfloat",
+        "fanatics-vault"
+      ],
+      "hardGate": "Margen neto, rotación, autenticidad, logística y salida documentadas; eBay excluido."
+    }
   }
 }
