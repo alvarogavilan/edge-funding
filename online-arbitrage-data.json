@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T00:18:00Z",
+  "checkedAt": "2026-10-06T02:06:00+02:00",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas en este instante. Nuevo carril prioritario: NFT on-chain floor ask → top bid agregado mediante Reservoir. Ya se detectó una ventana aparente de +26% que se cerró antes de ejecución; confirma que estas anomalías existen y duran poco. Solo se marcará verde tras revalidación primaria simultánea y costes completos.",
+  "summary": "0 compras autorizadas. El supuesto gran cruce Yield Fields (~21 USD mint → ~275 USD offer) ha sido invalidado en comprobación directa: OpenSea ha retirado la colección por sospecha de violación de sus términos. El motor exige ahora comprobación directa del mercado antes de cualquier verde.",
   "lanes": [
     {
       "id": "market-bid",
@@ -671,7 +671,9 @@
     "title": "MODO MÁXIMA CERTEZA · DOS PATAS ANTES DE COMPRAR",
     "greenCondition": "Solo COMPRAR si entrada y salida están verificadas simultáneamente para el mismo activo, el margen neto es positivo después de todos los costes, y la salida no depende de encontrar comprador después.",
     "absoluteGuarantee": false,
-    "note": "La app no puede afirmar beneficio 100% absoluto: contraparte, ejecución, cuenta, red, fraude, impuestos o cambios entre operaciones pueden impedirlo. El objetivo es minimizar al máximo ese riesgo, no ocultarlo."
+    "note": "La app no puede afirmar beneficio 100% absoluto: contraparte, ejecución, cuenta, red, fraude, impuestos o cambios entre operaciones pueden impedirlo. El objetivo es minimizar al máximo ese riesgo, no ocultarlo.",
+    "directMarketOpenRequired": true,
+    "directMarketRule": "Toda oportunidad debe abrirse y seguir disponible en el mercado primario inmediatamente antes de autorizarla; resultados indexados, agregadores y cachés nunca bastan."
   },
   "phygitalsPackVerdict": {
     "status": "REJECTED_AS_GUARANTEED_PROFIT",
@@ -805,5 +807,18 @@
     },
     "verdict": "FALSE_POSITIVE_CLOSED",
     "lesson": "Nunca convertir un agregador en COMPRA YA sin refrescar el marketplace primario en el mismo instante."
-  }
+  },
+  "liveChecks": [
+    {
+      "checkedAt": "2026-10-06T02:06:00+02:00",
+      "id": "yield-fields-founding-deeds",
+      "market": "OpenSea",
+      "apparentEntryUSD": 21.22,
+      "apparentExitUSD": 275.55,
+      "apparentGrossSpreadUSD": 254.33,
+      "decision": "BLOCKED_CRITICAL",
+      "reason": "OpenSea muestra actualmente la colección como retirada por sospecha de incumplimiento de sus términos. Los precios indexados previos no son una salida ejecutable.",
+      "url": "https://opensea.io/collection/yield-fields-founding-deeds/overview"
+    }
+  ]
 }
