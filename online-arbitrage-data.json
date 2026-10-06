@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T01:12:00Z",
+  "checkedAt": "2026-10-06T01:27:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas. Nuevo candidato fuerte: Phygitals standing claw buyback → USDC, pero todavía no está demostrado que una carta comprada en su marketplace herede esa recompra. MTGO sigue siendo la mecánica de arbitraje más pura; Courtyard queda condicionado a una oferta real de tercero sobre el activo exacto.",
+  "summary": "0 compras autorizadas todavía. Se elimina definitivamente la falsa vía de packs con '100% buyback': no garantiza recuperar el precio pagado. La búsqueda queda concentrada en arbitraje con dos patas preexistentes: MTGO bot→buylist, activos vaulted con oferta ya colocada y arbitraje atómico on-chain, este último bloqueado por gas/MEV/coste.",
   "lanes": [
     {
       "id": "market-bid",
@@ -599,5 +599,37 @@
       "name": "CollectorCredits",
       "reason": "Standing offers reales, pero liquidación por correo físico y en créditos; no cumple salida inmediata a dinero."
     }
-  ]
+  ],
+  "maximumCertaintyPolicy": {
+    "title": "MODO MÁXIMA CERTEZA · DOS PATAS ANTES DE COMPRAR",
+    "greenCondition": "Solo COMPRAR si entrada y salida están verificadas simultáneamente para el mismo activo, el margen neto es positivo después de todos los costes, y la salida no depende de encontrar comprador después.",
+    "absoluteGuarantee": false,
+    "note": "La app no puede afirmar beneficio 100% absoluto: contraparte, ejecución, cuenta, red, fraude, impuestos o cambios entre operaciones pueden impedirlo. El objetivo es minimizar al máximo ese riesgo, no ocultarlo."
+  },
+  "phygitalsPackVerdict": {
+    "status": "REJECTED_AS_GUARANTEED_PROFIT",
+    "reason": "El buyback del 100% es sobre el valor del activo extraído, no sobre el precio del pack.",
+    "evidence": [
+      "Sports Pro Pack: precio 100 USD, EV mostrado 92%, rango de resultados 38-100 USD en el 75% de los casos.",
+      "Dollar Sport Pack: precio 1 USD, EV mostrado 97%, con 80% de resultados en 0,01-1 USD.",
+      "La API documenta además ejemplos de packs con buyback_percent 0.85 y compra de 25 USD que devuelve buyback_price 21.25 USD."
+    ],
+    "conclusion": "No comprar packs buscando arbitraje seguro. El buyback sirve como suelo de liquidez, no como beneficio garantizado."
+  },
+  "atomicLane": {
+    "id": "dex-atomic-flashloan",
+    "name": "DEX atómico · flash loan → arbitraje en una sola transacción",
+    "status": "research",
+    "fit": "MECÁNICA MÁS CERCANA A TODO-O-NADA",
+    "execution": "El préstamo, swaps y devolución ocurren en una única transacción. Si no puede devolverse principal + comisión, la transacción revierte.",
+    "advantage": "No requiere capital principal ni mantener inventario.",
+    "blocker": "Gas, MEV, smart-contract risk y competencia extrema. No cumple cero-coste ni permite prometer beneficio absoluto.",
+    "source": "https://www.aave.com/docs/aave-v3/guides/flash-loans"
+  },
+  "mtgoDeepCheck": {
+    "status": "BEST_NON_BLOCKCHAIN_CANDIDATE",
+    "finding": "Cardhoarder confirma que sus buylist prices son exactamente lo que pagan sus Buy Bots y que los bots operan 24/7. GoatBots publica precios públicos y stock.",
+    "limitation": "El cash-out final de Event Tickets suele pagar menos de 1 USD por ticket y puede requerir verificación; cuentas extranjeras nuevas pueden sufrir esperas antifraude.",
+    "decision": "Seguir buscando cruces bot A sell < bot B buy, pero no etiquetar beneficio en EUR hasta incorporar la conversión real de Tickets."
+  }
 }
