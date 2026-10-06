@@ -60,8 +60,7 @@ function evaluateCycle(input,rules){
  if(!legs.length||!(startUnits>0))return {ready:false,executability:"BLOQUEADO",reasons:reasons.length?reasons:["sin quote"],grossPct:null,netPct:null,netExpPct:null};
  const last=legs[legs.length-1];
  const endExp=Number(last.askUnits);
- let ratioMin=1;for(const l of legs){const a=Number(l.askUnits),m=Number(l.minAskUnits);ratioMin*=a>0&&m>0?Math.min(1,m/a):0}
- const endMin=endExp*ratioMin;
+ const endMin=Number(last.minAskUnits);
  const gasTon=legs.reduce((s,l)=>s+Number(l.gasNano||0),0)/1e9;
  const gasUSD=gasTon*(ton>0?ton:0);
  const startUSD=startUnits/10**dec*px;
@@ -149,11 +148,12 @@ async function verifyToken(sym){
    const j=await getJson(STON_API+"/assets/"+addr);const a=j?.asset||j;
    if(!a)continue;
    const symbol=String(a.symbol||a.display_name||"");
-   const bad=a.blacklisted===true||a.deprecated===true;
+   const tags=Array.isArray(a.tags)?a.tags.map(String):[];
+   const bad=a.blacklisted===true||a.deprecated===true||tags.some(t=>["asset:blacklisted","asset:deprecated","asset:honeypot","asset:suspicious","asset:fake","asset:dmca_complaint","asset:non_searchable"].includes(t));
    const symOk=t.symbols.some(s=>s.toLowerCase()===symbol.toLowerCase());
    if(bad||!symOk){state.assetErr[sym]=bad?"token en lista negra/obsoleto en STON.fi":"símbolo oficial no coincide ("+symbol+")";state.assets[sym]=null;return null}
    const v={addr,dec:Number.isInteger(Number(a.decimals))?Number(a.decimals):t.dec,priceUSD:Number(a.dex_price_usd||a.third_party_usd_price||0),symbol,at:Date.now()};
-   state.assets[sym]=v;delete state.assetErr[sym];return v;
+   state.assets[sym]=v;delete state.assetErr[sym];delete state.sourceErr.ston;return v;
   }catch(e){state.sourceErr.ston=String(e.message||e)}
  }
  state.assetErr[sym]=state.assetErr[sym]||"STON.fi no responde para "+sym;
@@ -224,10 +224,10 @@ async function evalRoute(route,capEUR,fx){
   for(let i=0;i<route.path.length-1;i++){
    const venue=route.venues?route.venues[i]:"STON.fi";
    const leg=venue==="DeDust"?dedustLeg(route.path[i],route.path[i+1],units):await stonLeg(route.path[i],route.path[i+1],units);
-   legs.push(leg);units=leg.askUnits;
+   legs.push(leg);units=leg.minAskUnits;
   }
  }catch(e){reasons.push(String(e.message||e))}
- // Patas 2+ se precargan con el mínimo garantizado de la anterior: nunca piden más saldo del que tendrás.
+ // Patas 2+ se precargan con el mínimo protegido de la anterior: nunca piden más saldo del que tendrás.
  for(let i=1;i<legs.length;i++)if(legs[i].venue==="STON.fi"){const f=state.assets[legs[i].from],t=state.assets[legs[i].to];
   legs[i].url=stonSwapUrl(f.addr,t.addr,(Math.floor(legs[i-1].minAskUnits)/10**f.dec).toString())}
  const quoteAt=Date.now();
@@ -297,7 +297,7 @@ function readyCard(r){
  '<div><dt>Gas</dt><dd>≈'+e.gasTon.toFixed(3)+' TON ('+eur(e.gasUSD*fx)+')</dd></div>'+
  '<div><dt>Fees</dt><dd>'+esc(feeTxt)+' (ya descontadas en el quote)</dd></div>'+
  '<div><dt>Slippage máximo</dt><dd>'+(RULES.slippage*100).toFixed(2)+'% por pata</dd></div>'+
- '<div><dt>Beneficio mínimo garantizado por quote</dt><dd>'+eur(minEUR)+' ('+pct(e.netPct)+')</dd></div>'+
+ '<div><dt>Beneficio mínimo protegido por quotes</dt><dd>'+eur(minEUR)+' ('+pct(e.netPct)+')</dd></div>'+
  '<div><dt>Beneficio estimado</dt><dd>'+eur(expEUR)+' ('+pct(e.netExpPct)+')</dd></div>'+
  '<div><dt>Tiempo</dt><dd>'+r.legs.length+' swaps · ≈'+(r.legs.length*15)+' s</dd></div>'+
  '<div><dt>Validez del quote</dt><dd data-age>—</dd></div>'+
