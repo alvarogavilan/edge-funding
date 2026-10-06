@@ -4,6 +4,7 @@
 // oferta ≤24 h y enlace directo al producto. El resto se muestra como VIGILAR con su motivo.
 const state=window.CVStateBridge?.get?.()||JSON.parse(localStorage.getItem("cardvault.v2")||"{\"cards\":[],\"manualOpportunities\":[]}");
 const save=()=>{if(window.CVStateBridge?.save)window.CVStateBridge.save();else localStorage.setItem("cardvault.v2",JSON.stringify(state))};
+const UUID=()=>globalThis.crypto?.randomUUID?.()||("cv-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2));
 const N=v=>Number(v)||0;
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>N(v).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
@@ -156,7 +157,7 @@ function registerBuy(id){
  const extra=Math.max(0,N(String(s).replace(",",".")));
  const lg=prompt("Idioma de la carta recibida:",lang(x.offerLanguage||x.language)[2]?lang(x.offerLanguage||x.language)[1]:"");if(lg==null)return;
  const o=evaluate(x);
- state.cards.push({id:crypto.randomUUID(),universe:x.universe,name:x.name,set:x.set||"",number:x.number||"",language:lg,grading:"RAW",grade:x.condition||"",condition:x.condition||"",
+ state.cards.push({id:UUID(),universe:x.universe,name:x.name,set:x.set||"",number:x.number||"",language:lg,grading:"RAW",grade:x.condition||"",condition:x.condition||"",
   value:o.ref||price,valuationStatus:"reference",purchase:price,purchaseShipping:extra,purchaseFees:0,quantity:1,purchaseDate:new Date().toISOString().slice(0,10),
   purpose:"investment",referenceImage:officialImage(x)||"",referenceImageIdentityExact:!!officialImage(x),buyOpportunityId:x.id,buySource:"Cardmarket",buySourceUrl:o.url||"",
   fundingSource:"capital-card-vault",updatedAt:new Date().toISOString()});
