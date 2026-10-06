@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T02:06:00+02:00",
+  "checkedAt": "2026-10-06T02:19:00+02:00",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas. El supuesto gran cruce Yield Fields (~21 USD mint → ~275 USD offer) ha sido invalidado en comprobación directa: OpenSea ha retirado la colección por sospecha de violación de sus términos. El motor exige ahora comprobación directa del mercado antes de cualquier verde.",
+  "summary": "0 compras manuales autorizadas en este instante. Oro/metales descartados para minutos. La arquitectura prioritaria pasa a arbitraje atómico DEX: dos patas en una sola transacción, simulación previa y no inclusión/reversión si no supera todos los costes y el umbral de beneficio.",
   "lanes": [
     {
       "id": "market-bid",
@@ -763,7 +763,7 @@
       "title": "Arbitraje minutos",
       "priority": 1,
       "allocationPercent": 70,
-      "objective": "Crear capital rápido con activos digitales o ya custodiados, sin recibir ni enviar producto.",
+      "objective": "Crear capital rápido exclusivamente con activos digitales/custodiados o arbitraje atómico; cero logística física.",
       "allowedRouteIds": [
         "mtgo-bot-arbitrage",
         "phygitals-claw-buyback",
@@ -820,5 +820,36 @@
       "reason": "OpenSea muestra actualmente la colección como retirada por sospecha de incumplimiento de sus términos. Los precios indexados previos no son una salida ejecutable.",
       "url": "https://opensea.io/collection/yield-fields-founding-deeds/overview"
     }
-  ]
+  ],
+  "metalsVerdict": {
+    "status": "EXCLUDED_FROM_MINUTES",
+    "checkedAt": "2026-10-06T02:19:00+02:00",
+    "conclusion": "Oro/metales no cumplen arbitraje inmediato seguro.",
+    "evidence": [
+      "GoldRepublic cobra 1% al comprar y 1% al vender, además del diferencial compra/venta.",
+      "BullionVault aplica spread de mercado y comisiones que en el primer tramo alcanzan 0,5% por lado.",
+      "Kinesis cobra 0,22% por operación y el spread depende del libro de órdenes."
+    ],
+    "rule": "No mostrar metales en verde salvo cruce interplataforma simultáneo y neto después de todos los costes; ninguno verificado ahora."
+  },
+  "atomicExecutionMode": {
+    "id": "atomic-dex-flashbots",
+    "title": "ARBITRAJE ATÓMICO · flash loan + bundle privado",
+    "priority": 1,
+    "status": "architecture-ready-research",
+    "objective": "Ejecutar compra y venta en una sola transacción; si no queda beneficio suficiente para devolver principal+fee y umbral, revertir/no incluir.",
+    "mechanics": [
+      "Aave flash loan presta dentro de una única transacción.",
+      "El contrato ejecuta swaps/arbitraje y exige repayment + premium.",
+      "Si falta repayment, Aave revierte toda la transacción.",
+      "Flashbots permite simular bundles y enviar fuera de mempool público; Protect no cobra por transacciones fallidas/no incluidas."
+    ],
+    "hardGate": "beneficio_simulado_neto > gas_max + flash_fee + slippage_buffer + mev_buffer + profit_floor",
+    "caveat": "No se etiqueta 100% garantizado: smart-contract risk, builder/relay risk, oracle/token risk y competencia siguen existiendo.",
+    "sources": [
+      "https://www.aave.com/docs/aave-v3/guides/flash-loans",
+      "https://docs.flashbots.net/flashbots-protect/quick-start",
+      "https://docs.flashbots.net/flashbots-auction/advanced/rpc-endpoint"
+    ]
+  }
 }
