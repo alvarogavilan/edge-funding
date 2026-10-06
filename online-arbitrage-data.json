@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T01:53:00Z",
+  "checkedAt": "2026-10-06T00:07:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -61,6 +61,27 @@
     }
   ],
   "routes": [
+    {
+      "id": "nft-orderbook-cross",
+      "category": "NFT / activos on-chain",
+      "origin": "Online",
+      "name": "NFT on-chain · floor ask → collection bid",
+      "status": "candidate",
+      "exitType": "Oferta de colección ya colocada",
+      "logistics": "Compra y venta on-chain; sin producto físico. La salida puede aceptarse inmediatamente si la puja sigue viva y el NFT comprado cumple la oferta.",
+      "finding": "Se detectó un cruce agregado OCH Genesis Hero de 0,0594 ETH frente a 0,0751 WETH (+26% bruto), pero la revalidación directa en OpenSea ya mostraba floor superior a la top offer. Es un ejemplo real de ventana transitoria, no una compra autorizada.",
+      "missing": "Necesitamos lectura simultánea y primaria del ask más barato y la oferta aceptable, incluyendo royalties, marketplace fee, gas, WETH/ETH y elegibilidad del token exacto.",
+      "sources": [
+        {
+          "label": "eGamers · tabla floor/top offer",
+          "url": "https://egamers.io/nft-collections/"
+        },
+        {
+          "label": "OpenSea · OCH Genesis Hero",
+          "url": "https://opensea.io/collection/genesishero-abstract/overview"
+        }
+      ]
+    },
     {
       "id": "phygitals-claw-buyback",
       "category": "Coleccionables custodiados",
@@ -743,5 +764,20 @@
       ],
       "hardGate": "Margen neto, rotación, autenticidad, logística y salida documentadas; eBay excluido."
     }
+  },
+  "nftCrossCheck": {
+    "detectedAt": "2026-10-06T02:07:00+02:00",
+    "collection": "OCH Genesis Hero",
+    "aggregatedFloorETH": 0.0594,
+    "aggregatedTopOfferWETH": 0.0751,
+    "grossSpreadPct": 26.43,
+    "primaryRevalidation": {
+      "marketplace": "OpenSea",
+      "floorUSD": 184.77,
+      "topOfferUSD": 145.88,
+      "executable": false
+    },
+    "verdict": "FALSE_POSITIVE_CLOSED",
+    "lesson": "Nunca convertir un agregador en COMPRA YA sin refrescar el marketplace primario en el mismo instante."
   }
 }
