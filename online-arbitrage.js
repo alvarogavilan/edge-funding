@@ -32,6 +32,10 @@ function agentState(){
  },...readJson(AGENT_KEY,{})};
 }
 function saveAgent(next){writeJson(AGENT_KEY,next);return next}
+function availableCapital(){
+ const a=agentState();
+ return Math.max(100,100+Math.max(0,Number(a.realizedProfitEUR||0)));
+}
 
 function readFreq(){return readJson(FREQ_KEY,{samples:[]})}
 function recordFrequency(feed){
@@ -82,7 +86,7 @@ function agentDecision(){
    decision={
      at:new Date().toISOString(),
      status:"AUTO_READY",
-     reason:"Cumple filtros; requiere aprobación humana antes de mover fondos.",
+     reason:"Cumple filtros y ambas patas están confirmadas en fuente primaria; requiere aprobación antes de mover fondos.",
      coin:best.row.coin,
      buy:best.row.buy_exchange,
      sell:best.row.sell_exchange,
@@ -131,7 +135,7 @@ function renderAgent(){
  return '<section class="arbAgent">'+
  '<div class="arbAgentHead"><div><span class="arbKicker">AGENTE 24/7 · AUTO READY</span><h3>'+status+'</h3></div><span class="arbAgentMode">'+esc(a.mode)+'</span></div>'+
  '<div class="arbAgentGrid">'+
- '<label>Capital por operación €<input id="arbAgentCapital" type="number" min="10" max="106" step="1" value="'+esc(a.capitalLimitEUR)+'"></label>'+
+ '<label>Capital por operación €<input id="arbAgentCapital" type="number" min="10" step="1" value="'+esc(a.capitalLimitEUR)+'"></label>'+
  '<label>Neto mínimo %<input id="arbAgentMinNet" type="number" min="0.1" step="0.1" value="'+esc(a.minNetPct)+'"></label>'+
  '<label>Profundidad mínima $<input id="arbAgentDepth" type="number" min="100" step="100" value="'+esc(a.minDepthUSD)+'"></label>'+
  '<label>Quote máximo s<input id="arbAgentAge" type="number" min="3" step="1" value="'+esc(a.maxQuoteAgeSec)+'"></label>'+
@@ -142,7 +146,7 @@ function renderAgent(){
  '<div class="arbFrequency"><b>Frecuencia observada</b><span>'+fs.positive+'/'+fs.samples+' muestras por encima del umbral · '+(fs.samples?Math.round(fs.availability*100):0)+'% del tiempo observado</span><small>Solo cuenta mientras la app está abierta en este dispositivo.</small></div>'+
  executionPackage(d)+
  '<div class="arbAgentActions"><button id="arbAgentToggle">'+(a.enabled?"Pausar agente":"Activar agente")+'</button><button id="arbAgentSave">Guardar límites</button></div>'+
- '<small>Capital total actual: 106 €. Escalado automático recomendado: 20 € de prueba → 50 € tras 2 operaciones positivas → hasta 106 € solo después de validar costes, tiempos y slippage reales. El agente no firma ni mueve fondos.</small>'+
+ '<small>Capital inicial: 100 €. No se añadirán fondos externos. Capital máximo disponible = 100 € + beneficios realizados. </small>'+
  '</section>';
 }
 
@@ -150,7 +154,7 @@ function bindAgent(){
  const a=agentState();
  const save=()=>{
    const n={...a,
-     capitalLimitEUR:Math.min(106,Math.max(10,Number(document.getElementById("arbAgentCapital")?.value||a.capitalLimitEUR))),
+     capitalLimitEUR:Math.min(availableCapital(),Math.max(10,Number(document.getElementById("arbAgentCapital")?.value||a.capitalLimitEUR))),
      minNetPct:Math.max(.1,Number(document.getElementById("arbAgentMinNet")?.value||a.minNetPct)),
      minDepthUSD:Math.max(100,Number(document.getElementById("arbAgentDepth")?.value||a.minDepthUSD)),
      maxQuoteAgeSec:Math.max(3,Number(document.getElementById("arbAgentAge")?.value||a.maxQuoteAgeSec))
