@@ -51,3 +51,11 @@ body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snaps
  .arbKpis b{font-size:20px}
  .mainNav button[data-tab="arbitraje"],.mainNav button[data-tab="arbitraje-fisico"]{font-size:11px;padding:9px 10px}
 }
+.arbLive{padding:18px;border:1px solid #2f6f55;border-radius:18px;background:#0d1d18;margin-bottom:14px}
+.arbLiveHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.arbLiveCard{padding:16px;border:1px solid #3d5c74;border-radius:14px;background:#111b2c;margin:10px 0}
+.arbLiveCard.liveGreen{border-color:#3d8a65}
+.arbLiveNumbers{display:grid;grid-template-columns:repeat(3,auto 1fr);gap:6px 8px;align-items:baseline}
+.arbLiveNumbers b{font-size:18px}
+.arbLiveNumbers span{font-size:11px;color:#aebed6}
+@media(max-width:640px){.arbLiveHead{display:block}.arbLiveNumbers{grid-template-columns:auto 1fr}.arbLiveNumbers b{font-size:17px}}
