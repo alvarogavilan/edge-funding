@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T01:27:00Z",
+  "checkedAt": "2026-10-06T01:40:00Z",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras autorizadas todavía. Se elimina definitivamente la falsa vía de packs con '100% buyback': no garantiza recuperar el precio pagado. La búsqueda queda concentrada en arbitraje con dos patas preexistentes: MTGO bot→buylist, activos vaulted con oferta ya colocada y arbitraje atómico on-chain, este último bloqueado por gas/MEV/coste.",
+  "summary": "0 compras autorizadas. Se añade filtro obligatorio España. PSA Partner Offers sería técnicamente ideal pero queda excluido por elegibilidad geográfica. MTGO se degrada para cash-out: Cardhoarder publica 0,68 USD/tix y mínimo 25. Fanatics Vault es rápido y sin logística física, pero necesita una oferta de comprador preexistente.",
   "lanes": [
     {
       "id": "market-bid",
@@ -366,6 +366,27 @@
           "url": "https://skinport.com/blog/lower-fees-for-everybody"
         }
       ]
+    },
+    {
+      "id": "fanatics-vault",
+      "category": "Coleccionables custodiados",
+      "origin": "Online",
+      "name": "Fanatics Collect Vault · compra instantánea → oferta / Buy Now",
+      "status": "conditional",
+      "exitType": "Oferta de comprador o venta Buy Now",
+      "logistics": "Los activos comprados pueden permanecer en vault y listarse desde móvil/web; comprador paga inmediatamente al completar Buy Now.",
+      "finding": "Excelente infraestructura sin envío físico entre operaciones. Buy Now cobra 6% si la venta queda por debajo del 120% del market value; el comprador paga inmediatamente.",
+      "missing": "No hay recompra universal ni comprador garantizado. Solo sería arbitraje si antes de comprar existe una oferta ejecutable superior al coste total para el mismo activo.",
+      "sources": [
+        {
+          "label": "Fanatics Collect · funcionamiento",
+          "url": "https://support.fanaticscollect.com/en_us/how-fanatics-collect-works-S1BsmAX6ee"
+        },
+        {
+          "label": "Fanatics Collect · Buy Now fees",
+          "url": "https://support.fanaticscollect.com/en_us/buy-now-fees-ry33QCXaxe"
+        }
+      ]
     }
   ],
   "cases": [
@@ -627,9 +648,43 @@
     "source": "https://www.aave.com/docs/aave-v3/guides/flash-loans"
   },
   "mtgoDeepCheck": {
-    "status": "BEST_NON_BLOCKCHAIN_CANDIDATE",
+    "status": "DOWNGRADED_FOR_CASHOUT",
     "finding": "Cardhoarder confirma que sus buylist prices son exactamente lo que pagan sus Buy Bots y que los bots operan 24/7. GoatBots publica precios públicos y stock.",
     "limitation": "El cash-out final de Event Tickets suele pagar menos de 1 USD por ticket y puede requerir verificación; cuentas extranjeras nuevas pueden sufrir esperas antifraude.",
-    "decision": "Seguir buscando cruces bot A sell < bot B buy, pero no etiquetar beneficio en EUR hasta incorporar la conversión real de Tickets."
+    "decision": "Mantener como laboratorio de arbitraje digital, pero no VERDE hasta encontrar spread suficientemente grande para sobrevivir al haircut de cash-out y verificación.",
+    "currentCashoutObserved": "Cardhoarder publica actualmente 0,68 USD por Event Ticket, mínimo 25 tickets, sujeto a revisión.",
+    "implication": "Un spread positivo en tickets no equivale a beneficio real. Para cash-out vía Cardhoarder el valor económico de 1 tix debe tratarse como 0,68 USD en la validación actual, no 1 USD."
+  },
+  "spainExecutionGate": {
+    "required": true,
+    "rule": "Una oportunidad no puede ser VERDE si el comprador, payout o programa no admite a un residente/cuenta española.",
+    "rejectedExamples": [
+      {
+        "id": "psa-partner-offers",
+        "name": "PSA Partner Offers",
+        "reason": "Oferta directa, venta instantánea y 0% comisión, pero PSA limita actualmente el programa a coleccionistas con base en EE. UU. No ejecutable desde España."
+      }
+    ]
+  },
+  "fanaticsLane": {
+    "id": "fanatics-vault",
+    "category": "Coleccionables custodiados",
+    "origin": "Online",
+    "name": "Fanatics Collect Vault · compra instantánea → oferta / Buy Now",
+    "status": "conditional",
+    "exitType": "Oferta de comprador o venta Buy Now",
+    "logistics": "Los activos comprados pueden permanecer en vault y listarse desde móvil/web; comprador paga inmediatamente al completar Buy Now.",
+    "finding": "Excelente infraestructura sin envío físico entre operaciones. Buy Now cobra 6% si la venta queda por debajo del 120% del market value; el comprador paga inmediatamente.",
+    "missing": "No hay recompra universal ni comprador garantizado. Solo sería arbitraje si antes de comprar existe una oferta ejecutable superior al coste total para el mismo activo.",
+    "sources": [
+      {
+        "label": "Fanatics Collect · funcionamiento",
+        "url": "https://support.fanaticscollect.com/en_us/how-fanatics-collect-works-S1BsmAX6ee"
+      },
+      {
+        "label": "Fanatics Collect · Buy Now fees",
+        "url": "https://support.fanaticscollect.com/en_us/buy-now-fees-ry33QCXaxe"
+      }
+    ]
   }
 }
