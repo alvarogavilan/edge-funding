@@ -4,7 +4,7 @@ const ALLOWED={
  ston:{base:"https://api.ston.fi",paths:[/^\/v1\/assets\//,/^\/v1\/pools\//,/^\/v1\/swap\/simulate$/]},
  dedust:{base:"https://api.dedust.io",paths:[/^\/v2\/pools$/]},
  fx:{base:"https://api.frankfurter.app",paths:[/^\/latest$/]},
- lorcast:{base:"https://api.lorcast.com",paths:[/^\/v0\/cards\/search$/]},
+ lorcast:{base:"https://api.lorcast.com",paths:[/^\/v0\/cards\/search$/,/^\/v0\/sets$/,/^\/v0\/sets\/[^/]+\/cards$/]},
  tcgdex:{base:"https://api.tcgdex.net",paths:[/^\/v2\//]}
 };
 function send(res,status,body,type="application/json; charset=utf-8"){
