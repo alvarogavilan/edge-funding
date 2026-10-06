@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "Capital real declarado: 106 €. El motor no lo expone completo desde el inicio: escala 20→50→106 € únicamente tras resultados reales positivos y ejecución estable.",
+  "summary": "Capital inicial fijo: 100 €, sin nuevas aportaciones. El capital futuro será exclusivamente 100 € + beneficios realizados. En este instante no hay verde primario confirmado; USDe queda bloqueado hasta quote oficial de swap para el importe real.",
   "lanes": [
     {
       "id": "market-bid",
@@ -1017,27 +1017,25 @@
     }
   },
   "userCapitalPlan": {
-    "totalCapitalEUR": 106,
-    "hardCapEUR": 106,
-    "principle": "No exponer todo el capital hasta validar el circuito con resultados reales.",
-    "ladder": [
+    "initialCapitalEUR": 100,
+    "externalContributionsEUR": 0,
+    "formula": "capital disponible = 100 € + beneficio neto realizado acumulado",
+    "hardRule": "Nunca añadir fondos externos. El límite crece únicamente con beneficios realmente realizados.",
+    "firstExecutionEUR": 20,
+    "scaling": [
       {
-        "stage": 1,
-        "capitalEUR": 20,
-        "unlock": "1 operación real positiva sin incidencias"
+        "after": "1 operación real positiva sin incidencia",
+        "maxEUR": 50
       },
       {
-        "stage": 2,
-        "capitalEUR": 50,
-        "unlock": "2 operaciones reales positivas y costes medidos"
-      },
-      {
-        "stage": 3,
-        "capitalEUR": 106,
-        "unlock": "circuito repetible, slippage y tiempos verificados"
+        "after": "2 operaciones reales positivas y costes/slippage medidos",
+        "max": "capital disponible completo"
       }
-    ],
-    "preservePrincipalRule": "Si una operación deja de cumplir el margen mínimo antes de confirmar, se cancela.",
-    "dailyTargetPolicy": "Usar como máximo el capital realmente disponible; no apalancamiento ni fondos prestados."
+    ]
+  },
+  "currentGreen": {
+    "status": "NONE_PRIMARY_CONFIRMED",
+    "checkedAt": "2026-10-06T03:40:00+02:00",
+    "note": "USDe no se autoriza: fuentes externas muestran ~0.963–0.968 USD mientras la ficha oficial STON.fi muestra ~1.00 USD. Solo el quote/simulación oficial para importe real puede desbloquear verde."
   }
 }
