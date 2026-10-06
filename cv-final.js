@@ -54,12 +54,12 @@ function evaluate(x){
  const avail=N(x.available||x.sellerQty);
  const liq=avail>=20?"Alta":avail>=5?"Media":avail>0?"Baja":"Sin dato";
  const missing=[];
- if(!cs)missing.push("venta cerrada verificada");
+ if(!cs||!String(cs.type||"").startsWith("VENTA CERRADA REAL"))missing.push("venta cerrada verificada");
  if(!langOk)missing.push("idioma exacto de la oferta");
  if(!isFresh)missing.push("oferta comprobada hace ≤24 h (última: "+ageTxt(x)+")");
  if(!url)missing.push("enlace directo al producto");
  if(edge<40)missing.push("beneficio ≥ 40 €");
- const buyReady=missing.length===0&&["BUY-ONE","BUY-SCALE"].includes(x.approval);
+ const buyReady=missing.length===0&&cs&&String(cs.type||"").startsWith("VENTA CERRADA REAL")&&["BUY-ONE","BUY-SCALE"].includes(x.approval);
  const score=Math.round((cs?(cs.type.startsWith("VENTA CERRADA REAL")?35:20):0)+(langOk?20:0)+(isFresh?20:0)+(url?10:0)+(liq==="Alta"?15:liq==="Media"?10:liq==="Baja"?5:0));
  const risk=!langOk||x.languageMismatchRisk?"Alto (idioma)":!cs?"Alto (sin venta cerrada)":!isFresh?"Medio (oferta antigua)":"Bajo";
  return {x,cs,ref,refType,net,edge,roi,flag,lname,langOk,url,isFresh,liq,avail,missing,buyReady,score,risk};
