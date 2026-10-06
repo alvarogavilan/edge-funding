@@ -553,3 +553,5 @@ body[data-active-tab="radar"] header{padding-bottom:8px!important}
 #primeSimpleHome .nearPrimeBox small{font-size:13px!important}
 #primeSimpleHome .nearPrimeBox .buyMetrics span{background:#f0e5cd!important;color:#252017!important;font-size:14px!important;padding:8px 10px;border-radius:8px}
 #primeSimpleHome .nearPrimeBox .buyLink{font-size:14px!important;min-height:44px;display:flex;align-items:center;justify-content:center}
+
+.cvProdDiag{position:fixed;right:8px;bottom:8px;z-index:99999;max-width:min(360px,calc(100vw - 16px));background:#08111f;color:#eef6ff;border:1px solid #47627f;border-radius:10px;padding:8px 10px;font-size:12px}.cvProdDiag summary{font-weight:800;cursor:pointer}.cvProdDiag div{margin:4px 0}
