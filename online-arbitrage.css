@@ -59,3 +59,11 @@ body[data-active-tab="arbitraje"] .hero,body[data-active-tab="arbitraje"] #snaps
 .arbLiveNumbers b{font-size:18px}
 .arbLiveNumbers span{font-size:11px;color:#aebed6}
 @media(max-width:640px){.arbLiveHead{display:block}.arbLiveNumbers{grid-template-columns:auto 1fr}.arbLiveNumbers b{font-size:17px}}
+
+.arbCapacity{padding:18px;border:1px solid #3b4d69;border-radius:18px;background:#101a2a;margin-bottom:14px}
+.arbCapacity p{color:#ccd6e9}
+.arbCapGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.arbCapGrid>div{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px;border-radius:12px;background:#17243a}
+.arbCapGrid b{grid-column:1/-1}
+.arbCapGrid span{font-size:12px;color:#cbd7ea}
+@media(max-width:640px){.arbCapGrid{grid-template-columns:1fr}}
