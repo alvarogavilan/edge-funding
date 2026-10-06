@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T02:19:00+02:00",
+  "checkedAt": "2026-10-06T02:31:00+02:00",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -14,7 +14,7 @@
   },
   "purchaseRecommendation": null,
   "readyCount": 0,
-  "summary": "0 compras manuales autorizadas en este instante. Oro/metales descartados para minutos. La arquitectura prioritaria pasa a arbitraje atómico DEX: dos patas en una sola transacción, simulación previa y no inclusión/reversión si no supera todos los costes y el umbral de beneficio.",
+  "summary": "0 compras manuales autorizadas todavía. La señal USDe→Bybit queda fuera del modo estricto por depender de acreditación CEX. Nuevo estándar: Tonkeeper + ejecución únicamente on-chain en la misma wallet, usando STON.fi/Omniston y DeDust; sin registros adicionales ni depósitos/retiros.",
   "lanes": [
     {
       "id": "market-bid",
@@ -850,6 +850,32 @@
       "https://www.aave.com/docs/aave-v3/guides/flash-loans",
       "https://docs.flashbots.net/flashbots-protect/quick-start",
       "https://docs.flashbots.net/flashbots-auction/advanced/rpc-endpoint"
+    ]
+  },
+  "instantExecutionPolicy": {
+    "cexTransfersAllowed": false,
+    "reason": "Para Arbitraje minutos se excluyen rutas que requieran depósito/retiro en CEX porque no existe garantía de acreditación instantánea.",
+    "requiredArchitecture": "misma wallet autocustodiada → DEX/RFQ → settlement on-chain",
+    "recommendedWallet": "Tonkeeper",
+    "accountRegistrationRequired": false
+  },
+  "usdeStonBybitVerdict": {
+    "status": "EXCLUDED_FROM_STRICT_MINUTES",
+    "reason": "El spread observado era real como señal, pero Bybit EU acredita depósitos tras las confirmaciones blockchain requeridas para moneda/red; no puede garantizarse disponibilidad instantánea. No cumple la política estricta.",
+    "previousSignal": "USDe STON.fi → Bybit TON ~3.2% scanner",
+    "action": "Mantener solo como radar secundario, nunca como COMPRAR YA."
+  },
+  "sameWalletPriority": {
+    "id": "ton-same-wallet",
+    "name": "TON autocustodia · STON.fi/Omniston + DeDust",
+    "priority": 1,
+    "setup": "Tonkeeper únicamente. STON.fi/DeDust se conectan vía TON Connect sin registro.",
+    "architecture": "Buscar ciclos/multi-hop cuyo mínimo recibido final supere capital inicial + gas + fees + margen mínimo; abortar si no se cumple.",
+    "settlement": "On-chain en la misma wallet; no depósitos ni retiros de exchange.",
+    "evidence": [
+      "STON.fi indica swaps en segundos y conexión directa con Tonkeeper.",
+      "Omniston agrega liquidez de STON.fi, DeDust, TonCo y resolvers con quotes en tiempo real.",
+      "DeDust V2 soporta multi-hop y minimalAmountOut/deadline; si el mínimo no se alcanza la operación se aborta y se reembolsa."
     ]
   }
 }
