@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "checkedAt": "2026-10-06T00:44:00.000Z",
+  "checkedAt": "2026-10-06T03:02:00+02:00",
   "timezone": "Europe/Madrid",
   "continuousMonitoring": false,
   "excludedMarkets": [
@@ -949,7 +949,18 @@
     ],
     "hourlyCeilingRule": "No mostrar €/hora salvo que el feed observe y ejecute cruces suficientes durante esa hora. La app debe medir frecuencia real antes de extrapolar.",
     "dailyCeilingRule": "No anualizar ni prometer crecimiento compuesto; registrar únicamente beneficio realizado y capital realmente rotado.",
-    "currentReality": "Todavía no existe un ciclo TON same-wallet verificado y vivo que permita asignar una ganancia real por hora/día."
+    "currentReality": "Todavía no existe un ciclo TON same-wallet verificado y vivo que permita asignar una ganancia real por hora/día.",
+    "realFrequency": {
+      "sameWalletVerifiedCyclesPerDay": 0,
+      "prefundedUSDeWindow": "persistente en snapshots separados por semanas",
+      "warning": "Persistencia del spread no equivale a capacidad ilimitada: cada ejecución desequilibra inventario y requiere rebalanceo.",
+      "tonMarketActivity": {
+        "chainDexVolume24hUSD": 2660000,
+        "chainDexTransactions24h": 34065,
+        "stonVolume24hUSD": 1760000,
+        "dedustVolume24hUSD": 690306
+      }
+    }
   },
   "maxEngine": {
     "title": "MOTOR PRIME · BÚSQUEDA MÁXIMA",
@@ -982,5 +993,27 @@
       "stale quote",
       "negative or zero minimum profit"
     ]
+  },
+  "prefundedMode": {
+    "id": "prefunded-two-venue",
+    "title": "MODO PREPOSICIONADO · EJECUCIÓN SIMULTÁNEA",
+    "status": "best-current-candidate",
+    "concept": "Mantener USDT/TON en wallet STON.fi y USDe/USDT en Bybit EU. Cuando exista spread, comprar USDe en STON.fi y vender simultáneamente USDe ya preposicionado en Bybit. No se espera una transferencia durante la operación.",
+    "currentCandidate": {
+      "asset": "USDe",
+      "buyVenue": "STON.fi",
+      "sellVenue": "Bybit EU",
+      "observedGrossPct": 3.26,
+      "observedScannerNetPct": 3.21,
+      "historicalObservation": "El mismo par aparecía hace ~3 semanas cerca de +2.84% neto, lo que sugiere una ventana persistente, no prueba de rentabilidad futura.",
+      "strictGreen": false,
+      "reasonNotStrictGreen": "El rebalanceo de inventario sigue siendo necesario después; Bybit EU/mercado puede cambiar y no se ha verificado la cuenta concreta del usuario."
+    },
+    "frequencyModel": {
+      "type": "inventory-turnover",
+      "explanation": "Si el spread permanece abierto, no hay un número fijo de cruces al día: pueden ejecutarse varias tandas hasta agotar el inventario del lado vendedor. Después hay que rebalancear.",
+      "measuredSameWalletCyclesPerDay": 0,
+      "note": "No se ha observado todavía ningún ciclo same-wallet ≥1% neto verificable; no inventar frecuencia."
+    }
   }
 }
