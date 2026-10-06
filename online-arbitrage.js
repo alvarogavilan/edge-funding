@@ -133,7 +133,7 @@ function renderAgent(){
  const a=agentState(),d=agentDecision(),fs=frequencyStats();
  const status=d.status==="AUTO_READY"?"LISTO PARA APROBAR":d.status==="OFF"?"DESACTIVADO":"VIGILANDO";
  return '<section class="arbAgent">'+
- '<div class="arbAgentHead"><div><span class="arbKicker">AGENTE 24/7 · AUTO READY</span><h3>'+status+'</h3></div><span class="arbAgentMode">'+esc(a.mode)+'</span></div>'+
+ '<div class="arbAgentHead"><div><span class="arbKicker">AGENTE 24/7 · LISTO PARA APROBAR</span><h3>'+status+'</h3></div><span class="arbAgentMode">'+esc(a.mode)+'</span></div>'+
  '<div class="arbAgentGrid">'+
  '<label>Capital por operación €<input id="arbAgentCapital" type="number" min="10" step="1" value="'+esc(a.capitalLimitEUR)+'"></label>'+
  '<label>Neto mínimo %<input id="arbAgentMinNet" type="number" min="0.1" step="0.1" value="'+esc(a.minNetPct)+'"></label>'+
