@@ -22,7 +22,13 @@ function evaluate(record,now=Date.now()){
 }
 
 root.CVOnlineArbitrage={evaluate,allowedUrl};
-let report=null,liveFeed=null;
+let report=null,liveFeed=null,liveTimer=null;
+const freqKey="cv_arb_live_frequency_v1";
+function readFreq(){try{return JSON.parse(localStorage.getItem(freqKey)||"{\"samples\":[]}")}catch{return {samples:[]}}}
+function writeFreq(x){try{localStorage.setItem(freqKey,JSON.stringify(x))}catch{}}
+function recordFrequency(feed){const now=Date.now(),cut=now-86400000,f=readFreq();f.samples=(f.samples||[]).filter(x=>x.at>=cut);const usde=(feed?.rows||[]).find(x=>String(x.coin).toUpperCase()==="USDE"&&x.buy_exchange==="STON.fi"&&/Bybit/i.test(x.sell_exchange||"")&&x.executable===true&&x.route_available===true);f.samples.push({at:now,ok:!!usde,net:usde?Number(usde.net_spread_pct||0):0});writeFreq(f);return f}
+function frequencyStats(){const f=readFreq(),samples=f.samples||[],positive=samples.filter(x=>x.ok&&x.net>=1);const observedMinutes=samples.length;return {samples:samples.length,positive:positive.length,availability:samples.length?positive.length/samples.length:0,observedMinutes};}
+
 
 function splitRoutes(mode){
  const rows=report?.routes||[];
@@ -43,6 +49,7 @@ function renderSwarm(){
  return '<section class="arbSwarm"><div><span class="arbKicker">'+esc(s.label)+'</span><h3>'+Number(s.syntheticProfiles||0).toLocaleString("es-ES")+' perfiles sintéticos</h3><p>'+esc(s.description)+'</p></div><div class="arbRoleGrid">'+(s.expertRoles||[]).map(x=>'<span>'+esc(x)+'</span>').join("")+'</div><small>'+esc(s.rule)+'</small></section>';
 }
 function liveMinutesBlock(){
+ const fs=frequencyStats();
  if(!liveFeed?.rows?.length)return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>Sin señal ejecutable cargada</h3><p>El resto del informe sigue disponible, pero ninguna compra se autoriza sin datos vivos.</p></section>';
  const rows=liveFeed.rows.filter(x=>x.executable===true&&x.route_available===true&&x.depth_status==="ok"&&Number(x.net_spread_pct)>0).sort((a,b)=>b.net_spread_pct-a.net_spread_pct);
  if(!rows.length)return '<section class="arbLive"><span class="arbKicker">RADAR EN VIVO</span><h3>0 cruces positivos verificados</h3><p>No comprar.</p></section>';
@@ -59,7 +66,67 @@ function liveMinutesBlock(){
     '<small>*Resta adicional conservadora de 0,55 pp por trading/DEX + 0,20 pp de colchón, además del coste de red ya reflejado por el feed. La comisión exacta de la cuenta y el quote final mandan.</small>'+
     '</article>';
  }).join("");
- return '<section class="arbLive"><div class="arbLiveHead"><div><span class="arbKicker">RADAR EN VIVO · APIs OFICIALES AGREGADAS</span><h3>Oportunidades ejecutables detectadas</h3></div><small>Actualizado: '+esc(liveFeed.updated_at||"")+' · posición base del feed: $'+esc(liveFeed.position_usd||"")+'.</small></div>'+cards+'<small>Fuente: Yieldo (yieldo.me) — datos de mercado en tiempo real agregados desde APIs oficiales · CC BY 4.0.</small></section>';
+ return '<section class="arbLive"><div class="arbLiveHead"><div><span class="arbKicker">RADAR EN VIVO · APIs OFICIALES AGREGADAS</span><h3>Oportunidades ejecutables detectadas</h3></div><small>Actualizado: '+esc(liveFeed.updated_at||"")+' · posición base del feed: 
+}
+function renderMode(mode){
+ if(!report)return;
+ const physical=mode==="physical";
+ const prefix=physical?"physicalArbitrage":"arbitrage";
+ const host=document.getElementById(physical?"physicalArbitrageContent":"onlineArbitrageContent");if(!host)return;
+ const cat=document.getElementById(prefix+"Category")?.value||"";
+ const st=document.getElementById(prefix+"Status")?.value||"";
+ let routes=splitRoutes(mode).filter(r=>(!cat||r.category===cat)&&(!st||r.status===st));
+ const cases=splitCases(mode);
+ const cfg=physical?report.tabs?.physical:report.tabs?.minutes;
+ const date=new Date(report.checkedAt).toLocaleString("es-ES",{timeZone:"Europe/Madrid"});
+ const ready=routes.filter(r=>r.ready===true).length;
+ const candidates=routes.filter(r=>r.status==="candidate").length;
+ const headline=physical?"Compra física / Sevilla → venta online":"Sin stock físico · compra y salida en minutos";
+ host.innerHTML=(physical?"":liveMinutesBlock())+
+ '<section class="arbCommand '+(physical?'physical':'minutes')+'"><div><span class="arbKicker">'+(physical?'ESCALADO':'PRIORIDAD ABSOLUTA')+'</span><h3>'+esc(headline)+'</h3><p>'+esc(cfg?.objective||"")+'</p></div><div class="arbKpis"><div><b>'+ready+'</b><span>verdes reales</span></div><div><b>'+candidates+'</b><span>rutas prioritarias</span></div><div><b>'+routes.length+'</b><span>rutas visibles</span></div></div></section>'+
+ renderCapacity()+renderSwarm()+
+ '<div class="arbSummary"><strong>'+ready+' operaciones autorizadas ahora</strong><p>'+esc(report.summary)+'</p><small>Revisión: '+esc(date)+' · España · eBay excluido</small><p><b>Regla:</b> '+esc(cfg?.hardGate||"")+'</p></div>'+
+ (cases.length?'<h3>Casos concretos</h3>'+cases.map(c=>'<article class="arbCase"><span class="arbBadge">'+(c.recommendBuy?"COMPRAR":"BLOQUEADO")+'</span><h4>'+esc(c.name)+'</h4><dl><div><dt>Compra</dt><dd>'+money(c.buyPriceEUR)+'</dd></div><div><dt>Salida / techo</dt><dd>'+money(c.exitCeilingEUR)+'</dd></div><div><dt>Diferencia bruta</dt><dd>'+money(c.ceilingDifferenceEUR)+'</dd></div></dl><p>'+esc(c.finding)+'</p><div class="arbLinks">'+links([{label:"Compra",url:c.buyUrl},{label:"Salida",url:c.exitUrl}])+'</div></article>').join(""):"")+
+ '<h3>Rutas · '+routes.length+'</h3><div class="arbRoutes">'+routes.map(r=>'<article class="arbRoute arb-'+esc(r.status)+'"><div class="arbRouteTop"><span class="arbBadge">'+statusLabel(r.status)+'</span><span class="arbOrigin">'+esc(r.origin||"Online")+'</span></div><h4>'+esc(r.name)+'</h4><div class="arbExitType">'+esc(r.exitType||"")+'</div><p>'+esc(r.finding)+'</p><p><b>Qué falta:</b> '+esc(r.missing)+'</p><p><b>Logística:</b> '+esc(r.logistics)+'</p><div class="arbLinks">'+links(r.sources)+'</div></article>').join("")+'</div>'+
+ '<div class="arbNoGuarantee"><b>Control antifalso-positivo:</b> ninguna estimación, listing o beneficio futuro se trata como salida cerrada.</div>';
+}
+function setupSelects(mode){
+ const physical=mode==="physical",prefix=physical?"physicalArbitrage":"arbitrage";
+ const rows=splitRoutes(mode),cat=document.getElementById(prefix+"Category"),st=document.getElementById(prefix+"Status");
+ if(cat){const cats=[...new Set(rows.map(r=>r.category))].sort();cat.innerHTML='<option value="">Todas</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");cat.onchange=()=>renderMode(mode)}
+ if(st)st.onchange=()=>renderMode(mode);
+ const btn=document.getElementById(physical?"physicalArbitrageCopy":"arbitrageCopy");
+ if(btn){btn.disabled=false;btn.onclick=()=>copyMode(mode)}
+}
+function copyMode(mode){
+ const physical=mode==="physical",rows=splitRoutes(mode),status=document.getElementById(physical?"physicalArbitrageCopyStatus":"arbitrageCopyStatus");
+ const txt=[physical?"ARBITRAJE FÍSICO · CARD VAULT":"ARBITRAJE MINUTOS · CARD VAULT","Revisión: "+report.checkedAt,"eBay: EXCLUIDO",...rows.map(r=>r.name+"\nEstado: "+statusLabel(r.status)+"\n"+r.finding+"\nFalta: "+r.missing+"\n"+(r.sources||[]).map(s=>s.url).join("\n"))].join("\n\n");
+ const done=()=>{if(status)status.textContent="Informe copiado."};
+ if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).then(done).catch(()=>fallback(txt,status));else fallback(txt,status);
+}
+function fallback(txt,status){const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand("copy");t.remove();if(status)status.textContent="Informe copiado."}catch{if(status)status.textContent="Selecciona el texto para copiarlo."}}
+async function start(){
+ try{
+  const [r,live]=await Promise.all([
+   fetch("online-arbitrage-data.json?v=3.1",{cache:"no-store"}),
+   fetch("https://yieldo.me/arbitrage/live.json",{cache:"no-store"}).catch(()=>null)
+  ]);
+  if(!r.ok)throw 0;
+  report=await r.json();
+  try{if(live?.ok){liveFeed=await live.json();recordFrequency(liveFeed)}}catch{}
+  setupSelects("minutes");setupSelects("physical");renderMode("minutes");renderMode("physical");
+  if(!liveTimer)liveTimer=setInterval(async()=>{try{const x=await fetch("https://yieldo.me/arbitrage/live.json?ts="+Date.now(),{cache:"no-store"});if(x.ok){liveFeed=await x.json();recordFrequency(liveFeed);renderMode("minutes")}}catch{}},60000);
+ }catch{
+  ["onlineArbitrageContent","physicalArbitrageContent"].forEach(id=>{const h=document.getElementById(id);if(h)h.textContent="No se pudo cargar el informe. No hay compras autorizadas."});
+ }
+ if(location.hash==="#arbitraje")root.CVSimpleNav?.showTab("arbitraje");
+ if(location.hash==="#arbitraje-fisico")root.CVSimpleNav?.showTab("arbitraje-fisico");
+}
+start();
+})(typeof globalThis!=="undefined"?globalThis:this);
++esc(liveFeed.position_usd||"")+'.</small></div>'+
+ '<div class="arbFrequency"><b>Frecuencia observada en este dispositivo</b><span>'+fs.positive+'/'+fs.samples+' muestras ≥1% neto · '+(fs.samples?Math.round(fs.availability*100):0)+'% del tiempo observado</span><small>Se mide mientras la app está abierta; no se extrapola a 24 h hasta tener suficientes muestras.</small></div>'+
+ cards+'<small>Fuente: Yieldo (yieldo.me) — datos de mercado en tiempo real agregados desde APIs oficiales · CC BY 4.0.</small></section>';
 }
 function renderMode(mode){
  if(!report)return;
