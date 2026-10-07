@@ -7,6 +7,14 @@ const ALLOWED={
  lorcast:{base:"https://api.lorcast.com",paths:[/^\/v0\/cards\/search$/,/^\/v0\/sets$/,/^\/v0\/sets\/[^/]+\/cards$/]},
  tcgdex:{base:"https://api.tcgdex.net",paths:[/^\/v2\//]}
 };
+async function readBody(req){
+ return await new Promise((resolve,reject)=>{
+  let data="",size=0;
+  req.on("data",chunk=>{size+=chunk.length;if(size>65536){reject(new Error("body too large"));return}data+=chunk});
+  req.on("end",()=>resolve(data));
+  req.on("error",reject);
+ });
+}
 function send(res,status,body,type="application/json; charset=utf-8"){
  res.writeHead(status,{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type","Cache-Control":"no-store","Content-Type":type});
  res.end(body);
@@ -33,8 +41,11 @@ const server=http.createServer(async(req,res)=>{
  const target=cfg.base+path+(qp.toString()?"?"+qp.toString():"");
  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),9000);
  try{
-  const r=await fetch(target,{method:req.method==="POST"?"POST":"GET",headers:{"Accept":"application/json","User-Agent":"CardVault/98.1"},signal:ctl.signal});
-  const body=await r.text();return send(res,r.status,body,r.headers.get("content-type")||"application/json; charset=utf-8");
+  const requestBody=req.method==="POST"?await readBody(req):undefined;
+  const headers={"Accept":"application/json","User-Agent":"CardVault/98.2"};
+  if(req.method==="POST")headers["Content-Type"]=req.headers["content-type"]||"application/json";
+  const r=await fetch(target,{method:req.method==="POST"?"POST":"GET",headers,body:req.method==="POST"?requestBody:undefined,signal:ctl.signal});
+  const responseBody=await r.text();return send(res,r.status,responseBody,r.headers.get("content-type")||"application/json; charset=utf-8");
  }catch(e){return send(res,502,JSON.stringify({ok:false,error:String(e&&e.message||e),source:src}))}
  finally{clearTimeout(t)}
 });
