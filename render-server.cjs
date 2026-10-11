@@ -15,8 +15,9 @@ async function readBody(req){
   req.on("error",reject);
  });
 }
-function send(res,status,body,type="application/json; charset=utf-8"){
- res.writeHead(status,{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type","Cache-Control":"no-store","Content-Type":type});
+const APP_ORIGIN="https://alvarogavilan.github.io";
+function send(res,status,body,type="application/json; charset=utf-8",origin=APP_ORIGIN){
+ res.writeHead(status,{"Access-Control-Allow-Origin":origin,"Vary":"Origin","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type","Cache-Control":"no-store","Content-Type":type});
  res.end(body);
 }
 async function health(){
@@ -31,12 +32,14 @@ async function health(){
  return {ok,checkedAt:new Date().toISOString(),sources};
 }
 const server=http.createServer(async(req,res)=>{
- if(req.method==="OPTIONS")return send(res,204,"","text/plain");
+ const origin=String(req.headers.origin||"");
+ if(origin&&origin!==APP_ORIGIN)return send(res,403,JSON.stringify({ok:false,error:"origen no permitido"}),"application/json; charset=utf-8",APP_ORIGIN);
+ if(req.method==="OPTIONS")return send(res,204,"","text/plain",origin||APP_ORIGIN);
  const u=new URL(req.url,"http://localhost");
- if(u.pathname==="/health"){const h=await health();return send(res,200,JSON.stringify(h))}
- if(u.pathname!=="/proxy")return send(res,404,JSON.stringify({ok:false,error:"not found"}));
+ if(u.pathname==="/health"){const h=await health();return send(res,200,JSON.stringify(h),"application/json; charset=utf-8",origin||APP_ORIGIN)}
+ if(u.pathname!=="/proxy")return send(res,404,JSON.stringify({ok:false,error:"not found"}),"application/json; charset=utf-8",origin||APP_ORIGIN);
  const src=u.searchParams.get("source")||"",path=u.searchParams.get("path")||"",cfg=ALLOWED[src];
- if(!cfg||!cfg.paths.some(r=>r.test(path)))return send(res,400,JSON.stringify({ok:false,error:"source/path no permitido"}));
+ if(!cfg||!cfg.paths.some(r=>r.test(path)))return send(res,400,JSON.stringify({ok:false,error:"source/path no permitido"}),"application/json; charset=utf-8",origin||APP_ORIGIN);
  const qp=new URLSearchParams(u.searchParams);qp.delete("source");qp.delete("path");
  const target=cfg.base+path+(qp.toString()?"?"+qp.toString():"");
  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),9000);
@@ -45,8 +48,8 @@ const server=http.createServer(async(req,res)=>{
   const headers={"Accept":"application/json","User-Agent":"CardVault/98.2"};
   if(req.method==="POST")headers["Content-Type"]=req.headers["content-type"]||"application/json";
   const r=await fetch(target,{method:req.method==="POST"?"POST":"GET",headers,body:req.method==="POST"?requestBody:undefined,signal:ctl.signal});
-  const responseBody=await r.text();return send(res,r.status,responseBody,r.headers.get("content-type")||"application/json; charset=utf-8");
- }catch(e){return send(res,502,JSON.stringify({ok:false,error:String(e&&e.message||e),source:src}))}
+  const responseBody=await r.text();return send(res,r.status,responseBody,r.headers.get("content-type")||"application/json; charset=utf-8",origin||APP_ORIGIN);
+ }catch(e){return send(res,502,JSON.stringify({ok:false,error:String(e&&e.message||e),source:src}),"application/json; charset=utf-8",origin||APP_ORIGIN)}
  finally{clearTimeout(t)}
 });
 const port=process.env.PORT||10000;
