@@ -1,5 +1,8 @@
 module.exports=async function handler(req,res){
- res.setHeader("Access-Control-Allow-Origin","*");
+ const origin=String(req.headers.origin||"");
+ if(origin&&origin!=="https://alvarogavilan.github.io")return res.status(403).json({ok:false,error:"origen no permitido"});
+ res.setHeader("Access-Control-Allow-Origin",origin||"https://alvarogavilan.github.io");
+ res.setHeader("Vary","Origin");
  res.setHeader("Cache-Control","no-store");
  const targets=[
   ["ston","https://api.ston.fi/v1/assets/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"],
