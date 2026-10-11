@@ -5,14 +5,19 @@ const ALLOWED={
   lorcast:{host:"api.lorcast.com",base:"https://api.lorcast.com",paths:[/^\/v0\/cards\/search$/,/^\/v0\/sets$/,/^\/v0\/sets\/[^/]+\/cards$/]},
   tcgdex:{host:"api.tcgdex.net",base:"https://api.tcgdex.net",paths:[/^\/v2\//]}
 };
-const cors={
- "Access-Control-Allow-Origin":"*",
- "Access-Control-Allow-Methods":"GET,POST,OPTIONS",
- "Access-Control-Allow-Headers":"Content-Type",
- "Cache-Control":"no-store"
-};
+const APP_ORIGIN="https://alvarogavilan.github.io";
+function setCors(req,res){
+ const origin=String(req.headers.origin||"");
+ if(origin&&origin!==APP_ORIGIN)return false;
+ res.setHeader("Access-Control-Allow-Origin",origin||APP_ORIGIN);
+ res.setHeader("Vary","Origin");
+ res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");
+ res.setHeader("Access-Control-Allow-Headers","Content-Type");
+ res.setHeader("Cache-Control","no-store");
+ return true;
+}
 module.exports=async function handler(req,res){
- Object.entries(cors).forEach(([k,v])=>res.setHeader(k,v));
+ if(!setCors(req,res))return res.status(403).json({ok:false,error:"origen no permitido"});
  if(req.method==="OPTIONS")return res.status(204).end();
  const src=String(req.query.source||"");
  const path=String(req.query.path||"");
@@ -27,7 +32,14 @@ module.exports=async function handler(req,res){
  const ctl=new AbortController();
  const timer=setTimeout(()=>ctl.abort(),9000);
  try{
-   const upstream=await fetch(url,{method:req.method==="POST"?"POST":"GET",headers:{"Accept":"application/json","User-Agent":"CardVault/98"},signal:ctl.signal});
+   const method=req.method==="POST"?"POST":"GET";
+   const headers={"Accept":"application/json","User-Agent":"CardVault/98.2"};
+   let body;
+   if(method==="POST"){
+     headers["Content-Type"]=String(req.headers["content-type"]||"application/json");
+     body=typeof req.body==="string"?req.body:JSON.stringify(req.body??{});
+   }
+   const upstream=await fetch(url,{method,headers,body,signal:ctl.signal});
    const text=await upstream.text();
    res.status(upstream.status);
    res.setHeader("Content-Type",upstream.headers.get("content-type")||"application/json; charset=utf-8");
