@@ -34,12 +34,16 @@ module.exports=async function handler(req,res){
  try{
    const method=req.method==="POST"?"POST":"GET";
    const headers={"Accept":"application/json","User-Agent":"CardVault/98.2"};
-   let body;
+   if(req.method!=="GET"&&req.method!=="POST")return res.status(405).json({ok:false,error:"método no permitido"});
+   if(method==="POST"&&(src!=="ston"||path!=="/v1/swap/simulate"))
+     return res.status(405).json({ok:false,error:"POST no permitido para esta ruta"});
+   let requestBody;
    if(method==="POST"){
      headers["Content-Type"]=String(req.headers["content-type"]||"application/json");
-     body=typeof req.body==="string"?req.body:JSON.stringify(req.body??{});
+     requestBody=Buffer.isBuffer(req.body)?req.body.toString("utf8"):typeof req.body==="string"?req.body:JSON.stringify(req.body??{});
+     if(Buffer.byteLength(requestBody,"utf8")>65536)return res.status(413).json({ok:false,error:"cuerpo demasiado grande"});
    }
-   const upstream=await fetch(url,{method,headers,body,signal:ctl.signal});
+   const upstream=await fetch(url,{method,headers,body:requestBody,signal:ctl.signal});
    const text=await upstream.text();
    res.status(upstream.status);
    res.setHeader("Content-Type",upstream.headers.get("content-type")||"application/json; charset=utf-8");
