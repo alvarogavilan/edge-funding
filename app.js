@@ -485,7 +485,7 @@ async function resolveLorcanaCatalogImage(c){
  return scored[0]?.image||"";
 }
 async function hydrateCatalogImages(){
- const todo=(state.cards||[]).filter(x=>!x.archivedSold&&(!x.referenceImage||x.referenceImageSource==="external-reference")).slice(0,30);
+ const todo=(state.cards||[]).filter(x=>!x.archivedSold&&!window.CVCardImages?.entry(x)&&(!x.referenceImage||x.referenceImageSource==="external-reference")).slice(0,30);
  if(!todo.length)return;
  let local=[];try{local=await catalogAll()}catch{}
  let changed=false;
@@ -500,7 +500,7 @@ async function hydrateCatalogImages(){
  if(changed){save();render();try{window.renderMasterSets?.()}catch{}try{window.CVSimpleHome?.render?.()}catch{}}
 }
 document.addEventListener("error",e=>{
- const img=e.target?.closest?.("img[data-auto-card]");if(!img)return;
+ const img=e.target?.closest?.("img[data-auto-card]");if(!img||window.CVCardImages)return;
  const card=(state.cards||[]).find(x=>x.id===img.dataset.autoCard);if(!card)return;
  if(card.referenceImage){card.referenceImage="";card.referenceImageSource="";save()}
  img.closest(".catalogThumb")?.replaceWith(Object.assign(document.createElement("div"),{className:"photoMissing",innerHTML:"BUSCANDO<br>IMAGEN<small>probando otra fuente</small>"}));

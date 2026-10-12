@@ -80,7 +80,7 @@ function cardRows(){
 /* ---------- fotos oficiales (nunca fotos personales) ---------- */
 const IMG_KEY="cv_official_img_v1";
 const imgCache=(()=>{try{return JSON.parse(localStorage.getItem(IMG_KEY)||"{}")}catch{return {}}})();
-function officialImage(x){const u=safeUrl(x.image||"");return u||imgCache[x.id]||""}
+function officialImage(x){const bundled=window.CVCardImages?.entry(x);if(bundled)return bundled.path;const u=safeUrl(x.image||"");return window.CVCardImages?.localUrl(u||imgCache[x.id]||"")||u||imgCache[x.id]||""}
 async function resolveLorcanaImages(rows){
  for(const x of rows.filter(r=>r.universe==="lorcana"&&!officialImage(r)).slice(0,12)){
   try{
@@ -97,12 +97,13 @@ async function resolveLorcanaImages(rows){
 /* ---------- Compra YA ---------- */
 let filter="all";
 function oppCard(o){
- const x=o.x,img=officialImage(x),badge=o.buyReady?'<span class="cyBadge buy">COMPRAR YA</span>':'<span class="cyBadge watch">VIGILAR</span>';
+ const x=o.x,img=officialImage(x),imageEntry=window.CVCardImages?.entry(x),badge=o.buyReady?'<span class="cyBadge buy">COMPRAR YA</span>':'<span class="cyBadge watch">VIGILAR</span>';
  return '<article class="cyCard">'+
  '<div class="cyImg">'+(img?'<img src="'+E(img)+'" alt="'+E(x.name)+'" loading="lazy" referrerpolicy="no-referrer">':'<span>Foto oficial<br>no disponible</span>')+'</div>'+
  '<div class="cyBody">'+badge+'<span class="cyGame">'+(x.universe==="lorcana"?"Lorcana":"Pokémon")+'</span>'+
  '<h4>'+E(x.name)+'</h4>'+
  '<p class="cyMeta">'+E([x.set,x.number?"nº "+x.number:""].filter(Boolean).join(" · "))+'</p>'+
+ (imageEntry?.language?'<p class="cyMeta">Imagen de catálogo en '+E(imageEntry.language)+'</p>':'')+
  '<p class="cyMeta">'+o.flag+' '+E(o.lname)+' · '+E(x.condition||"estado pendiente")+' · '+E(rarity(x))+'</p>'+
  '<dl class="cyGrid">'+
  '<div><dt>Precio compra</dt><dd>'+EUR(x.price)+'</dd></div>'+

@@ -147,7 +147,7 @@ function bridgeUrl(url){
 }
 async function rawFetchJson(url,opts){
  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
- try{const r=await fetch(url,{...(typeof document!=="undefined"?{cache:"no-store"}:{}),...(opts||{}),signal:ctl.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
+ try{const r=await fetch(url,{...(typeof document!=="undefined"?{cache:"no-store"}:{}),...(opts||{}),signal:ctl.signal});if(!r.ok)throw new Error(j?"API no operativa · HTTP "+r.status:"Respuesta no JSON · HTTP "+r.status);return await r.json()}
  finally{clearTimeout(to)}
 }
 async function getJson(url,opts){
@@ -165,8 +165,8 @@ async function probeBridgeHealth(){
  try{
   const r=await fetch(BRIDGE_API.replace(/\/$/,"")+BRIDGE_HEALTH_PATH,{cache:"no-store",signal:ctl.signal});
   const j=await r.json().catch(()=>null);
-  const ok=!!(r.ok&&j&&(j.ok!==false));
-  state.bridgeHealth={ok:ok,msg:ok?"operativo":("HTTP "+r.status)};
+  const ok=!!(r.ok&&j&&j.ok===true);
+  state.bridgeHealth={ok:ok,msg:ok?"operativo":(j?"API no operativa · HTTP "+r.status:"Respuesta no JSON · HTTP "+r.status)};
  }catch(e){state.bridgeHealth={ok:false,msg:String(e.message||e)}}
  finally{clearTimeout(to)}
  return state.bridgeHealth;

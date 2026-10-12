@@ -4,6 +4,7 @@ const EUR=v=>(Number(v)||0).toLocaleString("es-ES",{style:"currency",currency:"E
 const Q=s=>document.querySelector(s);
 const qty=c=>Math.max(1,Number(c?.quantity)||1);
 function img(c){
+ const bundled=window.CVCardImages?.entry(c);if(bundled)return bundled.path;
  // Catálogos contrastados visualmente: nombre, número, edición e idioma.
  const local={
   "own-machamp-gx-154-bus-es":["Machamp GX","154/147","Sombras Ardientes","Español","machamp-gx-154-es.png"],
