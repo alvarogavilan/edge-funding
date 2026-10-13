@@ -1,0 +1,144 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><meta name="robots" content="noindex,nofollow"><title>Phygitals · Diagnóstico 14 octubre</title>
+<style>:root{font:16px/1.5 system-ui,-apple-system,sans-serif;color:#e9effa;background:#0d1422;color-scheme:dark}*{box-sizing:border-box}body{max-width:720px;margin:auto;padding:24px 16px 60px}a{color:#b2d1ff}h1{font-size:1.6rem;margin:8px 0}p{color:#bdc7d7}main{margin-top:18px}.card{background:#182438;border:1px solid #35435b;border-radius:18px;padding:20px;margin:16px 0}.big{font-size:2.1rem;line-height:1.2;font-weight:850;margin:8px 0}.muted{color:#aab7c8;font-size:.88rem}.pill{font-size:.8rem;font-weight:750;letter-spacing:.06em;color:#fac3a4}.row{display:flex;gap:10px;align-items:center;justify-content:space-between}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}button,select,input{border-radius:10px;padding:12px;background:#243850;color:white;border:1px solid #63748e;font:inherit;width:100%}button{background:#3367cf;cursor:pointer;font-weight:700}.secondary{background:#25344b}.minicard{background:#101e31;border:1px solid #33465f;padding:14px;border-radius:13px;margin:10px 0}.minicard strong{display:block}.minicard p{margin:5px 0}.minicard a{display:inline-block;margin:8px 0 0}label{display:block;font-size:.84rem;color:#bec9da}details{margin-top:26px}summary{cursor:pointer}.warn{color:#ffce8a}.fine{font-size:.8rem;color:#a3aec0}.status{font-size:.87rem;color:#bac8de}.good{color:#9eebc6}@media(max-width:420px){.grid{grid-template-columns:1fr 1fr}.grid div:last-child{grid-column:span 2}}</style></head>
+<body><a href="index.html">← Card Vault</a><h1>Phygitals · Compra YA <small style="font-size:.65rem;color:#9eebc6">v14.10 diagnóstico</small></h1><p>Todos los coleccionables · solo presupuestos pequeños · ninguna compra automática.</p><main><section class="card"><div class="pill" id="badge">COMPROBACIÓN DE EVIDENCIA</div><div class="big" id="decision">NO COMPRAR</div><p id="reason">Sin una salida real de venta y beneficio neto confirmado no se autoriza ninguna compra.</p><div class="row muted"><span id="checked">Catálogo aún sin consultar</span><span id="count">0 compras aprobadas</span></div></section>
+<section class="card"><div class="row"><strong>Explorador de packs</strong><span class="muted">Límite: 50 €</span></div><p class="muted">Incluye packs de deportes, TCG, creadores y otras colecciones; no solo Pokémon.</p><div class="grid"><div><label for="max">Presupuesto €</label><select id="max"><option>5</option><option>10</option><option>25</option><option selected>50</option></select></div><div><label for="fx">1 USD en EUR</label><input id="fx" type="number" placeholder="Auto" min=".01" step=".0001"></div><div><label for="fees">Costes extra €</label><input id="fees" type="number" min="0" value="0" step=".01"></div></div><p id="fxStatus" class="fine">Consultando cambio; si falla, introduce un cambio contrastado.</p><button id="scan" type="button">Consultar oportunidades reales</button><button id="diagnose" type="button" class="secondary">Comprobar conexión con Phygitals</button><p id="diagnoseStatus" class="status" role="status">La prueba no realiza compras ni necesita credenciales.</p><p class="fine"><a href="https://api.phygitals.com/api/vm/available?platform=mainnet&amp;includeRepacks=true&amp;excludeVariants=true" target="_blank" rel="noopener noreferrer">Abrir respuesta oficial de Phygitals directamente ↗</a> · Si este enlace tampoco carga en Safari, el problema no se limita al acceso entre dominios (CORS). Prueba Safari fuera del navegador integrado y otra red; el catálogo puede no estar accesible temporalmente.</p><p id="scanStatus" class="status" role="status">Sin comprobación iniciada.</p><details><summary>Alternativa sin intermediarios: importar respuesta oficial</summary><p class="fine">Cuando Safari abra la API, puedes copiar su respuesta JSON aquí. No introduce claves ni ejecuta compras. Los datos importados son solo orientativos y no autorizan compras.</p><textarea id="importJson" rows="3" style="width:100%;background:#101e31;color:#fff;border:1px solid #63748e;border-radius:10px;padding:10px" placeholder="Pegar aquí el JSON del catálogo oficial"></textarea><button type="button" class="secondary" id="importCatalog">Analizar JSON pegado</button><p id="importStatus" class="fine"></p></details><div id="candidates"></div></section>
+<section class="card" aria-label="Investigación de premios en blockchain"><strong>Investigación real de Mythic y Epic</strong><p class="muted">RipIndex documenta un registro de aperturas reconstruido desde Solana, con marcas temporales individuales. El feed de ganadores de Phygitals está sesgado hacia premios grandes: no sirve por sí solo para identificar ciclos.</p><p class="muted">Aún no disponemos de una exportación completa y auditable de ese registro; por ello no hay un intervalo ganador demostrado ni señal automática por hora.</p><a href="https://rip-index.com/methodology" target="_blank" rel="noopener noreferrer">Ver método y registro declarado ↗</a> · <a href="https://rip-index.com/phygitals" target="_blank" rel="noopener noreferrer">Consultar mediciones de Phygitals ↗</a></section>
+<p><a href="phygitals-auditoria.html">Auditoría de secuencias Mythic/Epic con aperturas reales ↗</a></p><details><summary>Fuentes independientes de auditoría</summary><p><a href="https://app.blockworks.com/projects/phygitals/analytics/phygitals-gachapon" target="_blank" rel="noopener noreferrer">Blockworks Intel: packs abiertos, gasto por precio y resultados de jugadores ↗</a></p><p class="muted">Limitaciones verificadas: no cubre todas las compras con tarjeta y la exportación de datos individuales requiere suscripción Pro. No se considera registro exhaustivo ni prueba de patrones temporales.</p><p><a href="https://rip-index.com/methodology" target="_blank" rel="noopener noreferrer">RipIndex: metodología y sesgo de aperturas públicas ↗</a></p></details><details><summary>Prueba real: fútbol 10 USD (muestra histórica)</summary><section class="card"><strong>183 aperturas observadas por RipRanks</strong><p>Valor medio de cartas: 96 % del precio. Solo 30,1 % de resultados con valoración al menos igual al coste. Con una recompra hipotética del 85 % sobre ese valor, la recuperación media aritmética sería 81,6 % antes de gastos, sujeto a que todas esas cartas fueran elegibles para recompra.</p><p class="warn">El porcentaje no es una medición de efectivo recibido: es una conversión condicional de valor de cartas a efectivo. Tampoco permite predecir horarios.</p><a href="https://ripranks.com/card-rip-sites/phygitals/packs/starter-sport-pack" target="_blank" rel="noopener noreferrer">Ver muestra y limitaciones ↗</a></section></details><details><summary>¿Cuándo podría aparecer otro Mythic o Epic?</summary>
+<section class="card"><p>Estimador matemático, <strong>no predictor</strong>. Introduce la probabilidad publicada del premio del pack exacto; no uses probabilidades de otros packs.</p>
+<div class="grid"><div><label for="prob">Probabilidad por apertura (%)</label><input id="prob" type="number" min="0.0001" max="100" step="0.01" placeholder="Probabilidad publicada"></div>
+<div><label for="packCost">Coste por apertura (€)</label><input id="packCost" type="number" min="0.01" step="0.01" value="10"></div><div><label for="draws">Número de aperturas</label><input id="draws" type="number" min="1" max="1000000" step="1" value="5"></div></div>
+<p id="oddsOutput" role="status"></p>
+<p class="fine">Asume aperturas independientes y una probabilidad constante y correcta. No implica que Phygitals cumpla estos supuestos ni aumenta la probabilidad por esperar una hora concreta. Tampoco incorpora el valor de recompra ni el riesgo de pérdida.</p></section></details><details><summary>Histórico local de cambios del catálogo</summary><p>Los datos descargados al consultar el catálogo se guardan en este dispositivo. No son aperturas verificadas. Puedes exportar una copia JSON.</p><button type="button" id="exportCatalog" class="secondary">Exportar histórico de precios y stock</button><p id="catalogHistoryStatus" class="muted"></p><div id="catalogChanges" class="muted" role="status">Todavía no hay dos capturas comparables de este catálogo.</div></details><details><summary>¿Cuándo mostrará COMPRA YA?</summary><p>Solo si existe un artículo concreto identificado (no un resultado aleatorio), dentro del presupuesto y con una oferta de recompra o compra firme para ese mismo artículo que siga siendo válida tras adquirirlo; deben descontarse comisiones, divisa y todos los costes. Ningún pack aleatorio cumple una garantía de beneficio por el mero hecho de tener EV positivo. Un valor esperado anunciado, una rareza alta, la hora de apertura o un premio visto en redes no cumplen estos requisitos.</p><p>Los packs aleatorios pueden dar pérdidas incluso si sus cifras publicitarias parecen favorables. No se ha demostrado una debilidad explotable de su generador. Para revisar estudios anteriores: <a href="phygitals-investigacion.html">abrir investigación detallada</a>.</p></details></main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n);
+let packs=[],rate=null,stamp=null;
+const HISTORY_KEY='phygitals_catalog_snapshots_v1';
+let catalogLive=false;
+function loadCachedCatalog(){
+ try{
+  const history=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+  if(!Array.isArray(history)||history.length===0)return false;
+  const last=history[history.length-1];
+  if(!Array.isArray(last.rows)||last.rows.length===0)return false;
+  // Map to catalog row names for read-only, stale research mode.
+  packs=last.rows.filter(p=>p&&typeof p.slug==='string').map(p=>({
+   slug:p.slug,name:p.name,mint_price:p.price,ev:p.ev,
+   in_stock:p.in_stock,enable:p.enable,buyback_percent:p.buyback_percent,
+   ev_updated_at:p.ev_updated_at,rarity_distribution:p.rarity_distribution
+  }));
+  catalogLive=false;
+  $('checked').textContent='Datos históricos: '+new Date(last.capturedAt).toLocaleString('es-ES');
+  return true;
+ }catch(_){return false}
+}
+
+function saveCatalogSnapshot(data){
+ const rows=data.filter(p=>p&&typeof p.slug==='string').map(p=>({
+  slug:p.slug,name:String(p.name||''),price:p.mint_price??null,ev:p.ev??null,
+  in_stock:p.in_stock===true,enable:p.enable===true,
+  buyback_percent:p.buyback_percent??null,ev_updated_at:p.ev_updated_at??null,
+  num_pulls_7d:p.num_pulls_7d??null,id:p.id??null,
+  rarity_distribution:p.rarity_distribution??null
+ }));
+ try{
+  const prior=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+  const history=Array.isArray(prior)?prior:[];
+  // Compare economic conditions only: 7-day volume changing must not erase the last 30 meaningful snapshots.
+  const economicSignature=list=>JSON.stringify((list||[]).map(p=>({
+   slug:p.slug,price:p.price,ev:p.ev,buyback_percent:p.buyback_percent,
+   in_stock:p.in_stock,enable:p.enable,rarity_distribution:p.rarity_distribution
+  })).sort((a,b)=>a.slug.localeCompare(b.slug)));
+  const signature=economicSignature(rows);
+  if(!history.length||economicSignature(history[history.length-1].rows)!==signature){
+   history.push({capturedAt:new Date().toISOString(),source:'Phygitals public API /api/vm/available',rows});
+   localStorage.setItem(HISTORY_KEY,JSON.stringify(history.slice(-30)));
+  }
+ }catch(_){/* Browser storage may be disabled */ }
+}
+
+function renderCatalogChanges(){
+ const el=$('catalogChanges');
+ try{
+  const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+  if(!Array.isArray(h)||h.length<2){el.textContent='Se necesitan al menos dos capturas distintas. Las aperturas ajenas no están incluidas.';return}
+  const prev=h[h.length-2],cur=h[h.length-1],old=new Map((prev.rows||[]).map(x=>[x.slug,x]));
+  const changed=[];
+  for(const p of cur.rows||[]){
+   const o=old.get(p.slug);if(!o)continue;
+   const metric=['price','ev','buyback_percent','in_stock'];
+   const diff=metric.filter(k=>String(o[k]??'')!==String(p[k]??''));
+   if(diff.length)changed.push(String(p.name||p.slug)+': '+diff.map(k=>k+' '+String(o[k]??'?')+' → '+String(p[k]??'?')).join('; '));
+  }
+  el.replaceChildren();
+  paragraph(el,'Comparación de las últimas capturas distintas ('+String(prev.capturedAt)+' frente a '+String(cur.capturedAt)+'). Cambios: '+changed.length+'. Esto NO es evidencia de resultados de aperturas.','fine');
+  for(const line of changed.slice(0,12))paragraph(el,line,'fine');
+  if(changed.length>12)paragraph(el,'Otros '+(changed.length-12)+' cambios disponibles en la exportación.','fine');
+ }catch(_){el.textContent='Historial local no legible. No hay datos suficientes para comparar.'}
+}
+const q=$('candidates'),scan=$('scan');
+function clear(){q.replaceChildren()}
+function paragraph(parent,s,cls=''){const x=document.createElement('p');x.textContent=s;x.className=cls;parent.append(x);return x}
+function render(){clear();const budget=Number($('max').value),fees=Number($('fees').value),fx=Number($('fx').value)||rate;
+if(!Number.isFinite(fees)||fees<0){paragraph(q,'Costes no válidos.','warn');return}
+if(!fx||!Number.isFinite(fx)||fx<=0){paragraph(q,'No se puede comprobar el límite en euros sin un cambio USD/EUR verificable.','warn');return}
+const eligible=packs.filter(p=>p&&p.enable===true&&p.in_stock===true&&Number.isFinite(Number(p.mint_price))&&Number(p.mint_price)>0&&Number(p.mint_price)*fx+fees<=budget);
+$('count').textContent='0 compras aprobadas';$('decision').textContent='NO COMPRAR';
+if(!catalogLive&&packs.length){paragraph(q,'HISTÓRICO SIN VERIFICAR: catálogo guardado en este iPhone. No comprobar disponibilidad ni comprar con estos datos.','warn')}if(!eligible.length){paragraph(q,packs.length?'No hay productos visibles dentro del presupuesto en esta captura; no confirma disponibilidad actual.':'Sin catálogo verificable.','muted');return}
+const projected=p=>{const ev=Number(p.ev),bb=Number(p.buyback_percent);if(p.ev===null||p.ev===undefined||p.buyback_percent===null||p.buyback_percent===undefined||!Number.isFinite(ev)||ev<0||!Number.isFinite(bb)||bb<=0||bb>1)return null;return (ev*bb-Number(p.mint_price))*fx-fees;};
+eligible.sort((a,b)=>(projected(b)??-Infinity)-(projected(a)??-Infinity));
+const fresh=p=>{const t=Date.parse(p.ev_updated_at||'');return Number.isFinite(t)&&t<=Date.now()&&Date.now()-t<=24*60*60*1000;};
+const potential=catalogLive?eligible.filter(p=>fresh(p)&&projected(p)!==null&&projected(p)>0):[];
+$('badge').textContent=potential.length?'MÁRGENES TEÓRICOS · SIN GARANTÍA':'SIN VENTA CONFIRMADA';
+$('reason').textContent=potential.length?'Hay '+potential.length+' pack(s) con margen teórico positivo y EV de menos de 24 horas según el operador, pero falta verificar recompra real, costes y riesgo: NO COMPRAR todavía.':'No existe una compra con salida ejecutable verificada. No gastar en aperturas para recuperar pérdidas.';
+paragraph(q,eligible.length+' pack(s) asequibles · '+potential.length+' margen(es) medios teóricos positivos · 0 compras autorizadas.','status');
+for(const p of eligible.slice(0,8)){const el=document.createElement('div');el.className='minicard';const name=document.createElement('strong');name.textContent=String(p.name||'Pack sin nombre');el.append(name);
+const price=Number(p.mint_price)*fx;paragraph(el,'Precio anunciado: '+money(price)+' aprox. · Coste mínimo con extras: '+money(price+fees));
+const margin=projected(p);if(p.buyback_percent!==null&&p.buyback_percent!==undefined){const bp=Number(p.buyback_percent);if(Number.isFinite(bp))paragraph(el,'Recompra publicada: '+(bp*100).toFixed(1)+' % · EV actualizado: '+String(p.ev_updated_at||'fecha no disponible'),'muted');}if(margin!==null){paragraph(el,'Margen medio teórico: '+money(margin)+' · NO es beneficio garantizado',margin>0?'warn':'muted');if(margin>0)paragraph(el,'SOLO INVESTIGACIÓN: el promedio no garantiza recuperar el dinero.','warn')}const pct=Number(p.buyback_percent);if(p.buyback_percent!==null&&p.buyback_percent!==undefined&&Number.isFinite(pct)&&pct>0&&pct<=1){const threshold=(Number(p.mint_price)+fees/fx)/pct;paragraph(el,'Para cubrir coste y extras, EV bruto necesario: '+threshold.toFixed(2)+' USD · EV publicado: '+(p.ev===null||p.ev===undefined?'no consta':Number(p.ev).toFixed(2)+' USD'),'fine');const updatedAt=Date.parse(p.ev_updated_at||'');if(!Number.isFinite(updatedAt)){paragraph(el,'Fecha del EV sin verificar: no interpretar un margen aparente como actual.','warn')}else if(Date.now()-updatedAt>86400000){paragraph(el,'EV de hace más de 24 horas: dato potencialmente desactualizado.','warn')}}
+paragraph(el,'Categorías: '+(Array.isArray(p.categories)?p.categories.join(', '):String(p.category||'no especificada')),'muted');
+if(typeof p.slug==='string'&&/^[a-zA-Z0-9_-]+$/.test(p.slug)){const a=document.createElement('a');a.href='https://www.phygitals.com/claw/'+encodeURIComponent(p.slug);a.target='_blank';a.rel='noopener noreferrer';a.textContent='Ver pack concreto (sin recomendación de compra) ↗';el.append(a)}q.append(el)}
+}
+async function fx(){try{const r=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR',{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();const v=Number(d?.rates?.EUR);if(!(v>0))throw Error();rate=v;$('fxStatus').textContent='Cambio USD→EUR consultado: '+v.toFixed(4)+' (fecha '+String(d.date||'no disponible')+'). Confirma tasas reales del medio de pago.';if(packs.length)render()}catch{$('fxStatus').textContent='No fue posible consultar el cambio: introduce un tipo de cambio verificable antes de evaluar los packs.'}}
+scan.onclick=async()=>{scan.disabled=true;clear();$('scanStatus').textContent='Consultando catálogo público…';const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
+try{const url='https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true';let data,source='API oficial directa';
+try{
+ const r=await fetch(url,{cache:'no-store',credentials:'omit',signal:ctrl.signal});
+ if(!r.ok)throw Error('HTTP '+r.status);data=await r.json();
+}catch(directError){
+ // Solo datos públicos sin claves. El intermediario no es fuente independiente ni verifica precios.
+ throw directError; // Nunca depender de un proxy externo no comprobado para datos económicos.
+}if(!Array.isArray(data))throw Error('Respuesta inesperada');if(!data.every(p=>p&&typeof p==='object'&&!Array.isArray(p)))throw Error('Formato de productos no válido');packs=data;catalogLive=source==='API oficial directa';if(catalogLive)saveCatalogSnapshot(data);renderCatalogChanges();stamp=new Date();$('checked').textContent='Catálogo: '+stamp.toLocaleTimeString('es-ES');$('scanStatus').textContent='Recibidos '+packs.length+' packs · Fuente: '+source+'. '+(catalogLive?'Catálogo directo consultado.':'SOLO INVESTIGACIÓN: el intermediario externo puede estar desactualizado o alterado. No genera señales de compra.')+' Sin ofertas individuales de recompra verificadas.';render()}catch(e){catalogLive=false;const cached=loadCachedCatalog();if(!cached){packs=[];$('checked').textContent='Sin datos en directo';}$('scanStatus').textContent='Conexión al catálogo fallida ('+e.message+'). '+(cached?'Mostrando la última captura guardada SOLO como referencia histórica; no confirma stock ni beneficios.':'No hay ninguna captura local; los datos no están disponibles.')+' Puede deberse a CORS, DNS, red o servicio. NO COMPRAR.';render()}finally{clearTimeout(timer);scan.disabled=false}};
+$('importCatalog').onclick=()=>{
+ try{const raw=$('importJson').value;if(raw.length>3000000)throw Error('Archivo demasiado grande');const data=JSON.parse(raw);if(!Array.isArray(data)||!data.every(p=>p&&typeof p==='object'&&!Array.isArray(p)))throw Error('Se esperaba una lista JSON de packs');
+ packs=data;catalogLive=false;$('checked').textContent='Catálogo importado sin autenticación';$('importStatus').textContent='Importadas '+packs.length+' filas. Datos no verificados en directo desde la app. NO COMPRAR sin comprobar condiciones.';render();
+ }catch(e){$('importStatus').textContent='No se ha podido interpretar el JSON: '+e.message}
+};
+$('diagnose').onclick=async()=>{
+ const button=$('diagnose'),target=$('diagnoseStatus');button.disabled=true;
+ const url='https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true';
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
+ target.textContent='Comprobando respuesta desde este navegador…';
+ try{const res=await fetch(url,{credentials:'omit',cache:'no-store',signal:controller.signal});
+  if(!res.ok){target.textContent='Servidor accesible, pero respondió HTTP '+res.status+'. No comprar sin datos actuales.';return}
+  const data=await res.json();
+  if(!Array.isArray(data)){target.textContent='Respuesta recibida, pero el formato no es una lista de packs. Revisar API.';return}
+  const visible=data.filter(x=>x&&x.enable===true&&x.in_stock===true);
+  target.textContent='Conexión correcta desde este navegador. '+data.length+' productos recibidos; '+visible.length+' marcados como activos y con stock. Esto no verifica rentabilidad ni ofertas de recompra.';
+ }catch(err){
+  const type=err&&err.name==='AbortError'?'Tiempo de espera agotado':'Acceso fallido (posible bloqueo CORS, DNS, navegador o servicio)';
+  target.textContent=type+'. No es posible identificar la causa exacta desde JavaScript. No comprar sin datos.';
+ }finally{clearTimeout(timer);button.disabled=false}
+};
+$('exportCatalog').onclick=()=>{try{const all=localStorage.getItem(HISTORY_KEY)||'[]';const rows=JSON.parse(all);$('catalogHistoryStatus').textContent=rows.length+' capturas diferentes guardadas en este iPhone.';const blob=new Blob([JSON.stringify({type:HISTORY_KEY,exportedAt:new Date().toISOString(),snapshots:rows},null,2)],{type:'application/json'});const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='phygitals-catalogo-historico.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(e){$('catalogHistoryStatus').textContent='No se puede exportar: '+e.message}};
+function odds(){const p=Number($('prob').value)/100,cost=Number($('packCost').value),n=Number($('draws').value);
+if(!(p>0&&p<=1&&cost>0&&Number.isInteger(n)&&n>=1&&n<=1000000)){$('oddsOutput').textContent='Falta la probabilidad oficial del pack exacto. No se puede estimar ningún plazo.';return}
+const chance=-Math.expm1(n*Math.log1p(-p)),expected=1/p;
+$('oddsOutput').textContent='Posibilidad teórica de al menos un premio en '+n+' aperturas: '+(chance*100).toFixed(2)+'%. Gasto: '+money(n*cost)+'. Media matemática hasta el primer premio: '+expected.toFixed(1)+'; NO indica cuándo saldrá ni garantiza ganar.';
+}
+renderCatalogChanges();
+for(const id of ['prob','packCost','draws'])$(id).addEventListener('input',odds);odds();
+$('max').onchange=render;$('fx').oninput=render;$('fees').oninput=render;fx();scan.click();
+// Al volver a Safari tras 5 minutos, consultar de nuevo; no hay tareas ni compras en segundo plano.
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!scan.disabled&&(!stamp||Date.now()-stamp.getTime()>5*60*1000)){scan.click()}});
+})();
+</script><script src="phygitals-decision-engine.js?v=1"></script></body></html>
