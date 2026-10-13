@@ -17,6 +17,7 @@ function evaluate(candidate,now=Date.now()){
  if(candidate.exitType!=='binding_bid')fail.push('Un anuncio o valoración no es una oferta firme');
  const costs=(candidate.purchaseEUR||0)+(candidate.feesEUR||0)+(candidate.withdrawalFeesEUR||0)+(candidate.fxSpreadEUR||0);
  const net=(candidate.firmExitEUR||0)-costs;
+ if(costs>budget)fail.push('Coste total, incluidos gastos, excede el presupuesto');
  if(net<=0)fail.push('Sin margen neto positivo');
  return {decision:fail.length?'NO COMPRAR':'COMPRA YA',netEUR:Math.round(net*100)/100,reasons:fail,budgetEUR:budget,assetId:candidate.assetId||null};
 }
