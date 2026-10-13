@@ -34,4 +34,4 @@ scan.onclick=async()=>{scan.disabled=true;clear();$('scanStatus').textContent='C
 try{const r=await fetch('https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true',{cache:'no-store',credentials:'omit',signal:ctrl.signal});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();if(!Array.isArray(data))throw Error('Respuesta inesperada');packs=data;stamp=new Date();$('checked').textContent='Catálogo: '+stamp.toLocaleTimeString('es-ES');$('scanStatus').textContent='Recibidos '+packs.length+' packs. Solo se muestran los que caben en el presupuesto. Sin ofertas individuales de recompra verificadas.';render()}catch(e){packs=[];$('checked').textContent='Sin datos en directo';$('scanStatus').textContent='No se ha podido consultar el catálogo desde este navegador ('+e.message+'). NO COMPRAR.';render()}finally{clearTimeout(timer);scan.disabled=false}};
 $('max').onchange=render;$('fx').oninput=render;$('fees').oninput=render;fx();scan.click();
 })();
-</script></body></html>
+</script><script src="phygitals-decision-engine.js?v=1"></script></body></html>
