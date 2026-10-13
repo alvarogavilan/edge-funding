@@ -18,6 +18,8 @@ function saveCatalogSnapshot(data){
  const rows=data.filter(p=>p&&typeof p.slug==='string').map(p=>({
   slug:p.slug,name:String(p.name||''),price:p.mint_price??null,ev:p.ev??null,
   in_stock:p.in_stock===true,enable:p.enable===true,
+  buyback_percent:p.buyback_percent??null,ev_updated_at:p.ev_updated_at??null,
+  num_pulls_7d:p.num_pulls_7d??null,id:p.id??null,
   rarity_distribution:p.rarity_distribution??null
  }));
  try{
@@ -48,7 +50,7 @@ $('reason').textContent=potential.length?'Hay '+potential.length+' pack(s) con m
 paragraph(q,eligible.length+' pack(s) asequibles · '+potential.length+' margen(es) medios teóricos positivos · 0 compras autorizadas.','status');
 for(const p of eligible.slice(0,8)){const el=document.createElement('div');el.className='minicard';const name=document.createElement('strong');name.textContent=String(p.name||'Pack sin nombre');el.append(name);
 const price=Number(p.mint_price)*fx;paragraph(el,'Precio anunciado: '+money(price)+' aprox. · Coste mínimo con extras: '+money(price+fees));
-const margin=projected(p);if(margin!==null){paragraph(el,'Margen medio teórico: '+money(margin)+' · NO es beneficio garantizado',margin>0?'warn':'muted');if(margin>0)paragraph(el,'SOLO INVESTIGACIÓN: el promedio no garantiza recuperar el dinero.','warn')}
+const margin=projected(p);if(p.buyback_percent!==null&&p.buyback_percent!==undefined){const bp=Number(p.buyback_percent);if(Number.isFinite(bp))paragraph(el,'Recompra publicada: '+(bp*100).toFixed(1)+' % · EV actualizado: '+String(p.ev_updated_at||'fecha no disponible'),'muted');}if(margin!==null){paragraph(el,'Margen medio teórico: '+money(margin)+' · NO es beneficio garantizado',margin>0?'warn':'muted');if(margin>0)paragraph(el,'SOLO INVESTIGACIÓN: el promedio no garantiza recuperar el dinero.','warn')}
 paragraph(el,'Categorías: '+(Array.isArray(p.categories)?p.categories.join(', '):String(p.category||'no especificada')),'muted');
 if(typeof p.slug==='string'&&/^[a-zA-Z0-9_-]+$/.test(p.slug)){const a=document.createElement('a');a.href='https://www.phygitals.com/claw/'+encodeURIComponent(p.slug);a.target='_blank';a.rel='noopener noreferrer';a.textContent='Ver pack concreto (sin recomendación de compra) ↗';el.append(a)}q.append(el)}
 }
