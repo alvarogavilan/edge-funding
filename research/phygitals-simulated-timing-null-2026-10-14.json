@@ -1,0 +1,18 @@
+{
+  "method": "Monte Carlo independiente; NO datos reales de Phygitals",
+  "draws_discovery": 5000000,
+  "draws_validation": 2000000,
+  "assumed_win_probability": 0.01,
+  "discovery_winners": {
+    "hour_6": 0.010562267079257719,
+    "minute_43": 0.010844111395323703,
+    "second_12": 0.01118220414997309
+  },
+  "validation": {
+    "hour_6": 0.010090720611675036,
+    "minute_43": 0.009903961584633853,
+    "second_12": 0.009939577039274925,
+    "overall": 0.0101105
+  },
+  "conclusion": "Coindicencias temporales aparentes no sobrevivieron a una muestra independiente. No inferir probabilidades reales del juego."
+}
