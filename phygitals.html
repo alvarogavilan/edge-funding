@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Laboratorio Phygitals</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14171c;--mute:#5b6472;--line:#dfe3e8;--acc:#2f5bd3;--ok:#1d7a46;--bad:#b3261e;--warn:#9a6700}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a20;--ink:#e8eaee;--mute:#9aa3b0;--line:#2a2f38;--acc:#7c9cff;--ok:#4cc38a;--bad:#ff7a70;--warn:#e3b341}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:920px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1.1rem;margin:0 0 12px}
+p.sub{color:var(--mute);margin:0 0 20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:4px}
+input{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+td input{padding:6px}
+.scroll{overflow-x:auto}
+button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;cursor:pointer}
+button.ghost{background:transparent;color:var(--acc);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi b{display:block;font-size:1.35rem}
+.kpi span{color:var(--mute);font-size:.82rem}
+.verdict{border-radius:10px;padding:14px;font-weight:600;margin-top:12px;border:1px solid var(--line)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+ul{padding-left:20px;margin:6px 0}li{margin:4px 0}
+small{color:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+<h1>Laboratorio Phygitals</h1>
+<p class="sub">Copia la tabla de probabilidades que muestra la app antes de abrir un sobre. El laboratorio te dice si ese sobre, en ese momento, tiene ventaja matemática para ti.</p>
+
+<section>
+<h2>1. El sobre que estás mirando</h2>
+<div class="grid">
+  <div><label for="price">Precio del sobre ($)</label><input id="price" type="number" step="0.01" value="25"></div>
+  <div><label for="buyback">Buyback mostrado (%)</label><input id="buyback" type="number" step="0.5" value="85"></div>
+  <div><label for="promo">Bono/cashback aplicado (%)</label><input id="promo" type="number" step="0.5" value="0"></div>
+</div>
+<h2 style="margin-top:16px">Tramos de premio (probabilidad y valor medio)</h2>
+<div class="scroll"><table>
+<thead><tr><th>Probabilidad (%)</th><th>Valor medio del tramo ($)</th><th></th></tr></thead>
+<tbody id="tiers"></tbody>
+</table></div>
+<div class="row">
+  <button class="ghost" id="add">+ Añadir tramo</button>
+  <button class="ghost" id="preset">Cargar ejemplo Pokémon Rookie $25</button>
+</div>
+<small>Valor medio del tramo: si la app muestra "$25–$50", usa un punto algo por debajo del centro (≈$33), porque dentro de un tramo abundan más las cartas baratas.</small>
+</section>
+
+<section>
+<h2>2. Veredicto</h2>
+<div class="kpis">
+  <div class="kpi"><span>EV teórico (valor de mercado)</span><b id="evTheo">–</b></div>
+  <div class="kpi"><span>EV si vendes al buyback</span><b id="evCash">–</b></div>
+  <div class="kpi"><span>Buyback mínimo para no perder</span><b id="beBuy">–</b></div>
+  <div class="kpi"><span>Suma de probabilidades</span><b id="sumP">–</b></div>
+</div>
+<div class="verdict" id="verdict">–</div>
+</section>
+
+<section>
+<h2>3. Simulación de tu sesión</h2>
+<div class="grid">
+  <div><label for="n">Sobres que piensas abrir</label><input id="n" type="number" value="20"></div>
+  <div><label for="runs">Sesiones simuladas</label><input id="runs" type="number" value="200000"></div>
+</div>
+<div class="row"><button id="sim">Simular</button></div>
+<div class="kpis" style="margin-top:12px">
+  <div class="kpi"><span>Probabilidad de acabar ganando</span><b id="pWin">–</b></div>
+  <div class="kpi"><span>Resultado típico (mediana)</span><b id="med">–</b></div>
+  <div class="kpi"><span>Resultado medio</span><b id="mean">–</b></div>
+  <div class="kpi"><span>Mala racha (peor 5%)</span><b id="p5">–</b></div>
+</div>
+<small id="simInfo"></small>
+</section>
+
+<section>
+<h2>Lo que dicen los datos reales</h2>
+<p>Auditoría independiente de RipIndex sobre aperturas verificadas en la blockchain de Solana (septiembre 2026):</p>
+<div class="scroll"><table>
+<thead><tr><th>Sobre</th><th>Precio</th><th>EV teórico</th><th>EV vendiendo</th><th>Aperturas</th></tr></thead>
+<tbody>
+<tr><td>Rookie Pokémon</td><td>$25</td><td class="ok">+5,0%</td><td class="bad">−10,8%</td><td>15.928</td></tr>
+<tr><td>Rookie Riftbound</td><td>$10</td><td class="bad">−6,2%</td><td class="bad">−6,2%</td><td>1.607</td></tr>
+<tr><td>Starter Riftbound</td><td>$25</td><td class="bad">−8,0%</td><td class="bad">−8,0%</td><td>256</td></tr>
+<tr><td>Starter One Piece</td><td>$25</td><td class="ok">+5,6%</td><td class="bad">−10,2%</td><td>4.054</td></tr>
+</tbody></table></div>
+<ul>
+<li><b>La regla que decide todo:</b> EV teórico × buyback debe ser mayor que el precio. Con +5% de EV teórico necesitas un buyback ≥ 95,3%.</li>
+<li><b>La única ventaja real posible:</b> un sobre con EV teórico positivo <i>y</i> un boost de buyback al 100%. Entonces la esperanza pasa a +5%.</li>
+<li><b>Aun con ventaja, la varianza manda:</b> con +5% de EV, abriendo 50 sobres solo ganas ~39% de las veces; hacen falta cientos de sobres para que la ventaja se note.</li>
+<li><b>Si guardas la carta</b> en vez de venderla, su valor real es el que pagaría un comprador (Cardmarket menos comisiones y envío), no el "valor de mercado" que fija Phygitals.</li>
+<li><b>Los mythic no tienen truco de horario ni de selección:</b> cada sobre es un sorteo independiente (VRF on-chain). Ninguna racha previa cambia el siguiente.</li>
+</ul>
+</section>
+</main>
+<script>
+const PRESET=[[65,13],[22,24],[9,45],[3,110],[0.9,350],[0.1,2000]];
+const $=id=>document.getElementById(id);
+const tiers=$('tiers');
+function addRow(p='',v=''){const tr=document.createElement('tr');
+ tr.innerHTML=`<td><input type="number" step="0.01" value="${p}"></td><td><input type="number" step="0.01" value="${v}"></td><td><button class="ghost" aria-label="Quitar">×</button></td>`;
+ tr.querySelector('button').onclick=()=>{tr.remove();calc()};tiers.appendChild(tr);}
+function load(rows){tiers.innerHTML='';rows.forEach(r=>addRow(...r));calc();}
+function read(){return [...tiers.rows].map(r=>[...r.querySelectorAll('input')].map(i=>parseFloat(i.value))).filter(([p,v])=>p>0&&v>=0).map(([p,v])=>[p/100,v]);}
+function params(){return{price:+$('price').value,bb:+$('buyback').value/100,promo:+$('promo').value/100,t:read()};}
+const pct=x=>(x>=0?'+':'')+(x*100).toFixed(1)+'%';
+const usd=x=>(x>=0?'+':'−')+'$'+Math.abs(x).toFixed(0);
+function calc(){const{price,bb,promo,t}=params();if(!t.length||!price)return;
+ const sp=t.reduce((a,[p])=>a+p,0),ev=t.reduce((a,[p,v])=>a+p*v,0)/sp;
+ const cost=price*(1-promo),cash=ev*bb;
+ $('evTheo').textContent=`$${ev.toFixed(2)} (${pct(ev/cost-1)})`;
+ $('evCash').textContent=`$${cash.toFixed(2)} (${pct(cash/cost-1)})`;
+ $('beBuy').textContent=(cost/ev*100).toFixed(1)+'%';
+ const s=$('sumP');s.textContent=(sp*100).toFixed(2)+'%';s.className=Math.abs(sp-1)>0.005?'warn':'';
+ const v=$('verdict'),edge=cash/cost-1;
+ if(edge>0.01){v.className='verdict ok';v.textContent=`Ventaja a tu favor (${pct(edge)} por sobre vendiendo al buyback). Es la situación que buscas; aun así, solo apuesta lo que aceptes perder: la varianza es enorme.`}
+ else if(edge>-0.01){v.className='verdict warn';v.textContent=`Prácticamente neutro (${pct(edge)}). A largo plazo no ganas ni pierdes; solo merece la pena si quieres la carta.`}
+ else{v.className='verdict bad';v.textContent=`No abras este sobre para ganar dinero: pierdes de media ${usd(cash-cost).replace('−','')} por sobre (${pct(edge)}). Espera a un boost de buyback ≥ ${(cost/ev*100).toFixed(0)}%.`}}
+function sim(){const{price,bb,promo,t}=params();const n=Math.max(1,+$('n').value|0),runs=Math.min(2e6,Math.max(1000,+$('runs').value|0));
+ const sp=t.reduce((a,[p])=>a+p,0),cum=[];let c=0;for(const[p]of t){c+=p/sp;cum.push(c)}
+ const vals=t.map(([,v])=>v*bb),cost=price*(1-promo),out=new Float64Array(runs);
+ for(let r=0;r<runs;r++){let tot=0;for(let i=0;i<n;i++){const u=Math.random();let k=0;while(k<cum.length-1&&u>cum[k])k++;
+  const z=Math.sqrt(-2*Math.log(Math.random()||1e-12))*Math.cos(2*Math.PI*Math.random());tot+=vals[k]*Math.exp(0.5*z-0.125)-cost}out[r]=tot}
+ out.sort();const q=f=>out[Math.floor(f*(runs-1))];let w=0,m=0;for(const x of out){if(x>0)w++;m+=x}
+ $('pWin').textContent=(w/runs*100).toFixed(1)+'%';$('med').textContent=usd(q(.5));$('mean').textContent=usd(m/runs);$('p5').textContent=usd(q(.05));
+ $('simInfo').textContent=`${(runs*n).toLocaleString('es-ES')} sobres simulados para ${n} sobres por sesión (inversión ${'$'+(cost*n).toFixed(0)}).`;}
+$('add').onclick=()=>addRow();$('preset').onclick=()=>load(PRESET);$('sim').onclick=()=>{$('sim').textContent='Simulando…';setTimeout(()=>{sim();$('sim').textContent='Simular'},20)};
+document.addEventListener('input',calc);load(PRESET);
+</script>
+</body>
+</html>
