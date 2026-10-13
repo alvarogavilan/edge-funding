@@ -3,7 +3,7 @@
 const hour=t=>new Date(t).getUTCHours(),minute=t=>new Date(t).getUTCMinutes(),second=t=>new Date(t).getUTCSeconds(),weekday=t=>new Date(t).getUTCDay();
 const dims={weekday:7,hour:24,minute:60,second:60};
 const get={weekday,hour,minute,second};
-function binomTail(n,k,p){if(k<=0)return 1;if(k>n)return 0;if(p<=0)return 0;if(p>=1)return 1;let log=Math.log,arr=[];let logfact=0;const lf=[0];for(let i=1;i<=n;i++){logfact+=log(i);lf.push(logfact)}for(let i=k;i<=n;i++)arr.push(lf[n]-lf[i]-lf[n-i]+i*log(p)+(n-i)*Math.log1p(-p));const max=Math.max(...arr);return Math.min(1,Math.exp(max)*arr.reduce((a,x)=>a+Math.exp(x-max),0))}
+function binomTail(n,k,p){if(n>5000){const variance=n*p*(1-p);if(variance<=0)return k<=n*p?1:0;const z=(k-.5-n*p)/Math.sqrt(variance),t=1/(1+.2316419*Math.abs(z)),d=.3989422804014327*Math.exp(-.5*z*z),tail=d*t*(.319381530+t*(-.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));return Math.max(0,Math.min(1,z>=0?tail:1-tail))}if(k<=0)return 1;if(k>n)return 0;if(p<=0)return 0;if(p>=1)return 1;let log=Math.log,arr=[];let logfact=0;const lf=[0];for(let i=1;i<=n;i++){logfact+=log(i);lf.push(logfact)}for(let i=k;i<=n;i++)arr.push(lf[n]-lf[i]-lf[n-i]+i*log(p)+(n-i)*Math.log1p(-p));const max=Math.max(...arr);return Math.min(1,Math.exp(max)*arr.reduce((a,x)=>a+Math.exp(x-max),0))}
 function audit(rows,{complete=false,minTrain=300,minTest=150}={}){
  if(!complete)return {status:'SIN EVIDENCIA',reason:'El origen no garantiza todas las aperturas, incluidas las comunes. Los feeds destacados sesgan cualquier patrón.'};
  if(!Array.isArray(rows)||rows.length<minTrain+minTest)return {status:'SIN EVIDENCIA',reason:'Historial insuficiente para separar entrenamiento y validación.'};
