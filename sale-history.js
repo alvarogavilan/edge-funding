@@ -7,8 +7,8 @@ function render(){
  if(!rows.length){box.innerHTML='<div class="emptyState"><b>Aún no hay ventas registradas.</b><span>Usa “Marcar vendida” en cualquier carta de Mi colección.</span></div>';return}
  box.innerHTML=rows.map(h=>{
   const st=statusFor(h),snap=h.cardSnapshot||{},landed=h.landedCostUnit??snap.landedCostUnit??null,purchase=h.purchase??snap.purchase??null,
-   basis=landed!=null?N(landed)*N(h.qty||1):(purchase==null?null:N(purchase)*N(h.qty||1)),result=basis==null?null:N(h.net)-basis;
-  return '<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+st+'</span><h4>'+String(h.name||"")+'</h4><small>'+[h.number,h.set,h.language,h.grading,h.grade].filter(Boolean).join(" · ")+'</small></div><div class="sealedNumbers"><b>'+EUR(h.unitPrice)+'</b><span>'+N(h.qty||1)+' '+(N(h.qty||1)===1?'unidad':'unidades')+' · neto '+EUR(h.net)+'</span></div></div><div class="microNote">Venta '+String(h.soldAt||"")+(result==null?"":" · resultado vs coste aterrizado "+(result>=0?"+":"")+EUR(result))+'</div></article>'
+   basis=landed!=null?N(landed)*N(h.qty||1):(purchase==null?null:N(purchase)*N(h.qty||1)),result=basis==null||h.costsPending?null:N(h.net)-basis;
+  return '<article class="sealedCard"><div class="sealedMain"><div><span class="pill">'+st+'</span><h4>'+String(h.name||"")+'</h4><small>'+[h.number,h.set,h.language,h.grading,h.grade].filter(Boolean).join(" · ")+'</small></div><div class="sealedNumbers"><b>'+EUR(h.unitPrice)+'</b><span>'+N(h.qty||1)+' '+(N(h.qty||1)===1?'unidad':'unidades')+' · neto '+(h.costsPending?'pendiente':EUR(h.net))+'</span></div></div><div class="microNote">Venta '+String(h.soldAt||"")+(result==null?"":" · resultado vs coste aterrizado "+(result>=0?"+":"")+EUR(result))+'</div></article>'
  }).join("");
 }
 window.CVSalesHistory={render};render();

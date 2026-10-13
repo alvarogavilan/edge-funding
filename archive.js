@@ -130,8 +130,8 @@ function records(){
  return [...state.saleHistory].map(h=>{
   const s=h.cardSnapshot||{};
   const purchase=h.purchase??s.purchase??null,landed=h.landedCostUnit??s.landedCostUnit??null,basis=landed!=null?N(landed)*N(h.qty||1):(purchase==null?null:N(purchase)*N(h.qty||1));
-  const net=N(h.net)||N(h.unitPrice)*N(h.qty||1)-N(h.shipping)-N(h.fees);
-  return {...s,...h,cardSnapshot:s,purchase,basis,net,result:basis==null?null:net-basis,payment:paymentStatus(h),workflow:workflowLabel(h),
+  const net=h.costsPending?null:(h.net!=null?N(h.net):N(h.unitPrice)*N(h.qty||1)-N(h.shipping)-N(h.fees));
+  return {...s,...h,cardSnapshot:s,purchase,basis,net,result:basis==null||net==null?null:net-basis,payment:paymentStatus(h),workflow:workflowLabel(h),
    audit:h.audit||null,identityKey:h.audit?.identityKey||"",shippedAt:h.shippedAt||(state.investmentLedger||[]).find(r=>r.id===h.id)?.shippedAt||"",paidAt:h.paidAt||(state.investmentLedger||[]).find(r=>r.id===h.id)?.paidAt||"",
    heldDays:holdDays(h),ledgerStatus:(state.investmentLedger||[]).find(r=>r.id===h.id)?.fulfillmentStatus||h.fulfillmentStatus||""};
  }).sort((a,b)=>(b.soldAt||"").localeCompare(a.soldAt||""));
@@ -142,7 +142,7 @@ function summary(rows){
  const psa=rows.filter(x=>String(x.grading||"").toUpperCase()==="PSA").length,raw=rows.filter(x=>String(x.grading||"RAW").toUpperCase()==="RAW").length;
  const pokemon=rows.filter(x=>String(x.universe||"pokemon").toLowerCase()==="pokemon").length,lorcana=rows.filter(x=>String(x.universe||"").toLowerCase()==="lorcana").length;
  const best=rows.slice().sort((a,b)=>N(b.unitPrice)-N(a.unitPrice))[0]||null;
- return {count:rows.reduce((a,x)=>a+N(x.qty||1),0),records:rows.length,gross,net,known:known.length,pnl,pending,psa,raw,pokemon,lorcana,best};
+ return {count:rows.reduce((a,x)=>a+N(x.qty||1),0),records:rows.length,gross,net,pendingCosts:rows.filter(x=>x.costsPending).length,pendingGross:rows.filter(x=>x.payment!=="COBRADA"&&x.costsPending).reduce((a,x)=>a+N(x.unitPrice)*N(x.qty||1),0),known:known.length,pnl,pending,psa,raw,pokemon,lorcana,best};
 }
 function csv(rows){
  const cols=["Fecha venta","Nombre","Universo","Set","Número","Año","Idioma","Variante","Condición","Graduación","Nota","Certificado","Cantidad","Precio unidad","Bruto","Comisiones","Envío","Neto","Coste compra","Portes compra","Comisiones compra","Coste aterrizado ud","Coste base","Beneficio","ROI %","Días en cartera","Canal","Pedido","Estado cobro","Workflow","Vendedor compra","Procedencia","Tipo procedencia","Producto origen coste","Coste producto aproximado","Fecha compra","URL compra","URL mercado","Población grado","Población superior","Población total","Fuente población","Descripción venta","Descripción","Notas carta","Notas venta","Snapshot mercado RAW","Histórico posterior","Identity key exacta","Enviada (shippedAt)","Cobrada (paidAt)","Coste aterrizado congelado","Valoración al vender","Tesis de compra","Tesis de venta","Evidencia de salida","Supply / reprint","Evaluación de condición","Audit congelado"];
@@ -271,14 +271,14 @@ function render(){
  const box=Q("#archiveList"),sum=Q("#archiveSummary");if(!box||!sum)return;
  ensureArchiveFilters();
  const allRows=records(),rows=filteredRows(allRows),s=summary(allRows);renderLearning(allRows);
- sum.innerHTML='<div><span>Cartas vendidas</span><b>'+s.count+'</b></div><div><span>Ventas archivadas</span><b>'+s.records+'</b></div><div><span>Bruto histórico</span><b>'+EUR(s.gross)+'</b></div><div><span>Neto histórico</span><b>'+EUR(s.net)+'</b></div><div><span>Resultado conocido</span><b>'+(s.known?(s.pnl>=0?"+":"")+EUR(s.pnl):"Coste pendiente")+'</b></div><div><span>Cobros pendientes</span><b>'+EUR(s.pending)+'</b></div><div><span>PSA / RAW</span><b>'+s.psa+' / '+s.raw+'</b></div><div><span>Pokémon / Lorcana</span><b>'+s.pokemon+' / '+s.lorcana+'</b></div><div><span>Mejor salida</span><b>'+(s.best?EUR(s.best.unitPrice):"—")+'</b></div>';
+ sum.innerHTML='<div><span>Costes por completar</span><b>'+s.pendingCosts+' venta(s)</b></div><div><span>Bruto pendiente de cobro (neto desconocido)</span><b>'+EUR(s.pendingGross)+'</b></div><div><span>Cartas vendidas</span><b>'+s.count+'</b></div><div><span>Ventas archivadas</span><b>'+s.records+'</b></div><div><span>Bruto histórico</span><b>'+EUR(s.gross)+'</b></div><div><span>Neto conocido</span><b>'+EUR(s.net)+'</b></div><div><span>Resultado conocido</span><b>'+(s.known?(s.pnl>=0?"+":"")+EUR(s.pnl):"Coste pendiente")+'</b></div><div><span>Cobros pendientes</span><b>'+EUR(s.pending)+'</b></div><div><span>PSA / RAW</span><b>'+s.psa+' / '+s.raw+'</b></div><div><span>Pokémon / Lorcana</span><b>'+s.pokemon+' / '+s.lorcana+'</b></div><div><span>Mejor salida</span><b>'+(s.best?EUR(s.best.unitPrice):"—")+'</b></div>';
  box.innerHTML=(rows.length?'<div class="microNote"><b>'+rows.length+'</b> expediente(s) visibles de '+allRows.length+'</div>':"")+ (rows.length?rows.map(x=>{
   const detail=[x.number,x.set,x.language,x.variant,x.condition,x.grading,x.grade,x.cert?("Cert. "+x.cert):""].filter(Boolean).join(" · ");
   const origin=[x.acquisitionSource,x.acquisitionType].filter(Boolean).join(" · ");
-  const result=x.result==null?"ROI no calculado · coste individual desconocido":("Resultado "+(x.result>=0?"+":"")+EUR(x.result)+" · ROI "+(x.basis>0?(x.result/x.basis*100).toFixed(1)+"%":"—"));
-  return '<article class="sealedCard archiveCard"><div class="sealedMain"><div class="thumb">'+(x.referenceImage?'<img src="'+x.referenceImage+'" alt="">':"🗃️")+'</div><div><span class="pill">'+x.payment+'</span><h4>'+String(x.name||"")+'</h4><small>'+detail+'</small></div><div class="sealedNumbers"><b>'+EUR(x.unitPrice)+' / ud</b><span>'+N(x.qty||1)+' ud · neto '+EUR(x.net)+'</span></div></div>'+
+  const result=x.result==null?(x.costsPending?"Neto y ROI pendientes · faltan portes/comisiones reales":"ROI no calculado · coste individual desconocido"):("Resultado "+(x.result>=0?"+":"")+EUR(x.result)+" · ROI "+(x.basis>0?(x.result/x.basis*100).toFixed(1)+"%":"—"));
+  return '<article class="sealedCard archiveCard"><div class="sealedMain"><div class="thumb">'+(x.referenceImage?'<img src="'+x.referenceImage+'" alt="">':"🗃️")+'</div><div><span class="pill">'+x.payment+'</span><h4>'+String(x.name||"")+'</h4><small>'+detail+'</small></div><div class="sealedNumbers"><b>'+EUR(x.unitPrice)+' / ud</b><span>'+N(x.qty||1)+' ud · neto '+(x.net==null?'pendiente':EUR(x.net))+'</span></div></div>'+
    '<div class="microNote"><b>Venta:</b> '+String(x.soldAt||"")+" · "+String(x.channel||"")+(x.saleOrder?" · Pedido #"+x.saleOrder:"")+' · '+x.workflow+'</div>'+
-   '<div class="microNote"><b>Marketplace:</b> '+E(x.channel||"—")+' · <b>Precio de venta real:</b> '+EUR(x.unitPrice)+' · <b>Comisión:</b> '+(N(x.fees)>0?EUR(x.fees):'no registrada')+' · <b>Neto:</b> '+EUR(x.net)+' · <button type="button" data-archive-fee="'+E(x.id)+'">Corregir comisión</button></div>'+
+   '<div class="microNote"><b>Marketplace:</b> '+E(x.channel||"—")+' · <b>Precio de venta real:</b> '+EUR(x.unitPrice)+' · <b>Comisión:</b> '+(N(x.fees)>0?EUR(x.fees):'no registrada')+' · <b>Neto:</b> '+(x.net==null?'pendiente':EUR(x.net))+' · <button type="button" data-archive-fee="'+E(x.id)+'">Corregir comisión</button></div>'+
    '<div class="microNote"><b>Procedencia:</b> '+String(origin||"Sin documentar")+(x.parentProductCostEUR?" · producto origen ~"+EUR(x.parentProductCostEUR):"")+'</div>'+
    '<div class="microNote"><b>Contabilidad:</b> '+result+(x.heldDays!=null?" · "+x.heldDays+" días en cartera":"")+'</div>'+
    (x.acquisitionNotes?'<div class="microNote">'+String(x.acquisitionNotes)+'</div>':"")+
@@ -295,8 +295,8 @@ function render(){
   const id=b.dataset.archiveFee,sale=(state.saleHistory||[]).find(r=>r.id===id);if(!sale)return;
   const v=prompt("Comisión real cobrada por "+(sale.channel||"el marketplace")+" en este pedido (€):",String(N(sale.fees)));if(v==null)return;
   const fee=N(String(v).replace(",","."));if(!(fee>=0)){alert("Importe no válido.");return}
-  sale.fees=fee;sale.net=N(sale.unitPrice)*N(sale.qty||1)-fee-N(sale.shipping);
-  const l=(state.investmentLedger||[]).find(r=>r.id===id);if(l)l.fees=fee;
+  sale.fees=fee;sale.costsPending=sale.shipping==null;sale.net=sale.costsPending?null:N(sale.unitPrice)*N(sale.qty||1)-fee-N(sale.shipping);
+  const l=(state.investmentLedger||[]).find(r=>r.id===id);if(l){l.fees=fee;l.costsPending=sale.costsPending;l.net=sale.net;}
   save();render();
  });
  const ex=Q("#archiveExport");if(ex)ex.onclick=exportCsv;

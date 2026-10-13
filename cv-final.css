@@ -39,3 +39,4 @@
 .cyRow span{color:#c6d2e6}
 .plPos{color:#7ee2a8}.plNeg{color:#ff9d9d}
 @media(max-width:700px){.cyList,.cySealed{grid-template-columns:1fr}.cyCard{grid-template-columns:84px minmax(0,1fr)}.cyImg{width:84px}.cyHead h2{font-size:19px}}
+.retailSection{margin-bottom:28px}.cyBadge.retail{background:#16334e;color:#bae0ff;border:1px solid #467ba0}.retailLink{background:#e8f1ff!important;color:#0b1626!important}.retailCard .cyImg{width:110px}.retailCard .cyImg img{object-fit:contain}.retailCard .cyBody{min-width:0}

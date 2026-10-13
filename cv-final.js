@@ -140,13 +140,13 @@ function renderBuy(){
  const buys=live.filter(o=>o.buyReady),pk=live.filter(o=>o.x.universe==="pokemon").length,lo=live.filter(o=>o.x.universe==="lorcana").length;
  const ownedN=cardRows().filter(x=>x.ownedDuplicateBlocked||owned(x)).length;
  const newest=Math.max(0,...live.map(o=>Date.parse(o.x.checkedAt||"")||0));
- host.innerHTML=arbBanner()+
+ host.innerHTML=(window.CVAvailableOffers?.treasury()||"")+arbBanner()+(window.CVAvailableOffers?.html("card",filter)||"")+
  '<section class="cyHead"><span class="cyKicker">COMPRA YA · POKÉMON + LORCANA · SIN EBAY</span>'+
- '<h2>'+(buys.length?buys.length+' compra(s) verificada(s)':'0 compras verificadas ahora · '+live.length+' oportunidades en vigilancia')+'</h2>'+
+ '<h2>'+(buys.length?buys.length+' recomendaciones de inversión verificadas':'Reventa: 0 recomendaciones verificadas · '+live.length+' fichas en vigilancia')+'</h2>'+
  '<p>'+(buys.length?'Cumplen venta cerrada, idioma exacto, oferta ≤24 h, enlace directo y ≥40 € de beneficio.':'Ninguna cumple hoy todas las condiciones de compra. La evidencia más reciente es del '+(newest?new Date(newest).toLocaleDateString("es-ES"):"—")+': abre el producto, confirma precio, idioma y estado, y solo entonces compra.')+'</p>'+
  '<div class="cyFilters" role="group" aria-label="Juego">'+[["all","Todas ("+live.length+")"],["pokemon","Pokémon ("+pk+")"],["lorcana","Lorcana ("+lo+")"]].map(([k,l])=>'<button type="button" data-cy-filter="'+k+'" class="'+(filter===k?"on":"")+'">'+l+'</button>').join("")+'</div>'+
  '<p class="cyNote">'+ownedN+' oportunidad(es) ocultas porque ya están en Mi colección. Precio de venta real solo se muestra como «VENTA CERRADA REAL»; un anuncio nunca cuenta como venta.</p></section>'+
- '<div class="cyList">'+view.map(oppCard).join("")+'</div>'+
+ (buys.length?'':'<details class="cyDisc"><summary>Investigación anterior · ofertas por reverificar ('+view.length+')</summary>')+'<div class="cyList">'+view.map(oppCard).join("")+'</div>'+(buys.length?'':'</details>')+
  (disc.length?'<details class="cyDisc"><summary>Descartadas con motivo ('+disc.length+')</summary>'+disc.map(x=>'<div class="cyDiscRow"><b>'+E(x.name)+'</b> <span>'+E([x.set,x.number].filter(Boolean).join(" · "))+'</span> · '+E(discarded(x))+'</div>').join("")+'</details>':'');
  resolveLorcanaImages(view.map(o=>o.x)).then(()=>{if(view.some(o=>!o.x.image&&imgCache[o.x.id])&&!host.dataset.reimg){host.dataset.reimg="1";renderBuy()}});
 }
@@ -193,7 +193,7 @@ function renderSealed(){
  const manual=(state.manualOpportunities||[]).filter(x=>String(x.condition).toUpperCase()==="SEALED").map(x=>({game:x.universe,type:"Mazo temático",name:x.name,url:x.url,from:N(x.price),avg30:N(x.avg30)||N(x.trend)||null,avail:N(x.available)||null,note:x.status,seen:String(x.checkedAt||"").slice(0,10)}));
  const own=(state.sealedProducts||[]).length;
  const rows=[...SEALED.map(r=>({...r,seen:SEEN})),...manual].filter(r=>directUrl(r.url));
- host.innerHTML='<section class="cyHead"><span class="cyKicker">SELLADO · POKÉMON + LORCANA</span><h2>0 compras verificadas · '+rows.length+' productos en vigilancia</h2>'+
+ host.innerHTML=(window.CVAvailableOffers?.html("sealed")||"")+'<section class="cyHead"><span class="cyKicker">SELLADO · POKÉMON + LORCANA</span><h2>Reventa: 0 recomendaciones verificadas · '+rows.length+' productos en vigilancia</h2>'+
  '<p>Fichas directas de Cardmarket. «Desde» es el anuncio más barato y «media 30 d» la media de ventas que publica Cardmarket, ambos tomados del índice público de búsqueda el '+new Date(SEEN).toLocaleDateString("es-ES")+': son ESTIMACIÓN. Un «desde» muy por debajo de la media suele ser otro idioma o un producto sin precintar: compruébalo en la ficha. No se muestran probabilidades de cartas premiadas porque no hay fuente fiable.</p></section>'+
  '<div class="cySealed">'+rows.map(r=>{const gap=r.from&&r.avg30?r.avg30-r.from:null;
   return '<article class="cyCard sealed"><div class="cyBody"><span class="cyBadge watch">VIGILAR</span><span class="cyGame">'+(r.game==="lorcana"?"Lorcana":"Pokémon")+' · '+E(r.type)+'</span><h4>'+E(r.name)+'</h4>'+
@@ -214,7 +214,7 @@ function renderPSA(){
  const g=state.gradingEconomics||{};
  const psaCost=N(g.gradeCost);
  const rowsRaw=raw.map(c=>({c,v:N(c.value)})).sort((a,b)=>b.v-a.v);
- host.innerHTML='<section class="cyHead"><span class="cyKicker">PSA · OPORTUNIDADES</span><h2>0 PSA 10 verificadas a ≤40 € ahora</h2>'+
+ host.innerHTML=(window.CVAvailableOffers?.html("graded")||"")+'<section class="cyHead"><span class="cyKicker">PSA · OPORTUNIDADES</span><h2>Reventa PSA: 0 recomendaciones verificadas</h2>'+
  '<p>No hay ninguna oferta PSA 10 con precio, certificado y venta cerrada comparable verificados en los datos actuales; por eso no se recomienda comprar ninguna. Abajo: tus graduadas y tus RAW candidatas a enviar a PSA.</p></section>'+
  '<h3 class="cySub">Tus graduadas ('+graded.length+')</h3><div class="cyTable">'+graded.map(c=>'<div class="cyRow"><b>'+E(c.name)+'</b><span>PSA '+E(c.grade)+' · '+E(c.set||"")+'</span><span>Valor '+(N(c.value)?EUR(c.value):"pendiente")+'</span><span>Coste '+(c.purchase!=null?EUR(c.purchase):"pendiente")+'</span><span>Población PSA: '+(c.popTotal?E(c.popTotal):"sin dato verificado")+'</span></div>').join("")+'</div>'+
  '<h3 class="cySub">RAW → PSA: ¿compensa enviar?</h3>'+
