@@ -1,0 +1,41 @@
+{
+  "schema": "phygitals-public-evidence-v1",
+  "checked_on": "2026-10-14",
+  "status": "published_aggregate_and_highlight_only",
+  "individual_complete_openings": 0,
+  "aggregate_reports": [
+    {
+      "source": "https://rip-index.com/report",
+      "week": "2026-09-28",
+      "platforms": [
+        "Collector Crypt",
+        "Courtyard",
+        "Phygitals",
+        "Monster",
+        "GachaPull"
+      ],
+      "opens_all_platforms": 320289,
+      "warning": "No se dispone de filas individuales ni desglose completo Phygitals"
+    }
+  ],
+  "examples": [
+    {
+      "source": "https://rip-index.com/report/2026-08-10",
+      "platform": "Phygitals",
+      "pack_price_usd": 25,
+      "card_nominal_value_usd": 9986,
+      "card": "1999 Pokemon Base Set Shadowless Holo Charizard #4 PSA 9",
+      "is_complete_sequence": false
+    },
+    {
+      "source": "https://rip-index.com/report",
+      "platform": "Phygitals",
+      "pack_price_usd": 25,
+      "card_nominal_value_usd": 4570,
+      "card": "2026 Riftbound League of Legends Unleashed Ultimate Rare Baron Nashor #238 PSA 10",
+      "is_complete_sequence": false
+    }
+  ],
+  "official_api": "https://www.phygitals.com/docs/public-api",
+  "notes": "Datos extraídos de informes públicos, no descargados directamente de un ledger de aperturas. No calcular odds ni patrones temporales a partir de estos ejemplos. No se pudo acceder al endpoint vivo desde este entorno."
+}
