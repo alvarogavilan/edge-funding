@@ -107,5 +107,7 @@ $('oddsOutput').textContent='Posibilidad teórica de al menos un premio en '+n+'
 renderCatalogChanges();
 for(const id of ['prob','packCost','draws'])$(id).addEventListener('input',odds);odds();
 $('max').onchange=render;$('fx').oninput=render;$('fees').oninput=render;fx();scan.click();
+// Al volver a Safari tras 5 minutos, consultar de nuevo; no hay tareas ni compras en segundo plano.
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!scan.disabled&&(!stamp||Date.now()-stamp.getTime()>5*60*1000)){scan.click()}});
 })();
 </script><script src="phygitals-decision-engine.js?v=1"></script></body></html>
