@@ -11,7 +11,7 @@ const base={
  exitType:'binding_bid'
 };
 const cases=[
- ['fully documented and 6 EUR net (synthetic)',{},'COMPRA YA'],
+ ['plausible 6 EUR net needs external verification (synthetic)',{},'REVISAR OFERTA'],
  ['random pack',{randomPack:true},'NO COMPRAR'],
  ['unverified exit',{exitType:'listing'},'NO COMPRAR'],
  ['old quote',{exitVerifiedAt:now-900_001},'NO COMPRAR'],
@@ -21,7 +21,9 @@ const cases=[
  ['cost including fees >50',{purchaseEUR:49},'NO COMPRAR'],
  ['purchase within budget but total cost exceeds tighter budget',{budgetEUR:40,purchaseEUR:39},'NO COMPRAR'],
  ['negative net',{firmExitEUR:39},'NO COMPRAR'],
- ['no identity',{assetId:''},'NO COMPRAR']
+ ['no identity',{assetId:''},'NO COMPRAR'],
+ ['negative budget',{budgetEUR:-1},'NO COMPRAR'],
+ ['missing exit proof',{exitEvidenceUrl:''},'NO COMPRAR']
 ];
 for(const [name,change,want] of cases){const result=evaluate({...base,...change},now);assert.equal(result.decision,want,name);console.log('PASS:',name)}
-console.log('11 of 11 synthetic tests passed; not live market evidence.');
+console.log(cases.length+' of '+cases.length+' synthetic tests passed; not live market evidence.');
