@@ -8,7 +8,7 @@
 <div class="grid"><div><label for="prob">Probabilidad por apertura (%)</label><input id="prob" type="number" min="0.0001" max="100" step="0.01" placeholder="Probabilidad publicada"></div>
 <div><label for="packCost">Coste por apertura (€)</label><input id="packCost" type="number" min="0.01" step="0.01" value="10"></div><div><label for="draws">Número de aperturas</label><input id="draws" type="number" min="1" max="1000000" step="1" value="5"></div></div>
 <p id="oddsOutput" role="status"></p>
-<p class="fine">Asume aperturas independientes y una probabilidad constante y correcta. No implica que Phygitals cumpla estos supuestos ni aumenta la probabilidad por esperar una hora concreta. Tampoco incorpora el valor de recompra ni el riesgo de pérdida.</p></section></details><details><summary>Histórico local de cambios del catálogo</summary><p>Los datos descargados al consultar el catálogo se guardan en este dispositivo. No son aperturas verificadas. Puedes exportar una copia JSON.</p><button type="button" id="exportCatalog" class="secondary">Exportar histórico de precios y stock</button><p id="catalogHistoryStatus" class="muted"></p></details><details><summary>¿Cuándo mostrará COMPRA YA?</summary><p>Solo si existe un artículo concreto identificado (no un resultado aleatorio), dentro del presupuesto y con una oferta de recompra o compra firme para ese mismo artículo que siga siendo válida tras adquirirlo; deben descontarse comisiones, divisa y todos los costes. Ningún pack aleatorio cumple una garantía de beneficio por el mero hecho de tener EV positivo. Un valor esperado anunciado, una rareza alta, la hora de apertura o un premio visto en redes no cumplen estos requisitos.</p><p>Los packs aleatorios pueden dar pérdidas incluso si sus cifras publicitarias parecen favorables. No se ha demostrado una debilidad explotable de su generador. Para revisar estudios anteriores: <a href="phygitals-investigacion.html">abrir investigación detallada</a>.</p></details></main>
+<p class="fine">Asume aperturas independientes y una probabilidad constante y correcta. No implica que Phygitals cumpla estos supuestos ni aumenta la probabilidad por esperar una hora concreta. Tampoco incorpora el valor de recompra ni el riesgo de pérdida.</p></section></details><details><summary>Histórico local de cambios del catálogo</summary><p>Los datos descargados al consultar el catálogo se guardan en este dispositivo. No son aperturas verificadas. Puedes exportar una copia JSON.</p><button type="button" id="exportCatalog" class="secondary">Exportar histórico de precios y stock</button><p id="catalogHistoryStatus" class="muted"></p><div id="catalogChanges" class="muted" role="status">Todavía no hay dos capturas comparables de este catálogo.</div></details><details><summary>¿Cuándo mostrará COMPRA YA?</summary><p>Solo si existe un artículo concreto identificado (no un resultado aleatorio), dentro del presupuesto y con una oferta de recompra o compra firme para ese mismo artículo que siga siendo válida tras adquirirlo; deben descontarse comisiones, divisa y todos los costes. Ningún pack aleatorio cumple una garantía de beneficio por el mero hecho de tener EV positivo. Un valor esperado anunciado, una rareza alta, la hora de apertura o un premio visto en redes no cumplen estos requisitos.</p><p>Los packs aleatorios pueden dar pérdidas incluso si sus cifras publicitarias parecen favorables. No se ha demostrado una debilidad explotable de su generador. Para revisar estudios anteriores: <a href="phygitals-investigacion.html">abrir investigación detallada</a>.</p></details></main>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n);
@@ -33,6 +33,25 @@ function saveCatalogSnapshot(data){
  }catch(_){/* Browser storage may be disabled */ }
 }
 
+function renderCatalogChanges(){
+ const el=$('catalogChanges');
+ try{
+  const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+  if(!Array.isArray(h)||h.length<2){el.textContent='Se necesitan al menos dos capturas distintas. Las aperturas ajenas no están incluidas.';return}
+  const prev=h[h.length-2],cur=h[h.length-1],old=new Map((prev.rows||[]).map(x=>[x.slug,x]));
+  const changed=[];
+  for(const p of cur.rows||[]){
+   const o=old.get(p.slug);if(!o)continue;
+   const metric=['price','ev','buyback_percent','in_stock'];
+   const diff=metric.filter(k=>String(o[k]??'')!==String(p[k]??''));
+   if(diff.length)changed.push(String(p.name||p.slug)+': '+diff.map(k=>k+' '+String(o[k]??'?')+' → '+String(p[k]??'?')).join('; '));
+  }
+  el.replaceChildren();
+  paragraph(el,'Comparación de las últimas capturas distintas ('+String(prev.capturedAt)+' frente a '+String(cur.capturedAt)+'). Cambios: '+changed.length+'. Esto NO es evidencia de resultados de aperturas.','fine');
+  for(const line of changed.slice(0,12))paragraph(el,line,'fine');
+  if(changed.length>12)paragraph(el,'Otros '+(changed.length-12)+' cambios disponibles en la exportación.','fine');
+ }catch(_){el.textContent='Historial local no legible. No hay datos suficientes para comparar.'}
+}
 const q=$('candidates'),scan=$('scan');
 function clear(){q.replaceChildren()}
 function paragraph(parent,s,cls=''){const x=document.createElement('p');x.textContent=s;x.className=cls;parent.append(x);return x}
@@ -56,13 +75,14 @@ if(typeof p.slug==='string'&&/^[a-zA-Z0-9_-]+$/.test(p.slug)){const a=document.c
 }
 async function fx(){try{const r=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR',{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();const v=Number(d?.rates?.EUR);if(!(v>0))throw Error();rate=v;$('fxStatus').textContent='Cambio USD→EUR consultado: '+v.toFixed(4)+' (fecha '+String(d.date||'no disponible')+'). Confirma tasas reales del medio de pago.';if(packs.length)render()}catch{$('fxStatus').textContent='No fue posible consultar el cambio: introduce un tipo de cambio verificable antes de evaluar los packs.'}}
 scan.onclick=async()=>{scan.disabled=true;clear();$('scanStatus').textContent='Consultando catálogo público…';const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
-try{const r=await fetch('https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true',{cache:'no-store',credentials:'omit',signal:ctrl.signal});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();if(!Array.isArray(data))throw Error('Respuesta inesperada');packs=data;saveCatalogSnapshot(data);stamp=new Date();$('checked').textContent='Catálogo: '+stamp.toLocaleTimeString('es-ES');$('scanStatus').textContent='Recibidos '+packs.length+' packs. Solo se muestran los que caben en el presupuesto. Sin ofertas individuales de recompra verificadas.';render()}catch(e){packs=[];$('checked').textContent='Sin datos en directo';$('scanStatus').textContent='No se ha podido consultar el catálogo desde este navegador ('+e.message+'). NO COMPRAR.';render()}finally{clearTimeout(timer);scan.disabled=false}};
+try{const r=await fetch('https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true',{cache:'no-store',credentials:'omit',signal:ctrl.signal});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();if(!Array.isArray(data))throw Error('Respuesta inesperada');packs=data;saveCatalogSnapshot(data);renderCatalogChanges();stamp=new Date();$('checked').textContent='Catálogo: '+stamp.toLocaleTimeString('es-ES');$('scanStatus').textContent='Recibidos '+packs.length+' packs. Solo se muestran los que caben en el presupuesto. Sin ofertas individuales de recompra verificadas.';render()}catch(e){packs=[];$('checked').textContent='Sin datos en directo';$('scanStatus').textContent='No se ha podido consultar el catálogo desde este navegador ('+e.message+'). NO COMPRAR.';render()}finally{clearTimeout(timer);scan.disabled=false}};
 $('exportCatalog').onclick=()=>{try{const all=localStorage.getItem(HISTORY_KEY)||'[]';const rows=JSON.parse(all);$('catalogHistoryStatus').textContent=rows.length+' capturas diferentes guardadas en este iPhone.';const blob=new Blob([JSON.stringify({type:HISTORY_KEY,exportedAt:new Date().toISOString(),snapshots:rows},null,2)],{type:'application/json'});const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='phygitals-catalogo-historico.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(e){$('catalogHistoryStatus').textContent='No se puede exportar: '+e.message}};
 function odds(){const p=Number($('prob').value)/100,cost=Number($('packCost').value),n=Number($('draws').value);
 if(!(p>0&&p<=1&&cost>0&&Number.isInteger(n)&&n>=1&&n<=1000000)){$('oddsOutput').textContent='Falta la probabilidad oficial del pack exacto. No se puede estimar ningún plazo.';return}
 const chance=-Math.expm1(n*Math.log1p(-p)),expected=1/p;
 $('oddsOutput').textContent='Posibilidad teórica de al menos un premio en '+n+' aperturas: '+(chance*100).toFixed(2)+'%. Gasto: '+money(n*cost)+'. Media matemática hasta el primer premio: '+expected.toFixed(1)+'; NO indica cuándo saldrá ni garantiza ganar.';
 }
+renderCatalogChanges();
 for(const id of ['prob','packCost','draws'])$(id).addEventListener('input',odds);odds();
 $('max').onchange=render;$('fx').oninput=render;$('fees').oninput=render;fx();scan.click();
 })();
