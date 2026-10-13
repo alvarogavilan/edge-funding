@@ -4,6 +4,7 @@ const finite=x=>typeof x==='number'&&Number.isFinite(x);
 function evaluate(candidate,now=Date.now()){
  const fail=[];if(!candidate||typeof candidate!=='object')return {decision:'NO COMPRAR',reasons:['Sin operación concreta']};
  const budget=finite(candidate.budgetEUR)?Math.min(candidate.budgetEUR,50):50;
+ if(!(budget>0))fail.push('Presupuesto no válido');
  const amountKeys=['purchaseEUR','feesEUR','withdrawalFeesEUR','fxSpreadEUR','firmExitEUR'];
  for(const k of amountKeys)if(!finite(candidate[k])||candidate[k]<0)fail.push('Falta importe comprobable: '+k);
  if(candidate.purchaseEUR>budget)fail.push('Excede el presupuesto');
@@ -19,7 +20,7 @@ function evaluate(candidate,now=Date.now()){
  const net=(candidate.firmExitEUR||0)-costs;
  if(costs>budget)fail.push('Coste total, incluidos gastos, excede el presupuesto');
  if(net<=0)fail.push('Sin margen neto positivo');
- return {decision:fail.length?'NO COMPRAR':'COMPRA YA',netEUR:Math.round(net*100)/100,reasons:fail,budgetEUR:budget,assetId:candidate.assetId||null};
+ return {decision:fail.length?'NO COMPRAR':'REVISAR OFERTA',netEUR:Math.round(net*100)/100,reasons:fail.length?fail:['La oferta declarada requiere comprobación externa de vigencia y ejecución antes de comprar'],budgetEUR:budget,assetId:candidate.assetId||null};
 }
 const api={evaluate};if(typeof module==='object'&&module.exports)module.exports=api;root.PhygitalsDecision=api;
 })(typeof window==='object'?window:globalThis);
