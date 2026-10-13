@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict'),A=require('../phygitals-engine.js');
+const r=A.economic({price:1000,ev:1024,buyback:.9});assert.ok(Math.abs(r.net+78.4)<1e-8);assert.equal(r.costsComplete,false);assert.equal(A.economic({price:1000,ev:1024,buyback:.9,fees:2}).net,r.net-2);
+for(const override of [{price:0},{ev:NaN},{buyback:1.1},{fees:-1},{discount:1000}])assert.throws(()=>A.economic({price:1000,ev:1024,buyback:.9,...override}));
+assert.throws(()=>A.validateTiers([{p:.5,lo:0,hi:100}]));assert.throws(()=>A.validateTiers([{p:1,lo:100,hi:0}]));A.validateTiers(A.TIERS);
+const header='id,timestamp_utc,pack_id,odds_version,cost_usd,cash_received_usd\n';const row='a,2026-10-13T21:00:00Z,Mythic,v1,1000,900';
+const rows=A.history(header+row+'\nb,2026-10-13T21:15:00Z,Mythic,v1,1000,\nc,2026-10-13T21:15:00Z,Mythic,v2,1000,1500');const g=A.summarize(rows);assert.equal(g.length,2);assert.equal(g[0].net,null);assert.equal(g[0].pending,1);assert.equal(g[1].net,500);
+assert.throws(()=>A.history(header+row+'\n'+row));assert.throws(()=>A.history(header+row.replace('2026-10-13','2026-02-30')));assert.throws(()=>A.history(header+row.replace('T21:00:00Z','T21:00:00')));assert.throws(()=>A.history(header+row.replace('1000,900',',900')));
+assert.equal(A.history(header+row.replace('Mythic','"Mythic, Pokémon"'))[0].pack_id,'Mythic, Pokémon');
+const random=A.rng(20261013),counts=[0,0,0,0];for(let i=0;i<100000;i++)counts[A.draw(A.TIERS,random)]++;assert.equal(counts.reduce((a,b)=>a+b),100000);assert.ok(counts[3]>800&&counts[3]<1200);
+console.log('Phygitals Lab: unknown costs preserved; invalid probabilities rejected; no invented payouts; UTC, duplicates and pack versions checked.');

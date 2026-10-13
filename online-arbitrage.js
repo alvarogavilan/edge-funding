@@ -1,7 +1,7 @@
 (function(root){
 "use strict";
 
-const MINUTE_IDS=new Set(["mtgo-bot-arbitrage","phygitals-claw-buyback","courtyard-vaulted","giftcard-cross","dmarket-cs2","csfloat","fanatics-vault"]);
+const MINUTE_IDS=new Set(["mtgo-bot-arbitrage","courtyard-vaulted","giftcard-cross","dmarket-cs2","csfloat","fanatics-vault"]);
 const FREQ_KEY="cv_arb_live_frequency_v2";
 const AGENT_KEY="cv_arb_agent_v1";
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -166,11 +166,11 @@ function bindAgent(){
 }
 
 function splitRoutes(mode){
- const rows=report?.routes||[];
+ const rows=(report?.routes||[]).filter(r=>!String(r.id||"").includes("phygitals"));
  return rows.filter(r=>mode==="minutes"?MINUTE_IDS.has(r.id):!MINUTE_IDS.has(r.id));
 }
 function splitCases(mode){
- const rows=report?.cases||[];
+ const rows=(report?.cases||[]).filter(c=>!/phygitals/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
  if(mode==="minutes")return rows.filter(c=>/phygitals|courtyard|mtgo|gift|cs2|skin|digital|crypto|usde/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
  return rows.filter(c=>!/phygitals|courtyard|mtgo|gift|cs2|skin|digital|crypto|usde/i.test((c.id||"")+" "+(c.name||"")+" "+(c.finding||"")));
 }
