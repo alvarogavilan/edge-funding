@@ -68,9 +68,10 @@ $('count').textContent='0 compras aprobadas';$('decision').textContent='NO COMPR
 if(!eligible.length){paragraph(q,packs.length?'Sin packs disponibles dentro del presupuesto confirmado.':'Sin catálogo verificable.','muted');return}
 const projected=p=>{const ev=Number(p.ev),bb=Number(p.buyback_percent);if(p.ev===null||p.ev===undefined||p.buyback_percent===null||p.buyback_percent===undefined||!Number.isFinite(ev)||ev<0||!Number.isFinite(bb)||bb<=0||bb>1)return null;return (ev*bb-Number(p.mint_price))*fx-fees;};
 eligible.sort((a,b)=>(projected(b)??-Infinity)-(projected(a)??-Infinity));
-const potential=eligible.filter(p=>projected(p)!==null&&projected(p)>0);
+const fresh=p=>{const t=Date.parse(p.ev_updated_at||'');return Number.isFinite(t)&&t<=Date.now()&&Date.now()-t<=24*60*60*1000;};
+const potential=eligible.filter(p=>fresh(p)&&projected(p)!==null&&projected(p)>0);
 $('badge').textContent=potential.length?'MÁRGENES TEÓRICOS · SIN GARANTÍA':'SIN VENTA CONFIRMADA';
-$('reason').textContent=potential.length?'Hay '+potential.length+' pack(s) con margen teórico positivo según datos del operador, pero falta verificar recompra real, costes y riesgo: NO COMPRAR todavía.':'No existe una compra con salida ejecutable verificada. No gastar en aperturas para recuperar pérdidas.';
+$('reason').textContent=potential.length?'Hay '+potential.length+' pack(s) con margen teórico positivo y EV de menos de 24 horas según el operador, pero falta verificar recompra real, costes y riesgo: NO COMPRAR todavía.':'No existe una compra con salida ejecutable verificada. No gastar en aperturas para recuperar pérdidas.';
 paragraph(q,eligible.length+' pack(s) asequibles · '+potential.length+' margen(es) medios teóricos positivos · 0 compras autorizadas.','status');
 for(const p of eligible.slice(0,8)){const el=document.createElement('div');el.className='minicard';const name=document.createElement('strong');name.textContent=String(p.name||'Pack sin nombre');el.append(name);
 const price=Number(p.mint_price)*fx;paragraph(el,'Precio anunciado: '+money(price)+' aprox. · Coste mínimo con extras: '+money(price+fees));
