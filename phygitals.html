@@ -14,6 +14,25 @@
 const $=id=>document.getElementById(id),money=n=>new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(n);
 let packs=[],rate=null,stamp=null;
 const HISTORY_KEY='phygitals_catalog_snapshots_v1';
+let catalogLive=false;
+function loadCachedCatalog(){
+ try{
+  const history=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+  if(!Array.isArray(history)||history.length===0)return false;
+  const last=history[history.length-1];
+  if(!Array.isArray(last.rows)||last.rows.length===0)return false;
+  // Map to catalog row names for read-only, stale research mode.
+  packs=last.rows.filter(p=>p&&typeof p.slug==='string').map(p=>({
+   slug:p.slug,name:p.name,mint_price:p.price,ev:p.ev,
+   in_stock:p.in_stock,enable:p.enable,buyback_percent:p.buyback_percent,
+   ev_updated_at:p.ev_updated_at,rarity_distribution:p.rarity_distribution
+  }));
+  catalogLive=false;
+  $('checked').textContent='Datos históricos: '+new Date(last.capturedAt).toLocaleString('es-ES');
+  return true;
+ }catch(_){return false}
+}
+
 function saveCatalogSnapshot(data){
  const rows=data.filter(p=>p&&typeof p.slug==='string').map(p=>({
   slug:p.slug,name:String(p.name||''),price:p.mint_price??null,ev:p.ev??null,
@@ -65,11 +84,11 @@ if(!Number.isFinite(fees)||fees<0){paragraph(q,'Costes no válidos.','warn');ret
 if(!fx||!Number.isFinite(fx)||fx<=0){paragraph(q,'No se puede comprobar el límite en euros sin un cambio USD/EUR verificable.','warn');return}
 const eligible=packs.filter(p=>p&&p.enable===true&&p.in_stock===true&&Number.isFinite(Number(p.mint_price))&&Number(p.mint_price)>0&&Number(p.mint_price)*fx+fees<=budget);
 $('count').textContent='0 compras aprobadas';$('decision').textContent='NO COMPRAR';
-if(!eligible.length){paragraph(q,packs.length?'Sin packs disponibles dentro del presupuesto confirmado.':'Sin catálogo verificable.','muted');return}
+if(!catalogLive&&packs.length){paragraph(q,'HISTÓRICO SIN VERIFICAR: catálogo guardado en este iPhone. No comprobar disponibilidad ni comprar con estos datos.','warn')}if(!eligible.length){paragraph(q,packs.length?'No hay productos visibles dentro del presupuesto en esta captura; no confirma disponibilidad actual.':'Sin catálogo verificable.','muted');return}
 const projected=p=>{const ev=Number(p.ev),bb=Number(p.buyback_percent);if(p.ev===null||p.ev===undefined||p.buyback_percent===null||p.buyback_percent===undefined||!Number.isFinite(ev)||ev<0||!Number.isFinite(bb)||bb<=0||bb>1)return null;return (ev*bb-Number(p.mint_price))*fx-fees;};
 eligible.sort((a,b)=>(projected(b)??-Infinity)-(projected(a)??-Infinity));
 const fresh=p=>{const t=Date.parse(p.ev_updated_at||'');return Number.isFinite(t)&&t<=Date.now()&&Date.now()-t<=24*60*60*1000;};
-const potential=eligible.filter(p=>fresh(p)&&projected(p)!==null&&projected(p)>0);
+const potential=catalogLive?eligible.filter(p=>fresh(p)&&projected(p)!==null&&projected(p)>0):[];
 $('badge').textContent=potential.length?'MÁRGENES TEÓRICOS · SIN GARANTÍA':'SIN VENTA CONFIRMADA';
 $('reason').textContent=potential.length?'Hay '+potential.length+' pack(s) con margen teórico positivo y EV de menos de 24 horas según el operador, pero falta verificar recompra real, costes y riesgo: NO COMPRAR todavía.':'No existe una compra con salida ejecutable verificada. No gastar en aperturas para recuperar pérdidas.';
 paragraph(q,eligible.length+' pack(s) asequibles · '+potential.length+' margen(es) medios teóricos positivos · 0 compras autorizadas.','status');
@@ -81,7 +100,7 @@ if(typeof p.slug==='string'&&/^[a-zA-Z0-9_-]+$/.test(p.slug)){const a=document.c
 }
 async function fx(){try{const r=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR',{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();const v=Number(d?.rates?.EUR);if(!(v>0))throw Error();rate=v;$('fxStatus').textContent='Cambio USD→EUR consultado: '+v.toFixed(4)+' (fecha '+String(d.date||'no disponible')+'). Confirma tasas reales del medio de pago.';if(packs.length)render()}catch{$('fxStatus').textContent='No fue posible consultar el cambio: introduce un tipo de cambio verificable antes de evaluar los packs.'}}
 scan.onclick=async()=>{scan.disabled=true;clear();$('scanStatus').textContent='Consultando catálogo público…';const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
-try{const r=await fetch('https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true',{cache:'no-store',credentials:'omit',signal:ctrl.signal});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();if(!Array.isArray(data))throw Error('Respuesta inesperada');if(!data.every(p=>p&&typeof p==='object'&&!Array.isArray(p)))throw Error('Formato de productos no válido');packs=data;saveCatalogSnapshot(data);renderCatalogChanges();stamp=new Date();$('checked').textContent='Catálogo: '+stamp.toLocaleTimeString('es-ES');$('scanStatus').textContent='Recibidos '+packs.length+' packs. Solo se muestran los que caben en el presupuesto. Sin ofertas individuales de recompra verificadas.';render()}catch(e){packs=[];$('checked').textContent='Sin datos en directo';$('scanStatus').textContent='No se ha podido consultar el catálogo desde este navegador ('+e.message+'). Posibles causas: acceso de red, CORS o fallo del servicio. No significa que no existan packs. NO COMPRAR sin datos.';render()}finally{clearTimeout(timer);scan.disabled=false}};
+try{const r=await fetch('https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true',{cache:'no-store',credentials:'omit',signal:ctrl.signal});if(!r.ok)throw Error('HTTP '+r.status);const data=await r.json();if(!Array.isArray(data))throw Error('Respuesta inesperada');if(!data.every(p=>p&&typeof p==='object'&&!Array.isArray(p)))throw Error('Formato de productos no válido');packs=data;catalogLive=true;saveCatalogSnapshot(data);renderCatalogChanges();stamp=new Date();$('checked').textContent='Catálogo: '+stamp.toLocaleTimeString('es-ES');$('scanStatus').textContent='Recibidos '+packs.length+' packs. Solo se muestran los que caben en el presupuesto. Sin ofertas individuales de recompra verificadas.';render()}catch(e){catalogLive=false;const cached=loadCachedCatalog();if(!cached){packs=[];$('checked').textContent='Sin datos en directo';}$('scanStatus').textContent='Conexión al catálogo fallida ('+e.message+'). '+(cached?'Mostrando la última captura guardada SOLO como referencia histórica; no confirma stock ni beneficios.':'No hay ninguna captura local; los datos no están disponibles.')+' Puede deberse a CORS, DNS, red o servicio. NO COMPRAR.';render()}finally{clearTimeout(timer);scan.disabled=false}};
 $('diagnose').onclick=async()=>{
  const button=$('diagnose'),target=$('diagnoseStatus');button.disabled=true;
  const url='https://api.phygitals.com/api/vm/available?platform=mainnet&includeRepacks=true&excludeVariants=true';
