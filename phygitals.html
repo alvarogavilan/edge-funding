@@ -25,8 +25,13 @@ function saveCatalogSnapshot(data){
  try{
   const prior=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
   const history=Array.isArray(prior)?prior:[];
-  const signature=JSON.stringify(rows);
-  if(!history.length||JSON.stringify(history[history.length-1].rows)!==signature){
+  // Compare economic conditions only: 7-day volume changing must not erase the last 30 meaningful snapshots.
+  const economicSignature=list=>JSON.stringify((list||[]).map(p=>({
+   slug:p.slug,price:p.price,ev:p.ev,buyback_percent:p.buyback_percent,
+   in_stock:p.in_stock,enable:p.enable,rarity_distribution:p.rarity_distribution
+  })).sort((a,b)=>a.slug.localeCompare(b.slug)));
+  const signature=economicSignature(rows);
+  if(!history.length||economicSignature(history[history.length-1].rows)!==signature){
    history.push({capturedAt:new Date().toISOString(),source:'Phygitals public API /api/vm/available',rows});
    localStorage.setItem(HISTORY_KEY,JSON.stringify(history.slice(-30)));
   }
