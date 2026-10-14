@@ -1,0 +1,447 @@
+{
+ "generated_at": "2026-10-14T00:00:00Z",
+ "source_note": "Agregados públicos de RipRanks (feed de Phygitals) + catálogo oficial transcrito. Sin transacciones verificadas.",
+ "packs": [
+  {
+   "slug": "trainer-pack",
+   "name": "Trainer Pack · Pokémon",
+   "price_usd": 10,
+   "n": 205089,
+   "buyback_percent": 1.0,
+   "buyback_source": "ficha pública del pack",
+   "odds_p_holm_raw": 5.827973272815766e-62,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.01,
+    "observed": 0.00653,
+    "ci95": [
+     0.00619,
+     0.00689
+    ]
+   },
+   "odds_p_holm": 0.0,
+   "odds_max_dev_pp": 0.42,
+   "value_return": 0.9486,
+   "value_return_ci95": [
+    0.9418,
+    0.9548
+   ],
+   "value_return_last14": 0.9379,
+   "value_return_last14_ci95": [
+    0.9289,
+    0.9465
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-08-27",
+    "before": 0.9154,
+    "after": 0.9518,
+    "p_holm": 0.2298
+   }
+  },
+  {
+   "slug": "rookie-pack",
+   "name": "Rookie Pack · Pokémon",
+   "price_usd": 25,
+   "n": 100808,
+   "buyback_percent": 0.85,
+   "buyback_source": "API /vm/available",
+   "odds_p_holm_raw": 0.0014067522073495156,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.01,
+    "observed": 0.01033,
+    "ci95": [
+     0.00972,
+     0.01097
+    ]
+   },
+   "odds_p_holm": 0.001407,
+   "odds_max_dev_pp": 0.5,
+   "value_return": 1.0739,
+   "value_return_ci95": [
+    1.0457,
+    1.1043
+   ],
+   "value_return_last14": 1.0547,
+   "value_return_last14_ci95": [
+    1.0138,
+    1.0985
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-08-28",
+    "before": 1.009,
+    "after": 1.0873,
+    "p_holm": 1.0
+   }
+  },
+  {
+   "slug": "elite-pack",
+   "name": "Elite Pack · Pokémon",
+   "price_usd": 50,
+   "n": 44354,
+   "buyback_percent": 0.85,
+   "buyback_source": "API /vm/available",
+   "odds_p_holm_raw": 0.093377339750186,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.01,
+    "observed": 0.01107,
+    "ci95": [
+     0.01014,
+     0.01209
+    ]
+   },
+   "odds_p_holm": 0.093377,
+   "odds_max_dev_pp": 0.3,
+   "value_return": 1.057,
+   "value_return_ci95": [
+    1.0369,
+    1.0775
+   ],
+   "value_return_last14": 1.0489,
+   "value_return_last14_ci95": [
+    1.0143,
+    1.0834
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-09-06",
+    "before": 1.0749,
+    "after": 1.0409,
+    "p_holm": 1.0
+   }
+  },
+  {
+   "slug": "boost-sport-pack",
+   "name": "Boost Sport Pack",
+   "price_usd": 5,
+   "n": 16288,
+   "buyback_percent": 1.0,
+   "buyback_source": "API /vm/available",
+   "odds_p_holm_raw": 1.0,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.01,
+    "observed": 0.01087,
+    "ci95": [
+     0.00939,
+     0.01258
+    ]
+   },
+   "odds_p_holm": 1.0,
+   "odds_max_dev_pp": 0.25,
+   "value_return": 0.8362,
+   "value_return_ci95": [
+    0.8254,
+    0.8458
+   ],
+   "value_return_last14": 0.8343,
+   "value_return_last14_ci95": [
+    0.823,
+    0.8447
+   ],
+   "window": [
+    "2026-08-25",
+    "2026-09-10"
+   ],
+   "regime_break": {
+    "from": "2026-09-03",
+    "before": 0.8431,
+    "after": 0.8294,
+    "p_holm": 1.0
+   }
+  },
+  {
+   "slug": "starter-one-piece-pack",
+   "name": "Starter Pack · One Piece",
+   "price_usd": 25,
+   "n": 23728,
+   "buyback_percent": 0.85,
+   "buyback_source": "ficha pública del pack",
+   "odds_p_holm_raw": 1.0,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.01,
+    "observed": 0.01037,
+    "ci95": [
+     0.00916,
+     0.01174
+    ]
+   },
+   "odds_p_holm": 1.0,
+   "odds_max_dev_pp": 0.28,
+   "value_return": 1.0484,
+   "value_return_ci95": [
+    1.0241,
+    1.0737
+   ],
+   "value_return_last14": 0.9958,
+   "value_return_last14_ci95": [
+    0.9609,
+    1.026
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-09-24",
+    "before": 1.064,
+    "after": 0.9964,
+    "p_holm": 1.0
+   }
+  },
+  {
+   "slug": "pirate-pack",
+   "name": "Pirate Pack · One Piece",
+   "price_usd": 10,
+   "n": 22472,
+   "buyback_percent": 1.0,
+   "buyback_source": "ficha pública del pack",
+   "odds_p_holm_raw": 2.375073628651003e-06,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.141,
+    "observed": 0.12905,
+    "ci95": [
+     0.12473,
+     0.1335
+    ]
+   },
+   "odds_p_holm": 2e-06,
+   "odds_max_dev_pp": 1.2,
+   "value_return": 0.8681,
+   "value_return_ci95": [
+    0.8373,
+    0.8926
+   ],
+   "value_return_last14": 0.7675,
+   "value_return_last14_ci95": [
+    0.7031,
+    0.8237
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-09-17",
+    "before": 0.9223,
+    "after": 0.7521,
+    "p_holm": 0.011
+   }
+  },
+  {
+   "slug": "starter-sport-pack",
+   "name": "Starter Pack · Fútbol americano",
+   "price_usd": 10,
+   "n": 14986,
+   "buyback_percent": null,
+   "buyback_source": null,
+   "odds_p_holm_raw": 1.0,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.1,
+    "observed": 0.10089,
+    "ci95": [
+     0.09617,
+     0.10582
+    ]
+   },
+   "odds_p_holm": 1.0,
+   "odds_max_dev_pp": 0.09,
+   "value_return": 0.9211,
+   "value_return_ci95": [
+    0.9138,
+    0.9283
+   ],
+   "value_return_last14": 0.9106,
+   "value_return_last14_ci95": [
+    0.888,
+    0.929
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-08-30",
+    "before": 0.9393,
+    "after": 0.9145,
+    "p_holm": 0.3147
+   }
+  },
+  {
+   "slug": "rookie-sport-pack",
+   "name": "Rookie Pack · Fútbol americano",
+   "price_usd": 25,
+   "n": 12446,
+   "buyback_percent": null,
+   "buyback_source": null,
+   "odds_p_holm_raw": 3.274308196983678e-24,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.003,
+    "observed": 0.00554,
+    "ci95": [
+     0.00438,
+     0.00701
+    ]
+   },
+   "odds_p_holm": 0.0,
+   "odds_max_dev_pp": 1.53,
+   "value_return": 0.9754,
+   "value_return_ci95": [
+    0.8971,
+    1.0753
+   ],
+   "value_return_last14": 0.8988,
+   "value_return_last14_ci95": [
+    0.8094,
+    0.9473
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-09-16",
+    "before": 1.0403,
+    "after": 0.8885,
+    "p_holm": 1.0
+   }
+  },
+  {
+   "slug": "elite-one-piece-pack",
+   "name": "Elite Pack · One Piece",
+   "price_usd": 50,
+   "n": 10168,
+   "buyback_percent": 0.85,
+   "buyback_source": "API /vm/available",
+   "odds_p_holm_raw": 1.0,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.01,
+    "observed": 0.01062,
+    "ci95": [
+     0.00881,
+     0.01281
+    ]
+   },
+   "odds_p_holm": 1.0,
+   "odds_max_dev_pp": 0.31,
+   "value_return": 1.0385,
+   "value_return_ci95": [
+    0.9857,
+    1.0935
+   ],
+   "value_return_last14": 0.9715,
+   "value_return_last14_ci95": [
+    0.9021,
+    1.0305
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-08"
+   ],
+   "regime_break": {
+    "from": "2026-09-03",
+    "before": 1.1216,
+    "after": 0.9778,
+    "p_holm": 0.5275
+   }
+  },
+  {
+   "slug": "starter-pack-q4pux3",
+   "name": "Starter Pack · Baloncesto",
+   "price_usd": 50,
+   "n": 7565,
+   "buyback_percent": 0.85,
+   "buyback_source": "ficha pública del pack",
+   "odds_p_holm_raw": 0.1529820689228221,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.01,
+    "observed": 0.01229,
+    "ci95": [
+     0.01005,
+     0.01504
+    ]
+   },
+   "odds_p_holm": 0.152982,
+   "odds_max_dev_pp": 0.91,
+   "value_return": 1.1328,
+   "value_return_ci95": [
+    1.0377,
+    1.2512
+   ],
+   "value_return_last14": 1.0835,
+   "value_return_last14_ci95": [
+    0.9688,
+    1.2128
+   ],
+   "window": [
+    "2026-08-20",
+    "2026-10-07"
+   ],
+   "regime_break": {
+    "from": "2026-09-06",
+    "before": 1.0226,
+    "after": 1.2017,
+    "p_holm": 1.0
+   }
+  },
+  {
+   "slug": "elite-riftbound-pack",
+   "name": "Elite Pack · Riftbound",
+   "price_usd": 50,
+   "n": 2269,
+   "buyback_percent": 1.0,
+   "buyback_source": "API /vm/available",
+   "odds_p_holm_raw": 0.125021813696446,
+   "top_tier": {
+    "tier": "Mythic",
+    "advertised": 0.009,
+    "observed": 0.01366,
+    "ci95": [
+     0.00964,
+     0.01933
+    ]
+   },
+   "odds_p_holm": 0.125022,
+   "odds_max_dev_pp": 1.47,
+   "value_return": 1.0906,
+   "value_return_ci95": [
+    0.9104,
+    1.3792
+   ],
+   "value_return_last14": 1.1784,
+   "value_return_last14_ci95": [
+    0.881,
+    1.5169
+   ],
+   "window": [
+    "2026-08-22",
+    "2026-10-05"
+   ],
+   "regime_break": {
+    "from": "2026-09-19",
+    "before": 1.0563,
+    "after": 1.3158,
+    "p_holm": 1.0
+   }
+  }
+ ],
+ "temporal_patterns_validated": []
+}

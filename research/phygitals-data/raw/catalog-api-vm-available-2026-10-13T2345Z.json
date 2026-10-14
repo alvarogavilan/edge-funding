@@ -1,0 +1,27 @@
+{
+  "source_url": "https://api.phygitals.com/api/vm/available",
+  "captured_at_utc": "2026-10-13T23:45:00Z",
+  "capture_method": "Transcripción mediante herramienta de lectura web (WebFetch); el shell de este entorno tiene bloqueado api.phygitals.com. Respuesta truncada: 40 objetos completos; faltan los packs posteriores (p. ej. Dollar, Trainer, Starter One Piece, Riftbound Rookie/Starter).",
+  "evidence_quality": "A-catalogo-oficial (transcrito)",
+  "packs": [
+    {"slug":"rookie-pack","name":"Rookie Pack","category":"pokemon","mint_price":25,"in_stock":true,"num_pulls_7d":16963,"ev":26.16,"min_ev":24.75,"max_ev":27,"ev_updated_at":"2026-10-13T23:41:26.446Z","buyback_percent":0.85,"tiers":[[13,25,80],[25,50,15],[50,150,4],[150,10000,1]]},
+    {"slug":"elite-pack","name":"Elite Pack","category":"pokemon","mint_price":50,"in_stock":true,"num_pulls_7d":6403,"ev":50.65,"min_ev":47,"max_ev":53,"ev_updated_at":"2026-10-13T23:42:10.393Z","buyback_percent":0.85,"tiers":[[24,60,80],[60,120,15],[120,250,4],[250,5000,1]]},
+    {"slug":"legend-pack","name":"Legend Pack","category":"pokemon","mint_price":250,"in_stock":true,"num_pulls_7d":1938,"ev":260.6,"min_ev":247.5,"max_ev":262.5,"ev_updated_at":"2026-10-13T23:42:10.393Z","buyback_percent":0.9},
+    {"slug":"east-blue-pack","name":"East Blue Pack","category":"one piece","mint_price":80,"in_stock":true,"num_pulls_7d":513,"ev":82.25,"min_ev":79.2,"max_ev":84,"ev_updated_at":"2026-10-13T22:40:08.480Z","buyback_percent":0.85},
+    {"slug":"platinum-pack","name":"Platinum Pack","category":"pokemon","mint_price":500,"in_stock":true,"num_pulls_7d":542,"ev":514.08,"ev_updated_at":"2026-10-13T23:42:10.393Z","buyback_percent":0.9},
+    {"slug":"mythic-pack","name":"Mythic Pack","category":"pokemon","mint_price":1000,"in_stock":true,"num_pulls_7d":706,"ev":1023.86,"ev_updated_at":"2026-10-13T23:25:45.943Z","buyback_percent":0.9},
+    {"slug":"starter-football-pack","name":"Starter Pack","category":"football","mint_price":25,"in_stock":true,"num_pulls_7d":300,"ev":25.62,"min_ev":24.75,"max_ev":26.25,"ev_updated_at":"2026-10-13T23:42:10.393Z","buyback_percent":0.85,"tiers":[[12,25,80],[25,50,15],[50,100,4],[100,7000,1]]},
+    {"slug":"elite-football-pack","name":"Elite Pack","category":"football","mint_price":50,"in_stock":true,"num_pulls_7d":242,"ev":50.89,"min_ev":49.5,"max_ev":52.5,"ev_updated_at":"2026-10-13T23:42:10.393Z","buyback_percent":0.85,"tiers":[[20,50,75],[50,110,20],[110,200,4],[200,5000,1]]},
+    {"slug":"starter-baseball-pack","name":"Starter Pack","category":"baseball","mint_price":25,"in_stock":true,"num_pulls_7d":317,"ev":25.62,"min_ev":24.75,"max_ev":26.25,"ev_updated_at":"2026-10-13T23:42:10.393Z","buyback_percent":0.85,"tiers":[[13,25,81],[25,50,15],[50,150,3],[150,5000,1]]},
+    {"slug":"pro-baseball-pack","name":"Pro Pack","category":"baseball","mint_price":100,"in_stock":true,"num_pulls_7d":55,"ev":101.62,"ev_updated_at":"2026-10-13T23:42:05.994Z","buyback_percent":0.85},
+    {"slug":"boost-sport-pack","name":"Boost Sport Pack","category":null,"mint_price":5,"in_stock":true,"num_pulls_7d":12342,"ev":3.03,"min_ev":1,"max_ev":4.5,"ev_updated_at":"2026-10-13T22:47:41.697Z","buyback_percent":1.0,"tiers":[[1,5,80],[5,10,15],[10,20,4],[20,50,1]]},
+    {"slug":"elite-dragonball-pack","name":"Elite Pack","category":"dragon ball","mint_price":50,"in_stock":true,"num_pulls_7d":53,"ev":51.96,"min_ev":47,"max_ev":53,"ev_updated_at":"2026-10-13T23:15:21.299Z","buyback_percent":0.85,"tiers":[[25,60,80],[60,120,15],[120,250,4],[250,5000,1]]},
+    {"slug":"elite-one-piece-pack","name":"Elite Pack","category":"one piece","mint_price":50,"in_stock":true,"num_pulls_7d":1685,"ev":50.48,"min_ev":47,"max_ev":53,"ev_updated_at":"2026-10-13T22:33:38.845Z","buyback_percent":0.85,"tiers":[[25,50,80],[50,100,15],[100,400,4],[400,15000,1]]},
+    {"slug":"elite-riftbound-pack","name":"Elite Pack","category":"riftbound","mint_price":50,"in_stock":true,"num_pulls_7d":90,"ev":46.51,"min_ev":46,"max_ev":47,"ev_updated_at":"2026-10-13T22:44:46.866Z","buyback_percent":1.0,"tiers":[[20,60,83.1],[60,120,15],[120,250,1],[250,5000,0.9]]},
+    {"slug":"elite-soccer-pack","name":"Elite Pack","category":"soccer","mint_price":50,"in_stock":true,"num_pulls_7d":268,"ev":51.82,"min_ev":47,"max_ev":53,"ev_updated_at":"2026-10-13T21:41:24.099Z","buyback_percent":0.85,"tiers":[[25,60,80],[60,120,15],[120,300,4],[300,5000,1]]},
+    {"slug":"elite-sport-pack","name":"Elite Pack","category":"football","mint_price":50,"in_stock":true,"num_pulls_7d":160,"ev":45.97,"min_ev":45,"max_ev":46.5,"ev_updated_at":"2026-10-13T23:42:10.393Z","buyback_percent":1.0,"tiers":[[24,60,80],[60,120,15],[120,250,4],[250,5000,1]]},
+    {"slug":"black-pack","name":"Black Pack","category":"pokemon","mint_price":2500,"in_stock":true,"num_pulls_7d":186,"ev":2292.58,"ev_updated_at":"2026-10-13T22:22:52.132Z","buyback_percent":1.0},
+    {"slug":"diamond-pack","name":"Diamond Pack","category":"pokemon","mint_price":5000,"in_stock":true,"num_pulls_7d":142,"ev":4391.6,"ev_updated_at":"2026-10-13T22:41:30.787Z","buyback_percent":1.0}
+  ],
+  "observacion": "En los 40 objetos transcritos, rewards_amounts y sellback_rewards_amounts están vacíos y last_pull es null: el catálogo no publica aperturas individuales."
+}

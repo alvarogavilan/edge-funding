@@ -1,0 +1,1438 @@
+{
+ "generated_by": "tools/phygitals_evidence.py",
+ "seed": 20261014,
+ "openings": {
+  "total_rows": 168,
+  "packspy_rows": 118,
+  "ripranks_rows": 50,
+  "rows_with_tx_signature": 0,
+  "rows_with_absolute_utc_second": 0,
+  "rows_with_position_selected": 0,
+  "packspy_rows_flagged_possible_duplicate": 2,
+  "packspy_value_at_least_price": 36,
+  "packspy_value_at_least_price_share": 0.3050847457627119
+ },
+ "aggregate_pulls_covered": 460173,
+ "packs": {
+  "trainer-pack": {
+   "slug": "trainer-pack",
+   "name": "Trainer Pack · Pokémon",
+   "price_usd": 10,
+   "game": "pokemon",
+   "buyback_percent": 1.0,
+   "buyback_source": "ficha pública del pack",
+   "tier_test": {
+    "n": 205089,
+    "chi2": 286.7910034722054,
+    "df": 2,
+    "p": 5.298157520741605e-63,
+    "cramers_v": 0.02644213877548705,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 90.0,
+      "observed_pct": 89.9,
+      "count": 184429,
+      "advertised_share": 0.9,
+      "observed_share": 0.89926,
+      "ci95": [
+       0.89795,
+       0.90056
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Legendary",
+      "advertised_pct": 9.0,
+      "observed_pct": 9.4,
+      "count": 19320,
+      "advertised_share": 0.09,
+      "observed_share": 0.0942,
+      "ci95": [
+       0.09295,
+       0.09547
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 1.0,
+      "observed_pct": 0.7,
+      "count": 1340,
+      "advertised_share": 0.01,
+      "observed_share": 0.00653,
+      "ci95": [
+       0.00619,
+       0.00689
+      ],
+      "advertised_inside_ci": false
+     }
+    ],
+    "p_holm": 5.827973272815766e-62,
+    "q_bh": 5.827973272815766e-62
+   },
+   "daily": {
+    "days": 50,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 175906,
+    "value_return_mean": 0.9485663251964117,
+    "value_return_ci95": [
+     0.9417643318118726,
+     0.9548393617691993
+    ],
+    "value_return_last14": 0.9378657932472949,
+    "value_return_last14_ci95": [
+     0.9289303726080999,
+     0.9464507017974324
+    ]
+   },
+   "regime_break": {
+    "split_index": 7,
+    "t_max": 3.4749366708967946,
+    "p_perm": 0.022977022977022976,
+    "date_from": "2026-08-27",
+    "mean_before": 0.9153531049666515,
+    "mean_after": 0.9517627739728162,
+    "p_holm": 0.22977022977022976
+   },
+   "catalog": null,
+   "cash_return_observed": {
+    "mean": 0.9485663251964117,
+    "ci95": [
+     0.9417643318118726,
+     0.9548393617691993
+    ],
+    "last14": 0.9378657932472949,
+    "last14_ci95": [
+     0.9289303726080999,
+     0.9464507017974324
+    ]
+   }
+  },
+  "rookie-pack": {
+   "slug": "rookie-pack",
+   "name": "Rookie Pack · Pokémon",
+   "price_usd": 25,
+   "game": "pokemon",
+   "buyback_percent": 0.85,
+   "buyback_source": "API /vm/available",
+   "tier_test": {
+    "n": 100808,
+    "chi2": 19.925987190169916,
+    "df": 3,
+    "p": 0.00017584402591868946,
+    "cramers_v": 0.008117116828581865,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 80.0,
+      "observed_pct": 80.5,
+      "count": 81147,
+      "advertised_share": 0.8,
+      "observed_share": 0.80497,
+      "ci95": [
+       0.80251,
+       0.8074
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Uncommon",
+      "advertised_pct": 15.0,
+      "observed_pct": 14.5,
+      "count": 14647,
+      "advertised_share": 0.15,
+      "observed_share": 0.1453,
+      "ci95": [
+       0.14313,
+       0.14748
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 4.0,
+      "observed_pct": 3.9,
+      "count": 3973,
+      "advertised_share": 0.04,
+      "observed_share": 0.03941,
+      "ci95": [
+       0.03823,
+       0.04063
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.0,
+      "count": 1041,
+      "advertised_share": 0.01,
+      "observed_share": 0.01033,
+      "ci95": [
+       0.00972,
+       0.01097
+      ],
+      "advertised_inside_ci": true
+     }
+    ],
+    "p_holm": 0.0014067522073495156,
+    "q_bh": 0.000483571071276396
+   },
+   "daily": {
+    "days": 50,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 88042,
+    "value_return_mean": 1.0738986960768724,
+    "value_return_ci95": [
+     1.0456687082332183,
+     1.1042528098691404
+    ],
+    "value_return_last14": 1.0546928649835345,
+    "value_return_last14_ci95": [
+     1.0138085545334412,
+     1.0985092488478663
+    ]
+   },
+   "regime_break": {
+    "split_index": 8,
+    "t_max": 2.088762952202279,
+    "p_perm": 0.34865134865134867,
+    "date_from": "2026-08-28",
+    "mean_before": 1.0089504660452728,
+    "mean_after": 1.087257990742516,
+    "p_holm": 1.0
+   },
+   "catalog": {
+    "ev": 26.16,
+    "buyback_percent": 0.85,
+    "ev_updated_at": "2026-10-13T23:41:26.446Z",
+    "in_stock": true,
+    "num_pulls_7d": 16963,
+    "cash_return_from_ev": 0.88944
+   },
+   "cash_return_observed": {
+    "mean": 0.9128138916653415,
+    "ci95": [
+     0.8888184019982356,
+     0.9386148883887694
+    ],
+    "last14": 0.8964889352360044,
+    "last14_ci95": [
+     0.861737271353425,
+     0.9337328615206864
+    ]
+   }
+  },
+  "elite-pack": {
+   "slug": "elite-pack",
+   "name": "Elite Pack · Pokémon",
+   "price_usd": 50,
+   "game": "pokemon",
+   "buyback_percent": 0.85,
+   "buyback_source": "API /vm/available",
+   "tier_test": {
+    "n": 44354,
+    "chi2": 10.72013046549724,
+    "df": 3,
+    "p": 0.013339619964312287,
+    "cramers_v": 0.008975796795825617,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 80.0,
+      "observed_pct": 80.3,
+      "count": 35618,
+      "advertised_share": 0.8,
+      "observed_share": 0.80304,
+      "ci95": [
+       0.79931,
+       0.80671
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Uncommon",
+      "advertised_pct": 15.0,
+      "observed_pct": 14.8,
+      "count": 6550,
+      "advertised_share": 0.15,
+      "observed_share": 0.14768,
+      "ci95": [
+       0.1444,
+       0.15101
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 4.0,
+      "observed_pct": 3.8,
+      "count": 1695,
+      "advertised_share": 0.04,
+      "observed_share": 0.03822,
+      "ci95": [
+       0.03647,
+       0.04004
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.1,
+      "count": 491,
+      "advertised_share": 0.01,
+      "observed_share": 0.01107,
+      "ci95": [
+       0.01014,
+       0.01209
+      ],
+      "advertised_inside_ci": false
+     }
+    ],
+    "p_holm": 0.093377339750186,
+    "q_bh": 0.029347163921487028
+   },
+   "daily": {
+    "days": 50,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 39306,
+    "value_return_mean": 1.0570217524042131,
+    "value_return_ci95": [
+     1.0369097956653106,
+     1.0774522337649817
+    ],
+    "value_return_last14": 1.048921736197009,
+    "value_return_last14_ci95": [
+     1.0143110815960215,
+     1.0834373566342361
+    ]
+   },
+   "regime_break": {
+    "split_index": 17,
+    "t_max": 1.6282870400692078,
+    "p_perm": 0.5474525474525475,
+    "date_from": "2026-09-06",
+    "mean_before": 1.0749272961235323,
+    "mean_after": 1.0408534495279593,
+    "p_holm": 1.0
+   },
+   "catalog": {
+    "ev": 50.65,
+    "buyback_percent": 0.85,
+    "ev_updated_at": "2026-10-13T23:42:10.393Z",
+    "in_stock": true,
+    "num_pulls_7d": 6403,
+    "cash_return_from_ev": 0.8610499999999999
+   },
+   "cash_return_observed": {
+    "mean": 0.8984684895435812,
+    "ci95": [
+     0.881373326315514,
+     0.9158343987002344
+    ],
+    "last14": 0.8915834757674576,
+    "last14_ci95": [
+     0.8621644193566183,
+     0.9209217531391006
+    ]
+   }
+  },
+  "boost-sport-pack": {
+   "slug": "boost-sport-pack",
+   "name": "Boost Sport Pack",
+   "price_usd": 5,
+   "game": "sport",
+   "buyback_percent": 1.0,
+   "buyback_source": "API /vm/available",
+   "tier_test": {
+    "n": 16288,
+    "chi2": 1.6437049770792542,
+    "df": 3,
+    "p": 0.6495211061254837,
+    "cramers_v": 0.00579985889073241,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 80.0,
+      "observed_pct": 79.8,
+      "count": 12990,
+      "advertised_share": 0.8,
+      "observed_share": 0.79752,
+      "ci95": [
+       0.79128,
+       0.80362
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 15.0,
+      "observed_pct": 15.2,
+      "count": 2470,
+      "advertised_share": 0.15,
+      "observed_share": 0.15165,
+      "ci95": [
+       0.14622,
+       0.15724
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Legendary",
+      "advertised_pct": 4.0,
+      "observed_pct": 4.0,
+      "count": 651,
+      "advertised_share": 0.04,
+      "observed_share": 0.03997,
+      "ci95": [
+       0.03707,
+       0.04309
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.1,
+      "count": 177,
+      "advertised_share": 0.01,
+      "observed_share": 0.01087,
+      "ci95": [
+       0.00939,
+       0.01258
+      ],
+      "advertised_inside_ci": true
+     }
+    ],
+    "p_holm": 1.0,
+    "q_bh": 0.7144732167380321
+   },
+   "daily": {
+    "days": 17,
+    "first": "2026-08-25",
+    "last": "2026-09-10",
+    "pulls": 16283,
+    "value_return_mean": 0.8361826444758338,
+    "value_return_ci95": [
+     0.8254043471674073,
+     0.845810521884041
+    ],
+    "value_return_last14": 0.8343105542900532,
+    "value_return_last14_ci95": [
+     0.822967182074303,
+     0.8446981156325235
+    ]
+   },
+   "regime_break": {
+    "split_index": 9,
+    "t_max": 1.0496420268359639,
+    "p_perm": 0.3706293706293706,
+    "date_from": "2026-09-03",
+    "mean_before": 0.8430957683741649,
+    "mean_after": 0.8293698329472016,
+    "p_holm": 1.0
+   },
+   "catalog": {
+    "ev": 3.03,
+    "buyback_percent": 1.0,
+    "ev_updated_at": "2026-10-13T22:47:41.697Z",
+    "in_stock": true,
+    "num_pulls_7d": 12342,
+    "cash_return_from_ev": 0.606
+   },
+   "cash_return_observed": {
+    "mean": 0.8361826444758338,
+    "ci95": [
+     0.8254043471674073,
+     0.845810521884041
+    ],
+    "last14": 0.8343105542900532,
+    "last14_ci95": [
+     0.822967182074303,
+     0.8446981156325235
+    ]
+   }
+  },
+  "starter-one-piece-pack": {
+   "slug": "starter-one-piece-pack",
+   "name": "Starter Pack · One Piece",
+   "price_usd": 25,
+   "game": "onepiece",
+   "buyback_percent": 0.85,
+   "buyback_source": "ficha pública del pack",
+   "tier_test": {
+    "n": 23728,
+    "chi2": 1.7423578332209324,
+    "df": 3,
+    "p": 0.6275580999673143,
+    "cramers_v": 0.004947405207876263,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 80.0,
+      "observed_pct": 80.3,
+      "count": 19044,
+      "advertised_share": 0.8,
+      "observed_share": 0.8026,
+      "ci95": [
+       0.79748,
+       0.80761
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Uncommon",
+      "advertised_pct": 15.0,
+      "observed_pct": 14.7,
+      "count": 3494,
+      "advertised_share": 0.15,
+      "observed_share": 0.14725,
+      "ci95": [
+       0.1428,
+       0.15182
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 4.0,
+      "observed_pct": 4.0,
+      "count": 944,
+      "advertised_share": 0.04,
+      "observed_share": 0.03978,
+      "ci95": [
+       0.03737,
+       0.04235
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.0,
+      "count": 246,
+      "advertised_share": 0.01,
+      "observed_share": 0.01037,
+      "ci95": [
+       0.00916,
+       0.01174
+      ],
+      "advertised_inside_ci": true
+     }
+    ],
+    "p_holm": 1.0,
+    "q_bh": 0.7144732167380321
+   },
+   "daily": {
+    "days": 50,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 21045,
+    "value_return_mean": 1.0483896887621764,
+    "value_return_ci95": [
+     1.024074929482395,
+     1.0736620817615388
+    ],
+    "value_return_last14": 0.9957709297433743,
+    "value_return_last14_ci95": [
+     0.9608935134612302,
+     1.0259823548694318
+    ]
+   },
+   "regime_break": {
+    "split_index": 35,
+    "t_max": 2.424494843648773,
+    "p_perm": 0.19080919080919082,
+    "date_from": "2026-09-24",
+    "mean_before": 1.0639888813391807,
+    "mean_after": 0.9963848846787483,
+    "p_holm": 1.0
+   },
+   "catalog": null,
+   "cash_return_observed": {
+    "mean": 0.8911312354478499,
+    "ci95": [
+     0.8704636900600357,
+     0.912612769497308
+    ],
+    "last14": 0.8464052902818682,
+    "last14_ci95": [
+     0.8167594864420457,
+     0.872085001639017
+    ]
+   }
+  },
+  "pirate-pack": {
+   "slug": "pirate-pack",
+   "name": "Pirate Pack · One Piece",
+   "price_usd": 10,
+   "game": "onepiece",
+   "buyback_percent": 1.0,
+   "buyback_source": "ficha pública del pack",
+   "tier_test": {
+    "n": 22472,
+    "chi2": 26.497370569339875,
+    "df": 1,
+    "p": 2.638970698501114e-07,
+    "cramers_v": 0.03433843726529396,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 85.9,
+      "observed_pct": 87.1,
+      "count": 19572,
+      "advertised_share": 0.859,
+      "observed_share": 0.87095,
+      "ci95": [
+       0.8665,
+       0.87527
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 14.1,
+      "observed_pct": 12.9,
+      "count": 2900,
+      "advertised_share": 0.141,
+      "observed_share": 0.12905,
+      "ci95": [
+       0.12473,
+       0.1335
+      ],
+      "advertised_inside_ci": false
+     }
+    ],
+    "p_holm": 2.375073628651003e-06,
+    "q_bh": 9.676225894504087e-07
+   },
+   "daily": {
+    "days": 47,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 20322,
+    "value_return_mean": 0.8681069776596795,
+    "value_return_ci95": [
+     0.837330338072588,
+     0.8926415078239821
+    ],
+    "value_return_last14": 0.7674792088109689,
+    "value_return_last14_ci95": [
+     0.7031319367479872,
+     0.8237291407671947
+    ]
+   },
+   "regime_break": {
+    "split_index": 25,
+    "t_max": 9.164038667155992,
+    "p_perm": 0.000999000999000999,
+    "date_from": "2026-09-17",
+    "mean_before": 0.9222701024974738,
+    "mean_after": 0.7520933828076685,
+    "p_holm": 0.010989010989010988
+   },
+   "catalog": null,
+   "cash_return_observed": {
+    "mean": 0.8681069776596795,
+    "ci95": [
+     0.837330338072588,
+     0.8926415078239821
+    ],
+    "last14": 0.7674792088109689,
+    "last14_ci95": [
+     0.7031319367479872,
+     0.8237291407671947
+    ]
+   }
+  },
+  "starter-sport-pack": {
+   "slug": "starter-sport-pack",
+   "name": "Starter Pack · Fútbol americano",
+   "price_usd": 10,
+   "game": "sport",
+   "buyback_percent": null,
+   "buyback_source": null,
+   "tier_test": {
+    "n": 14986,
+    "chi2": 0.13313166362678924,
+    "df": 1,
+    "p": 0.7152068670091964,
+    "cramers_v": 0.0029805596334356154,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 90.0,
+      "observed_pct": 89.9,
+      "count": 13474,
+      "advertised_share": 0.9,
+      "observed_share": 0.89911,
+      "ci95": [
+       0.89418,
+       0.90383
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 10.0,
+      "observed_pct": 10.1,
+      "count": 1512,
+      "advertised_share": 0.1,
+      "observed_share": 0.10089,
+      "ci95": [
+       0.09617,
+       0.10582
+      ],
+      "advertised_inside_ci": true
+     }
+    ],
+    "p_holm": 1.0,
+    "q_bh": 0.7152068670091964
+   },
+   "daily": {
+    "days": 50,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 14124,
+    "value_return_mean": 0.9210883602378929,
+    "value_return_ci95": [
+     0.9137832848348769,
+     0.9283315095537104
+    ],
+    "value_return_last14": 0.9105803278688525,
+    "value_return_last14_ci95": [
+     0.8879839977324475,
+     0.9290432093678278
+    ]
+   },
+   "regime_break": {
+    "split_index": 10,
+    "t_max": 3.154700333716718,
+    "p_perm": 0.03496503496503497,
+    "date_from": "2026-08-30",
+    "mean_before": 0.9392941644562334,
+    "mean_after": 0.9144594359667759,
+    "p_holm": 0.3146853146853147
+   },
+   "catalog": null,
+   "cash_return_observed": null
+  },
+  "rookie-sport-pack": {
+   "slug": "rookie-sport-pack",
+   "name": "Rookie Pack · Fútbol americano",
+   "price_usd": 25,
+   "game": "sport",
+   "buyback_percent": null,
+   "buyback_source": null,
+   "tier_test": {
+    "n": 12446,
+    "chi2": 117.08522878572583,
+    "df": 3,
+    "p": 3.274308196983678e-25,
+    "cramers_v": 0.055998388440145805,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 83.7,
+      "observed_pct": 84.2,
+      "count": 10483,
+      "advertised_share": 0.837,
+      "observed_share": 0.84228,
+      "ci95": [
+       0.83577,
+       0.84858
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Uncommon",
+      "advertised_pct": 15.0,
+      "observed_pct": 13.5,
+      "count": 1676,
+      "advertised_share": 0.15,
+      "observed_share": 0.13466,
+      "ci95": [
+       0.12878,
+       0.14077
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.8,
+      "count": 218,
+      "advertised_share": 0.01,
+      "observed_share": 0.01752,
+      "ci95": [
+       0.01536,
+       0.01997
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 0.3,
+      "observed_pct": 0.6,
+      "count": 69,
+      "advertised_share": 0.003,
+      "observed_share": 0.00554,
+      "ci95": [
+       0.00438,
+       0.00701
+      ],
+      "advertised_inside_ci": false
+     }
+    ],
+    "p_holm": 3.274308196983678e-24,
+    "q_bh": 1.800869508341023e-24
+   },
+   "daily": {
+    "days": 50,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 11614,
+    "value_return_mean": 0.9754363698983985,
+    "value_return_ci95": [
+     0.8971179941137017,
+     1.0752797425844463
+    ],
+    "value_return_last14": 0.898842472118959,
+    "value_return_last14_ci95": [
+     0.8094104131053389,
+     0.9472678975942276
+    ]
+   },
+   "regime_break": {
+    "split_index": 27,
+    "t_max": 1.8493794655462996,
+    "p_perm": 0.4745254745254745,
+    "date_from": "2026-09-16",
+    "mean_before": 1.0402986622576282,
+    "mean_after": 0.8884521265873817,
+    "p_holm": 1.0
+   },
+   "catalog": null,
+   "cash_return_observed": null
+  },
+  "elite-one-piece-pack": {
+   "slug": "elite-one-piece-pack",
+   "name": "Elite Pack · One Piece",
+   "price_usd": 50,
+   "game": "onepiece",
+   "buyback_percent": 0.85,
+   "buyback_source": "API /vm/available",
+   "tier_test": {
+    "n": 10168,
+    "chi2": 3.179845266194599,
+    "df": 3,
+    "p": 0.3647190628327114,
+    "cramers_v": 0.010209973092869877,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 80.0,
+      "observed_pct": 80.0,
+      "count": 8138,
+      "advertised_share": 0.8,
+      "observed_share": 0.80035,
+      "ci95": [
+       0.79247,
+       0.80801
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Uncommon",
+      "advertised_pct": 15.0,
+      "observed_pct": 15.2,
+      "count": 1547,
+      "advertised_share": 0.15,
+      "observed_share": 0.15214,
+      "ci95": [
+       0.14529,
+       0.15926
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 4.0,
+      "observed_pct": 3.7,
+      "count": 375,
+      "advertised_share": 0.04,
+      "observed_share": 0.03688,
+      "ci95": [
+       0.03339,
+       0.04072
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.1,
+      "count": 108,
+      "advertised_share": 0.01,
+      "observed_share": 0.01062,
+      "ci95": [
+       0.00881,
+       0.01281
+      ],
+      "advertised_inside_ci": true
+     }
+    ],
+    "p_holm": 1.0,
+    "q_bh": 0.5014887113949782
+   },
+   "daily": {
+    "days": 50,
+    "first": "2026-08-20",
+    "last": "2026-10-08",
+    "pulls": 9335,
+    "value_return_mean": 1.0385196572040705,
+    "value_return_ci95": [
+     0.9857390956089629,
+     1.0935025218232557
+    ],
+    "value_return_last14": 0.9715066115702481,
+    "value_return_last14_ci95": [
+     0.9020771592488072,
+     1.030490459278648
+    ]
+   },
+   "regime_break": {
+    "split_index": 14,
+    "t_max": 3.3579765971286655,
+    "p_perm": 0.06593406593406594,
+    "date_from": "2026-09-03",
+    "mean_before": 1.121568856200862,
+    "mean_after": 0.9777883902077152,
+    "p_holm": 0.5274725274725275
+   },
+   "catalog": {
+    "ev": 50.48,
+    "buyback_percent": 0.85,
+    "ev_updated_at": "2026-10-13T22:33:38.845Z",
+    "in_stock": true,
+    "num_pulls_7d": 1685,
+    "cash_return_from_ev": 0.8581599999999999
+   },
+   "cash_return_observed": {
+    "mean": 0.8827417086234599,
+    "ci95": [
+     0.8378782312676184,
+     0.9294771435497673
+    ],
+    "last14": 0.8257806198347108,
+    "last14_ci95": [
+     0.7667655853614861,
+     0.8759168903868507
+    ]
+   }
+  },
+  "starter-pack-q4pux3": {
+   "slug": "starter-pack-q4pux3",
+   "name": "Starter Pack · Baloncesto",
+   "price_usd": 50,
+   "game": "sport",
+   "buyback_percent": 0.85,
+   "buyback_source": "ficha pública del pack",
+   "tier_test": {
+    "n": 7565,
+    "chi2": 8.90388852170081,
+    "df": 3,
+    "p": 0.03059641378456442,
+    "cramers_v": 0.019807276465992393,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 80.0,
+      "observed_pct": 80.5,
+      "count": 6091,
+      "advertised_share": 0.8,
+      "observed_share": 0.80516,
+      "ci95": [
+       0.79608,
+       0.81392
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Uncommon",
+      "advertised_pct": 15.0,
+      "observed_pct": 14.1,
+      "count": 1066,
+      "advertised_share": 0.15,
+      "observed_share": 0.14091,
+      "ci95": [
+       0.13325,
+       0.14893
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 4.0,
+      "observed_pct": 4.2,
+      "count": 315,
+      "advertised_share": 0.04,
+      "observed_share": 0.04164,
+      "ci95": [
+       0.03737,
+       0.04638
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.2,
+      "count": 93,
+      "advertised_share": 0.01,
+      "observed_share": 0.01229,
+      "ci95": [
+       0.01005,
+       0.01504
+      ],
+      "advertised_inside_ci": false
+     }
+    ],
+    "p_holm": 0.1529820689228221,
+    "q_bh": 0.048080078804315515
+   },
+   "daily": {
+    "days": 49,
+    "first": "2026-08-20",
+    "last": "2026-10-07",
+    "pulls": 7002,
+    "value_return_mean": 1.1328259068837476,
+    "value_return_ci95": [
+     1.0377267282668778,
+     1.251240249648764
+    ],
+    "value_return_last14": 1.0834658519051044,
+    "value_return_last14_ci95": [
+     0.9687532047024557,
+     1.2127787147497198
+    ]
+   },
+   "regime_break": {
+    "split_index": 17,
+    "t_max": 1.9634845932308094,
+    "p_perm": 0.4995004995004995,
+    "date_from": "2026-09-06",
+    "mean_before": 1.0226011882658743,
+    "mean_after": 1.201713158505454,
+    "p_holm": 1.0
+   },
+   "catalog": null,
+   "cash_return_observed": {
+    "mean": 0.9629020208511855,
+    "ci95": [
+     0.8820677190268461,
+     1.0635542122014494
+    ],
+    "last14": 0.9209459741193387,
+    "last14_ci95": [
+     0.8234402239970874,
+     1.0308619075372618
+    ]
+   }
+  },
+  "elite-riftbound-pack": {
+   "slug": "elite-riftbound-pack",
+   "name": "Elite Pack · Riftbound",
+   "price_usd": 50,
+   "game": "riftbound",
+   "buyback_percent": 1.0,
+   "buyback_source": "API /vm/available",
+   "tier_test": {
+    "n": 2269,
+    "chi2": 9.747717938124492,
+    "df": 3,
+    "p": 0.020836968949407664,
+    "cramers_v": 0.03784195819753464,
+    "tiers": [
+     {
+      "tier": "Common",
+      "advertised_pct": 83.1,
+      "observed_pct": 83.9,
+      "count": 1904,
+      "advertised_share": 0.831,
+      "observed_share": 0.83914,
+      "ci95": [
+       0.82345,
+       0.85368
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Uncommon",
+      "advertised_pct": 15.0,
+      "observed_pct": 13.5,
+      "count": 307,
+      "advertised_share": 0.15,
+      "observed_share": 0.1353,
+      "ci95": [
+       0.12184,
+       0.14999
+      ],
+      "advertised_inside_ci": false
+     },
+     {
+      "tier": "Epic",
+      "advertised_pct": 1.0,
+      "observed_pct": 1.2,
+      "count": 27,
+      "advertised_share": 0.01,
+      "observed_share": 0.0119,
+      "ci95": [
+       0.00819,
+       0.01726
+      ],
+      "advertised_inside_ci": true
+     },
+     {
+      "tier": "Mythic",
+      "advertised_pct": 0.9,
+      "observed_pct": 1.4,
+      "count": 31,
+      "advertised_share": 0.009,
+      "observed_share": 0.01366,
+      "ci95": [
+       0.00964,
+       0.01933
+      ],
+      "advertised_inside_ci": false
+     }
+    ],
+    "p_holm": 0.125021813696446,
+    "q_bh": 0.03820110974058072
+   },
+   "daily": {
+    "days": 31,
+    "first": "2026-08-22",
+    "last": "2026-10-05",
+    "pulls": 2042,
+    "value_return_mean": 1.0905974534769836,
+    "value_return_ci95": [
+     0.9104003494332689,
+     1.3791919727253033
+    ],
+    "value_return_last14": 1.1783849056603772,
+    "value_return_last14_ci95": [
+     0.8809682352528336,
+     1.5168732129341516
+    ]
+   },
+   "regime_break": {
+    "split_index": 23,
+    "t_max": 0.9187764866493513,
+    "p_perm": 0.9690309690309691,
+    "date_from": "2026-09-19",
+    "mean_before": 1.0562906320541763,
+    "mean_after": 1.3157518518518516,
+    "p_holm": 1.0
+   },
+   "catalog": {
+    "ev": 46.51,
+    "buyback_percent": 1.0,
+    "ev_updated_at": "2026-10-13T22:44:46.866Z",
+    "in_stock": true,
+    "num_pulls_7d": 90,
+    "cash_return_from_ev": 0.9301999999999999
+   },
+   "cash_return_observed": {
+    "mean": 1.0905974534769836,
+    "ci95": [
+     0.9104003494332689,
+     1.3791919727253033
+    ],
+    "last14": 1.1783849056603772,
+    "last14_ci95": [
+     0.8809682352528336,
+     1.5168732129341516
+    ]
+   }
+  }
+ },
+ "temporal_tests": [
+  {
+   "pack": "trainer-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": 0.720714107424132,
+   "train_p": 0.00024993751562109475,
+   "validation_stat": 0.21865362858384968,
+   "validation_p_one_sided": 0.10647338165458635,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "trainer-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (domingo)",
+   "train_stat": 0.3388093442485658,
+   "train_p": null,
+   "validation_stat": -0.6162075862907939,
+   "validation_p_one_sided": 0.7394521095780844,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "rookie-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": 0.07101320632077865,
+   "train_p": 0.7268182954261435,
+   "validation_stat": -0.06414432408112174,
+   "validation_p_one_sided": 1.0,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "rookie-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (viernes)",
+   "train_stat": 4.84545714611492,
+   "train_p": null,
+   "validation_stat": 0.10942533107737284,
+   "validation_p_one_sided": 0.4273145370925815,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "elite-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": -0.03596826114904566,
+   "train_p": 0.8672831792051987,
+   "validation_stat": -0.06071673151701154,
+   "validation_p_one_sided": 0.4816295926018495,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "elite-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (sábado)",
+   "train_stat": 1.149525749859392,
+   "train_p": null,
+   "validation_stat": 0.18556314011860303,
+   "validation_p_one_sided": 0.38492301539692064,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "boost-sport-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": -0.2897554907674287,
+   "train_p": 0.4843789052736816,
+   "validation_stat": 0.2753820685424911,
+   "validation_p_one_sided": 1.0,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "boost-sport-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (martes)",
+   "train_stat": -0.5982549740962335,
+   "train_p": null,
+   "validation_stat": null,
+   "validation_p_one_sided": 1.0,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "starter-one-piece-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": -0.10624544409345293,
+   "train_p": 0.6173456635841039,
+   "validation_stat": 0.06328100403547886,
+   "validation_p_one_sided": 1.0,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "starter-one-piece-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (martes)",
+   "train_stat": 2.282359593835521,
+   "train_p": null,
+   "validation_stat": -0.6679622669303892,
+   "validation_p_one_sided": 0.7762447510497901,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "pirate-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": -0.3699131232819943,
+   "train_p": 0.08472881779555111,
+   "validation_stat": 0.14509004615912952,
+   "validation_p_one_sided": 1.0,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "pirate-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (miércoles)",
+   "train_stat": 0.6361335640865605,
+   "train_p": null,
+   "validation_stat": 1.3576909642895734,
+   "validation_p_one_sided": 0.07838432313537293,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "starter-sport-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": 0.3161951237438179,
+   "train_p": 0.11347163209197701,
+   "validation_stat": -0.24390541250346176,
+   "validation_p_one_sided": 1.0,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "starter-sport-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (viernes)",
+   "train_stat": 0.35671509685779745,
+   "train_p": null,
+   "validation_stat": 0.20529314442811697,
+   "validation_p_one_sided": 0.236752649470106,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "rookie-sport-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": -0.10941730482085402,
+   "train_p": 0.5603599100224944,
+   "validation_stat": 0.03606396851827473,
+   "validation_p_one_sided": 1.0,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "rookie-sport-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (sábado)",
+   "train_stat": 7.495179008729356,
+   "train_p": null,
+   "validation_stat": -1.5158447153414123,
+   "validation_p_one_sided": 0.750249950009998,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "elite-one-piece-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": 0.28504394643058284,
+   "train_p": 0.15371157210697325,
+   "validation_stat": 0.011115314314434504,
+   "validation_p_one_sided": 0.3939015246188453,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "elite-one-piece-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (miércoles)",
+   "train_stat": 2.0030448852771134,
+   "train_p": null,
+   "validation_stat": 0.7031333544974148,
+   "validation_p_one_sided": 0.15936812637472506,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "starter-pack-q4pux3",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": -0.07760216146695706,
+   "train_p": 0.6048487878030493,
+   "validation_stat": -0.1752633042458762,
+   "validation_p_one_sided": 0.2376905773556611,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "starter-pack-q4pux3",
+   "hypothesis": "mejor día de la semana en entrenamiento (lunes)",
+   "train_stat": 4.841971090509388,
+   "train_p": null,
+   "validation_stat": -0.7426343567009224,
+   "validation_p_one_sided": 0.7080583883223356,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "elite-riftbound-pack",
+   "hypothesis": "autocorrelación diaria (rachas)",
+   "train_stat": -0.3037416466268223,
+   "train_p": 0.2464383904023994,
+   "validation_stat": -0.346143526964773,
+   "validation_p_one_sided": 0.1184703824043989,
+   "promoted_to_validation": false,
+   "validation_p_holm": 1.0,
+   "passed": false
+  },
+  {
+   "pack": "elite-riftbound-pack",
+   "hypothesis": "mejor día de la semana en entrenamiento (sábado)",
+   "train_stat": 7.032575192126901,
+   "train_p": null,
+   "validation_stat": 1.4447086966416678,
+   "validation_p_one_sided": 0.33213357328534293,
+   "promoted_to_validation": true,
+   "validation_p_holm": 1.0,
+   "passed": false
+  }
+ ],
+ "packspy_vs_ripranks": [
+  {
+   "pack": "Elite Pack · Pokémon",
+   "packspy_n": 359,
+   "packspy_beat_price": 0.49,
+   "ripranks_n": 44354,
+   "ripranks_beat_price": 0.305,
+   "z": 7.572438576228322,
+   "p_two_sided": 3.662824200089386e-14
+  },
+  {
+   "pack": "Rookie Pack · Pokémon",
+   "packspy_n": 1136,
+   "packspy_beat_price": 0.15,
+   "ripranks_n": 100808,
+   "ripranks_beat_price": 0.202,
+   "z": -4.345584748322874,
+   "p_two_sided": 1.389051281561997e-05
+  },
+  {
+   "pack": "Trainer Pack · Pokémon",
+   "packspy_n": 2078,
+   "packspy_beat_price": 0.18,
+   "ripranks_n": 205089,
+   "ripranks_beat_price": 0.316,
+   "z": -13.283355106030697,
+   "p_two_sided": 2.8914262942746953e-40
+  }
+ ]
+}
