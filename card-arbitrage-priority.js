@@ -23,7 +23,7 @@ let refreshRunning=false;let refreshStatus='Sin comprobación de tienda en esta 
 async function refreshShopify(force=false){
  if(refreshRunning||typeof fetch!=='function'||(!force&&Date.now()-refreshAt<REFRESH_INTERVAL))return;refreshRunning=true;refreshAt=Date.now();refreshStatus='Consultando variantes exactas en tiendas…';render();let ok=0,failed=0;
  try{
-  const all=(window.CVRetailSnapshot?.offers||[]);for(const r of all){if(r.liveVerified!==true)r.liveVerified=false}const items=all.filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));storeCoverage={connected:items.length,unavailable:all.length-items.length};
+  const all=(window.CVRetailSnapshot?.offers||[]);for(const r of all){r.liveVerified=false}const items=all.filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));storeCoverage={connected:items.length,unavailable:all.length-items.length};
   for(const r of items.slice(0,12)){
    try{
     const res=await fetch(r.refreshUrl,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
