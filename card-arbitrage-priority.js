@@ -41,10 +41,10 @@ function render(){
  const rows=getRows(),live=rows.filter(x=>x.buyValid),cards=live.filter(x=>x.r.kind==='card'||x.r.kind==='graded'),sealed=live.filter(x=>x.r.kind==='sealed');
  const all=rows.filter(x=>x.r&&x.r.evidenceType==='ANUNCIO ACTIVO'&&validUrl(x.r.url));
  const historical=all.filter(x=>!x.buyValid&&Number(x.r.priceEUR)>=20);
- const shown=live.length?live:historical.slice().sort((a,b)=>Number(a.r.priceEUR)-Number(b.r.priceEUR));
+ const shown=[...live.slice().sort((a,b)=>Number(a.r.priceEUR)-Number(b.r.priceEUR)),...historical.slice().sort((a,b)=>Number(a.r.priceEUR)-Number(b.r.priceEUR))];
  root.innerHTML='<section style="border:1px solid #334866;border-radius:16px;padding:16px;background:#132039;margin:12px 0">'+
  '<div style="font-weight:800;letter-spacing:.05em;color:#bcd6ff;font-size:.8rem">CARD VAULT · COMPRAS Y ARBITRAJE</div>'+
- '<h2 style="margin:6px 0">Compra YA · cartas para comprobar</h2><p style="color:#ffcb85;margin:6px 0"><b>0 compras con beneficio neto demostrado.</b> Comprueba el stock y precio actual antes de pagar.</p>'+
+ '<h2 style="margin:6px 0">Compra YA · ofertas y referencias</h2><p style="color:#ffcb85;margin:6px 0"><b>0 compras con beneficio neto demostrado.</b> Comprueba el stock y precio actual antes de pagar.</p>'+
  '<p style="margin:8px 0;color:#d9e5f4">Ofertas vigentes de compra: <b>'+live.length+'</b> · Cartas: <b>'+cards.length+'</b> · Sellado: <b>'+sealed.length+'</b> · Anuncios registrados: '+all.length+'.</p>'+
  '<p style="margin:8px 0;color:#c5d3e4" role="status">Actualización de tiendas: '+esc(refreshStatus)+'. La tienda debe permitir acceso desde el navegador; sin conexión, el anuncio continúa caducado.</p>'+ 
  '<p style="margin:8px 0;color:#c5d3e4">Una oferta de venta activa no demuestra a cuánto se revenderá. No hay comprador firme ni margen confirmado en estos registros. Se excluyen cartas ya identificadas en tu colección.</p>'+
@@ -54,7 +54,7 @@ function render(){
  const list=root.querySelector('#cvDealsList');
  const paintList=()=>{
 
-  list.innerHTML=shown.length?shown.slice(0,12).map(({r,buyValid})=>
+  list.innerHTML=shown.length?shown.slice(0,20).map(({r,buyValid})=>
    '<article style="padding:12px 0;border-top:1px solid #314056">'+(r.image?'<img alt="" loading="lazy" src="'+esc(r.image)+'" style="float:right;width:65px;height:85px;object-fit:contain"/>':'')+'<strong>'+esc(r.displayName||r.name)+'</strong> · '+esc(r.universe)+'<div>'+Number(r.priceEUR).toLocaleString('es-ES',{style:'currency',currency:'EUR'})+' · '+esc(r.language)+' · '+esc(r.condition||r.grading||'')+'</div><small>'+(buyValid?'OFERTA RECIENTE POR REVISAR':'OFERTA HISTÓRICA, STOCK NO VERIFICADO')+' · Sin venta cerrada ni beneficio demostrado. Comprobada: '+esc(r.checkedAt)+'</small><div><a href="'+esc(r.url)+'" target="_blank" rel="noopener noreferrer">Comprobar precio y disponibilidad en tienda ↗</a></div></article>').join(''):'<p>No existen ofertas registradas que puedan consultarse. No se inventarán precios ni enlaces.</p>';
  };
  paintList();
