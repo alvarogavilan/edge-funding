@@ -66,6 +66,7 @@ function install(){
  const radar=document.getElementById('radar');if(!radar)return;
  let box=document.getElementById('cvDealsVerified');if(!box){box=document.createElement('div');box.id='cvDealsVerified';radar.insertBefore(box,radar.firstChild)}
  render();
+ refreshStatus='Comprobación automática iniciada; solo Shopify admite el método implementado';
  refreshShopify();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,600));
@@ -73,5 +74,7 @@ else setTimeout(install,600);
 window.addEventListener('cv:retail-refresh',()=>{render();refreshShopify()});
 window.addEventListener('pageshow',()=>refreshShopify());
 window.addEventListener('focus',()=>refreshShopify());
+// Reconsultar mientras la app está abierta; no depende de pulsaciones del usuario.
+setInterval(()=>{if(!document.hidden)refreshShopify()},15*60*1000);
 window.CVDealsVerified={render,getRows,refreshShopify};
 })();
