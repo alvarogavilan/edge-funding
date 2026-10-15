@@ -19,6 +19,23 @@ function getRows(){
    return {r,buyValid,exitVerified:false,netVerified:false};
  });
 }
+let refreshRunning=false;
+async function refreshShopify(){
+ if(refreshRunning||typeof fetch!=='function')return;refreshRunning=true;
+ try{
+  const items=(window.CVRetailSnapshot?.offers||[]).filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));
+  for(const r of items.slice(0,12)){
+   try{
+    const res=await fetch(r.refreshUrl,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
+    if(!res.ok)continue;
+    const product=await res.json();const v=(product?.variants||[]).find(x=>String(x.id)===String(r.variantId));
+    if(!v||!Number.isFinite(Number(v.price)))continue;
+    // Only product's exact Shopify variant. Never infer resale price or profit.
+    r.stock=v.available===true;r.priceEUR=Number(v.price)/100;r.checkedAt=new Date().toISOString();r.evidenceType='ANUNCIO ACTIVO';
+   }catch(_){/* CORS or unavailable store: retain old, stale offer */}
+  }
+ }finally{refreshRunning=false;render()}
+}
 function render(){
  const root=document.getElementById('cvDealsVerified');if(!root)return;
  const rows=getRows(),live=rows.filter(x=>x.buyValid),cards=live.filter(x=>x.r.kind==='card'||x.r.kind==='graded'),sealed=live.filter(x=>x.r.kind==='sealed');
@@ -47,9 +64,10 @@ function install(){
  const radar=document.getElementById('radar');if(!radar)return;
  let box=document.getElementById('cvDealsVerified');if(!box){box=document.createElement('div');box.id='cvDealsVerified';radar.insertBefore(box,radar.firstChild)}
  render();
+ refreshShopify();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,600));
 else setTimeout(install,600);
 window.addEventListener('cv:retail-refresh',render);
-window.CVDealsVerified={render,getRows};
+window.CVDealsVerified={render,getRows,refreshShopify};
 })();
