@@ -21,7 +21,7 @@ function getRows(){
 }
 let refreshRunning=false;let refreshStatus='Sin comprobación de tienda en esta sesión';let storeCoverage={connected:0,unavailable:0};let refreshAt=0;const REFRESH_INTERVAL=15*60*1000;
 async function refreshShopify(force=false){
- if(refreshRunning||typeof fetch!=='function'||(!force&&Date.now()-refreshAt<REFRESH_INTERVAL))return;refreshRunning=true;refreshAt=Date.now();refreshStatus='Consultando variantes exactas en tiendas…';render();let ok=0,failed=0;
+ if(refreshRunning||typeof fetch!=='function'||(!force&&Date.now()-refreshAt<REFRESH_INTERVAL))return;refreshRunning=true;refreshAt=Date.now();for(const r of (window.CVRetailSnapshot?.offers||[]))r.liveVerified=false;refreshStatus='Consultando variantes exactas en tiendas…';render();window.CVFinal?.renderAll?.();let ok=0,failed=0;
  try{
   const all=(window.CVRetailSnapshot?.offers||[]);for(const r of all){r.liveVerified=false}const items=all.filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));storeCoverage={connected:items.length,unavailable:all.length-items.length};
   for(const r of items.slice(0,12)){
