@@ -19,9 +19,9 @@ function getRows(){
    return {r,buyValid,exitVerified:false,netVerified:false};
  });
 }
-let refreshRunning=false;let refreshStatus='Sin comprobación de tienda en esta sesión';
+let refreshRunning=false;let refreshStatus='Sin comprobación de tienda en esta sesión';let refreshAt=0;const REFRESH_INTERVAL=15*60*1000;
 async function refreshShopify(){
- if(refreshRunning||typeof fetch!=='function')return;refreshRunning=true;let ok=0,failed=0;
+ if(refreshRunning||typeof fetch!=='function'||Date.now()-refreshAt<REFRESH_INTERVAL)return;refreshRunning=true;refreshAt=Date.now();let ok=0,failed=0;
  try{
   const items=(window.CVRetailSnapshot?.offers||[]).filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));
   for(const r of items.slice(0,12)){
@@ -29,12 +29,12 @@ async function refreshShopify(){
     const res=await fetch(r.refreshUrl,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
     if(!res.ok){failed++;continue;}
     const product=await res.json();const v=(product?.variants||[]).find(x=>String(x.id)===String(r.variantId));
-    if(!v||!Number.isFinite(Number(v.price))||Number(v.price)<=0){failed++;continue;}
+    if(!v||typeof v.available!=='boolean'||!Number.isFinite(Number(v.price))||Number(v.price)<=0){failed++;continue;}
     // Only product's exact Shopify variant. Never infer resale price or profit.
     r.stock=v.available===true;r.priceEUR=Number(v.price)/100;r.checkedAt=new Date().toISOString();r.evidenceType='ANUNCIO ACTIVO';ok++;
    }catch(_){failed++;/* CORS or unavailable store: retain old, stale offer */}
   }
- }finally{refreshStatus=ok+' productos consultados en tienda · '+failed+' sin acceso o sin datos válidos';refreshRunning=false;render();window.CVFinal?.renderAll?.()}
+ }finally{refreshStatus=ok+' variantes exactas consultadas · '+failed+' sin acceso o sin datos válidos';refreshRunning=false;render();window.CVFinal?.renderAll?.()}
 }
 function render(){
  const root=document.getElementById('cvDealsVerified');if(!root)return;
@@ -70,6 +70,8 @@ function install(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,600));
 else setTimeout(install,600);
-window.addEventListener('cv:retail-refresh',render);
+window.addEventListener('cv:retail-refresh',()=>{render();refreshShopify()});
+window.addEventListener('pageshow',()=>refreshShopify());
+window.addEventListener('focus',()=>refreshShopify());
 window.CVDealsVerified={render,getRows,refreshShopify};
 })();
