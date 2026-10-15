@@ -19,22 +19,22 @@ function getRows(){
    return {r,buyValid,exitVerified:false,netVerified:false};
  });
 }
-let refreshRunning=false;
+let refreshRunning=false;let refreshStatus='Sin comprobación de tienda en esta sesión';
 async function refreshShopify(){
- if(refreshRunning||typeof fetch!=='function')return;refreshRunning=true;
+ if(refreshRunning||typeof fetch!=='function')return;refreshRunning=true;let ok=0,failed=0;
  try{
   const items=(window.CVRetailSnapshot?.offers||[]).filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));
   for(const r of items.slice(0,12)){
    try{
     const res=await fetch(r.refreshUrl,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
-    if(!res.ok)continue;
+    if(!res.ok){failed++;continue;}
     const product=await res.json();const v=(product?.variants||[]).find(x=>String(x.id)===String(r.variantId));
-    if(!v||!Number.isFinite(Number(v.price)))continue;
+    if(!v||!Number.isFinite(Number(v.price))||Number(v.price)<=0){failed++;continue;}
     // Only product's exact Shopify variant. Never infer resale price or profit.
-    r.stock=v.available===true;r.priceEUR=Number(v.price)/100;r.checkedAt=new Date().toISOString();r.evidenceType='ANUNCIO ACTIVO';
-   }catch(_){/* CORS or unavailable store: retain old, stale offer */}
+    r.stock=v.available===true;r.priceEUR=Number(v.price)/100;r.checkedAt=new Date().toISOString();r.evidenceType='ANUNCIO ACTIVO';ok++;
+   }catch(_){failed++;/* CORS or unavailable store: retain old, stale offer */}
   }
- }finally{refreshRunning=false;render()}
+ }finally{refreshStatus=ok+' productos consultados en tienda · '+failed+' sin acceso o sin datos válidos';refreshRunning=false;render()}
 }
 function render(){
  const root=document.getElementById('cvDealsVerified');if(!root)return;
@@ -46,8 +46,9 @@ function render(){
  '<div style="font-weight:800;letter-spacing:.05em;color:#bcd6ff;font-size:.8rem">CARD VAULT · COMPRAS Y ARBITRAJE</div>'+
  '<h2 style="margin:6px 0">Compra YA · cartas para comprobar</h2><p style="color:#ffcb85;margin:6px 0"><b>0 compras con beneficio neto demostrado.</b> Comprueba el stock y precio actual antes de pagar.</p>'+
  '<p style="margin:8px 0;color:#d9e5f4">Ofertas vigentes de compra: <b>'+live.length+'</b> · Cartas: <b>'+cards.length+'</b> · Sellado: <b>'+sealed.length+'</b> · Anuncios registrados: '+all.length+'.</p>'+
+ '<p style="margin:8px 0;color:#c5d3e4" role="status">Actualización de tiendas: '+esc(refreshStatus)+'. Solo se revalidan variantes exactas accesibles mediante CORS.</p>'+ 
  '<p style="margin:8px 0;color:#c5d3e4">Una oferta de venta activa no demuestra a cuánto se revenderá. No hay comprador firme ni margen confirmado en estos registros. Se excluyen cartas ya identificadas en tu colección.</p>'+
- '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="cvDealsShow" style="padding:10px">Ver ofertas y referencias</button><button type="button" id="cvDealsArb" style="padding:10px">Ir a arbitrajes</button></div>'+
+ '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="cvDealsRefresh" style="padding:10px">Actualizar tiendas</button><button type="button" id="cvDealsShow" style="padding:10px">Ver ofertas y referencias</button><button type="button" id="cvDealsArb" style="padding:10px">Ir a arbitrajes</button></div>'+
  '<div id="cvDealsList" style="display:block;margin-top:12px"></div>'+
  '</section>';
  const list=root.querySelector('#cvDealsList');
@@ -58,6 +59,7 @@ function render(){
  };
  paintList();
  root.querySelector('#cvDealsShow').onclick=()=>{const hidden=list.style.display==='none';list.style.display=hidden?'block':'none';root.querySelector('#cvDealsShow').textContent=hidden?'Ocultar ofertas':'Ver ofertas y referencias'};
+ root.querySelector('#cvDealsRefresh').onclick=()=>{refreshStatus='Consultando productos exactos…';render();refreshShopify()};
  root.querySelector('#cvDealsArb').onclick=()=>{const btn=document.querySelector('[data-tab="arbitraje"]');if(btn)btn.click()};
 }
 function install(){
