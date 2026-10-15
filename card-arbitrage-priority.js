@@ -34,7 +34,7 @@ async function refreshShopify(){
     r.stock=v.available===true;r.priceEUR=Number(v.price)/100;r.checkedAt=new Date().toISOString();r.evidenceType='ANUNCIO ACTIVO';ok++;
    }catch(_){failed++;/* CORS or unavailable store: retain old, stale offer */}
   }
- }finally{refreshStatus=ok+' productos consultados en tienda · '+failed+' sin acceso o sin datos válidos';refreshRunning=false;render()}
+ }finally{refreshStatus=ok+' productos consultados en tienda · '+failed+' sin acceso o sin datos válidos';refreshRunning=false;render();window.CVFinal?.renderAll?.()}
 }
 function render(){
  const root=document.getElementById('cvDealsVerified');if(!root)return;
