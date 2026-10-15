@@ -14,7 +14,7 @@ function getRows(){
  const s=state(),offers=Array.isArray(window.CVRetailSnapshot?.offers)?window.CVRetailSnapshot.offers:[];
  return offers.filter(r=>r&&['card','graded','sealed'].includes(r.kind)&&!owned(r,s))
  .map(r=>{
-   const buyValid=!!(r.stock===true&&dateOK(r.checkedAt)&&validUrl(r.url)&&Number(r.priceEUR)>=20&&r.evidenceType==='ANUNCIO ACTIVO');
+   const buyValid=!!(r.stock===true&&dateOK(r.checkedAt)&&r.liveVerified===true&&validUrl(r.url)&&Number(r.priceEUR)>=20&&r.evidenceType==='ANUNCIO ACTIVO');
    // Never deduce a firm buyer or comparable sold from a listing / marketing price.
    return {r,buyValid,exitVerified:false,netVerified:false};
  });
@@ -23,7 +23,7 @@ let refreshRunning=false;let refreshStatus='Sin comprobación de tienda en esta 
 async function refreshShopify(force=false){
  if(refreshRunning||typeof fetch!=='function'||(!force&&Date.now()-refreshAt<REFRESH_INTERVAL))return;refreshRunning=true;refreshAt=Date.now();refreshStatus='Consultando variantes exactas en tiendas…';render();let ok=0,failed=0;
  try{
-  const all=(window.CVRetailSnapshot?.offers||[]);const items=all.filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));storeCoverage={connected:items.length,unavailable:all.length-items.length};
+  const all=(window.CVRetailSnapshot?.offers||[]);for(const r of all){if(r.liveVerified!==true)r.liveVerified=false}const items=all.filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));storeCoverage={connected:items.length,unavailable:all.length-items.length};
   for(const r of items.slice(0,12)){
    try{
     const res=await fetch(r.refreshUrl,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
@@ -31,7 +31,7 @@ async function refreshShopify(force=false){
     const product=await res.json();const v=(product?.variants||[]).find(x=>String(x.id)===String(r.variantId));
     if(!v||typeof v.available!=='boolean'||!Number.isFinite(Number(v.price))||Number(v.price)<=0){failed++;continue;}
     // Only product's exact Shopify variant. Never infer resale price or profit.
-    r.stock=v.available===true;r.priceEUR=Number(v.price)/100;r.checkedAt=new Date().toISOString();r.evidenceType='ANUNCIO ACTIVO';ok++;
+    r.stock=v.available===true;r.priceEUR=Number(v.price)/100;r.checkedAt=new Date().toISOString();r.liveVerified=true;r.evidenceType='ANUNCIO ACTIVO';ok++;
    }catch(_){failed++;/* CORS or unavailable store: retain old, stale offer */}
   }
  }finally{refreshStatus=ok+' variantes exactas consultadas · '+failed+' fallidas · '+storeCoverage.unavailable+' sin conector automático';refreshRunning=false;render();window.CVFinal?.renderAll?.()}
