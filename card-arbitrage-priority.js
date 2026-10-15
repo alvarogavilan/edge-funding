@@ -2,12 +2,12 @@
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const dateOK=(v,now=Date.now())=>{const t=Date.parse(v||'');return Number.isFinite(t)&&t<=now&&now-t<=86400000};
-const validUrl=v=>{try{const u=new URL(v);return u.protocol==='https:'&&!u.hostname.toLowerCase().includes('ebay.')}catch{return false}};
+const validUrl=v=>{try{const u=new URL(v);return u.protocol==='https:'&&!u.username&&!u.password&&!/(^|\.)ebay\.[a-z.]+$/i.test(u.hostname)&&!['localhost','127.0.0.1'].includes(u.hostname)}catch{return false}};
 function state(){try{return window.CVStateBridge?.get?.()||{}}catch{return {}}}
 function owned(r,s){
  const cards=Array.isArray(s.cards)?s.cards:[];
- const n=norm(r.number),set=norm(r.set),lang=norm(r.language);
- return cards.some(c=>!c.archivedSold&&norm(c.universe||'pokemon')===norm(r.universe||'pokemon')&&norm(c.set)===set&&norm(c.number)===n&&n&&(!c.language||norm(c.language)===lang))||
+ const n=norm(String(r.number||'').split('/')[0]).replace(/^0+(?=\d)/,''),set=norm(r.set),lang=norm(r.language);
+ return cards.some(c=>!c.archivedSold&&norm(c.universe||'pokemon')===norm(r.universe||'pokemon')&&norm(c.set)===set&&norm(String(c.number||'').split('/')[0]).replace(/^0+(?=\d)/,'')===n&&n&&(!c.language||norm(c.language)===lang))||
   (r.kind==='sealed'&&(s.sealedProducts||[]).some(c=>norm(c.name)===norm(r.name)));
 }
 function getRows(){
@@ -27,7 +27,7 @@ function render(){
  const shown=live.length?live:historical.slice().sort((a,b)=>Number(a.r.priceEUR)-Number(b.r.priceEUR));
  root.innerHTML='<section style="border:1px solid #334866;border-radius:16px;padding:16px;background:#132039;margin:12px 0">'+
  '<div style="font-weight:800;letter-spacing:.05em;color:#bcd6ff;font-size:.8rem">CARD VAULT · COMPRAS Y ARBITRAJE</div>'+
- '<h2 style="margin:6px 0">0 arbitrajes con beneficio probado</h2>'+
+ '<h2 style="margin:6px 0">Compra YA · cartas para comprobar</h2><p style="color:#ffcb85;margin:6px 0"><b>0 compras con beneficio neto demostrado.</b> Comprueba el stock y precio actual antes de pagar.</p>'+
  '<p style="margin:8px 0;color:#d9e5f4">Ofertas vigentes de compra: <b>'+live.length+'</b> · Cartas: <b>'+cards.length+'</b> · Sellado: <b>'+sealed.length+'</b> · Anuncios registrados: '+all.length+'.</p>'+
  '<p style="margin:8px 0;color:#c5d3e4">Una oferta de venta activa no demuestra a cuánto se revenderá. No hay comprador firme ni margen confirmado en estos registros. Se excluyen cartas ya identificadas en tu colección.</p>'+
  '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="cvDealsShow" style="padding:10px">Ver ofertas y referencias</button><button type="button" id="cvDealsArb" style="padding:10px">Ir a arbitrajes</button></div>'+
