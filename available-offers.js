@@ -19,17 +19,17 @@ function card(r){
  const current=fresh(r)&&r.stock===true,shipping=r.shippingEUR==null?null:Number(r.shippingEUR),total=shipping==null?null:Number(r.priceEUR)+shipping;
  const flag=r.language==="Español"?"🇪🇸":r.language==="Japonés"?"🇯🇵":"🇬🇧";
  return '<article class="cyCard retailCard" data-retail-offer="'+E(r.id)+'"><div class="cyImg"><img src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy"></div><div class="cyBody">'+
- '<span class="cyBadge retail">'+(current?'OFERTA DISPONIBLE':'RECOMPROBAR OFERTA')+'</span><span class="cyGame">'+(r.universe==="lorcana"?'Lorcana':'Pokémon')+'</span><h4>'+E(r.displayName||r.name)+'</h4>'+
+ '<span class="cyBadge retail">'+(current?'STOCK CONSULTADO · CONFIRMAR AL PAGAR':'REFERENCIA ANTIGUA · SIN STOCK CONFIRMADO')+'</span><span class="cyGame">'+(r.universe==="lorcana"?'Lorcana':'Pokémon')+'</span><h4>'+E(r.displayName||r.name)+'</h4>'+
  '<p class="cyMeta">'+E([r.number,r.set,r.rarity].filter(Boolean).join(' · '))+'</p><p class="cyMeta">'+flag+' '+E(r.language)+' · '+E(r.grading==="RAW"?r.condition:r.grading==="SEALED"?r.condition:r.grading+' '+r.grade+' (según anuncio)')+'</p>'+
  '<dl class="cyGrid"><div><dt>Precio anunciado</dt><dd>'+EUR(r.priceEUR)+'</dd></div><div><dt>Total a península</dt><dd>'+(total==null?EUR(r.priceEUR)+' + portes':EUR(total))+'</dd></div><div><dt>Estado de la oferta</dt><dd>'+(current?'Stock comprobado':'Disponibilidad pendiente de actualizar')+'</dd></div><div><dt>Tipo de evidencia</dt><dd>ANUNCIO ACTIVO</dd></div><div class="wide"><dt>Vendedor</dt><dd>'+E(r.seller)+'</dd></div><div class="wide"><dt>Beneficio de reventa</dt><dd>SIN VERIFICAR · falta venta cerrada comparable</dd></div></dl>'+
  '<p class="cyNote">'+E(r.shippingNote)+' Comprobado: '+E(date(r))+'.</p>'+
  (r.grading==="PSA"?'<p class="cyNote">Certificado PSA pendiente de cotejar. El precio ≤40 € excluye portes.</p>':'')+
- '<div class="cyActions"><a class="cyBtn retailLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+(current?'Comprar en la tienda':'Ver disponibilidad actual')+'</a><button type="button" class="cyBtn" data-retail-bought="'+E(r.id)+'">He comprado</button></div></div></article>';
+ '<div class="cyActions"><a class="cyBtn retailLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+(current?'Consultar compra en tienda':'Abrir ficha histórica en tienda')+'</a><button type="button" class="cyBtn" data-retail-bought="'+E(r.id)+'">He comprado</button></div></div></article>';
 }
 function html(kind,filter="all"){
  const all=rows(kind,filter);if(!all.length)return "";
  const n=count(kind,filter),heading=kind==="graded"?'PSA 10 anunciadas':kind==="sealed"?'Sellado':'Cartas';
- return '<section class="retailSection"><div class="cyHead"><span class="cyKicker">'+heading.toUpperCase()+' · PRECIOS Y STOCK DE TIENDAS</span><h2>'+n+' oferta(s) disponible(s) para comprar</h2><p>Precio, edición, idioma y stock observados en el vendedor. Estar disponible no acredita rentabilidad: solo se activa una recomendación de inversión con ventas cerradas comparables y el margen exigido. La comprobación caduca a las 24 horas.</p>'+(kind==='card'?'<div class="cyFilters" role="group" aria-label="Filtrar ofertas por juego">'+[['all','Todas'],['pokemon','Pokémon'],['lorcana','Lorcana']].map(([key,label])=>'<button type="button" data-cy-filter="'+key+'" class="'+(filter===key?'on':'')+'">'+label+' ('+rows(kind,key).length+')</button>').join('')+'</div>':'')+'</div><div class="cyList">'+all.map(card).join('')+'</div></section>';
+ return '<section class="retailSection"><div class="cyHead"><span class="cyKicker">'+heading.toUpperCase()+' · PRECIOS Y STOCK DE TIENDAS</span><h2>'+n+' oferta(s) recientes · '+(all.length-n)+' referencias sin vigencia</h2><p>La app intenta refrescar los productos automáticamente al abrir y volver a ella. Las fichas de tiendas que bloquean el acceso automático quedan históricas. Ningún anuncio acredita beneficio de reventa sin una salida comprobada.</p>'+(kind==='card'?'<div class="cyFilters" role="group" aria-label="Filtrar ofertas por juego">'+[['all','Todas'],['pokemon','Pokémon'],['lorcana','Lorcana']].map(([key,label])=>'<button type="button" data-cy-filter="'+key+'" class="'+(filter===key?'on':'')+'">'+label+' ('+rows(kind,key).length+')</button>').join('')+'</div>':'')+'</div><div class="cyList">'+all.map(card).join('')+'</div></section>';
 }
 function register(id){
  const r=(data.offers||[]).find(r=>r.id===id);if(!r)return;
@@ -50,7 +50,7 @@ function register(id){
  window.CVStateBridge.save();window.CVRenderCollection?.();window.CVFinal?.renderAll();alert('Compra registrada con tu coste real.');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-retail-bought]');if(b){e.preventDefault();register(b.dataset.retailBought)}});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)window.CVFinal?.renderAll()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){window.CVDealsVerified?.refreshShopify?.();window.CVFinal?.renderAll()}});
 setInterval(()=>{if(!document.hidden)window.CVFinal?.renderAll()},60000);
 function treasury(){const s=window.CVStateBridge?.get?.(),c=s?.treasuryCash;if(!c)return '';const pending=(s.saleHistory||[]).filter(h=>h.sourceEvidence==='user-confirmed'&&h.fulfillmentStatus==='sold-awaiting-shipment').reduce((a,h)=>a+Number(h.unitPrice)*Number(h.qty||1),0);return '<section class="retailSection cyHead"><h2>Caja Cardmarket: '+EUR(c.availableEUR)+'</h2><p>Confirmada por ti el '+E(c.reportedAt)+'. Ventas recién confirmadas pendientes de envío: '+EUR(pending)+' brutos; no se suman a caja disponible. El saldo Cardmarket no paga automáticamente compras en otras tiendas.</p><p>Gyarados: comprador interesado; sigue sin vender.</p></section>'}
 window.CVAvailableOffers={html,rows,count,valid,fresh,owned,register,data,treasury};
