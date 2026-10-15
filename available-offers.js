@@ -13,18 +13,18 @@ function owned(r){
   (r.kind==="sealed"&&(s?.sealedProducts||[]).some(c=>norm(c.name)===norm(r.name)));
 }
 function rows(kind,filter="all"){return (data.offers||[]).filter(r=>valid(r)&&r.kind===kind&&(!filter||filter==="all"||r.universe===filter)&&!owned(r))}
-function count(kind,filter="all"){return rows(kind,filter).filter(r=>r.stock===true&&fresh(r)).length}
+function count(kind,filter="all"){return rows(kind,filter).filter(r=>r.stock===true&&r.liveVerified===true&&fresh(r)).length}
 const date=r=>new Date(r.checkedAt).toLocaleString("es-ES",{timeZone:"Europe/Madrid",dateStyle:"short",timeStyle:"short"});
 function card(r){
- const current=fresh(r)&&r.stock===true,shipping=r.shippingEUR==null?null:Number(r.shippingEUR),total=shipping==null?null:Number(r.priceEUR)+shipping;
+ const current=fresh(r)&&r.stock===true&&r.liveVerified===true,shipping=r.shippingEUR==null?null:Number(r.shippingEUR),total=shipping==null?null:Number(r.priceEUR)+shipping;
  const flag=r.language==="Español"?"🇪🇸":r.language==="Japonés"?"🇯🇵":"🇬🇧";
  return '<article class="cyCard retailCard" data-retail-offer="'+E(r.id)+'"><div class="cyImg"><img src="'+E(r.image)+'" alt="'+E(r.name)+'" loading="lazy"></div><div class="cyBody">'+
  '<span class="cyBadge retail">'+(current?'STOCK CONSULTADO · CONFIRMAR AL PAGAR':'REFERENCIA ANTIGUA · SIN STOCK CONFIRMADO')+'</span><span class="cyGame">'+(r.universe==="lorcana"?'Lorcana':'Pokémon')+'</span><h4>'+E(r.displayName||r.name)+'</h4>'+
  '<p class="cyMeta">'+E([r.number,r.set,r.rarity].filter(Boolean).join(' · '))+'</p><p class="cyMeta">'+flag+' '+E(r.language)+' · '+E(r.grading==="RAW"?r.condition:r.grading==="SEALED"?r.condition:r.grading+' '+r.grade+' (según anuncio)')+'</p>'+
- '<dl class="cyGrid"><div><dt>Precio anunciado</dt><dd>'+EUR(r.priceEUR)+'</dd></div><div><dt>Total a península</dt><dd>'+(total==null?EUR(r.priceEUR)+' + portes':EUR(total))+'</dd></div><div><dt>Estado de la oferta</dt><dd>'+(current?'Stock comprobado':'Disponibilidad pendiente de actualizar')+'</dd></div><div><dt>Tipo de evidencia</dt><dd>ANUNCIO ACTIVO</dd></div><div class="wide"><dt>Vendedor</dt><dd>'+E(r.seller)+'</dd></div><div class="wide"><dt>Beneficio de reventa</dt><dd>SIN VERIFICAR · falta venta cerrada comparable</dd></div></dl>'+
+ '<dl class="cyGrid"><div><dt>Precio anunciado</dt><dd>'+EUR(r.priceEUR)+'</dd></div><div><dt>Total a península</dt><dd>'+(total==null?EUR(r.priceEUR)+' + portes':EUR(total))+'</dd></div><div><dt>Estado de la oferta</dt><dd>'+(current?'Stock comprobado':'Disponibilidad pendiente de actualizar')+'</dd></div><div><dt>Tipo de evidencia</dt><dd>'+(current?'ANUNCIO COMPROBADO EN SESIÓN':'ANUNCIO HISTÓRICO')+'</dd></div><div class="wide"><dt>Vendedor</dt><dd>'+E(r.seller)+'</dd></div><div class="wide"><dt>Beneficio de reventa</dt><dd>SIN VERIFICAR · falta venta cerrada comparable</dd></div></dl>'+
  '<p class="cyNote">'+E(r.shippingNote)+' Comprobado: '+E(date(r))+'.</p>'+
  (r.grading==="PSA"?'<p class="cyNote">Certificado PSA pendiente de cotejar. El precio ≤40 € excluye portes.</p>':'')+
- '<div class="cyActions"><a class="cyBtn retailLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+(current?'Consultar compra en tienda':'Abrir ficha histórica en tienda')+'</a><button type="button" class="cyBtn" data-retail-bought="'+E(r.id)+'">He comprado</button></div></div></article>';
+ '<div class="cyActions"><a class="cyBtn retailLink" href="'+E(r.url)+'" target="_blank" rel="noopener">'+(current?'Consultar compra en tienda':'Abrir ficha histórica en tienda')+'</a><button type="button" class="cyBtn" data-retail-bought="'+E(r.id)+'">Registrar compra realizada</button></div></div></article>';
 }
 function html(kind,filter="all"){
  const all=rows(kind,filter);if(!all.length)return "";
