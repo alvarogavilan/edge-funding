@@ -20,8 +20,8 @@ function getRows(){
  });
 }
 let refreshRunning=false;let refreshStatus='Sin comprobación de tienda en esta sesión';let refreshAt=0;const REFRESH_INTERVAL=15*60*1000;
-async function refreshShopify(){
- if(refreshRunning||typeof fetch!=='function'||Date.now()-refreshAt<REFRESH_INTERVAL)return;refreshRunning=true;refreshAt=Date.now();let ok=0,failed=0;
+async function refreshShopify(force=false){
+ if(refreshRunning||typeof fetch!=='function'||(!force&&Date.now()-refreshAt<REFRESH_INTERVAL))return;refreshRunning=true;refreshAt=Date.now();refreshStatus='Consultando variantes exactas en tiendas…';render();let ok=0,failed=0;
  try{
   const items=(window.CVRetailSnapshot?.offers||[]).filter(r=>r.refreshUrl&&r.variantId&&validUrl(r.refreshUrl));
   for(const r of items.slice(0,12)){
@@ -59,7 +59,7 @@ function render(){
  };
  paintList();
  root.querySelector('#cvDealsShow').onclick=()=>{const hidden=list.style.display==='none';list.style.display=hidden?'block':'none';root.querySelector('#cvDealsShow').textContent=hidden?'Ocultar ofertas':'Ver ofertas y referencias'};
- root.querySelector('#cvDealsRefresh').onclick=()=>{refreshStatus='Consultando productos exactos…';render();refreshShopify()};
+ root.querySelector('#cvDealsRefresh').onclick=()=>{refreshStatus='Consultando productos exactos…';render();refreshShopify(true)};
  root.querySelector('#cvDealsArb').onclick=()=>{const btn=document.querySelector('[data-tab="arbitraje"]');if(btn)btn.click()};
 }
 function install(){
