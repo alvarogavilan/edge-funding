@@ -6,8 +6,8 @@ compatibility_date = "2026-09-01"
 [vars]
 ALLOWED_ORIGIN = "https://alvarogavilan.github.io"
 ALLOW_PAID = "false"
-MAX_USD_PER_JOB = "3"
-MAX_USD_TOTAL = "25"
+MAX_USD_PER_JOB = "0"
+MAX_USD_TOTAL = "0"
 
 [[kv_namespaces]]
 binding = "LIORA_KV"
