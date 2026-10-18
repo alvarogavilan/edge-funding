@@ -38,6 +38,12 @@ def main():
         issues.append("Falta fotografía maestra verificable")
     if shutil.which("ffprobe") is None:
         issues.append("Falta ffprobe: no se podrá verificar el vídeo final")
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            issues.append("PyTorch no detecta GPU CUDA; no se puede ejecutar Wan 2.2 aquí")
+    except ImportError:
+        issues.append("PyTorch no está instalado")
     if shutil.which("nvidia-smi") is None:
         issues.append("No se detecta controlador CUDA/NVIDIA; no se asegura que exista GPU")
     else:
