@@ -6,6 +6,7 @@ import { analyzeClip } from './qc.js';
 import * as media from './media.js';
 import * as be from './backend.js';
 import * as C from './content.js';
+import { buildEclipseInstrumental, ECLIPSE_TITLE } from './music-original.js';
 
 const $ = id => document.getElementById(id);
 const S = P.STATUS;
@@ -209,6 +210,27 @@ $('importIdentity').addEventListener('change', async e => {
 /* ------------------------------------------------------------------ 2 · producción */
 let selectedScene = 0;
 
+// Base musical interna: se guarda automáticamente en el almacenamiento local del iPhone.
+// No necesita subir archivos, descargar MP3 ni conectar un proveedor de pago.
+async function ensureOriginalMusic(project) {
+  if (!/eclipse/i.test(project.title || '') || project.audio?.blobKey) return;
+  try {
+    const blob = await buildEclipseInstrumental();
+    const key = db.uid('song');
+    await db.put('blobs', key, blob);
+    project.audio = {
+      blobKey: key, name: ECLIPSE_TITLE + '.wav', duration: 28, offset: 0,
+      license: { type: 'original', holder: 'Liora Studio · composición instrumental generada en la app',
+        ok: true, at: new Date().toISOString() },
+      lyrics: ''
+    };
+    await db.put('projects', project.id, project);
+    toast('Instrumental original vinculada automáticamente al proyecto.', 5500);
+  } catch (e) {
+    toast('No se pudo preparar la música automática: ' + e.message, 6500);
+  }
+}
+
 async function loadProjects() {
   state.projects = (await db.all('projects')).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   if (!state.projects.length) {
@@ -224,6 +246,7 @@ async function loadProjects() {
   }
   const last = await db.get('kv', 'current_project');
   state.project = state.projects.find(p => p.id === last) || state.projects[0];
+  await ensureOriginalMusic(state.project);
 }
 
 function renderProject() {
@@ -235,11 +258,11 @@ function renderProject() {
   renderSceneList(); renderSceneDetail();
 }
 
-$('projectSelect').onchange = async () => { state.project = state.projects.find(p => p.id === $('projectSelect').value); await db.put('kv', 'current_project', state.project.id); selectedScene = 0; renderAll(); };
+$('projectSelect').onchange = async () => { state.project = state.projects.find(p => p.id === $('projectSelect').value); await db.put('kv', 'current_project', state.project.id); await ensureOriginalMusic(state.project); selectedScene = 0; renderAll(); };
 $('newProject').onclick = async () => {
   const title = prompt('Título del nuevo proyecto:'); if (!title) return;
   const p = P.newProject({ title, character: '', concept: '' }); p.id = db.uid('proj');
-  await db.put('projects', p.id, p); state.projects.unshift(p); state.project = p; await db.put('kv', 'current_project', p.id); selectedScene = 0; renderAll();
+  await db.put('projects', p.id, p); state.projects.unshift(p); state.project = p; await db.put('kv', 'current_project', p.id); await ensureOriginalMusic(p); selectedScene = 0; renderAll();
 };
 $('saveProjectBtn').onclick = async () => {
   Object.assign(state.project, { title: $('pTitle').value.trim(), character: $('pCharacter').value.trim(), concept: $('pConcept').value.trim() });
