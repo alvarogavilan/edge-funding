@@ -1,36 +1,248 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#130e1c"><meta name="apple-mobile-web-app-capable" content="yes"><title>Liora Studio | Makeup & Music</title>
-<style>
-:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f9f1ff;background:#0c0a11}*{box-sizing:border-box}body{margin:0;padding:0 0 45px}header{padding:30px 20px 18px;background:linear-gradient(130deg,#26142d,#13121e);border-bottom:1px solid #4b304c}.eyebrow{color:#efafe6;font-size:12px;letter-spacing:.15em;text-transform:uppercase}h1{font-size:30px;margin:8px 0}h2{font-size:20px}p{line-height:1.5;color:#d6cbde}.sub{font-size:13px}main{max-width:720px;margin:auto;padding:16px}section{background:#191522;border:1px solid #352b3d;border-radius:20px;padding:18px;margin:16px 0}button,.button{border:0;background:#da76c0;color:#1b0c1d;border-radius:12px;padding:13px 17px;font-size:15px;font-weight:700;cursor:pointer}button.alt{background:#31273a;color:white}input,textarea,select{font:inherit;width:100%;padding:13px;border:1px solid #62516b;border-radius:10px;background:#100e16;color:white;margin:7px 0 14px}textarea{min-height:100px;resize:vertical}label{display:block;color:#e4d1ec;font-size:13px}nav{display:flex;gap:7px;overflow:auto;padding:12px 16px;background:#100e17;position:sticky;top:0;z-index:2}nav button{white-space:nowrap;background:#30263a;color:#f1dced;font-size:13px;padding:11px}nav button.on{background:#eaa3d7;color:#260f25}.hidden{display:none}.status{color:#93dfba}.warn{color:#f7c778}.upload{border:1px dashed #a778a6;padding:15px;border-radius:12px}#avatarPreview{max-width:170px;width:100%;border-radius:18px;display:none;object-fit:cover}.step{padding:13px;margin:8px 0;background:#241c2c;border-radius:12px}.step b{display:block}.step small{color:#b8a9bf}.row{display:flex;gap:8px;flex-wrap:wrap}video{width:100%;max-height:410px;border-radius:12px;background:black}.note{background:#2e2732;padding:12px;border-radius:9px;color:#e7d8e9;font-size:13px}a{color:#efb1e2}footer{padding:22px;text-align:center;color:#af9fb6;font-size:12px}
-</style></head>
-<body><header><div class="eyebrow">Liora Vale · Estudio privado</div><h1>Liora Studio</h1><p>Una protagonista. Infinitas transformaciones. Producción móvil para Instagram y TikTok.</p><div class="sub status">Versión operativa de planificación · Sin costes de IA activados</div></header>
-<nav aria-label="Secciones"><button class="on" data-t="identidad">Avatar fijo</button><button data-t="proyecto">Producción 001</button><button data-t="clips">Clips y revisión</button><button data-t="tendencias">Tendencias</button><button data-t="formatos">Formatos</button><button data-t="publicar">Publicar</button></nav>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#130e1c">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Liora Studio">
+<title>Liora Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23da76c0%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2736%27 text-anchor=%27middle%27 font-family=%27Georgia%27 fill=%27%23130e1c%27%3EL%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header>
+  <div class="eyebrow">Liora Vale · @lioravalemakeup</div>
+  <h1>Liora Studio</h1>
+  <p class="sub">Producción audiovisual de una única protagonista virtual. Los datos viven en este iPhone; la URL es pública, la app no es privada por sí misma.</p>
+  <div id="statusline"></div>
+</header>
+<nav aria-label="Secciones">
+  <button class="on" data-t="identidad">1 · Identidad</button>
+  <button data-t="produccion">2 · Producción</button>
+  <button data-t="audio">3 · Canción y voz</button>
+  <button data-t="montaje">4 · Montaje y exportación</button>
+  <button data-t="publicar">5 · Publicaciones</button>
+  <button data-t="tendencias">6 · Tendencias</button>
+  <button data-t="motores">7 · Motores</button>
+</nav>
 <main>
-<div id="identidad" class="tab"><section><h2>Identidad oficial de Liora</h2><p>Sube desde Fotos la imagen maestra de la mujer ya creada. Se conservará localmente en este iPhone (sin subirla a servidores). No cambiamos de protagonista entre proyectos.</p><div class="upload"><label for="face">Seleccionar retrato maestro</label><input type="file" id="face" accept="image/*"><img id="avatarPreview" alt="Retrato maestro"><p id="avatarMsg" class="sub"></p></div><p class="note">Las imágenes se guardan en el almacenamiento local del navegador; si borras datos de Safari o cambias de iPhone tendrás que volver a subirlas. No equivale a un modelo de IA entrenado: es nuestra referencia visual.</p></section><section><h2>Reglas invariables</h2><p>Cabello castaño oscuro ondulado · ojos avellana verdosos · pecas ligeras · labios naturales · piel humana texturizada. Cada escena debe revisarse contra la foto oficial.</p></section></div>
-<div id="proyecto" class="tab hidden"><section><h2>Reel 001 · La Reina del Eclipse</h2><label>Título del proyecto<input id="videoTitle" value="La Reina del Eclipse"></label><label>Transformación / personaje<textarea id="concept">Liora canta una melodía ORIGINAL mientras se transforma paso a paso en una reina de fantasía oscura. Comienza al natural, se aplica maquillaje visible con brochas reales y termina con ojos ahumados azul noche y detalles plateados.</textarea></label><label>Audio / canción<textarea id="audio">Crear y utilizar canción original o audio expresamente autorizado. Evitar canciones protegidas sin derechos para uso multiplataforma.</textarea></label><button id="saveProject">Guardar proyecto</button><span id="saveMsg" class="sub status"></span></section><section><h2>Plan de 30 segundos</h2><div id="story"></div><button id="copyScript" class="alt">Copiar guion completo</button></section></div>
-<div id="clips" class="tab hidden"><section><h2>Revisión de vídeo</h2><p>Sube un clip generado o grabado. Podrás verlo y revisar los defectos antes de aprobarlo. La app aún NO genera animaciones ni hace diagnóstico automático.</p><label>Cargar vídeo desde Fotos o Archivos<input type="file" accept="video/*" id="videoFile"></label><video id="videoPreview" controls playsinline class="hidden"></video><div id="checks"></div><label>Observaciones de revisión<textarea id="qcNotes" placeholder="Fotograma, segundo y defecto observado…"></textarea></label><button id="saveReview">Guardar revisión</button><button id="copyReview" class="alt">Copiar informe de revisión</button><span id="reviewMsg" class="status sub"></span><p id="qcStatus" class="warn"></p></section></div>
-<div id="tendencias" class="tab hidden"><section><h2>Registro de tendencias</h2><p>Guarda vídeos de referencia e ideas originales, sin copiar rostros ni reutilizar grabaciones. Las visualizaciones deben introducirse a partir de cifras verificadas.</p><label>URL pública del Reel o TikTok<input type="url" id="trendUrl" placeholder="https://..."></label><label>Qué funciona en ese vídeo<textarea id="trendNotes" placeholder="Apertura, ritmo, maquillaje, transición, canción..."></textarea></label><button id="addTrend">Guardar tendencia</button><div id="trendList"></div></section></div>
-<div id="formatos" class="tab hidden"><section><h2>Exportación Instagram + TikTok</h2><p>Un único máster vertical, entregado como archivos independientes para cada plataforma. El contenido nunca debe contener marcas de agua de la otra red.</p><label>Perfil de exportación<select id="formatSelect"><option value="reels">Instagram Reels</option><option value="tiktok">TikTok</option><option value="master">Máster sin marca de agua</option></select></label><div id="formatDetails" class="step"></div><p class="note">Son especificaciones recomendadas para nuestro flujo, no una validación automática de un archivo. Las restricciones oficiales pueden cambiar.</p><button id="copyDelivery" class="alt">Copiar especificaciones</button></section><section><h2>Protocolo de realismo</h2><p>Rostro original como referencia obligatoria en cada toma; misma voz, mismo entorno y ubicación coherente de cosméticos. Cada escena debe tener estado ANTES → ACCIÓN visible → DESPUÉS; no se permite que el maquillaje aparezca mágicamente.</p><label>Semilla de identidad / identificador de referencia<input id="identityTag" placeholder="LIORA-IDENTIDAD-001"></label><label>Restricciones adicionales<textarea id="continuityRules" placeholder="Rasgos invariables, mano dominante, brochas, prendas, iluminación…"></textarea></label><button id="saveRules">Guardar reglas del personaje</button><span id="rulesStatus" class="status sub"></span></section><section><h2>Estado de los motores</h2><div class="step">Generación vídeo: <b class="warn">SIN CONECTAR</b></div><div class="step">Voz y sincronía labial: <b class="warn">SIN CONECTAR</b></div><div class="step">Comparación facial automática: <b class="warn">SIN CONECTAR</b></div><p>La interfaz está preparada para planificar y revisar. Generar clips de alta calidad exigirá proveedores externos con ejecución segura y autorización de costes.</p></section></div>
-<div id="publicar" class="tab hidden"><section><h2>Lanzamiento de los canales</h2><p><b>Instagram y TikTok:</b> @lioravalemakeup</p><p>Antes de publicar: imagen fija confirmada, clip completo, audio con derechos, coherencia de manos y rostro, transformación comprensible y etiqueta de creadora virtual cuando corresponda.</p><p><a href="https://www.instagram.com/lioravalemakeup/" target="_blank" rel="noopener">Abrir Instagram ↗</a></p><p><a href="https://www.tiktok.com/@lioravalemakeup" target="_blank" rel="noopener">Abrir TikTok ↗</a></p><p class="note">GitHub Pages permite alojar esta herramienta, pero para generar vídeo y voz habrá que conectar servicios externos seguros. No introduzcas contraseñas, tokens ni claves privadas en esta web pública.</p></section></div>
-</main><footer>Liora Studio · Proyecto original · iPhone first</footer>
-<script>
-const $=id=>document.getElementById(id);const steps=[["0–3 s","Apertura: Liora al natural, mirada a cámara y comienzo de canción"],["3–8 s","Preparación de piel y base aplicada con brocha, continuidad visible"],["8–14 s","Sombras oscuras aplicadas progresivamente mientras canta"],["14–20 s","Delineado, labios y detalles plateados; cortes discretos"],["20–26 s","Últimos retoques con la misma cara, mismo peinado y misma voz"],["26–30 s","Revelación final y gesto musical, cierre diseñado para bucle"]];$("story").innerHTML=steps.map(([s,v])=>'<div class="step"><b>'+s+'</b><small>'+v+'</small></div>').join('');
-document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(z=>z.classList.toggle('on',z===b));document.querySelectorAll('.tab').forEach(z=>z.classList.toggle('hidden',z.id!==b.dataset.t))}));
-function save(k,v){try{localStorage.setItem('liora_'+k,JSON.stringify(v))}catch(e){alert('Almacenamiento lleno: guarda una copia fuera de Safari.')}}function load(k,d){try{return JSON.parse(localStorage.getItem('liora_'+k))??d}catch(e){return d}}
-const old=load('project',null);if(old){$('videoTitle').value=old.title;$('concept').value=old.concept;$('audio').value=old.audio}
-$('saveProject').onclick=()=>{save('project',{title:$('videoTitle').value,concept:$('concept').value,audio:$('audio').value});$('saveMsg').textContent=' Guardado en este iPhone'};
-$('copyScript').onclick=()=>{const txt=[$('videoTitle').value,$('concept').value,$('audio').value,...steps.map(x=>x.join(': '))].join('\n\n');navigator.clipboard.writeText(txt).then(()=>alert('Guion copiado')).catch(()=>prompt('Copia este guion:',txt))};
-let faceDb;const dbRequest=indexedDB.open('liora_assets',1);dbRequest.onupgradeneeded=e=>e.target.result.createObjectStore('files');dbRequest.onsuccess=e=>{faceDb=e.target.result;const tx=faceDb.transaction('files','readonly');const get=tx.objectStore('files').get('master');get.onsuccess=()=>{if(get.result)showFace(get.result)}};function showFace(f){$('avatarPreview').src=URL.createObjectURL(f);$('avatarPreview').style.display='block';$('avatarMsg').textContent='Imagen maestra guardada en este navegador';}
-$('face').onchange=e=>{const f=e.target.files[0];if(!f||!faceDb)return;const tx=faceDb.transaction('files','readwrite');tx.objectStore('files').put(f,'master');tx.oncomplete=()=>showFace(f)};
-$('videoFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const v=$('videoPreview');v.src=URL.createObjectURL(f);v.classList.remove('hidden')};
-const questions=['¿Misma identidad facial en todos los planos?','¿Manos y dedos anatómicamente correctos?','¿Brochas y maquillaje interactúan de forma creíble?','¿Maquillaje progresa sin desaparecer ni cambiar mágicamente?','¿Labios sincronizados con el canto?','¿Audio propio o autorizado para ambas redes?','¿Sin parpadeos, deformaciones ni cortes bruscos?','¿Transformación final completa y comprensible?'];$("checks").innerHTML=questions.map((q,i)=>'<label class="step"><input type="checkbox" class="qc" style="width:auto;margin:0 10px 0 0">'+q+'</label>').join('');const qc=Array.from(document.querySelectorAll('.qc'));qc.forEach(x=>x.onchange=()=>{$('qcStatus').textContent=qc.every(q=>q.checked)?'Revisión manual completa. Comprueba el vídeo final antes de publicar.':'Pendiente: '+qc.filter(q=>!q.checked).length+' controles.'});$('qcStatus').textContent='Pendiente: '+qc.length+' controles.';
-function renderTrends(){const wrap=$('trendList');wrap.replaceChildren();for(const t of load('trends',[])){const d=document.createElement('div');d.className='step';const a=document.createElement('a');try{const u=new URL(t.url);if(u.protocol!=='https:')continue;a.href=u.href}catch{continue}a.textContent='Referencia ↗';a.target='_blank';a.rel='noopener noreferrer';const note=document.createElement('p');note.textContent=t.note;d.append(a,note);wrap.appendChild(d)}};$("addTrend").onclick=()=>{const u=$('trendUrl').value.trim();if(!/^https:\/\//i.test(u)){alert('Escribe una URL https válida');return}const ts=load('trends',[]);ts.unshift({url:u,note:$('trendNotes').value});save('trends',ts);$('trendUrl').value='';$('trendNotes').value='';renderTrends()};renderTrends();
-const formats={reels:{name:'Instagram Reels',resolution:'1080 × 1920',ratio:'9:16',codec:'MP4 / H.264 + AAC',fps:'30 fps',notes:'Evitar texto importante junto a bordes, botones y zona inferior de la interfaz.'},tiktok:{name:'TikTok',resolution:'1080 × 1920',ratio:'9:16',codec:'MP4 / H.264 + AAC',fps:'30 fps',notes:'Subir el archivo original, nunca el vídeo descargado de Instagram con marca de agua.'},master:{name:'Archivo máster',resolution:'1080 × 1920',ratio:'9:16',codec:'MP4 / H.264 + AAC',fps:'30 fps',notes:'Conservar original, pista de audio autorizada, guion y miniatura.'}};
-function selectedFormat(){return formats[$('formatSelect').value]};function updateFormat(){const f=selectedFormat();$('formatDetails').textContent=f.name+' · '+f.resolution+' · '+f.ratio+' · '+f.codec+' · '+f.fps+' · '+f.notes};$('formatSelect').onchange=updateFormat;updateFormat();$('copyDelivery').onclick=()=>navigator.clipboard.writeText(JSON.stringify(selectedFormat(),null,2)).then(()=>alert('Especificaciones copiadas')).catch(()=>alert('No se pudo copiar desde Safari'));
-const savedRules=load('rules',{});$('identityTag').value=savedRules.tag||'LIORA-IDENTIDAD-001';$('continuityRules').value=savedRules.rules||'Mismo rostro, piel y ojos; manos anatómicas; brocha en contacto real; progreso visible del maquillaje; voz y labios sincronizados; mismo personaje en todo momento.';
-$('saveRules').onclick=()=>{save('rules',{tag:$('identityTag').value,rules:$('continuityRules').value});$('rulesStatus').textContent=' Reglas guardadas'};
-$('qcNotes').value=load('review',{}).notes||'';
-$('saveReview').onclick=()=>{save('review',{notes:$('qcNotes').value,checks:qc.map(x=>x.checked),date:new Date().toISOString()});$('reviewMsg').textContent=' Revisión guardada'};
-$('copyReview').onclick=()=>{const t='Liora Studio — revisión de '+$('videoTitle').value+'\n'+questions.map((q,i)=>(qc[i].checked?'[OK] ':'[PENDIENTE] ')+q).join('\n')+'\nNotas: '+$('qcNotes').value;navigator.clipboard.writeText(t).then(()=>alert('Informe copiado')).catch(()=>alert('No se pudo copiar'))};
-const review=load('review',{});if(review.checks){review.checks.forEach((v,i)=>{if(qc[i])qc[i].checked=!!v});$('qcStatus').textContent=qc.every(x=>x.checked)?'Revisión previa completada; comprobar el archivo final.':'Pendiente: '+qc.filter(x=>!x.checked).length+' controles'}
-</script></body></html>
+
+<div id="identidad" class="tab">
+  <section>
+    <h2>Identidad oficial de Liora</h2>
+    <p>La fotografía oficial es la referencia maestra. Todas las escenas se comparan contra ella con reconocimiento facial que se ejecuta <b>en este iPhone</b> (las imágenes no salen del dispositivo salvo cuando tú lances una generación).</p>
+    <div id="identitySummary" class="note"></div>
+    <div id="refGrid" class="grid" style="margin-top:12px"></div>
+  </section>
+  <section>
+    <h3>Añadir referencia</h3>
+    <label>Tipo de referencia
+      <select id="refAngle">
+        <option value="oficial">Fotografía oficial (maestra)</option>
+        <option value="frontal">Frontal neutra</option>
+        <option value="tres-cuartos-izq">3/4 izquierda</option>
+        <option value="tres-cuartos-der">3/4 derecha</option>
+        <option value="perfil-izq">Perfil izquierdo</option>
+        <option value="perfil-der">Perfil derecho</option>
+        <option value="sonrisa">Sonrisa</option>
+        <option value="cantando">Cantando (boca abierta)</option>
+        <option value="manos">Manos / plano medio</option>
+      </select>
+    </label>
+    <label>Imagen (Fotos o Archivos)<input type="file" id="refFile" accept="image/*"></label>
+    <p class="sub">Las referencias de ángulo se aceptan solo si el sistema reconoce a la misma mujer de la fotografía oficial (distancia ≤ 0,55). Si no, se marcan como rechazadas y no se usan.</p>
+  </section>
+  <section>
+    <h3>Rasgos invariables (texto para los prompts)</h3>
+    <textarea id="identityText"></textarea>
+    <label>Escenario fijo de todas las escenas<textarea id="settingText"></textarea></label>
+    <button id="saveIdentityText">Guardar rasgos</button>
+  </section>
+  <section>
+    <h3>Comparar una imagen con Liora</h3>
+    <p class="sub">Sube un fotograma o imagen generada para medir si es la misma persona.</p>
+    <input type="file" id="compareFile" accept="image/*">
+    <div id="compareResult"></div>
+  </section>
+  <section>
+    <h3>Copia de seguridad de la identidad</h3>
+    <p class="sub">Las referencias se guardan en Safari y persisten entre proyectos. Si borras los datos de Safari se pierden: guarda una copia en Archivos/iCloud.</p>
+    <div class="row"><button class="alt" id="exportIdentity">Exportar paquete de identidad</button><label class="button alt" style="display:inline-flex;align-items:center;color:#fff">Importar<input type="file" id="importIdentity" accept="application/json,.json" class="hidden"></label></div>
+  </section>
+</div>
+
+<div id="produccion" class="tab hidden">
+  <section>
+    <h2>Proyecto</h2>
+    <div class="row"><select id="projectSelect" style="flex:1 1 200px"></select><button class="alt" id="newProject">Nuevo</button></div>
+    <label>Título<input id="pTitle"></label>
+    <label>Personaje final<input id="pCharacter"></label>
+    <label>Concepto<textarea id="pConcept"></textarea></label>
+    <button id="saveProjectBtn">Guardar proyecto</button>
+    <div id="projectSummary" class="sub" style="margin-top:10px"></div>
+  </section>
+  <section>
+    <h2>Escenas (8 etapas obligatorias)</h2>
+    <p class="sub">PENDIENTE → GENERANDO → REVISIÓN → APROBADO / RECHAZADO → EXPORTADO. Cada etapa parte del último fotograma aprobado de la anterior.</p>
+    <div id="sceneList"></div>
+  </section>
+  <section id="sceneDetail"></section>
+</div>
+
+<div id="audio" class="tab hidden">
+  <section>
+    <h2>Canción del proyecto</h2>
+    <p>Solo canciones originales o con licencia válida para Instagram y TikTok. La pista se recorta por etapas para generar el canto y sincronizar labios.</p>
+    <input type="file" id="songFile" accept="audio/*">
+    <audio id="songPlayer" controls class="hidden" style="width:100%"></audio>
+    <div id="songInfo" class="sub"></div>
+    <label>Origen de la canción
+      <select id="licType">
+        <option value="">— elegir —</option>
+        <option value="original">Original propia (letra y música nuestras)</option>
+        <option value="encargo">Encargada con cesión de derechos por escrito</option>
+        <option value="libreria">Librería con licencia comercial multiplataforma</option>
+        <option value="ia">Generada con IA con licencia comercial del plan contratado</option>
+      </select>
+    </label>
+    <label>Titular / proveedor y referencia de la licencia<input id="licHolder" placeholder="p. ej. contrato 2026-10, factura, plan Pro de…"></label>
+    <label class="check"><input type="checkbox" id="licOk"> Confirmo que tenemos derecho a usarla comercialmente en Instagram y TikTok, incluida la voz.</label>
+    <label>Inicio de la canción para la etapa 1 (segundos)<input id="songOffset" type="number" min="0" step="0.1" value="0"></label>
+    <label>Letra (opcional, una línea por etapa)<textarea id="lyrics"></textarea></label>
+    <button id="saveSong">Guardar canción y licencia</button>
+    <div id="rangesTable" class="scroll-x"></div>
+  </section>
+  <section>
+    <h2>Voz oficial de Liora</h2>
+    <p class="sub">La voz debe ser la misma en todos los vídeos. Guarda aquí cómo se produce y una muestra de referencia para comparar a oído cada canción nueva.</p>
+    <label>Método de voz
+      <select id="voiceMethod">
+        <option value="">— elegir —</option>
+        <option value="cantante">Cantante humana contratada (cesión de voz) + mismo micrófono/proceso</option>
+        <option value="conversion">Cantante humana + conversión a voz Liora con licencia (p. ej. Kits.ai)</option>
+        <option value="ia-musica">Generador musical IA con voz fija (persona/voz guardada)</option>
+      </select>
+    </label>
+    <label>Proveedor, identificador de voz y ajustes<input id="voiceId" placeholder="Nombre de la voz, preset, cadena de efectos…"></label>
+    <label>Muestra de referencia de la voz<input type="file" id="voiceSample" accept="audio/*"></label>
+    <audio id="voicePlayer" controls class="hidden" style="width:100%"></audio>
+    <button id="saveVoice">Guardar voz oficial</button>
+    <p class="note">La sincronía labial de voz hablada no garantiza canto: vocales sostenidas, respiraciones y notas largas fallan con frecuencia. Cada clip se revisa con el indicador boca↔voz y a ojo.</p>
+  </section>
+</div>
+
+<div id="montaje" class="tab hidden">
+  <section>
+    <h2>Máster del vídeo completo</h2>
+    <div id="masterGate"></div>
+    <label>Pista de audio del máster
+      <select id="masterAudio"><option value="song">Canción completa del proyecto (recomendado)</option><option value="clips">Audio de cada clip</option></select>
+    </label>
+    <button id="renderMaster">Montar máster 1080×1920</button>
+    <p class="sub">El montaje se renderiza en tiempo real en el iPhone: mantén la pantalla encendida y Safari en primer plano.</p>
+    <div id="renderLog" class="sub"></div>
+    <video id="masterPreview" controls playsinline class="hidden"></video>
+  </section>
+  <section id="validateSection" class="hidden">
+    <h2>Validación final humana (obligatoria)</h2>
+    <div id="finalChecks"></div>
+    <label>Revisado por<input id="finalReviewer"></label>
+    <button id="validateMaster">Validar máster para publicar</button>
+    <div id="validateMsg"></div>
+  </section>
+  <section id="deliverSection" class="hidden">
+    <h2>Entregables Instagram y TikTok</h2>
+    <label>Segundo de la portada<input type="range" id="coverTime" min="0" max="60" step="0.1" value="0"></label>
+    <div class="row"><button class="alt" id="makeCovers">Generar portadas</button><span id="coverInfo" class="sub"></span></div>
+    <div id="coverPreview" class="thumbs" style="margin:10px 0"></div>
+    <h3>Instagram Reels</h3>
+    <textarea id="capIg"></textarea>
+    <h3>TikTok</h3>
+    <textarea id="capTt"></textarea>
+    <div class="row">
+      <button id="dlMaster" class="alt">Máster</button>
+      <button id="dlIg">Versión Instagram</button>
+      <button id="dlTt">Versión TikTok</button>
+      <button id="dlCover" class="alt">Portadas</button>
+      <button id="dlText" class="alt">Textos</button>
+    </div>
+    <div id="platformRules" class="note" style="margin-top:12px"></div>
+  </section>
+</div>
+
+<div id="publicar" class="tab hidden">
+  <section>
+    <h2>Registro de publicaciones</h2>
+    <label>Plataforma<select id="pubPlatform"><option value="instagram">Instagram</option><option value="tiktok">TikTok</option></select></label>
+    <label>URL de la publicación<input id="pubUrl" type="url" placeholder="https://"></label>
+    <label>Fecha<input id="pubDate" type="datetime-local"></label>
+    <label>Archivo publicado<input id="pubFile" placeholder="liora-…-instagram.mp4"></label>
+    <button id="addPub">Registrar publicación</button>
+    <div id="pubList"></div>
+  </section>
+</div>
+
+<div id="tendencias" class="tab hidden">
+  <section>
+    <h2>Referencias virales de maquillaje</h2>
+    <p class="sub">Registra solo lo que hayas comprobado en la publicación original. Las métricas sin marcar como verificadas no cuentan en ningún cálculo. No se copian rostros, grabaciones ni identidades.</p>
+    <label>URL pública<input id="trUrl" type="url" placeholder="https://www.tiktok.com/@…/video/…"></label>
+    <div class="row"><label style="flex:1">Duración (s)<input id="trDur" type="number" min="1" step="0.5"></label><label style="flex:1">Revelación en (s)<input id="trReveal" type="number" min="0" step="0.5"></label><label style="flex:1">Nº cortes<input id="trCuts" type="number" min="0"></label></div>
+    <label>Apertura<select id="trHook"></select></label>
+    <label>Estilo musical<select id="trMusic"></select></label>
+    <label>Montaje y notas<textarea id="trNotes"></textarea></label>
+    <h3>Métricas (opcional)</h3>
+    <div class="row"><label style="flex:1">Vistas<input id="trViews" type="number" min="0"></label><label style="flex:1">Me gusta<input id="trLikes" type="number" min="0"></label></div>
+    <div class="row"><label style="flex:1">Comentarios<input id="trComments" type="number" min="0"></label><label style="flex:1">Compartidos<input id="trShares" type="number" min="0"></label><label style="flex:1">Guardados<input id="trSaves" type="number" min="0"></label></div>
+    <label class="check"><input type="checkbox" id="trVerified"> Cifras comprobadas hoy en la publicación original (no estimadas ni de terceros).</label>
+    <button id="addTrend">Guardar referencia</button>
+  </section>
+  <section><h2>Patrones</h2><div id="patterns"></div><button class="alt" id="genConcept">Proponer concepto original</button><div id="conceptOut"></div></section>
+  <section><h2>Referencias guardadas</h2><div id="trendList"></div></section>
+</div>
+
+<div id="motores" class="tab hidden">
+  <section>
+    <h2>Backend privado</h2>
+    <p class="sub">Las claves de los proveedores viven solo en el Worker de Cloudflare. Aquí se escribe la URL del Worker y tu clave de acceso de Liora (se guarda solo en memoria; el llavero de iCloud puede recordarla).</p>
+    <form id="backendForm" autocomplete="on">
+      <input type="text" name="username" value="liora-studio" autocomplete="username" class="hidden" readonly>
+      <label>URL del Worker<input id="beUrl" type="url" placeholder="https://liora-backend.TU-CUENTA.workers.dev" autocomplete="url"></label>
+      <label>Clave de acceso de Liora<input id="beKey" type="password" autocomplete="current-password" minlength="24"></label>
+      <div class="row"><button type="submit">Conectar</button><button type="button" class="alt" id="verifyModels">Verificar modelos y precios</button></div>
+    </form>
+    <div id="beStatus" style="margin-top:10px"></div>
+  </section>
+  <section>
+    <h2>Modelos disponibles</h2>
+    <div id="modelTable" class="scroll-x"></div>
+  </section>
+  <section>
+    <h2>Calculadora de coste del vídeo completo</h2>
+    <div id="costCalc"></div>
+  </section>
+  <section>
+    <h2>Despliegue del backend</h2>
+    <ol class="sub">
+      <li>Cloudflare → Workers &amp; Pages → Create → «Hello World» → nombre <b>liora-backend</b>.</li>
+      <li>Edit code → pega el código (botón de abajo) → Deploy.</li>
+      <li>Settings → Variables: secretos <b>FAL_KEY</b> y <b>LIORA_ACCESS_KEY</b>; variables ALLOW_PAID=false, MAX_USD_PER_JOB=3, MAX_USD_TOTAL=25, ALLOWED_ORIGIN=https://alvarogavilan.github.io.</li>
+      <li>Storage → KV → crear «liora» y vincularlo como <b>LIORA_KV</b>.</li>
+      <li>Para autorizar gasto: cambiar ALLOW_PAID a true.</li>
+    </ol>
+    <button class="alt" id="copyWorker">Copiar código del Worker</button>
+    <p class="sub"><a href="https://github.com/alvarogavilan/edge-funding/blob/main/liora/docs/PROVEEDORES.md" target="_blank" rel="noopener">Evaluación de proveedores, precios y límites ↗</a> · <a href="https://github.com/alvarogavilan/edge-funding/blob/main/liora/docs/ARQUITECTURA.md" target="_blank" rel="noopener">Arquitectura y seguridad ↗</a></p>
+  </section>
+  <section>
+    <h2>Almacenamiento del iPhone</h2>
+    <div id="storageInfo" class="sub"></div>
+    <button class="alt" id="persistBtn">Pedir almacenamiento persistente</button>
+  </section>
+</div>
+
+</main>
+<div id="toast" class="hidden" role="status"></div>
+<footer>Liora Studio · producción original · iPhone first · v2</footer>
+<script type="module" src="js/app.js"></script>
+</body></html>

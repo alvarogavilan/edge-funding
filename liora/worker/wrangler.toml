@@ -1,0 +1,16 @@
+# Liora Studio · backend privado (opcional; también se puede pegar worker.js en el panel de Cloudflare)
+name = "liora-backend"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://alvarogavilan.github.io"
+ALLOW_PAID = "false"
+MAX_USD_PER_JOB = "3"
+MAX_USD_TOTAL = "25"
+
+[[kv_namespaces]]
+binding = "LIORA_KV"
+id = "PEGA_AQUI_EL_ID_DEL_KV"
+
+# Secretos (nunca aquí):  wrangler secret put FAL_KEY  ·  wrangler secret put LIORA_ACCESS_KEY
