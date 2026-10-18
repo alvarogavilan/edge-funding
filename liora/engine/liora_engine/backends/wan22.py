@@ -52,8 +52,11 @@ class Wan22TI2V(Backend):
             issues.append("No hay GPU CUDA: Wan 2.2 5B no es ejecutable en CPU en un tiempo útil")
         else:
             need = self.spec["requirements"]["min_vram_gb_offload"]
-            if g["vram_gb"] < need:
-                issues.append(f"VRAM {g['vram_gb']} GB < {need} GB mínimos con descarga a CPU")
+            # Una T4 se anuncia como 15 GB (15360 MiB) y PyTorch informa 14,56 GiB: no rechazar por GB/GiB.
+            if g["vram_gb"] < need - 0.75:
+                issues.append(f"VRAM {g['vram_gb']} GiB < {need} GB nominales con descarga a CPU")
+            elif g["vram_gb"] < need:
+                facts["vram_warning"] = f"{g['vram_gb']} GiB (cifra nominal cercana a {need} GB): ejecución experimental, puede agotar la memoria"
             if float(g.get("capability", "0")) < 8:
                 facts["dtype_warning"] = "GPU anterior a Ampere: se usará fp16 (Wan se entrenó en bf16; si salen fotogramas negros, LIORA_DTYPE=bfloat16)"
         ram = probe._meminfo_gb("MemTotal") or 0
@@ -92,7 +95,7 @@ class Wan22TI2V(Backend):
         vae = AutoencoderKLWan.from_pretrained(self.model_id, subfolder="vae", torch_dtype=torch.float32)
         cls = WanImageToVideoPipeline if task == "image-to-video" else WanPipeline
         pipe = cls.from_pretrained(self.model_id, vae=vae, torch_dtype=dtype)
-        mode = mode or ("gpu" if vram >= 40 else "model_cpu_offload" if vram >= 15 else "sequential_cpu_offload")
+        mode = mode or ("gpu" if vram >= 40 else "model_cpu_offload" if vram >= 14 else "sequential_cpu_offload")
         if mode == "gpu":
             pipe.to("cuda")
         elif mode == "model_cpu_offload":

@@ -133,7 +133,7 @@ function renderIdentity() {
   const official = state.refs.find(r => r.official);
   const usable = usableRefs();
   const sum = $('identitySummary');
-  if (!official) sum.replaceChildren('Falta la fotografía oficial. Súbela con el tipo «Fotografía oficial». Es el primer paso obligatorio.');
+  if (!official) sum.replaceChildren('La identidad de Liora sigue definida, pero este navegador no encuentra el archivo de su fotografía oficial en el almacenamiento local. La app ha intentado recuperarlo del panel anterior. No crees otra modelo: debe recuperarse el retrato maestro original antes de generar.');
   else sum.replaceChildren(
     h('b', {}, official.descriptor ? 'Identidad oficial fijada y bloqueada. ' : 'Fotografía oficial guardada sin rostro analizado. '),
     `${usable.length} referencias válidas para comparar. `,
@@ -213,7 +213,10 @@ let selectedScene = 0;
 // Base musical interna: se guarda automáticamente en el almacenamiento local del iPhone.
 // No necesita subir archivos, descargar MP3 ni conectar un proveedor de pago.
 async function ensureOriginalMusic(project) {
-  if (!/eclipse/i.test(project.title || '') || project.audio?.blobKey) return;
+  if (!/eclipse/i.test(project.title || '')) return;
+  if (project.audio?.blobKey && await db.get('blobs', project.audio.blobKey)) return;
+  // Safari puede conservar el proyecto aunque falte el Blob. Reconstruir la
+  // instrumental sin solicitar al usuario que suba otro archivo.
   try {
     const blob = await buildEclipseInstrumental();
     const key = db.uid('song');
@@ -814,7 +817,7 @@ $('genConcept').onclick = async () => {
     h('p', { class: 'sub' }, c.basis),
     h('button', { onclick: async () => {
       const p = P.newProject({ title: c.title, character: c.concept.match(/en (.+?)\. Paleta/)?.[1] || '', concept: c.concept }); p.id = db.uid('proj');
-      await db.put('projects', p.id, p); state.projects.unshift(p); state.project = p; await db.put('kv', 'current_project', p.id); renderAll(); toast('Proyecto creado.');
+      await db.put('projects', p.id, p); state.projects.unshift(p); state.project = p; await db.put('kv', 'current_project', p.id); await ensureOriginalMusic(p); renderAll(); toast('Proyecto creado.');
     } }, 'Crear proyecto con este concepto')));
 };
 

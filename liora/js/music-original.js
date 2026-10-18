@@ -17,8 +17,11 @@ export async function buildEclipseInstrumental() {
     const osc = ctx.createOscillator(), gain = ctx.createGain();
     osc.type = kind; osc.frequency.setValueAtTime(freq, start);
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), Math.min(start + .04, end - .001));
-    gain.gain.setTargetAtTime(0.0001, Math.max(start + .08, end - .22), .07);
+    // Para percusión de 25 ms, el ataque nunca debe sobrepasar el fin de la nota.
+    const attackEnd = start + Math.min(0.012, (end - start) * 0.35);
+    const decayStart = Math.min(end - 0.002, Math.max(attackEnd, end - 0.22));
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), attackEnd);
+    gain.gain.setTargetAtTime(0.0001, decayStart, Math.max(0.004, (end - decayStart) / 5));
     osc.connect(gain); gain.connect(master); osc.start(start); osc.stop(end);
   }
   const chords = [[174.61,220,261.63],[130.81,164.81,196],[155.56,196,233.08],[116.54,146.83,174.61]];

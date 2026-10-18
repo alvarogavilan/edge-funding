@@ -74,7 +74,9 @@ export async function migrateLegacy() {
   const legacyMaster = await readLegacyMaster();
   if (legacyMaster instanceof Blob) {
     const existing = await all('refs');
-    if (!existing.length) {
+    // Una referencia secundaria no debe bloquear la recuperación del avatar maestro.
+    // Nunca reemplazamos una fotografía que ya esté marcada como oficial.
+    if (!existing.some(ref => ref.official)) {
       const id = uid('ref');
       await put('refs', id, {
         id, kind: 'master', angle: 'frontal', blob: legacyMaster,
