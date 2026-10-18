@@ -34,7 +34,7 @@ def render(image_path, prompt):
     # Foto original enviada a este runtime externo: usar únicamente espacios PRIVADOS,
     # acceso protegido y licencia y términos autorizados.
     if os.environ.get('LIORA_PRIVATE_RUNTIME') != '1':
-        raise gr.Error('Desactivado por privacidad: no se permite subir la imagen maestra sin entorno privado verificado.')
+        raise gr.Error('Bloqueado: no se ha autorizado un entorno privado. No uses la fotografía oficial en un Space público.')
     if not image_path:
         raise gr.Error("Falta una imagen de referencia.")
     if not prompt or len(prompt.strip()) < 12:
@@ -73,6 +73,9 @@ with gr.Blocks(title="Liora — prueba ZeroGPU 0 €") as demo:
     gr.Markdown("# Prueba experimental de vídeo real — Liora Engine\nNo garantiza GPU, privacidad de Space público ni generación dentro de cuota. No usar fotografía maestra confidencial hasta asegurar el acceso.")
     image = gr.Image(type="filepath", label="Imagen autorizada para la prueba")
     prompt = gr.Textbox(value="The fictional woman applies a makeup brush slowly to her cheek, realistic brush contact with skin, fixed identity, natural face motion, static camera.", label="Movimiento")
+    check = gr.Button("Diagnóstico gratuito (sin GPU ni imagen)")
+    diagnostics = gr.JSON(label="Dependencias detectadas")
+    check.click(requirements_check, inputs=[], outputs=[diagnostics])
     run = gr.Button("Intentar generar vídeo sin pago")
     video = gr.Video(label="Vídeo real generado (si hay capacidad)")
     status = gr.Textbox(label="Resultado")
