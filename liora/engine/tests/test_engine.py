@@ -149,10 +149,21 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(s2["start_image"], s1["last_frame"])
         self.assertEqual(s1["attempts"][0]["identity"]["verdict"], "pass")
         self.assertEqual(s1["attempts"][0]["safari_issues"], [])
+        sm = json.loads((TMP / "work" / "studio" / "studio-manifest.json").read_text())
+        self.assertEqual([x["file"] for x in sm["scenes"]], ["liora-01-inicial.mp4", "liora-02-piel.mp4"])
+        self.assertEqual(sm["scenes"][0]["sha256"], media.sha256(TMP / "work" / "studio" / "liora-01-inicial.mp4"))
         out = pipeline.assemble(TMP / "work" / "manifest.json", TMP / "master.mp4", song=str(tone(TMP / "song.wav")))
         self.assertEqual(out["safari_issues"], [])
         self.assertEqual((out["probe"]["width"], out["probe"]["height"]), (1080, 1920))
         self.assertAlmostEqual(out["probe"]["duration"], 4.0, delta=0.2)
+
+    def test_smoke_blocked_without_gpu_writes_evidence(self):
+        ev = pipeline.smoke(TMP / "smoke")
+        if ev["status"] == "generated":
+            self.skipTest("hay GPU real: la prueba bloqueada no aplica")
+        self.assertEqual(ev["status"], "blocked")
+        self.assertFalse(ev["generated"])
+        self.assertTrue((TMP / "smoke" / "evidence.json").exists() and (TMP / "smoke" / "run.log").exists())
 
     def test_blocked_backend_writes_blocked_manifest(self):
         from tests.fixtures import FixtureZoomBackend

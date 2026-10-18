@@ -1,6 +1,6 @@
 // Liora Studio · control de calidad automático de un clip (todo en el iPhone).
 // Son indicadores medidos sobre fotogramas reales; no sustituyen la revisión humana obligatoria.
-import { analyzeFace, identityDistance, distance, mouthOpenness, drawToCanvas, engineReady, loadFaceEngine } from './face.js';
+import { analyzeFace, closestFace, distance, mouthOpenness, drawToCanvas, engineReady, loadFaceEngine } from './face.js';
 import { identityVerdict } from './pipeline.js';
 
 export async function loadVideo(blob) {
@@ -135,10 +135,10 @@ export async function analyzeClip(blob, o) {
     const f = { t: times[i], luma: lumaMean(g), sharp: laplacianVariance(g), diff: meanAbsDiff(g, prevGray), face: false };
     prevGray = g;
     if (faceOk && refsUsable(o.refDescriptors)) {
-      const face = await analyzeFace(canvas, { inputSize: 320 });
+      const face = closestFace(await analyzeFace(canvas, { inputSize: 320 }), o.refDescriptors);
       if (face) {
         f.face = true; f.faces = face.faces; f.descriptor = face.descriptor;
-        f.dist = identityDistance(face.descriptor, o.refDescriptors);
+        f.dist = face.dist;
         f.mouth = mouthOpenness(face.landmarks);
         f.color = regionColor(canvas, face.landmarks, REGIONS[o.focus] || REGIONS.face);
       }
@@ -152,7 +152,7 @@ export async function analyzeClip(blob, o) {
   lastFrame = await canvasToBlob(lastCanvas, 'image/jpeg', 0.95);
   let lastDescriptor = null;
   if (faceOk && refsUsable(o.refDescriptors)) {
-    const lf = await analyzeFace(drawToCanvas(v, 720), { inputSize: 320 });
+    const lf = closestFace(await analyzeFace(drawToCanvas(v, 720), { inputSize: 320 }), o.refDescriptors);
     lastDescriptor = lf?.descriptor || null;
   }
   URL.revokeObjectURL(v.src);

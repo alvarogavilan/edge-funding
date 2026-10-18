@@ -145,7 +145,30 @@ def render(job: dict, workdir: str | Path, backend_id: str, *, only: int | None 
         manifest["status"] = "completed"
     manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
     media.write_json(mpath, manifest)
+    export_for_studio(manifest, work / "studio")
     return manifest
+
+
+def export_for_studio(manifest: dict, dest: str | Path) -> dict | None:
+    """Clips aceptados con nombres fijos + studio-manifest.json para «Importar render del motor» en Liora Studio."""
+    accepted = [s for s in manifest["scenes"] if s.get("clip")]
+    if not accepted:
+        return None
+    dest = Path(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    scenes = []
+    for s in accepted:
+        name = f"liora-{s['index'] + 1:02d}-{s['key']}.mp4"
+        shutil.copyfile(s["clip"], dest / name)
+        att = next(a for a in s["attempts"] if a.get("accepted"))
+        scenes.append({"index": s["index"], "key": s["key"], "file": name, "sha256": s["clip_sha256"],
+                       "model": att.get("params", {}).get("model"), "seed": att["seed"], "generation_s": att.get("generation_s"),
+                       "identity": att.get("identity", {}).get("verdict"), "continuity": att.get("continuity", {}).get("verdict"),
+                       "frames": att.get("frames"), "duration": att.get("probe", {}).get("duration")})
+    out = {"format": "liora-studio-import-v1", "backend": manifest["backend"], "project": manifest["job"].get("project"),
+           "created_at": datetime.now(timezone.utc).isoformat(), "scenes": scenes}
+    media.write_json(dest / "studio-manifest.json", out)
+    return out
 
 
 def assemble(manifest_path: str | Path, out: str | Path, *, song: str | None = None, offset: float = 0.0) -> dict:
@@ -157,14 +180,76 @@ def assemble(manifest_path: str | Path, out: str | Path, *, song: str | None = N
     return {"file": str(out), "sha256": media.sha256(out), "probe": info, "safari_issues": media.safari_check(info), "clips": clips}
 
 
-def copy_for_studio(manifest_path: str | Path, dest: str | Path) -> list[str]:
-    """Copia los clips con nombres legibles para subirlos en Liora Studio (Producción → subir clip)."""
-    m = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
-    Path(dest).mkdir(parents=True, exist_ok=True)
-    out = []
-    for s in m["scenes"]:
-        if s.get("clip"):
-            target = Path(dest) / f"liora-{s['index'] + 1:02d}-{s['key']}.mp4"
-            shutil.copyfile(s["clip"], target)
-            out.append(str(target))
-    return out
+SMOKE_PROMPT = ("Photorealistic vertical smartphone video, close-up of a fictional young woman with wavy dark hair sitting at a softly lit "
+                "makeup vanity. She holds a fluffy makeup brush in her right hand and sweeps blush onto her cheek in slow, physically "
+                "convincing strokes; the bristles visibly press and bend against the skin and pink powder appears only where the brush "
+                "touches. Anatomically correct hand with five fingers, natural skin texture with pores, static camera, soft warm light.")
+
+
+def _model_revision(model_id: str) -> str | None:
+    """Commit del snapshot de Hugging Face si el modelo está en la caché local."""
+    p = Path(model_id)
+    if "snapshots" in p.parts:
+        return p.parts[p.parts.index("snapshots") + 1]
+    try:
+        from huggingface_hub import scan_cache_dir
+        for repo in scan_cache_dir().repos:
+            if repo.repo_id == model_id:
+                return sorted(repo.revisions, key=lambda r: r.last_modified)[-1].commit_hash
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def smoke(workdir: str | Path, backend_id: str = "wan22-ti2v-5b", *, seconds: float = 3.5, width: int = 704, height: int = 1280,
+          fps: int = 24, steps: int = 30, guidance: float = 5.0, seed: int = 20261019, prompt: str = SMOKE_PROMPT,
+          backend=None, log=print) -> dict:
+    """Prueba P0: una escena real de texto→vídeo con una mujer ficticia (sin la imagen oficial)."""
+    from . import probe
+    work = Path(workdir)
+    work.mkdir(parents=True, exist_ok=True)
+    lines: list[str] = []
+
+    def say(msg: str):
+        stamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        lines.append(f"{stamp} {msg}")
+        log(msg)
+        (work / "run.log").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    be = backend or get(backend_id)
+    ev = {"format": "liora-smoke-evidence-v1", "started_at": datetime.now(timezone.utc).isoformat(), "backend": be.id,
+          "license": be.license, "budget_eur": 0, "prompt": prompt, "versions": _versions(), "hardware": probe.capacity(), "generated": False}
+    say(f"Liora Engine smoke · motor {be.id}")
+    pre = be.preflight()
+    ev["preflight"] = pre.as_dict()
+    if not pre.ok:
+        say("BLOQUEADO: " + "; ".join(pre.issues))
+        ev["status"] = "blocked"
+        media.write_json(work / "evidence.json", ev)
+        return ev
+    raw, out = work / "smoke-raw.mp4", work / "liora-smoke.mp4"
+    req = GenerationRequest(out_path=raw, prompt=prompt, negative_prompt=json.loads(STAGES_FILE.read_text(encoding="utf-8"))["negative_prompt"],
+                            seconds=seconds, width=width, height=height, fps=fps, seed=seed, steps=steps, guidance=guidance)
+    say(f"Generando {seconds} s a {width}×{height}, {steps} pasos, semilla {seed}…")
+    t0 = time.time()
+    try:
+        res = be.generate(req)
+    except Exception as e:  # noqa: BLE001
+        say(f"ERROR: {type(e).__name__}: {e}")
+        ev.update(status="failed", error=f"{type(e).__name__}: {e}", total_s=round(time.time() - t0, 1))
+        media.write_json(work / "evidence.json", ev)
+        return ev
+    say(f"Generación terminada en {res.elapsed_s} s; normalizando para Safari…")
+    info = media.encode_safari(raw, out, width=width, height=height, keep_audio=False)
+    health = media.degenerate_frames(out)
+    ev.update(status="generated" if health["ok"] else "invalid_output", generated=health["ok"], total_s=round(time.time() - t0, 1),
+              generation_s=res.elapsed_s, params=res.params, environment=res.environment,
+              model_revision=_model_revision(res.params.get("model", "")),
+              raw={"file": raw.name, "sha256": media.sha256(raw), "frames": media.count_frames(raw), "probe": media.probe(raw)},
+              mp4={"file": out.name, "sha256": media.sha256(out), "frames": media.count_frames(out), "probe": info,
+                   "safari_issues": media.safari_check(info)},
+              frame_health=health, finished_at=datetime.now(timezone.utc).isoformat())
+    say(f"MP4 {out.name}: {info.get('width')}×{info.get('height')}, {info.get('duration')} s, sha256 {ev['mp4']['sha256'][:16]}… · "
+        f"fotogramas {'válidos' if health['ok'] else 'INVÁLIDOS: ' + ', '.join(health['issues'])}")
+    media.write_json(work / "evidence.json", ev)
+    return ev

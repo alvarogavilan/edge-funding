@@ -174,7 +174,7 @@ $('compareFile').addEventListener('change', async e => {
   const img = await face.blobToImage(f);
   const res = await face.analyzeFace(face.drawToCanvas(img, 1280), { inputSize: 512 });
   if (!res) { out.replaceChildren(h('p', { class: 'bad' }, 'No se detecta ningún rostro.')); return; }
-  const d = face.identityDistance(res.descriptor, refDescriptors());
+  const d = face.closestFace(res, refDescriptors()).dist;
   const v = d <= P.IDENTITY.strong ? 'pass' : d <= P.IDENTITY.doubtful ? 'review' : 'fail';
   out.replaceChildren(h('p', {}, pill(v, v === 'pass' ? 'MISMA PERSONA' : v === 'review' ? 'DUDOSO' : 'PERSONA DISTINTA'), ` Distancia ${d.toFixed(3)} (≤0,45 misma · 0,45–0,55 dudoso · >0,55 distinta)`));
 });
@@ -354,6 +354,7 @@ async function renderSceneDetail() {
 
     clip ? h('div', {},
       h('h3', {}, 'Clip actual · ' + (sc.currentClip.source || '')),
+      sc.engine ? h('p', { class: 'sub' }, `Liora Engine: ${sc.engine.model || sc.engine.backend} · semilla ${sc.engine.seed} · identidad ${sc.engine.identity || '—'} · continuidad ${sc.engine.continuity || '—'} · SHA-256 ${sc.engine.sha256.slice(0, 12)}…`) : null,
       h('video', { src: blobUrl('clip' + i, clip), controls: true, playsinline: true }),
       firstB && lastB ? h('div', { class: 'thumbs', style: 'margin-top:8px' }, h('img', { src: blobUrl('f1' + i, firstB), alt: 'Primer fotograma' }), h('img', { src: blobUrl('fl' + i, lastB), alt: 'Último fotograma' })) : null,
       h('div', { class: 'row', style: 'margin-top:8px' },
@@ -382,6 +383,38 @@ async function renderSceneDetail() {
   );
 }
 
+async function sha256Hex(blob) {
+  const d = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Clips generados por Liora Engine: se comprueba la huella de cada archivo y cada escena pasa
+// por el mismo control automático y la misma revisión humana que cualquier otro clip.
+$('engineImport').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  const out = $('engineImportReport');
+  const mf = files.find(f => /studio-manifest\.json$/i.test(f.name));
+  if (!mf) { out.replaceChildren(h('p', { class: 'note bad' }, 'Falta studio-manifest.json en la selección.')); return; }
+  let m;
+  try { m = JSON.parse(await mf.text()); } catch { m = null; }
+  if (m?.format !== 'liora-studio-import-v1') { out.replaceChildren(h('p', { class: 'note bad' }, 'Manifiesto no reconocido.')); return; }
+  const lines = [];
+  for (const sc of [...m.scenes].sort((a, b) => a.index - b.index)) {
+    const f = files.find(x => x.name === sc.file);
+    const i = state.project.scenes.findIndex(s => s.key === sc.key);
+    if (!f) { lines.push(`${sc.file}: no seleccionado`); continue; }
+    if (i < 0) { lines.push(`${sc.file}: etapa «${sc.key}» desconocida`); continue; }
+    if ((await sha256Hex(f)) !== sc.sha256) { lines.push(`${sc.file}: la huella SHA-256 no coincide, descartado`); continue; }
+    const s = state.project.scenes[i];
+    if ([S.APROBADO, S.EXPORTADO, S.GENERANDO].includes(s.status)) { lines.push(`${sc.file}: la etapa está ${s.status}, no se sustituye`); continue; }
+    s.engine = { backend: m.backend, model: sc.model, seed: sc.seed, identity: sc.identity, continuity: sc.continuity, sha256: sc.sha256 };
+    out.replaceChildren(h('p', { class: 'sub' }, `Importando ${sc.file}…`));
+    await attachClip(i, f, { source: `Liora Engine · ${sc.model || m.backend} · semilla ${sc.seed}`, name: f.name });
+    lines.push(`${sc.file} → ${s.name}: importado y analizado (motor: identidad ${sc.identity || '—'}, continuidad ${sc.continuity || '—'})`);
+  }
+  out.replaceChildren(h('div', { class: 'note' }, h('b', {}, 'Importación del motor'), h('ul', {}, lines.map(x => h('li', {}, x)))));
+});
+
 async function attachClip(i, blob, { source, name, jobId }) {
   const p = state.project, sc = p.scenes[i];
   if (sc.status === S.GENERANDO && !jobId) { toast('Esta escena tiene una generación en curso.'); return; }
@@ -391,6 +424,7 @@ async function attachClip(i, blob, { source, name, jobId }) {
   sc.currentClip = { blobKey: key, source, name: name || '', jobId: jobId || null, createdAt: new Date().toISOString() };
   sc.attempts.push({ blobKey: key, source, createdAt: sc.currentClip.createdAt, jobId: jobId || null, qc: null, outcome: null });
   sc.auto = null; sc.manual = {}; sc.frames = null; sc.lastError = null;
+  if (!/^Liora Engine/.test(source)) delete sc.engine;
   if (sc.status !== S.REVISION) P.transition(sc, S.REVISION, source);
   else sc.history.push({ at: new Date().toISOString(), to: S.REVISION, note: 'clip sustituido: ' + source });
   await saveProject();

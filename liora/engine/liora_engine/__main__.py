@@ -65,6 +65,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--song")
     p.add_argument("--offset", type=float, default=0.0)
 
+    p = sub.add_parser("smoke", help="Prueba P0: escena real de texto→vídeo con mujer ficticia y evidencia completa")
+    p.add_argument("--work", required=True)
+    p.add_argument("--backend", default="wan22-ti2v-5b")
+    p.add_argument("--seconds", type=float, default=3.5)
+    p.add_argument("--steps", type=int, default=30)
+    p.add_argument("--width", type=int, default=704)
+    p.add_argument("--height", type=int, default=1280)
+    p.add_argument("--seed", type=int, default=20261019)
+
     p = sub.add_parser("conform", help="Convierte cualquier vídeo a MP4 1080×1920 compatible con Safari")
     p.add_argument("src")
     p.add_argument("dst")
@@ -124,6 +133,10 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "assemble":
         _print(pipeline.assemble(a.manifest, a.out, song=a.song, offset=a.offset))
         return 0
+    if a.cmd == "smoke":
+        ev = pipeline.smoke(a.work, a.backend, seconds=a.seconds, steps=a.steps, width=a.width, height=a.height, seed=a.seed)
+        _print({k: ev.get(k) for k in ("status", "generated", "total_s", "mp4", "params", "model_revision", "frame_health", "error")})
+        return 0 if ev.get("generated") else 2
     if a.cmd == "conform":
         info = media.encode_safari(a.src, a.dst, fit=a.fit)
         _print({**info, "safari_issues": media.safari_check(info), "sha256": media.sha256(a.dst)})

@@ -39,15 +39,26 @@ export async function analyzeFace(input, { inputSize = 416, minScore = 0.4 } = {
   const opts = new faceapi.TinyFaceDetectorOptions({ inputSize, scoreThreshold: minScore });
   const results = await faceapi.detectAllFaces(input, opts).withFaceLandmarks().withFaceDescriptors();
   if (!results.length) return null;
-  const best = results.reduce((a, b) => (a.detection.box.area > b.detection.box.area ? a : b));
-  const pts = best.landmarks.positions.map(p => [p.x, p.y]);
-  return {
-    faces: results.length,
-    score: best.detection.score,
-    box: { x: best.detection.box.x, y: best.detection.box.y, w: best.detection.box.width, h: best.detection.box.height },
-    descriptor: Array.from(best.descriptor),
-    landmarks: pts
-  };
+  const all = results.map(r => ({
+    score: r.detection.score,
+    box: { x: r.detection.box.x, y: r.detection.box.y, w: r.detection.box.width, h: r.detection.box.height },
+    descriptor: Array.from(r.descriptor),
+    landmarks: r.landmarks.positions.map(p => [p.x, p.y])
+  }));
+  // La mayor se usa para registrar referencias; en los clips se elige con closestFace (puede haber falsos positivos).
+  const best = all.reduce((a, b) => (a.box.w * a.box.h > b.box.w * b.box.h ? a : b));
+  return { ...best, faces: all.length, all };
+}
+
+// Cara más parecida a la identidad oficial entre todas las detectadas.
+export function closestFace(res, refDescriptors) {
+  if (!res) return null;
+  let bestFace = null, bestD = Infinity;
+  for (const f of res.all || [res]) {
+    const d = identityDistance(f.descriptor, refDescriptors);
+    if (d < bestD) { bestD = d; bestFace = f; }
+  }
+  return { ...bestFace, faces: res.faces, dist: bestD };
 }
 
 export function distance(a, b) {

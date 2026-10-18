@@ -23,7 +23,7 @@ wav.write('RIFF', 0); wav.writeUInt32LE(36 + n * 2, 4); wav.write('WAVEfmt ', 8)
 for (let i = 0; i < n; i++) wav.writeInt16LE(Math.round(8000 * Math.sin(2 * Math.PI * 440 * i / sr)), 44 + i * 2);
 await page.click('nav button[data-t="audio"]');
 await page.setInputFiles('#songFile', { name: 'cancion.wav', mimeType: 'audio/wav', buffer: wav });
-await page.waitForFunction(() => !!window.__liora.state.project.audio?.blobKey);
+await page.waitForFunction(() => window.__liora.state.project.audio?.name === 'cancion.wav'); // sustituye a la instrumental automática
 await page.selectOption('#licType', 'original'); await page.check('#licOk'); await page.click('#saveSong');
 await page.waitForFunction(() => window.__liora.state.project.audio.license?.ok);
 log('canción cargada con licencia');
