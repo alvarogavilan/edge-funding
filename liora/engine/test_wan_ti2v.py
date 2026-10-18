@@ -36,6 +36,14 @@ def main():
         issues.append("No se han descargado los pesos del modelo")
     if not args.image.is_file():
         issues.append("Falta fotografía maestra verificable")
+    if shutil.which("ffprobe") is None:
+        issues.append("Falta ffprobe: no se podrá verificar el vídeo final")
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            issues.append("PyTorch no detecta GPU CUDA; no se puede ejecutar Wan 2.2 aquí")
+    except ImportError:
+        issues.append("PyTorch no está instalado")
     if shutil.which("nvidia-smi") is None:
         issues.append("No se detecta controlador CUDA/NVIDIA; no se asegura que exista GPU")
     else:
@@ -79,11 +87,11 @@ def main():
                 report["video_generated"] = bool(report["video_probe"].get("streams"))
         else:
             report["media_probe_warning"] = "ffprobe no disponible: la reproducción no ha sido validada"
-    report["model_validated"] = report["video_generated"]
+    report["model_validated"] = report["video_generated"] and bool(report.get("video_probe", {}).get("streams"))
     report["video_file"] = str(output) if report["video_generated"] else None
     report["return_code"] = completed.returncode
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    return 0 if report["video_generated"] else 1
+    return 0 if report["model_validated"] else 1
 
 
 if __name__ == "__main__":
