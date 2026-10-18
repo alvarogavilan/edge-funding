@@ -15,15 +15,22 @@ await page.evaluate(async b64 => {
   const blob = await (await fetch('data:image/png;base64,' + b64)).blob();
   await new Promise((res, rej) => { const r = indexedDB.open('liora_assets', 1); r.onupgradeneeded = e => e.target.result.createObjectStore('files'); r.onsuccess = e => { const tx = e.target.result.transaction('files', 'readwrite'); tx.objectStore('files').put(blob, 'master'); tx.oncomplete = () => { e.target.result.close(); res(); }; }; r.onerror = rej; });
 }, FACE);
-await page.goto(BASE);
+await page.goto(BASE + 'produccion.html');
 await page.waitForFunction(() => window.__liora?.state?.project, null, { timeout: 30000 });
 await page.waitForFunction(() => window.__liora.state.refs.some(r => r.official && r.descriptor), null, { timeout: 120000 });
 const r = await page.evaluate(async () => ({
   title: window.__liora.state.project.title, refs: window.__liora.state.refs.length,
   trends: (await window.__liora.db.all('trends')).map(t => t.notes),
-  legacyFile: !!(await window.__liora.db.get('files', 'master'))
+  legacyV1: await new Promise(res => { const r = indexedDB.open('liora_assets', 1); r.onsuccess = e => { const d = e.target.result; const ok = d.version === 1 && d.objectStoreNames.contains('files'); const g = d.transaction('files').objectStore('files').get('master'); g.onsuccess = () => { res(ok && g.result instanceof Blob); d.close(); }; }; r.onerror = () => res(false); })
 }));
+// El panel principal (index.html, liora_assets v1) sigue funcionando después
+const panelErrors = [];
+page.on('pageerror', e => panelErrors.push(e.message));
+await page.goto(BASE);
+await page.waitForTimeout(2000);
+const panelMaster = await page.evaluate(() => document.getElementById('avatarMsg')?.textContent || '');
+console.log('panel principal:', JSON.stringify({ errores: panelErrors, avatarMsg: panelMaster }));
 console.log(JSON.stringify(r));
-const ok = r.title === 'Proyecto antiguo' && r.refs === 1 && r.trends[0] === 'nota antigua' && r.legacyFile;
+const ok = r.title === 'Proyecto antiguo' && r.refs === 1 && r.trends[0] === 'nota antigua' && r.legacyV1 && panelErrors.length === 0;
 await browser.close();
 console.log(ok ? 'Migración superada' : 'Migración FALLIDA'); if (!ok) process.exitCode = 1;

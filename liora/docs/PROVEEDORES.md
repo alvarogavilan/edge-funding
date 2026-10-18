@@ -64,6 +64,21 @@ respiraciones fallan con frecuencia. Prueba obligatoria: misma escena con Ruta A
 
 Cálculo en la app (Motores → Calculadora) con los precios que devuelva el Worker. No incluye la música.
 
+## Ruta de coste cero (presupuesto actual: 0 €)
+
+El panel principal registra un presupuesto autorizado de 0 €. El Worker respeta eso: con `ALLOW_PAID=false`
+(valor por defecto) **no envía nada a fal y no puede cobrar**. Mientras no autorices gasto, las vías posibles son:
+
+* **Planes gratuitos o de prueba en las webs de los proveedores** (Kling, Hailuo, Veo vía Gemini/Flow, Hedra…):
+  generas allí y subes el clip en Producción → «subir un clip generado fuera de la app». Pasa por el mismo QC
+  y la misma revisión. Revisa en cada plan si permite uso comercial y si pone marca de agua (la marca de agua
+  del generador impide publicar).
+* **Modelos abiertos en GPU gratuita** (p. ej. Wan 2.2 S2V para canto, Apache-2.0, en Hugging Face ZeroGPU):
+  cuotas diarias pequeñas y disponibilidad no garantizada (ver AUDITORIA-INFRAESTRUCTURA-2026-10-19.md).
+  No verificado desde este entorno; no se integra hasta comprobar cuota, licencia y calidad.
+
+Con 0 € no hay garantía de llegar al vídeo hiperrealista completo; la prueba más barata con API es ≈ 1,55 USD.
+
 ## Fuentes consultadas
 
 * fal.ai – Veo 3.1 reference-to-video / image-to-video / fast (llms.txt y páginas API)

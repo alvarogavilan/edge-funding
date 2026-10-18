@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { chromium, devices } = require(process.env.PW || 'playwright-core');
 
-const URL_ = process.env.LIORA_URL || 'http://127.0.0.1:8765/liora/';
+const URL_ = process.env.LIORA_URL || 'http://127.0.0.1:8765/liora/produccion.html';
 const FACE = readFileSync(process.env.FACE_IMG);
 const OUT = process.env.OUT_DIR || '.';
 const log = (...a) => console.log('·', ...a);

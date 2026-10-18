@@ -3,7 +3,7 @@
 ```
 iPhone (Safari)                                   Cloudflare Worker (liora-backend)          fal.ai
 ┌──────────────────────────────┐   HTTPS + Bearer ┌──────────────────────────────┐  Key     ┌─────────────┐
-│ GitHub Pages /liora/ (público)│ ───────────────▶ │ FAL_KEY (secreto)            │ ───────▶ │ cola de     │
+│ Pages /liora/produccion.html  │ ───────────────▶ │ FAL_KEY (secreto)            │ ───────▶ │ cola de     │
 │ IndexedDB: referencias, clips,│   clave Liora    │ LIORA_ACCESS_KEY (secreto)   │          │ modelos     │
 │ proyectos, máster, registros  │   en memoria     │ ALLOW_PAID / topes de gasto  │ ◀─────── │ vídeo/canto │
 │ face-api (reconocimiento)     │ ◀─────────────── │ KV: gasto estimado, trabajos │  vídeo   └─────────────┘
@@ -29,8 +29,10 @@ iPhone (Safari)                                   Cloudflare Worker (liora-backe
 
 ## Persistencia
 
-* IndexedDB `liora_assets` v2 (almacenes `files` (v1, intacto), `refs`, `projects`, `blobs`, `trends`, `posts`, `kv`).
-* La migración desde la v1 conserva la foto maestra, el proyecto, las reglas, la revisión y las tendencias.
+* IndexedDB propia `liora_studio` v1 (almacenes `refs`, `projects`, `blobs`, `trends`, `posts`, `kv`).
+* El panel principal (`index.html`) sigue usando `liora_assets` v1. El estudio solo la lee (sin subir su
+  versión ni crearla si no existe) e importa la foto maestra si el estudio aún no tiene referencias; copia una
+  vez el proyecto, reglas, revisión y tendencias de `localStorage` sin borrarlos.
 * Safari puede borrar datos de webs no usadas en semanas: pedir almacenamiento persistente (Motores), añadir
   a pantalla de inicio y **exportar el paquete de identidad** a Archivos/iCloud.
 

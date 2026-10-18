@@ -1,8 +1,10 @@
 # Liora Studio
 
 Aplicación iPhone-first (Safari) para producir vídeos de **Liora Vale** (@lioravalemakeup): una única
-influencer virtual que canta mientras se maquilla paso a paso. Servida gratis por GitHub Pages en
-`https://alvarogavilan.github.io/edge-funding/liora/`.
+influencer virtual que canta mientras se maquilla paso a paso. Servida gratis por GitHub Pages:
+
+* Panel principal (publicar hoy, calendario, originalidad…): `https://alvarogavilan.github.io/edge-funding/liora/`
+* **Estudio de producción** (este módulo): `https://alvarogavilan.github.io/edge-funding/liora/produccion.html`
 
 | Módulo | Estado real |
 |---|---|
@@ -16,7 +18,7 @@ influencer virtual que canta mientras se maquilla paso a paso. Servida gratis po
 | Tendencias con métricas verificadas y conceptos originales | Funcional; no inventa datos |
 | Registro de publicaciones | Funcional (manual; sin API de Instagram/TikTok) |
 
-* `index.html`, `css/`, `js/` – interfaz (módulos ES, sin compilación).
+* `produccion.html`, `css/`, `js/` – Estudio de producción (módulos ES, sin compilación). `index.html` es el panel principal.
 * `vendor/face-api/` – @vladmandic/face-api 1.7.15 (MIT) + modelos + binarios WASM de TensorFlow.js 4.22 (Apache-2.0).
 * `worker/` – backend privado para Cloudflare Workers (claves y topes de gasto).
 * `docs/` – [proveedores y costes](docs/PROVEEDORES.md), [arquitectura y seguridad](docs/ARQUITECTURA.md), [plan del primer vídeo](docs/PRIMER-VIDEO.md).

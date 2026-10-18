@@ -1,9 +1,10 @@
 // Liora Studio · almacenamiento local (IndexedDB) del iPhone.
-// Versión 1 (app anterior) solo tenía el almacén "files" con la clave "master".
-// La versión 2 conserva "files" intacto y añade los almacenes de producción.
-const DB_NAME = 'liora_assets';
-const DB_VERSION = 2;
-export const STORES = ['files', 'refs', 'projects', 'blobs', 'trends', 'posts', 'kv'];
+// Base propia «liora_studio». El panel principal (index.html) usa «liora_assets» v1 con el almacén
+// "files"/"master": aquí solo se LEE, sin cambiar su versión, para que ambas páginas convivan.
+const DB_NAME = 'liora_studio';
+const DB_VERSION = 1;
+const LEGACY_DB = 'liora_assets';
+export const STORES = ['refs', 'projects', 'blobs', 'trends', 'posts', 'kv'];
 
 let dbPromise = null;
 
@@ -48,11 +49,29 @@ export function uid(prefix = 'id') {
   return prefix + '_' + Date.now().toString(36) + r[0].toString(36) + r[1].toString(36);
 }
 
+// Abre «liora_assets» sin versión (no la actualiza). Si no existe, aborta la creación para no dejar
+// una base vacía que rompería el panel principal.
+function readLegacyMaster() {
+  return new Promise(resolve => {
+    let req;
+    try { req = indexedDB.open(LEGACY_DB); } catch { resolve(null); return; }
+    req.onupgradeneeded = () => { req.transaction.abort(); };
+    req.onerror = () => resolve(null);
+    req.onsuccess = () => {
+      const ldb = req.result;
+      if (!ldb.objectStoreNames.contains('files')) { ldb.close(); resolve(null); return; }
+      const g = ldb.transaction('files', 'readonly').objectStore('files').get('master');
+      g.onsuccess = () => { ldb.close(); resolve(g.result instanceof Blob ? g.result : null); };
+      g.onerror = () => { ldb.close(); resolve(null); };
+    };
+  });
+}
+
 // Migra los datos de la versión anterior sin borrarlos (localStorage + files/master).
 export async function migrateLegacy() {
-  if (await get('kv', 'migrated_v2')) return null;
   const report = [];
-  const legacyMaster = await get('files', 'master');
+  // La foto maestra se importa siempre que el estudio no tenga ninguna referencia todavía.
+  const legacyMaster = await readLegacyMaster();
   if (legacyMaster instanceof Blob) {
     const existing = await all('refs');
     if (!existing.length) {
@@ -60,11 +79,12 @@ export async function migrateLegacy() {
       await put('refs', id, {
         id, kind: 'master', angle: 'frontal', blob: legacyMaster,
         name: legacyMaster.name || 'retrato-maestro', addedAt: new Date().toISOString(),
-        descriptor: null, official: true, source: 'migrada de la versión anterior'
+        descriptor: null, official: true, source: 'importada del panel principal (liora_assets/master)'
       });
-      report.push('Retrato maestro anterior conservado como referencia oficial.');
+      report.push('Retrato maestro del panel principal importado como referencia oficial (el original no se modifica).');
     }
   }
+  if (await get('kv', 'migrated_v2')) return report;
   const read = k => { try { return JSON.parse(localStorage.getItem('liora_' + k)); } catch { return null; } };
   const trends = read('trends');
   if (Array.isArray(trends)) {

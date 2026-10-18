@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { chromium, devices } = require(process.env.PW || 'playwright-core');
-const URL_ = process.env.LIORA_URL || 'http://127.0.0.1:8765/liora/';
+const URL_ = process.env.LIORA_URL || 'http://127.0.0.1:8765/liora/produccion.html';
 const log = (...a) => console.log('·', ...a);
 const fail = m => { console.error('FALLO:', m); process.exitCode = 1; };
 const browser = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
