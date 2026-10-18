@@ -213,7 +213,10 @@ let selectedScene = 0;
 // Base musical interna: se guarda automáticamente en el almacenamiento local del iPhone.
 // No necesita subir archivos, descargar MP3 ni conectar un proveedor de pago.
 async function ensureOriginalMusic(project) {
-  if (!/eclipse/i.test(project.title || '') || project.audio?.blobKey) return;
+  if (!/eclipse/i.test(project.title || '')) return;
+  if (project.audio?.blobKey && await db.get('blobs', project.audio.blobKey)) return;
+  // Safari puede conservar el proyecto aunque falte el Blob. Reconstruir la
+  // instrumental sin solicitar al usuario que suba otro archivo.
   try {
     const blob = await buildEclipseInstrumental();
     const key = db.uid('song');
