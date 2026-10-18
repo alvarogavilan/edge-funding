@@ -68,14 +68,14 @@ def render(image_path, prompt):
         digest = hashlib.sha256(exported.read_bytes()).hexdigest()
         return str(exported), "MP4 real generado; SHA-256: " + digest + ". Falta revisión visual y autorización comercial."
 
-with gr.Blocks(title="Liora — prueba ZeroGPU 0 €") as demo:
+PRIVATE_VERIFIED = os.environ.get("LIORA_PRIVATE_RUNTIME") == "1"\n\nwith gr.Blocks(title="Liora — prueba ZeroGPU 0 €") as demo:
     gr.Markdown("# Prueba experimental de vídeo real — Liora Engine\nNo garantiza GPU, privacidad de Space público ni generación dentro de cuota. No usar fotografía maestra confidencial hasta asegurar el acceso.")
-    image = gr.Image(type="filepath", label="Imagen autorizada para la prueba")
+    image = gr.Image(type="filepath", label="Imagen autorizada para la prueba", interactive=PRIVATE_VERIFIED)
     prompt = gr.Textbox(value="The fictional woman applies a makeup brush slowly to her cheek, realistic brush contact with skin, fixed identity, natural face motion, static camera.", label="Movimiento")
-    check = gr.Button("Diagnóstico gratuito (sin GPU ni imagen)")
+    gr.Markdown("**CARGA DE FOTOGRAFÍAS DESACTIVADA POR DEFECTO.** El guard del servidor no impide que una imagen llegue a un Space público: por eso el control de subida permanece bloqueado salvo en una instalación privada verificada. El motor Wan aún no es compatible con ZeroGPU de forma demostrada.")\n    check = gr.Button("Diagnóstico gratuito (sin GPU ni imagen)")
     diagnostics = gr.JSON(label="Dependencias detectadas")
     check.click(requirements_check, inputs=[], outputs=[diagnostics])
-    run = gr.Button("Intentar generar vídeo sin pago")
+    run = gr.Button("Intentar generar vídeo sin pago", interactive=PRIVATE_VERIFIED)
     video = gr.Video(label="Vídeo real generado (si hay capacidad)")
     status = gr.Textbox(label="Resultado")
     run.click(render, inputs=[image, prompt], outputs=[video, status], concurrency_limit=1)
