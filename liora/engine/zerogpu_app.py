@@ -22,7 +22,6 @@ def requirements_check():
     import torch
     return {
         "cuda": torch.cuda.is_available(),
-        "nvidia": shutil.which("nvidia-smi") is not None,
         "wan_code": (WAN_PATH / "generate.py").is_file(),
         "wan_weights": MODEL_PATH.is_dir() and any(MODEL_PATH.iterdir()),
         "ffprobe": shutil.which("ffprobe") is not None,
@@ -30,7 +29,7 @@ def requirements_check():
 
 @spaces.GPU(duration=180)
 def render(image_path, prompt):
-    # ZeroGPU: 180 segundos reservados, sujetos a cuota personal; 165 segundos para el proceso.
+    # ZeroGPU: 180 segundos reservados, sujetos a cuota personal; 165 segundos para el proceso.\n    # IMPORTANTE: el CLI externo lanza otro proceso; la documentación ZeroGPU\n    # recomienda cargar el modelo en el proceso Gradio antes del decorador.\n    # Esta integración sigue siendo EXPERIMENTAL, no producción verificada.
     # Foto original enviada a este runtime externo: usar únicamente espacios PRIVADOS,
     # acceso protegido y licencia y términos autorizados.
     if os.environ.get('LIORA_PRIVATE_RUNTIME') != '1':
