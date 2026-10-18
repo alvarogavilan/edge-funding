@@ -780,7 +780,7 @@ $('genConcept').onclick = async () => {
     h('p', { class: 'sub' }, c.basis),
     h('button', { onclick: async () => {
       const p = P.newProject({ title: c.title, character: c.concept.match(/en (.+?)\. Paleta/)?.[1] || '', concept: c.concept }); p.id = db.uid('proj');
-      await db.put('projects', p.id, p); state.projects.unshift(p); state.project = p; await db.put('kv', 'current_project', p.id); renderAll(); toast('Proyecto creado.');
+      await db.put('projects', p.id, p); state.projects.unshift(p); state.project = p; await db.put('kv', 'current_project', p.id); await ensureOriginalMusic(p); renderAll(); toast('Proyecto creado.');
     } }, 'Crear proyecto con este concepto')));
 };
 
