@@ -4,6 +4,7 @@ No reserva GPU, no hace pagos y no simula fotogramas.
 Requiere por separado el repositorio oficial Wan2.2, pesos y GPU real.
 """
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -21,10 +22,13 @@ def main():
     ap.add_argument("--output-dir", type=Path, required=True)
     ap.add_argument("--prompt", default="An original fictional woman in a beauty studio, applying makeup with a brush in a physically convincing motion, consistent face, photorealistic close-up, static camera, natural skin texture.")
     ap.add_argument("--size", choices=["704*1280", "1280*704"], default="704*1280")
+    ap.add_argument("--frames", type=int, default=81, help="Fotogramas: 4n+1; 81 = 3,4 s a 24 fps")
     ap.add_argument("--allow-execution", action="store_true", help="Ejecutar exclusivamente con infraestructura ya disponible sin facturación")
     args = ap.parse_args()
 
     issues = []
+    if args.frames < 9 or (args.frames - 1) % 4 != 0:
+        issues.append('El número de fotogramas debe cumplir 4n+1 y ser >=9')
     generator = args.wan_repo / "generate.py"
     if not generator.is_file():
         issues.append("Falta generate.py del repositorio oficial Wan2.2")
@@ -47,7 +51,8 @@ def main():
                 issues.append("No se pudo comprobar memoria VRAM")
     if not args.allow_execution:
         issues.append("Modo diagnóstico: ejecución no autorizada mediante --allow-execution")
-    report = {"project": "Liora", "timestamp_utc": datetime.now(timezone.utc).isoformat(), "engine": "Wan2.2-TI2V-5B", "model_validated": False, "video_generated": False, "budget_eur": 0, "issues": issues}
+    image_sha256 = hashlib.sha256(args.image.read_bytes()).hexdigest() if args.image.is_file() else None
+    report = {"reference_sha256": image_sha256, "frame_count_requested": args.frames, "project": "Liora", "timestamp_utc": datetime.now(timezone.utc).isoformat(), "engine": "Wan2.2-TI2V-5B", "model_validated": False, "video_generated": False, "budget_eur": 0, "issues": issues}
     args.output_dir.mkdir(parents=True, exist_ok=True)
     report_path = args.output_dir / "engine-test-report.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -56,7 +61,7 @@ def main():
         return 2
     command = [
         sys.executable, str(generator), "--task", "ti2v-5B",
-        "--size", args.size, "--ckpt_dir", str(args.model_dir.resolve()),
+        "--size", args.size, "--frame_num", str(args.frames), "--ckpt_dir", str(args.model_dir.resolve()),
         "--offload_model", "True", "--convert_model_dtype",
         "--t5_cpu", "--image", str(args.image.resolve()), "--prompt", args.prompt,
         "--save_file", str((args.output_dir / "liora-test.mp4").resolve())
@@ -65,6 +70,15 @@ def main():
     completed = subprocess.run(command, cwd=args.wan_repo)
     output = args.output_dir / "liora-test.mp4"
     report["video_generated"] = completed.returncode == 0 and output.is_file() and output.stat().st_size > 10000
+    if report["video_generated"]:
+        report["video_sha256"] = hashlib.sha256(output.read_bytes()).hexdigest()
+        if shutil.which("ffprobe"):
+            probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name,width,height,nb_frames", "-of", "json", str(output)], capture_output=True, text=True)
+            if probe.returncode == 0:
+                report["video_probe"] = json.loads(probe.stdout)
+                report["video_generated"] = bool(report["video_probe"].get("streams"))
+        else:
+            report["media_probe_warning"] = "ffprobe no disponible: la reproducción no ha sido validada"
     report["model_validated"] = report["video_generated"]
     report["video_file"] = str(output) if report["video_generated"] else None
     report["return_code"] = completed.returncode
