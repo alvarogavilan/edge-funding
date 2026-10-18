@@ -58,10 +58,10 @@ $('finalPreview').addEventListener('loadedmetadata',()=>{const v=$('finalPreview
 $('finalPreview').addEventListener('error',()=>{videoFormatOk=false;videoWatchedToEnd=false;refreshPublicationGate()});
 $('finalPreview').addEventListener('ended',()=>{videoWatchedToEnd=true;refreshPublicationGate()});
 $('finalVideo').addEventListener('change',()=>setTimeout(refreshPublicationGate,0));
-qc.forEach(x=>x.addEventListener('change',refreshPublicationGate));
-rightsBoxes.forEach(x=>x.addEventListener('change',refreshPublicationGate));
-$('saveReview').addEventListener('click',()=>{currentVideoReviewed=!!deliveryFile&&qc.every(x=>x.checked);refreshPublicationGate()});
-['rightsAudio','rightsVisual'].forEach(id=>$(id).addEventListener('input',refreshPublicationGate));
+qc.forEach(x=>x.addEventListener('change',()=>{currentVideoReviewed=false;refreshPublicationGate()}));
+rightsBoxes.forEach(x=>x.addEventListener('change',()=>{currentVideoReviewed=false;refreshPublicationGate()}));
+$('saveReview').addEventListener('click',()=>{currentVideoReviewed=!!deliveryFile&&videoFormatOk&&qc.every(x=>x.checked)&&videoWatchedToEnd;refreshPublicationGate()});
+['rightsAudio','rightsVisual'].forEach(id=>$(id).addEventListener('input',()=>{currentVideoReviewed=false;refreshPublicationGate()}));
 refreshPublicationGate();
 function systemChecks(){const rows=[['Interfaz cargada',true],['Conexión segura HTTPS',location.protocol==='https:'],['Almacenamiento de proyecto',typeof localStorage!=='undefined'],['Compartir desde Safari',!!navigator.share],['Archivo de vídeo final revisado',!!deliveryFile&&videoFormatOk&&videoWatchedToEnd&&currentVideoReviewed&&qc.every(x=>x.checked)&&rightsBoxes.every(x=>x.checked)&&$('rightsAudio').value.trim().length>0&&$('rightsVisual').value.trim().length>0],['Motor gratuito de vídeo conectado',false],['Canto sincronizado conectado',false],['Investigación automática 24/7 activa',false],['Publicación automática autenticada',false]];$('systemCheckDate').textContent='Revisión local: '+new Date().toLocaleString('es-ES');const holder=$('systemChecklist');holder.replaceChildren();rows.forEach(([name,ok])=>{const d=document.createElement('div');d.className='step';d.textContent=(ok?'✓ ':'— ')+name;d.style.color=ok?'#aee4bc':'#f0c38b';holder.appendChild(d)})}
 $('runSelfCheck').onclick=systemChecks;systemChecks();
