@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "project": "Liora Studio",
+  "budget": {"currency": "EUR", "max_per_job": 0, "max_monthly": 0, "paid_services_allowed": false, "trial_with_billing_allowed": false},
+  "identity": {"reference_id": "LIORA-IDENTIDAD-001", "master_file_verified": false, "reference_sha256": null},
+  "render": {
+    "provider": null,
+    "model": null,
+    "backend_verified": false,
+    "commercial_license_verified": false,
+    "supports_consistent_face": false,
+    "supports_makeup_motion": false,
+    "generates_actual_video": false,
+    "verified_free_gpu": false,
+    "test_mp4_url": null,
+    "status": "blocked"
+  },
+  "audio": {"original_song_ready": false, "singing_voice_verified": false, "lip_sync_verified": false},
+  "distribution": {"instagram_export": "local_file_manual_share", "tiktok_export": "local_file_manual_share", "auto_publish": false},
+  "release_gate": {
+    "requires_real_video": true,
+    "requires_identity_review": true,
+    "requires_makeup_motion_review": true,
+    "requires_legal_review": true,
+    "requires_technical_validation": true,
+    "requires_human_approval": true
+  },
+  "last_audit": "2026-10-19",
+  "note": "False values represent unverified or unavailable capabilities. Never treat a static website, sample image or storyboard as an actual rendered video."
+}
