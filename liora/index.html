@@ -53,4 +53,10 @@ function updateRights(){const count=rightsBoxes.filter(x=>x.checked).length;$('r
 rightsBoxes.forEach(x=>x.onchange=updateRights);rightsFields.forEach(x=>$(x).addEventListener('input',updateRights));
 $('saveRights').onclick=()=>{const d=Object.fromEntries(rightsFields.map(x=>[x,$(x).value]));d.checks=rightsBoxes.map(x=>x.checked);d.date=new Date().toISOString();save('rights',d);updateRights();alert('Expediente de autoría guardado localmente')};
 $('copyRights').onclick=()=>{const t='LIORA — EXPEDIENTE DE ORIGINALIDAD\n'+rightsFields.map(x=>x+': '+$(x).value).join('\n')+'\n'+rightsQuestions.map((q,i)=>(rightsBoxes[i].checked?'[Sí] ':'[Pendiente] ')+q).join('\n');navigator.clipboard.writeText(t).then(()=>alert('Expediente copiado')).catch(()=>prompt('Copiar expediente',t))};updateRights();
+function refreshPublicationGate(){const rightsOk=rightsBoxes.every(x=>x.checked)&&$('rightsAudio').value.trim().length>0&&$('rightsVisual').value.trim().length>0;const qcOk=qc.every(x=>x.checked);const approved=!!deliveryFile&&rightsOk&&qcOk; $('downloadToday').disabled=!approved;$('shareToday').disabled=!approved;const st=$('readyStatus');if(!deliveryFile){st.textContent='Pendiente: no hay archivo final de vídeo.';return}st.textContent=approved?'Revisión declarada completa: archivo listo para revisión humana final y envío.':'Bloqueado: '+(!qcOk?'controles visuales pendientes. ':'')+(!rightsOk?'derechos y procedencia sin verificar.':'');}
+$('finalVideo').addEventListener('change',()=>setTimeout(refreshPublicationGate,0));
+qc.forEach(x=>x.addEventListener('change',refreshPublicationGate));
+rightsBoxes.forEach(x=>x.addEventListener('change',refreshPublicationGate));
+['rightsAudio','rightsVisual'].forEach(id=>$(id).addEventListener('input',refreshPublicationGate));
+refreshPublicationGate();
 </script></body></html>
