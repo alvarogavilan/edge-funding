@@ -1,0 +1,14 @@
+{
+  "tokens": 27280,
+  "latent": [
+    31,
+    44,
+    80
+  ],
+  "params_per_block_M": 163.7,
+  "threads": 4,
+  "dtype": "bfloat16",
+  "one_block_forward_s": 15.2,
+  "estimated_full_generation_h": 10.1,
+  "estimate_formula": "bloque \u00d7 30 bloques \u00d7 2 (CFG) \u00d7 pasos; sin VAE ni codificador de texto"
+}

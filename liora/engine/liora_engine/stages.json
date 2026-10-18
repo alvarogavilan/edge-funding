@@ -1,0 +1,15 @@
+{
+  "identity_text": "a woman in her mid-twenties with dark brown wavy shoulder-length hair, hazel-green eyes, light natural freckles across the nose and cheeks, natural full lips, real human skin texture with visible pores",
+  "setting": "a softly lit home makeup vanity with a round mirror light, warm white key light from the front, cream-colored wall, makeup brushes in a glass holder on the left, she wears a black satin robe",
+  "negative_prompt": "extra fingers, fused fingers, deformed hands, face morphing, different person, identity change, makeup appearing without tool contact, plastic skin, flicker, text, subtitles, watermark, logo, cartoon, blurred details, static, worst quality",
+  "stages": [
+    {"key": "inicial", "name": "Rostro inicial", "seconds": 4, "action": "looks into the camera with a bare, natural face (no makeup), hair pulled back with a soft headband, begins to sing the first line softly", "tool": "none"},
+    {"key": "piel", "name": "Preparación de piel", "seconds": 5, "action": "presses a small amount of serum onto her cheeks with her fingertips and then pats primer on her forehead and cheeks with her right hand, skin texture visible, while singing", "tool": "fingertips, primer bottle"},
+    {"key": "base", "name": "Base y contorno", "seconds": 5, "action": "blends liquid foundation with a damp beauty sponge using small pressing motions, then draws contour under the cheekbones with a dense angled brush and blends it, while singing", "tool": "beauty sponge, angled contour brush"},
+    {"key": "ojos", "name": "Sombras y ojos", "seconds": 5, "action": "with one eye closed, sweeps dark midnight-blue eyeshadow onto the eyelid with a fluffy blending brush, building it up gradually in two passes, while humming the melody", "tool": "fluffy eyeshadow brush, eyeshadow palette"},
+    {"key": "delineado", "name": "Delineado", "seconds": 5, "action": "holds a black liquid eyeliner pen and draws a sharp winged line along the upper lash line in one steady stroke, elbow resting on the table, then sings again", "tool": "liquid eyeliner pen"},
+    {"key": "labios", "name": "Labios", "seconds": 5, "action": "outlines her lips with a deep plum lip liner and fills them with a lip brush, then presses her lips together and continues singing", "tool": "lip liner pencil, lip brush"},
+    {"key": "caracterizacion", "name": "Detalles de caracterización", "seconds": 5, "action": "places tiny silver crystals along her cheekbones with tweezers and paints thin silver filigree lines at the outer corner of the eyes with a fine detail brush, while singing", "tool": "tweezers, fine detail brush"},
+    {"key": "final", "name": "Resultado final cinematográfico", "seconds": 5, "action": "removes the headband, lets her hair fall, turns slowly to the camera with the complete makeup and sings the final line with confidence, cinematic lighting", "tool": "none"}
+  ]
+}

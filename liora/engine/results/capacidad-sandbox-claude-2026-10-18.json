@@ -1,0 +1,108 @@
+{
+  "measured_at": "2026-10-18T23:17:54.886029+00:00",
+  "host": "vm",
+  "platform": "Linux-6.18.44-fc-v139-x86_64-with-glibc2.39",
+  "python": "3.13.16",
+  "cpu_count": 4,
+  "ram_total_gb": 15.72,
+  "ram_available_gb": 14.83,
+  "disk_free_gb": 19.7,
+  "gpu": {
+    "cuda": false,
+    "torch": "2.14.1+cu130"
+  },
+  "network": {
+    "huggingface.co": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  "env_hints": {},
+  "benchmark": {
+    "cpu_fp32_gflops": 499.0
+  },
+  "backends": {
+    "wan22-ti2v-5b": {
+      "ok": false,
+      "issues": [
+        "No hay GPU CUDA: Wan 2.2 5B no es ejecutable en CPU en un tiempo útil",
+        "RAM 15.72 GB < 24 GB necesarios para cargar el modelo",
+        "Pesos no disponibles: Wan-AI/Wan2.2-TI2V-5B-Diffusers no está en disco y huggingface.co no responde (URLError: <urlopen error Tunnel connection failed: 403 Forbidden>)",
+        "Disco libre 20 GB < 40 GB para los pesos"
+      ],
+      "facts": {
+        "model": "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
+        "gpu": {
+          "cuda": false,
+          "torch": "2.14.1+cu130"
+        },
+        "torch": "2.14.1",
+        "diffusers": "0.41.0",
+        "transformers": "5.20.1",
+        "accelerate": "1.15.0",
+        "ftfy": "6.3.1",
+        "hub_reachable": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+      }
+    },
+    "wan22-ti2v-5b-official": {
+      "ok": false,
+      "issues": [
+        "Repositorio oficial no encontrado (LIORA_WAN22_TI2V_5B_OFFICIAL_REPO)",
+        "Pesos no encontrados (LIORA_WAN22_TI2V_5B_OFFICIAL_CKPT)",
+        "No hay GPU CUDA"
+      ],
+      "facts": {
+        "repo_env": "LIORA_WAN22_TI2V_5B_OFFICIAL_REPO",
+        "ckpt_env": "LIORA_WAN22_TI2V_5B_OFFICIAL_CKPT",
+        "gpu": {
+          "cuda": false,
+          "torch": "2.14.1+cu130"
+        }
+      }
+    },
+    "wan22-s2v-14b": {
+      "ok": false,
+      "issues": [
+        "Repositorio oficial no encontrado (LIORA_WAN22_S2V_14B_REPO)",
+        "Pesos no encontrados (LIORA_WAN22_S2V_14B_CKPT)",
+        "No hay GPU CUDA"
+      ],
+      "facts": {
+        "repo_env": "LIORA_WAN22_S2V_14B_REPO",
+        "ckpt_env": "LIORA_WAN22_S2V_14B_CKPT",
+        "gpu": {
+          "cuda": false,
+          "torch": "2.14.1+cu130"
+        }
+      }
+    },
+    "latentsync-1.6": {
+      "ok": false,
+      "issues": [
+        "Repositorio oficial no encontrado (LIORA_LATENTSYNC_1_6_REPO)",
+        "Pesos no encontrados (LIORA_LATENTSYNC_1_6_CKPT)",
+        "No hay GPU CUDA"
+      ],
+      "facts": {
+        "repo_env": "LIORA_LATENTSYNC_1_6_REPO",
+        "ckpt_env": "LIORA_LATENTSYNC_1_6_CKPT",
+        "gpu": {
+          "cuda": false,
+          "torch": "2.14.1+cu130"
+        }
+      }
+    },
+    "yue-s1-7b": {
+      "ok": false,
+      "issues": [
+        "Repositorio oficial no encontrado (LIORA_YUE_S1_7B_REPO)",
+        "No hay GPU CUDA"
+      ],
+      "facts": {
+        "repo_env": "LIORA_YUE_S1_7B_REPO",
+        "ckpt_env": "LIORA_YUE_S1_7B_CKPT",
+        "gpu": {
+          "cuda": false,
+          "torch": "2.14.1+cu130"
+        }
+      }
+    }
+  }
+}

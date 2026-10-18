@@ -1,0 +1,21 @@
+[project]
+name = "liora-engine"
+version = "0.1.0"
+description = "Motor audiovisual propio de Liora Studio: generación intercambiable, identidad, continuidad y montaje."
+requires-python = ">=3.10"
+dependencies = ["numpy", "pillow", "imageio-ffmpeg>=0.5"]
+
+[project.optional-dependencies]
+# Identidad (dlib + modelos de reconocimiento) y referencias faciales densas (MediaPipe, Apache-2.0)
+identity = ["dlib-bin; platform_system=='Linux'", "face_recognition_models==0.3.0", "mediapipe>=0.10"]
+# Generación con Wan 2.2 en GPU (instalar torch con CUDA según la plataforma)
+wan = ["torch>=2.4", "diffusers>=0.35", "transformers>=4.49", "accelerate>=1.1", "ftfy", "sentencepiece", "huggingface_hub>=0.30"]
+
+[project.scripts]
+liora-engine = "liora_engine.__main__:main"
+
+[tool.setuptools]
+packages = ["liora_engine", "liora_engine.backends"]
+
+[tool.setuptools.package-data]
+liora_engine = ["*.json"]
