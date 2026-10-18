@@ -28,9 +28,9 @@ def requirements_check():
         "ffprobe": shutil.which("ffprobe") is not None,
     }
 
-@spaces.GPU(duration=300)
+@spaces.GPU(duration=180)
 def render(image_path, prompt):
-    # ZeroGPU cuota compartida; 300 segundos es un máximo solicitado, NO una garantía.
+    # ZeroGPU: 180 segundos reservados, sujetos a cuota personal; 165 segundos para el proceso.
     # Foto original enviada a este runtime externo: usar únicamente espacios PRIVADOS,
     # acceso protegido y licencia y términos autorizados.
     if os.environ.get('LIORA_PRIVATE_RUNTIME') != '1':
@@ -51,7 +51,7 @@ def render(image_path, prompt):
             "--t5_cpu", "--image", str(image_path), "--prompt", prompt.strip(),
             "--save_file", str(output)
         ]
-        result = subprocess.run(cmd, cwd=WAN_PATH, timeout=280, capture_output=True, text=True)
+        result = subprocess.run(cmd, cwd=WAN_PATH, timeout=165, capture_output=True, text=True)
         if result.returncode != 0 or not output.exists():
             raise gr.Error("Wan no pudo generar vídeo: " + (result.stderr or result.stdout)[-800:])
         probe = subprocess.run([
