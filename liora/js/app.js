@@ -133,7 +133,7 @@ function renderIdentity() {
   const official = state.refs.find(r => r.official);
   const usable = usableRefs();
   const sum = $('identitySummary');
-  if (!official) sum.replaceChildren('Falta la fotografía oficial. Súbela con el tipo «Fotografía oficial». Es el primer paso obligatorio.');
+  if (!official) sum.replaceChildren('La identidad de Liora sigue definida, pero este navegador no encuentra el archivo de su fotografía oficial en el almacenamiento local. La app ha intentado recuperarlo del panel anterior. No crees otra modelo: debe recuperarse el retrato maestro original antes de generar.');
   else sum.replaceChildren(
     h('b', {}, official.descriptor ? 'Identidad oficial fijada y bloqueada. ' : 'Fotografía oficial guardada sin rostro analizado. '),
     `${usable.length} referencias válidas para comparar. `,
