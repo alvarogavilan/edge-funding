@@ -52,8 +52,15 @@ class Wan22TI2V(Backend):
             issues.append("No hay GPU CUDA: Wan 2.2 5B no es ejecutable en CPU en un tiempo útil")
         else:
             need = self.spec["requirements"]["min_vram_gb_offload"]
-            if g["vram_gb"] < need:
-                issues.append(f"VRAM {g['vram_gb']} GB < {need} GB mínimos con descarga a CPU")
+            # Tesla T4 se anuncia como 15 GB (15360 MiB), pero PyTorch muestra
+            # 14.56 GiB. Evitar rechazo por diferencia GB/GiB. En este rango
+            # la ejecución sigue siendo EXPERIMENTAL y puede agotar la memoria.
+            if g["vram_gb"] < need - 0.75:
+                issues.append(f"VRAM {g['vram_gb']} GiB < {need} GB nominales con descarga a CPU")
+            elif g["vram_gb"] < need:
+                facts["vram_warning"] = (
+                    f"{g['vram_gb']} GiB en T4: cifra nominal cercana a {need} GB; "
+                    "solo se puede intentar descarga secuencial, sin garantía de éxito")
             if not g.get("bf16"):
                 facts["dtype_warning"] = "La GPU no soporta bf16: se usará fp16 (Wan se entrenó en bf16; calidad/estabilidad sin verificar)"
         ram = probe._meminfo_gb("MemTotal") or 0
