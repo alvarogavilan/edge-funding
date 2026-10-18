@@ -3,6 +3,7 @@
 # SOLO cuando haya cuenta apta y condiciones verificadas.
 # Este script no utiliza servicios de pago, ni claves, ni genera un vídeo simulado.
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -32,6 +33,8 @@ def render(image_path, prompt):
     # ZeroGPU cuota compartida; 300 segundos es un máximo solicitado, NO una garantía.
     # Foto original enviada a este runtime externo: usar únicamente espacios PRIVADOS,
     # acceso protegido y licencia y términos autorizados.
+    if os.environ.get('LIORA_PRIVATE_RUNTIME') != '1':
+        raise gr.Error('Desactivado por privacidad: no se permite subir la imagen maestra sin entorno privado verificado.')
     if not image_path:
         raise gr.Error("Falta una imagen de referencia.")
     if not prompt or len(prompt.strip()) < 12:
@@ -59,9 +62,12 @@ def render(image_path, prompt):
             raise gr.Error("El MP4 producido no contiene vídeo verificable.")
         # Gradio necesita el archivo fuera del directorio temporal.
         import shutil
-        exported = Path(tempfile.mkstemp(prefix="liora_verified_", suffix=".mp4")[1])
+        fd, export_name = tempfile.mkstemp(prefix="liora_verified_", suffix=".mp4")
+        os.close(fd)
+        exported = Path(export_name)
         shutil.copyfile(output, exported)
-        return str(exported), "Se obtuvo MP4 auténtico; falta revisión visual y autorización comercial."
+        digest = hashlib.sha256(exported.read_bytes()).hexdigest()
+        return str(exported), "MP4 real generado; SHA-256: " + digest + ". Falta revisión visual y autorización comercial."
 
 with gr.Blocks(title="Liora — prueba ZeroGPU 0 €") as demo:
     gr.Markdown("# Prueba experimental de vídeo real — Liora Engine\nNo garantiza GPU, privacidad de Space público ni generación dentro de cuota. No usar fotografía maestra confidencial hasta asegurar el acceso.")
