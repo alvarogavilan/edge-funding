@@ -2,10 +2,25 @@
   "format": "liora-identity-lock-v1",
   "identity_id": "LIORA-VALE-0001",
   "display_name": "Liora Vale",
-  "handles": {"instagram": "@lioravalemakeup", "tiktok": "@lioravalemakeup"},
-  "status": "REFERENCIA_AUSENTE",
-  "master": null,
-  "lock_sha256": null,
+  "handles": {
+    "instagram": "@lioravalemakeup",
+    "tiktok": "@lioravalemakeup"
+  },
+  "status": "REFERENCIA_VERIFICADA",
+  "master": {
+    "sha256": "42a10b1fd68f8d3801fbfae2cf8eac56037bacf68e796d699fe27e96853e43d9",
+    "bytes": 2498694,
+    "mime": "image/png",
+    "width": 941,
+    "height": 1672,
+    "sealed_at": "2026-10-19T21:50:31.076Z",
+    "provenance": {
+      "source": "Aportada y designada expresamente por el propietario como referencia oficial para siempre (conversación con Claude Code, 2026-10-19). PNG 941×1672; procesada en Liora Studio.",
+      "method": "Liora Studio · Sellar identidad oficial (archivo privado, no publicado)"
+    },
+    "passport_sha256": "9606b3df755df15eb4b3312197cd98d96446a0fabd689160d42ba97c32779353"
+  },
+  "lock_sha256": "b096f5994adf505645e0e6269dc9f98196f6970def030c680a0b62f632c6bc05",
   "rules": [
     "Una única mujer virtual para toda la vida de la marca.",
     "Pueden cambiar maquillaje, expresión, ropa, peinado e iluminación; nunca la identidad facial.",
@@ -17,5 +32,18 @@
     "Se aplica a Instagram, TikTok, Liora Studio, imágenes, vídeos y cualquier desarrollo futuro."
   ],
   "derivatives": [],
-  "history": []
+  "history": [
+    {
+      "version": 1,
+      "event": "SELLO_MAESTRO",
+      "at": "2026-10-19T21:50:59.791033+00:00",
+      "lock_sha256": "b80fe3662b87715678c9973ef8e6bc35e2413ab06172ba3a1d87c3b526de78e7"
+    },
+    {
+      "version": 2,
+      "event": "PASAPORTE",
+      "at": "2026-10-19T21:50:59.827770+00:00",
+      "lock_sha256": "b096f5994adf505645e0e6269dc9f98196f6970def030c680a0b62f632c6bc05"
+    }
+  ]
 }

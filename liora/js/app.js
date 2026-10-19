@@ -214,12 +214,15 @@ async function addRef(file, angle) {
   if (!file) return;
   const isOfficial = angle === 'oficial';
   const current = state.refs.find(r => r.official);
-  if (isOfficial && state.lock?.master && !IL.canBecomeOfficial(state.lock, await IL.sha256Hex(file))) {
+  const fileSha = isOfficial ? await IL.sha256Hex(file) : null;
+  if (isOfficial && state.lock?.master && !IL.canBecomeOfficial(state.lock, fileSha)) {
     toast('SUSTITUCIÓN BLOQUEADA: esta imagen no es la fotografía maestra sellada de Liora (' + state.lock.identity_id + ').', 7000);
     return;
   }
+  // Restaurar el maestro sellado no es un cambio de identidad: no se pide confirmación.
+  const restoringSealed = isOfficial && state.lock?.master?.sha256 === fileSha;
   const lock = await db.get('kv', 'identity_lock');
-  if (isOfficial && current && lock) {
+  if (isOfficial && current && lock && !restoringSealed) {
     const ok = prompt('La identidad oficial está bloqueada. Escribe CAMBIAR IDENTIDAD para sustituir la fotografía oficial (todas las escenas se tendrán que revalidar):');
     if (ok !== 'CAMBIAR IDENTIDAD') { toast('Fotografía oficial conservada.'); return; }
   }
@@ -292,7 +295,7 @@ $('compareFile').addEventListener('change', async e => {
 async function loadIdentityText() {
   const t = await db.get('kv', 'identity_text');
   const legacy = (await db.get('kv', 'legacy_snapshot'))?.rules;
-  $('identityText').value = t?.identity || 'a woman in her mid-twenties with dark brown wavy shoulder-length hair, hazel-green eyes, light natural freckles across the nose and cheeks, natural full lips, real human skin texture with visible pores' + (legacy?.rules ? '. ' + legacy.rules : '');
+  $('identityText').value = t?.identity || 'a woman in her mid-twenties with long voluminous wavy dark brown hair with chocolate and caramel highlights and a center part, almond-shaped hazel-green eyes with slightly lifted outer corners, thick dark arched eyebrows, fine freckles across the cheeks and nose, high cheekbones with natural rosy blush, a straight narrow nose, full nude-pink lips with a fuller lower lip, an oval face with a soft defined jawline, light-medium warm skin with real visible pores and natural sheen' + (legacy?.rules ? '. ' + legacy.rules : '');
   $('settingText').value = t?.setting || 'a softly lit home makeup vanity with a round mirror light, warm white key light from the front, cream-colored wall, makeup brushes in a glass holder on the left, she wears a black satin robe';
 }
 $('saveIdentityText').onclick = async () => { await db.put('kv', 'identity_text', { identity: $('identityText').value.trim(), setting: $('settingText').value.trim() }); toast('Rasgos guardados.'); };

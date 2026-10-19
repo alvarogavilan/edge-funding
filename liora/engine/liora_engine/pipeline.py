@@ -61,6 +61,25 @@ def plan(official_image: str, identity_pack: str, *, project: str = "Liora", sce
             "max_attempts": max_attempts, "scenes": job_scenes, "song": None}
 
 
+# ESCENA 001 · «Mi primer maquillaje»: primer plano de la auténtica Liora (primer fotograma y referencia = maestro sellado).
+SCENE001_PROMPT = ("Vertical close-up portrait of {identity}. She looks into the camera with a subtle, warm smile and gently sweeps a soft fluffy "
+                   "makeup brush across her right cheek, applying a light rosy blush; the bristles visibly touch the skin and the blush appears only "
+                   "where the brush passes. Natural head and hand movement, natural blinking, elegant professional studio lighting with a soft key light, "
+                   "neutral blue-grey studio background, bare shoulders, cinematic shallow depth of field. Anatomically correct hand with five fingers, "
+                   "natural skin pores, stable identity, static camera, no text, no watermark.")
+
+
+def scene001(official_image: str, identity_pack: str, workdir: str | Path, backend_id: str = "wan21-vace-1.3b", *, seconds: float = 5.0,
+             width: int = 480, height: int = 832, fps: int = 16, steps: int = 30, seed: int = 20261019, attempts: int = 3, log=print, **render_kw) -> dict:
+    """Genera la ESCENA 001 con el Identity Lock, la identidad de dlib y el control fotograma a fotograma obligatorios."""
+    cfg = json.loads(STAGES_FILE.read_text(encoding="utf-8"))
+    job = plan(official_image, identity_pack, project="Liora · Escena 001", scenes=1, seconds=seconds, width=width, height=height, fps=fps,
+               steps=steps, seed=seed, max_attempts=attempts)
+    # clave «piel»: la continuidad espera cambio en las mejillas, que es donde trabaja el pincel
+    job["scenes"][0].update(key="piel", name="Escena 001 · Mi primer maquillaje", prompt=SCENE001_PROMPT.format(identity=cfg["identity_text"]))
+    return render(job, workdir, backend_id, log=log, **render_kw)
+
+
 def _versions() -> dict:
     out = {"liora_engine": __version__, "python": platform.python_version()}
     for pkg in ("torch", "diffusers", "transformers", "dlib-bin", "mediapipe", "imageio-ffmpeg"):

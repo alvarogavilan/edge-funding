@@ -2,6 +2,8 @@
 
 Fuente única de verdad de la identidad de Liora Vale (`LIORA-VALE-0001`) para Liora Studio, Liora Engine, Instagram, TikTok y cualquier desarrollo futuro.
 
+**Estado: REFERENCIA VERIFICADA.** Maestro sellado el 2026-10-19: PNG de 941×1672, SHA-256 `42a10b1f…53e43d9`, aportado y designado por el propietario. Versiones: 1 SELLO_MAESTRO, 2 PASAPORTE.
+
 | Archivo | Qué es | ¿Público? |
 |---|---|---|
 | `identity-lock.json` | Manifiesto canónico: identificador, huella SHA-256 del maestro, procedencia, huella del pasaporte, derivados autorizados, historial de versiones y reglas | Sí (solo huellas) |

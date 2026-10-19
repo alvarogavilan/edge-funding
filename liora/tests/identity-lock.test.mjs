@@ -6,15 +6,22 @@ import * as L from '../identity/identity-lock.js';
 const manifest = () => readFile(new URL('../identity/identity-lock.json', import.meta.url), 'utf8').then(JSON.parse);
 const master = new Blob([new Uint8Array([1, 2, 3, 4, 5])], { type: 'image/jpeg' });
 const other = new Blob([new Uint8Array([9, 9, 9])], { type: 'image/jpeg' });
-const sealed = async () => L.applySeal(await manifest(), await L.buildSeal(master, { width: 1080, height: 1350, source: 'prueba' }));
+// Candado vacío de PRUEBA (el manifiesto real ya está sellado con el maestro de Liora y no se re-sella).
+const blank = async () => ({ ...(await manifest()), status: L.REF.AUSENTE, master: null, lock_sha256: null, history: [], derivatives: [] });
+const sealed = async () => L.applySeal(await blank(), await L.buildSeal(master, { width: 1080, height: 1350, source: 'prueba' }));
 
-test('el manifiesto publicado es íntegro y está en REFERENCIA_AUSENTE (no se declara verificado sin maestro)', async () => {
+test('el manifiesto publicado está sellado con el maestro de LIORA-VALE-0001 y es íntegro', async () => {
   const lock = await manifest();
   assert.deepEqual(await L.validateLock(lock), []);
   assert.equal(lock.identity_id, 'LIORA-VALE-0001');
-  assert.equal(lock.status, L.REF.AUSENTE);
-  assert.equal(lock.master, null);
+  assert.equal(lock.status, L.REF.VERIFICADA);
+  assert.equal(lock.master.sha256, '42a10b1fd68f8d3801fbfae2cf8eac56037bacf68e796d699fe27e96853e43d9');
+  assert.match(lock.master.passport_sha256, /^[0-9a-f]{64}$/);
+  assert.deepEqual(lock.history.map(e => e.event), ['SELLO_MAESTRO', 'PASAPORTE']);
   assert.equal(L.referenceState(lock, null).state, L.REF.AUSENTE);
+  assert.equal(L.referenceState(lock, await L.sha256Hex(other)).state, L.REF.SUSTITUCION);
+  assert.equal(L.canBecomeOfficial(lock, await L.sha256Hex(other)), false);
+  await assert.rejects(L.applySeal(lock, await L.buildSeal(other, { source: 'x' })), /sustitución bloqueada/);
 });
 
 test('el manifiesto no contiene imágenes ni datos de imagen', async () => {
@@ -49,7 +56,7 @@ test('manipulación: cambiar la huella o el identificador sin sello rompe la int
   assert.match((await L.validateLock(t1)).join(), /lock_sha256 no coincide/);
   const t2 = structuredClone(lock); t2.identity_id = 'LIORA-VALE-0002';
   assert.match((await L.validateLock(t2)).join(), /lock_sha256 no coincide/);
-  const t3 = await manifest(); t3.status = L.REF.VERIFICADA;
+  const t3 = await blank(); t3.status = L.REF.VERIFICADA;
   assert.match((await L.validateLock(t3)).join(), /REFERENCIA_AUSENTE/);
 });
 
@@ -64,7 +71,7 @@ test('derivados: solo cuentan los generados desde el maestro sellado', async () 
 });
 
 test('veredicto de render: pendiente sin referencia, rechazado con otra cara u otra referencia, aprobado solo con revisión humana', async () => {
-  const empty = await manifest();
+  const empty = await blank();
   assert.equal(L.renderVerdict(empty, { master_sha256: 'x', identity_distance: 0.2, human_approved: true }).state, L.RENDER.PENDIENTE);
   const lock = await sealed();
   const m = lock.master.sha256;
@@ -115,7 +122,7 @@ test('historial de versiones: el sello crea la versión 1 y el pasaporte la 2; m
   assert.deepEqual(await L.validateLock(v2), []);
   assert.notEqual(v2.lock_sha256, lock.lock_sha256);
   await assert.rejects(L.attachPassport(lock, { ...pp, master_sha256: 'b'.repeat(64) }, 'a'.repeat(64)), /maestro sellado/);
-  await assert.rejects(L.attachPassport(await manifest(), pp, 'a'.repeat(64)), /sellar el maestro/);
+  await assert.rejects(L.attachPassport(await blank(), pp, 'a'.repeat(64)), /sellar el maestro/);
   const cut = structuredClone(v2); cut.history.pop();
   assert.match((await L.validateLock(cut)).join(), /última versión/);
   const noHist = structuredClone(lock); noHist.history = [];

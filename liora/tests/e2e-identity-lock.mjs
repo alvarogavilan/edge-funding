@@ -1,5 +1,5 @@
 // Identity Lock en el navegador (iPhone emulado):
-// 1) con el manifiesto REAL publicado (sin maestro) → REFERENCIA AUSENTE / PENDIENTE DE SELLAR y aprobación bloqueada;
+// 0) con el manifiesto REAL (sellado): otra cara no puede ser oficial; 1) con un candado vacío de prueba → PENDIENTE DE SELLAR y aprobación bloqueada;
 // 2) «Sellar identidad oficial» descarga un sello con el SHA-256 exacto y sin imagen;
 // 3) con un candado sellado, otra imagen no puede convertirse en oficial (sustitución bloqueada).
 // FACE_IMG=… OTHER_IMG=… PW=…/playwright-core node tests/e2e-identity-lock.mjs
@@ -28,9 +28,33 @@ async function open(ctxOpts = {}) {
 }
 const lockPill = page => page.$eval('#statusline', e => e.textContent);
 
-// 1 · manifiesto real
+// 0 · manifiesto REAL (sellado con el maestro de LIORA-VALE-0001): otra cara no puede ser oficial
 {
   const { ctx, page } = await open();
+  await page.goto(URL_);
+  await page.waitForFunction(() => document.querySelector('#statusline')?.textContent.includes('Identity Lock'));
+  const m = await page.evaluate(() => window.__liora.state.lock?.master?.sha256);
+  m === '42a10b1fd68f8d3801fbfae2cf8eac56037bacf68e796d699fe27e96853e43d9' ? log('manifiesto real sellado:', m.slice(0, 16) + '…') : fail('manifiesto real sin sellar ' + m);
+  (await lockPill(page)).includes('REFERENCIA AUSENTE') ? log('dispositivo sin el maestro → REFERENCIA AUSENTE (no se declara verificado)') : fail('estado sin maestro local');
+  await page.click('nav button[data-t="identidad"]');
+  await page.selectOption('#refAngle', 'oficial');
+  await page.setInputFiles('#refFile', { name: 'otra.png', mimeType: 'image/png', buffer: FACE });
+  await page.waitForTimeout(1500);
+  (await page.evaluate(() => window.__liora.state.refs.length)) === 0 ? log('otra cara rechazada contra el manifiesto real: SUSTITUCIÓN BLOQUEADA') : fail('el manifiesto real aceptó otra cara');
+  if (process.env.MASTER_IMG) { // maestro privado: solo en local, nunca en el repositorio
+    await page.setInputFiles('#refFile', { name: 'maestro.png', mimeType: 'image/png', buffer: readFileSync(process.env.MASTER_IMG) });
+    await page.waitForFunction(() => window.__liora.state.refs.some(r => r.official), null, { timeout: 240000 });
+    (await lockPill(page)).includes('REFERENCIA VERIFICADA') ? log('maestro privado de Liora → REFERENCIA VERIFICADA') : fail('el maestro no se verificó');
+  }
+  await ctx.close();
+}
+
+// 1 · candado vacío de prueba (flujo de sellado)
+{
+  const { ctx, page } = await open();
+  const real = JSON.parse(readFileSync(new URL('../identity/identity-lock.json', import.meta.url), 'utf8'));
+  await page.route('**/identity/identity-lock.json', r => r.fulfill({ contentType: 'application/json',
+    body: JSON.stringify({ ...real, status: 'REFERENCIA_AUSENTE', master: null, lock_sha256: null, history: [], derivatives: [] }) }));
   await page.goto(URL_);
   await page.waitForFunction(() => document.querySelector('#statusline')?.textContent.includes('Identity Lock'));
   let st = await lockPill(page);

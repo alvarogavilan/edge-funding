@@ -77,6 +77,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--fallback", default="wan21-vace-1.3b", help="Motor de reserva si el principal falla ('' para desactivar)")
     p.add_argument("--image", help="Imagen SINTÉTICA de partida (imagen→vídeo). No usar la foto oficial fuera de entornos privados")
 
+    p = sub.add_parser("escena001", help="ESCENA 001 de la auténtica Liora (requiere el maestro sellado y GPU)")
+    p.add_argument("--official", required=True, help="Archivo maestro PRIVADO; su SHA-256 debe coincidir con el Identity Lock")
+    p.add_argument("--pack", required=True)
+    p.add_argument("--work", required=True)
+    p.add_argument("--backend", default="wan21-vace-1.3b")
+    p.add_argument("--seconds", type=float, default=5.0)
+    p.add_argument("--steps", type=int, default=30)
+    p.add_argument("--width", type=int, default=480)
+    p.add_argument("--height", type=int, default=832)
+    p.add_argument("--fps", type=int, default=16)
+
     p = sub.add_parser("conform", help="Convierte cualquier vídeo a MP4 1080×1920 compatible con Safari")
     p.add_argument("src")
     p.add_argument("dst")
@@ -142,6 +153,10 @@ def main(argv: list[str] | None = None) -> int:
         ev = pipeline.smoke_with_fallback(a.work, a.backend, (a.fallback or None) if a.fallback != a.backend else None, seconds=a.seconds, steps=a.steps, width=a.width, height=a.height, fps=a.fps, seed=a.seed, start_image=a.image)
         _print({k: ev.get(k) for k in ("status", "generated", "total_s", "mp4", "params", "model_revision", "frame_health", "error")})
         return 0 if ev.get("generated") else 2
+    if a.cmd == "escena001":
+        m = pipeline.scene001(a.official, a.pack, a.work, a.backend, seconds=a.seconds, width=a.width, height=a.height, fps=a.fps, steps=a.steps)
+        print(f"Estado: {m['status']} · manifiesto: {Path(a.work) / 'manifest.json'}")
+        return 0 if m["status"] == "completed" else 2
     if a.cmd == "conform":
         info = media.encode_safari(a.src, a.dst, fit=a.fit, audio=a.song, audio_offset=a.offset)
         _print({**info, "safari_issues": media.safari_check(info), "sha256": media.sha256(a.dst)})
