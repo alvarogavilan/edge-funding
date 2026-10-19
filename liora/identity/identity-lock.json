@@ -10,7 +10,12 @@
     "Una única mujer virtual para toda la vida de la marca.",
     "Pueden cambiar maquillaje, expresión, ropa, peinado e iluminación; nunca la identidad facial.",
     "La fotografía maestra es privada: solo se registra su SHA-256, nunca el archivo.",
-    "Ningún render se aprueba sin referencia verificada, medición facial y revisión humana."
+    "Ningún render se aprueba sin referencia verificada, medición facial y revisión humana.",
+    "La identidad se mide en todos los fotogramas de la escena: rostro visible en al menos el 80 %, ningún tramo de 2 fotogramas seguidos con otro rostro y ningún fotograma claramente distinto.",
+    "No basta con el nombre «Liora» en un prompt, con el realismo ni con que el primer fotograma se parezca.",
+    "Ningún módulo puede cambiar la persona oficial: un maestro distinto exige un identificador nuevo y la decisión expresa del propietario.",
+    "Se aplica a Instagram, TikTok, Liora Studio, imágenes, vídeos y cualquier desarrollo futuro."
   ],
-  "derivatives": []
+  "derivatives": [],
+  "history": []
 }

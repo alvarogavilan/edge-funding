@@ -168,6 +168,8 @@ export async function analyzeClip(blob, o) {
     const faceRatio = withFace.length / Math.max(1, frames.length);
     report.identity = identityVerdict(withFace.map(f => f.dist), o.stageIndex, faceRatio);
     report.identity.faceRatio = faceRatio;
+    // Serie completa (null = fotograma sin el rostro de Liora) para el control fotograma a fotograma del Identity Lock.
+    report.identity.frameSeries = frames.map(f => [f.t, f.face ? +f.dist.toFixed(4) : null]);
     report.identity.multiFaceFrames = withFace.filter(f => f.faces > 1).length;
     const jumps = [];
     for (let i = 1; i < withFace.length; i++) {

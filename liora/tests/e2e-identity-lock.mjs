@@ -69,6 +69,49 @@ const lockPill = page => page.$eval('#statusline', e => e.textContent);
   await page.waitForFunction(() => window.__liora.state.refs.some(r => r.official), null, { timeout: 180000 });
   const st = await lockPill(page);
   st.includes('REFERENCIA VERIFICADA') ? log('maestro sellado → REFERENCIA VERIFICADA') : fail('con maestro: ' + st);
+  // pasaporte biométrico (imagen de PRUEBA): medidas objetivas, observaciones pendientes, exportación privada sin imagen
+  await page.click('#lockPanel button:text-is("Generar pasaporte biométrico (privado)")');
+  await page.waitForSelector('#passportPanel textarea', { timeout: 180000 });
+  await page.fill('#passportPanel textarea >> nth=0', 'Observación de prueba');
+  await page.locator('#passportPanel textarea').first().dispatchEvent('change');
+  await page.waitForTimeout(300);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#passportPanel button:text-is("Exportar pasaporte (privado)")')]);
+  const pp = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  const raw = JSON.stringify(pp);
+  pp.master_sha256 === sha(FACE) && pp.geometria.ojos.anchura_derecho > 0 && pp.color.piel_mejillas ? log('pasaporte:', 'ojos', pp.geometria.ojos.anchura_derecho, pp.geometria.ojos.anchura_izquierdo, '· boca', pp.geometria.boca.anchura, '· simetría', pp.geometria.simetria.asimetria_media, '· piel', pp.color.piel_mejillas.categoria_ita) : fail('pasaporte incompleto');
+  pp.observaciones.contorno.estado === 'OBSERVADO_POR_PROPIETARIO' && pp.observaciones.orejas.estado === 'PENDIENTE_DE_OBSERVACION' ? log('observaciones: solo lo escrito por el propietario; el resto PENDIENTE') : fail('observaciones ' + JSON.stringify(pp.observaciones.contorno));
+  !/data:image|base64/.test(raw) && !('descriptor' in pp) ? log('pasaporte sin imagen ni descriptor (' + raw.length + ' bytes)') : fail('el pasaporte contiene datos de imagen');
+  // 4 · fotograma a fotograma: el primer fotograma es Liora, pero el rostro desaparece a mitad de escena → RENDER RECHAZADO
+  const clipB64 = await page.evaluate(async () => {
+    const off = window.__liora.state.refs.find(r => r.official);
+    const img = new Image(); img.src = URL.createObjectURL(off.blob); await img.decode();
+    const c = document.createElement('canvas'); c.width = 540; c.height = 960; const g = c.getContext('2d');
+    const rec = new MediaRecorder(c.captureStream(30), { mimeType: 'video/webm' }); const ch = [];
+    rec.ondataavailable = e => ch.push(e.data); const done = new Promise(r => { rec.onstop = r; }); rec.start(200); const t0 = performance.now();
+    await new Promise(res => { const tick = () => { const t = (performance.now() - t0) / 1000; g.fillStyle = '#556'; g.fillRect(0, 0, 540, 960);
+      if (t < 1.0 || t > 2.4) g.drawImage(img, -138, 92, 819, 819); else { g.fillStyle = '#a87'; g.fillRect(120, 300, 300, 360); }
+      t < 3.4 ? requestAnimationFrame(tick) : res(); }; tick(); });
+    rec.stop(); await done;
+    return await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(',')[1]); fr.readAsDataURL(new Blob(ch, { type: 'video/webm' })); });
+  });
+  await page.click('nav button[data-t="produccion"]');
+  await page.click('#sceneList .scene:nth-child(1)');
+  await page.setInputFiles('#sceneDetail input[type=file]', { name: 'cambio.webm', mimeType: 'video/webm', buffer: Buffer.from(clipB64, 'base64') });
+  await page.waitForFunction(() => !!window.__liora.state.project.scenes[0].auto, null, { timeout: 180000 });
+  const auto = await page.evaluate(() => { const a = window.__liora.state.project.scenes[0].auto.identity; return { v: a.verdict, faceRatio: a.faceRatio, first: a.frameSeries[0] }; });
+  log('QC del clip con cambio:', JSON.stringify(auto));
+  await page.waitForTimeout(800);
+  const checks = page.locator('#sceneDetail label.check').filter({ hasNotText: 'Audio nativo' }).locator('input');
+  for (let k = 0; k < await checks.count(); k++) await checks.nth(k).check();
+  await page.fill('#sceneDetail input[placeholder="Nombre o iniciales"]', 'E2E');
+  await page.dispatchEvent('#sceneDetail input[placeholder="Nombre o iniciales"]', 'change');
+  await page.fill('#sceneDetail textarea[placeholder^="Segundo"]', 'Intento de aprobar un clip con cambio de rostro');
+  await page.dispatchEvent('#sceneDetail textarea[placeholder^="Segundo"]', 'change');
+  await page.waitForTimeout(150);
+  await page.click('#sceneDetail button:text-is("Aprobar")');
+  const msg = await page.textContent('#gateMsg');
+  const status = await page.evaluate(() => window.__liora.state.project.scenes[0].status);
+  /RENDER RECHAZADO/.test(msg) && status !== 'APROBADO' ? log('aprobación bloqueada:', msg.replace(/\s+/g, ' ').slice(0, 160)) : fail('se aprobó un clip que pierde el rostro a mitad de escena: ' + msg);
   await ctx.close();
 }
 

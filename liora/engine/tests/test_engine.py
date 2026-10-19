@@ -158,6 +158,7 @@ class Pipeline(unittest.TestCase):
         s1, s2 = m["scenes"]
         self.assertEqual(s2["start_image"], s1["last_frame"])
         self.assertEqual(s1["attempts"][0]["identity"]["verdict"], "pass")
+        self.assertTrue(s1["attempts"][0]["identity"]["frames"]["ok"], s1["attempts"][0]["identity"]["frames"])
         self.assertEqual(s1["attempts"][0]["safari_issues"], [])
         sm = json.loads((TMP / "work" / "studio" / "studio-manifest.json").read_text())
         self.assertEqual([x["file"] for x in sm["scenes"]], ["liora-01-inicial.mp4", "liora-02-piel.mp4"])
@@ -231,8 +232,43 @@ class IdentityLock(unittest.TestCase):
         self.assertEqual(IL.render_verdict(lock, "f" * 64, 0.2, True), IL.RENDER_RECHAZADO)
         self.assertEqual(IL.render_verdict(lock, m, 0.7, True), IL.RENDER_RECHAZADO)
         self.assertEqual(IL.render_verdict(lock, m, None, True), IL.RENDER_PENDIENTE)
-        self.assertEqual(IL.render_verdict(lock, m, 0.3, False), IL.RENDER_PENDIENTE)
-        self.assertEqual(IL.render_verdict(lock, m, 0.3, True), IL.RENDER_APROBADO)
+        frames = IL.frame_continuity([(i * 0.25, 0.3) for i in range(20)], duration=5)
+        self.assertEqual(IL.render_verdict(lock, m, 0.3, True), IL.RENDER_PENDIENTE)  # sin control fotograma a fotograma
+        self.assertEqual(IL.render_verdict(lock, m, 0.3, False, frames), IL.RENDER_PENDIENTE)
+        self.assertEqual(IL.render_verdict(lock, m, 0.3, True, frames), IL.RENDER_APROBADO)
+        bad = IL.frame_continuity([(0, 0.3), (1, 0.62), (2, 0.63), (3, 0.3), (4, 0.3)], duration=4)
+        self.assertEqual(IL.render_verdict(lock, m, 0.3, True, bad), IL.RENDER_RECHAZADO)
+
+    def test_fotograma_a_fotograma(self):
+        ok = [(i * 0.125, 0.25 + (i % 3) * 0.02) for i in range(40)]
+        self.assertTrue(IL.frame_continuity(ok, duration=5)["ok"])
+        self.assertIn("toda la escena", " ".join(IL.frame_continuity(ok[:8], duration=5)["problems"]))
+        swap = [(t, 0.6 if i in (20, 21) else d) for i, (t, d) in enumerate(ok)]
+        self.assertIn("2 fotogramas seguidos", " ".join(IL.frame_continuity(swap, duration=5)["problems"]))
+        gone = [(t, None if i % 3 == 0 else d) for i, (t, d) in enumerate(ok)]
+        self.assertIn("mínimo 80", " ".join(IL.frame_continuity(gone, duration=5)["problems"]))
+        self.assertTrue(IL.frame_continuity([(t, 0.58) for t, _ in ok], duration=5, tolerance=0.05)["ok"])
+
+    def test_historial_pasaporte_y_derivados(self):
+        lock = IL.load(sealed_lock(self.img, TMP / "lock-h.json"))
+        self.assertEqual([e["event"] for e in lock["history"]], ["SELLO_MAESTRO"])
+        pp = TMP / "pasaporte.json"
+        pp.write_text(json.dumps({"format": "liora-identity-passport-v1", "master_sha256": lock["master"]["sha256"]}))
+        v2 = IL.attach_passport(lock, pp)
+        self.assertEqual(([e["event"] for e in v2["history"]], v2["master"]["passport_sha256"]), (["SELLO_MAESTRO", "PASAPORTE"], IL.sha256_file(pp)))
+        self.assertEqual(IL.validate(v2), [])
+        ajeno = TMP / "pasaporte-ajeno.json"
+        ajeno.write_text(json.dumps({"format": "liora-identity-passport-v1", "master_sha256": "b" * 64}))
+        with self.assertRaisesRegex(IL.IdentityLockError, "maestro sellado"):
+            IL.attach_passport(lock, ajeno)
+        d = {"sha256": "c" * 64, "master_sha256": lock["master"]["sha256"], "state": IL.RENDER_APROBADO}
+        self.assertEqual(len(IL.register_derivative(lock, d)["derivatives"]), 1)
+        with self.assertRaisesRegex(IL.IdentityLockError, "otra referencia"):
+            IL.register_derivative(lock, dict(d, master_sha256="d" * 64))
+        with self.assertRaisesRegex(IL.IdentityLockError, "aprobados"):
+            IL.register_derivative(lock, dict(d, state=IL.RENDER_PENDIENTE))
+        v2["history"].pop()
+        self.assertIn("última versión", " ".join(IL.validate(v2)))
 
     def test_huella_identica_en_navegador_y_python(self):
         import shutil

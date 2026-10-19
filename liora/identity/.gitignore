@@ -1,2 +1,9 @@
 __pycache__/
 *.pyc
+# Privado: nunca al repositorio (la fotografía maestra y el pasaporte biométrico viven solo en el iPhone)
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.webp
+liora-pasaporte-identidad*.json

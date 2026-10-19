@@ -135,7 +135,10 @@ def render(job: dict, workdir: str | Path, backend_id: str, *, only: int | None 
             if check_identity:
                 idr = check_video(pack, out, stage_index=i, encoder=encoder)
                 att["identity"] = {k: v for k, v in idr.items() if k != "series"}
-                ok &= idr["verdict"] != "fail"
+                # Identity Lock: la identidad debe mantenerse en todos los fotogramas, no solo en el primero.
+                att["identity"]["frames"] = _identity_lock().frame_continuity(
+                    [(x["t"], x.get("distance")) for x in idr.get("series", [])], duration=info.get("duration"), tolerance=idr.get("tolerance", 0.0))
+                ok &= idr["verdict"] != "fail" and att["identity"]["frames"]["ok"]
             if check_continuity:
                 from .continuity import evaluate, profile
                 cont = evaluate(sc["key"], profile(out, mesh=mesh), prev_end)

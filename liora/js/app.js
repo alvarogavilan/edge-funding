@@ -8,6 +8,7 @@ import * as be from './backend.js';
 import * as C from './content.js';
 import { buildEclipseInstrumental, ECLIPSE_TITLE } from './music-original.js';
 import * as IL from '../identity/identity-lock.js';
+import * as PP from '../identity/passport.js';
 
 const $ = id => document.getElementById(id);
 const S = P.STATUS;
@@ -102,8 +103,58 @@ function renderLock() {
     h('p', { class: 'sub' }, 'Huella sellada: ' + (m ? m.sha256.slice(0, 16) + '…' : 'ninguna') + ' · Huella local: ' + (state.masterSha ? state.masterSha.slice(0, 16) + '…' : 'sin foto oficial en este dispositivo')),
     ls.state !== IL.REF.VERIFICADA ? h('p', { class: 'sub' }, 'Mientras la referencia no esté VERIFICADA no se aprueba ninguna escena (RENDER PENDIENTE).') : null,
     official && !m ? h('button', { onclick: sealOfficial }, 'Sellar identidad oficial') : null,
-    official && !m ? h('p', { class: 'sub' }, 'Genera un archivo con la huella SHA-256 y las medidas de la fotografía oficial (no contiene la imagen). Envíalo una sola vez para fijar el candado.') : null
+    official && !m ? h('p', { class: 'sub' }, 'Genera un archivo con la huella SHA-256 y las medidas de la fotografía oficial (no contiene la imagen). Envíalo una sola vez para fijar el candado.') : null,
+    official?.descriptor && [IL.REF.VERIFICADA, IL.REF.PENDIENTE_SELLO].includes(ls.state) ? h('button', { class: 'alt', style: 'margin-top:8px', onclick: makePassport }, 'Generar pasaporte biométrico (privado)') : null
   );
+  renderPassport();
+}
+
+// Pasaporte biométrico: medidas objetivas del maestro + observaciones humanas. Privado: solo sale del iPhone si lo exportas.
+async function makePassport() {
+  const official = state.refs.find(r => r.official);
+  if (!official?.blob || !(await ensureEngine())) return;
+  toast('Midiendo el rostro maestro…');
+  const img = await face.blobToImage(official.blob);
+  const canvas = face.drawToCanvas(img, 2048);
+  const res = await face.analyzeFace(canvas, { inputSize: 608 });
+  if (!res) { toast('No se detecta el rostro en la fotografía maestra.', 6000); return; }
+  const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+  const prev = await db.get('kv', 'identity_passport');
+  const pp = PP.buildPassport({ identity_id: state.lock?.identity_id || 'LIORA-VALE-0001', master_sha256: state.masterSha, image: { width: canvas.width, height: canvas.height }, face: res, pixels });
+  if (prev?.master_sha256 === pp.master_sha256) pp.observaciones = prev.observaciones; // conserva lo ya observado
+  await db.put('kv', 'identity_passport', pp);
+  renderPassport(); toast('Pasaporte generado. Completa las observaciones visuales.');
+}
+
+async function renderPassport() {
+  const box = $('passportPanel');
+  const pp = await db.get('kv', 'identity_passport');
+  if (!pp) { box.replaceChildren(); return; }
+  const stale = pp.master_sha256 !== state.masterSha;
+  const g = pp.geometria, c = pp.color;
+  const row = (k, v) => h('tr', {}, h('td', {}, k), h('td', {}, v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v)));
+  const pending = Object.values(pp.observaciones).filter(o => !o.texto).length;
+  box.replaceChildren(h('div', { class: 'note' + (stale ? ' bad' : '') },
+    h('b', {}, 'Pasaporte biométrico · ' + pp.identity_id), stale ? ' · NO corresponde a la foto oficial actual' : '',
+    h('p', { class: 'sub' }, 'Privado (dato biométrico). Medido el ' + pp.generated_at.slice(0, 16).replace('T', ' ') + ' sobre ' + pp.imagen.anchura + '×' + pp.imagen.altura + ' · confianza ' + pp.deteccion.confianza + ' · ' + pending + ' observaciones pendientes.'),
+    h('details', {}, h('summary', {}, 'Medidas objetivas'),
+      h('table', {}, h('tbody', {}, ...Object.entries(g).filter(([k]) => k !== 'normalizacion').flatMap(([grp, o]) => Object.entries(o).map(([k, v]) => row(grp + ' · ' + k.replaceAll('_', ' '), v))),
+        row('piel (mejillas)', c.piel_mejillas && `${c.piel_mejillas.categoria_ita} · ITA ${c.piel_mejillas.ita_grados}° · subtono ${c.piel_mejillas.subtono_orientativo}`),
+        row('iris dcho/izdo (L*a*b*)', [c.iris_derecho_lab, c.iris_izquierdo_lab]), row('labios (L*a*b*)', c.labios_lab))),
+      h('p', { class: 'sub' }, 'Proporciones con la distancia entre ojos = 1. ' + c.aviso)),
+    h('p', { class: 'sub' }, 'Observaciones visuales: escribe solo lo que se ve en la fotografía maestra; deja vacío lo que no se aprecie.'),
+    ...Object.entries(pp.observaciones).map(([k, o]) => h('label', {}, o.rasgo, h('textarea', { rows: 2, onchange: async e => {
+      const cur = await db.get('kv', 'identity_passport');
+      const t = e.target.value.trim();
+      cur.observaciones[k] = { ...cur.observaciones[k], texto: t || null, estado: t ? 'OBSERVADO_POR_PROPIETARIO' : 'PENDIENTE_DE_OBSERVACION', at: new Date().toISOString() };
+      await db.put('kv', 'identity_passport', cur);
+    } }, o.texto || ''))),
+    h('p', { class: 'sub' }, 'No medible automáticamente: ' + pp.no_medible_automaticamente.join('; ') + '.'),
+    h('button', { onclick: async () => {
+      const cur = await db.get('kv', 'identity_passport');
+      await media.shareOrDownload(new Blob([JSON.stringify(cur, null, 2)], { type: 'application/json' }), 'liora-pasaporte-identidad.json');
+    } }, 'Exportar pasaporte (privado)')
+  ));
 }
 
 async function sealOfficial() {
@@ -523,12 +574,14 @@ async function approveScene(i) {
   // Identity Lock: un render solo se aprueba con la referencia verificada, medición facial y revisión humana.
   const ls = lockState();
   const id = sc.auto?.identity;
+  const frames = id?.frameSeries ? IL.frameContinuity(id.frameSeries, { duration: sc.auto?.duration, tolerance: id.tolerance || 0 }) : null;
   const verdict = ls.state === IL.REF.VERIFICADA
-    ? IL.renderVerdict(state.lock, { master_sha256: state.masterSha, identity_distance: typeof id?.median === 'number' ? Math.max(0, id.median - (id.tolerance || 0)) : null, human_approved: true })
+    ? IL.renderVerdict(state.lock, { master_sha256: state.masterSha, identity_distance: typeof id?.median === 'number' ? Math.max(0, id.median - (id.tolerance || 0)) : null, human_approved: true, frames })
     : { state: IL.RENDER.PENDIENTE, reason: 'Identity Lock: ' + LOCK_LABEL[ls.state] + '. ' + ls.reason };
   if (verdict.state !== IL.RENDER.APROBADO) gate.problems.push(verdict.state.replace('_', ' ') + ': ' + verdict.reason);
   if (!gate.ok || verdict.state !== IL.RENDER.APROBADO) { $('gateMsg').replaceChildren(h('div', { class: 'note bad' }, h('b', {}, 'No se puede aprobar:'), h('ul', {}, gate.problems.map(x => h('li', {}, x))))); return; }
-  sc.identityLock = { identity_id: state.lock.identity_id, master_sha256: state.masterSha, clip_sha256: await IL.sha256Hex(await sceneClipBlob(sc)), state: verdict.state, at: new Date().toISOString() };
+  sc.identityLock = { identity_id: state.lock.identity_id, master_sha256: state.masterSha, clip_sha256: await IL.sha256Hex(await sceneClipBlob(sc)), state: verdict.state,
+    frames: { coverage: frames.coverage, worstRun: frames.worstRun, max: frames.max, sampled: frames.sampled }, at: new Date().toISOString() };
   P.transition(sc, S.APROBADO, `revisado por ${sc.reviewer}`);
   const att = sc.attempts.find(a => a.blobKey === sc.currentClip.blobKey); if (att) att.outcome = 'aprobado';
   await saveProject(); renderProject(); renderMontage(); toast('Escena aprobada. Su último fotograma es el punto de partida de la siguiente.');
