@@ -7,6 +7,7 @@ Un clip aceptado aquí queda en REVISIÓN: la aprobación final es humana (Liora
 from __future__ import annotations
 
 import json
+import os
 import platform
 import shutil
 import time
@@ -260,3 +261,77 @@ def smoke(workdir: str | Path, backend_id: str = "wan22-ti2v-5b", *, seconds: fl
         + (" · MODO PRUEBA DE CANALIZACIÓN (modelo diminuto aleatorio): NO es una generación" if test_only else ""))
     media.write_json(work / "evidence.json", ev)
     return ev
+
+
+def _free_disk_for_fallback(log=print, need_gb: float = 20.0) -> None:
+    """Si falta disco para los pesos de reserva, borra de la caché de Hugging Face los de Wan 2.2 (ya fallidos)."""
+    primary = os.environ.get("LIORA_WAN22_TI2V", "")
+    cache = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
+    if shutil.disk_usage(cache if cache.exists() else Path.home()).free / 1024 ** 3 >= need_gb:
+        return
+    repo_dir = next((p for p in Path(primary).parents if p.name.startswith("models--Wan-AI--Wan2.2")), None) if primary else None
+    if repo_dir and repo_dir.is_dir():
+        log(f"Disco insuficiente: se eliminan de la caché los pesos de Wan 2.2 ({repo_dir}) para descargar el motor de reserva.")
+        shutil.rmtree(repo_dir, ignore_errors=True)
+
+
+def _ensure_weights(spec: dict, log=print) -> dict:
+    """Descarga los pesos oficiales del motor de reserva si no están en disco y registra licencia y commit de la ficha."""
+    env = spec.get("model_env")
+    current = os.environ.get(env, "") if env else ""
+    if current and Path(current).is_dir():
+        return {"path": current, "downloaded": False}
+    from huggingface_hub import model_info, snapshot_download
+    t0 = time.time()
+    log(f"Descargando pesos oficiales de {spec['model']}…")
+    path = snapshot_download(spec["model"])
+    info = model_info(spec["model"])
+    if env:
+        os.environ[env] = path
+    return {"path": path, "downloaded": True, "download_s": round(time.time() - t0, 1), "hub_commit": info.sha,
+            "card_license": getattr(info.card_data, "license", None) if info.card_data else None}
+
+
+def smoke_with_fallback(workdir: str | Path, backend_id: str = "wan22-ti2v-5b", fallback_id: str | None = "wan21-vace-1.3b",
+                        log=print, **kw) -> dict:
+    """Ejecuta smoke con el motor principal y, si queda bloqueado, falla o da fotogramas inválidos, repite con el motor
+    de reserva en la misma sesión. evidence.json/liora-smoke.mp4 quedan con el resultado válido; el intento fallido se
+    conserva como evidence-<motor>.json para el informe."""
+    work = Path(workdir)
+    ev = smoke(work, backend_id, log=log, **kw)
+    if ev.get("generated") or not fallback_id or ev.get("test_mode"):
+        return ev
+    if ev.get("status") == "blocked" and "No hay GPU CUDA" in " ".join(ev.get("preflight", {}).get("issues", [])):
+        return ev  # sin GPU el motor de reserva tampoco puede ejecutarse
+    failed = work / f"evidence-{backend_id}.json"
+    shutil.copyfile(work / "evidence.json", failed)
+    log(f"{backend_id} no produjo un MP4 válido ({ev.get('status')}: {ev.get('error') or ev.get('preflight', {}).get('issues')}). "
+        f"Se prueba el motor de reserva {fallback_id}.")
+    # liberar la memoria del motor principal (RAM y GPU) antes de cargar el de reserva
+    import gc
+    gc.collect()
+    try:
+        import torch
+        torch.cuda.empty_cache()
+    except Exception:  # noqa: BLE001
+        pass
+    _free_disk_for_fallback(log)
+    from .backends import specs
+    spec = specs()[fallback_id]
+    try:
+        weights = _ensure_weights(spec, log)
+    except Exception as e:  # noqa: BLE001
+        ev["fallback"] = {"backend": fallback_id, "error": f"No se pudieron obtener los pesos: {type(e).__name__}: {e}"}
+        media.write_json(work / "evidence.json", ev)
+        return ev
+    d = spec.get("defaults", {})
+    kw2 = dict(kw)
+    if (kw.get("width", 704), kw.get("height", 1280), kw.get("fps", 24)) == (704, 1280, 24):
+        # resolución por defecto de Wan 2.2 → resolución nativa del motor de reserva (480×832 a 16 fps en VACE)
+        kw2.update(width=d.get("width", 704), height=d.get("height", 1280), fps=d.get("fps", 24))
+    ev2 = smoke(work, fallback_id, log=log, **kw2)
+    ev2["fallback_from"] = {"backend": backend_id, "status": ev.get("status"), "error": ev.get("error"),
+                            "issues": ev.get("preflight", {}).get("issues"), "evidence_file": failed.name}
+    ev2["weights"] = weights
+    media.write_json(work / "evidence.json", ev2)
+    return ev2
