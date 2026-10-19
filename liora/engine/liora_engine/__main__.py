@@ -79,6 +79,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("src")
     p.add_argument("dst")
     p.add_argument("--fit", choices=["cover", "contain"], default="cover")
+    p.add_argument("--song", help="Pista de audio que sustituye al sonido del clip (p. ej. la instrumental original)")
+    p.add_argument("--offset", type=float, default=0.0)
 
     a = ap.parse_args(argv)
 
@@ -139,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         _print({k: ev.get(k) for k in ("status", "generated", "total_s", "mp4", "params", "model_revision", "frame_health", "error")})
         return 0 if ev.get("generated") else 2
     if a.cmd == "conform":
-        info = media.encode_safari(a.src, a.dst, fit=a.fit)
+        info = media.encode_safari(a.src, a.dst, fit=a.fit, audio=a.song, audio_offset=a.offset)
         _print({**info, "safari_issues": media.safari_check(info), "sha256": media.sha256(a.dst)})
         return 0
     return 1

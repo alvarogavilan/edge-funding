@@ -56,17 +56,27 @@ def verify(out: Path) -> dict:
                       "safari_issues": media.safari_check(info), "frame_health": media.degenerate_frames(clip)}
         if evid and rep.get("generated"):
             rep["sha256_matches_evidence"] = rep["mp4"]["sha256"] == ev.get("mp4", {}).get("sha256")
-    rep["verified_real_mp4"] = bool(clip and rep.get("generated") and rep.get("sha256_matches_evidence")
+    model = str((rep.get("params") or {}).get("model", ""))
+    rep["real_wan22_weights"] = "Wan2.2-TI2V-5B" in model  # ruta de pesos reales (caché de Hugging Face), no el modelo diminuto
+    rep["verified_real_mp4"] = bool(clip and rep.get("generated") and rep["real_wan22_weights"] and rep.get("sha256_matches_evidence")
                                     and rep["mp4"]["frame_health"]["ok"] and not rep["mp4"]["safari_issues"])
     return rep
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out")
+    ap.add_argument("--verify-dir", help="Verificar una salida de Kaggle descargada a mano (no necesita credenciales)")
     ap.add_argument("--dry-run", action="store_true", help="Solo prepara la carpeta y comprueba credenciales")
     ap.add_argument("--max-hours", type=float, default=11.5)
     a = ap.parse_args()
+    if a.verify_dir:
+        rep = verify(Path(a.verify_dir))
+        media.write_json(Path(a.verify_dir) / "verificacion.json", rep)
+        print(json.dumps(rep, ensure_ascii=False, indent=2, default=str))
+        return 0 if rep["verified_real_mp4"] else 1
+    if not a.out:
+        ap.error("--out es obligatorio salvo con --verify-dir")
     out = Path(a.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     report = {"started_at": datetime.now(timezone.utc).isoformat(), "budget_eur": 0}

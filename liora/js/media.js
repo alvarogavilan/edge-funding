@@ -3,6 +3,14 @@ import { loadVideo, seek, canvasToBlob } from './qc.js';
 
 const Ctx = () => new (window.AudioContext || window.webkitAudioContext)();
 
+// iOS solo deja sonar un AudioContext creado o reanudado dentro del gesto del usuario:
+// llamar a esto en la primera línea del manejador del botón, antes de cualquier await.
+export function unlockAudio() {
+  const ac = Ctx();
+  try { ac.resume(); } catch { /* */ }
+  return ac;
+}
+
 export async function decodeAudio(blob) {
   const ctx = Ctx();
   try { return await ctx.decodeAudioData(await blob.arrayBuffer()); } finally { ctx.close?.(); }
@@ -58,13 +66,13 @@ function drawCover(ctx, v, W, H, mode) {
  * audio: 'clips' usa el sonido de cada clip; Blob usa la canción completa como pista única.
  * Es un render en tiempo real: un vídeo de 40 s tarda unos 40 s. La pantalla debe permanecer encendida.
  */
-export async function renderVertical(clips, { audio = 'clips', audioOffset = 0, W = 1080, H = 1920, fps = 30, bitrate = 12_000_000, mode = 'cover', onProgress = () => {} } = {}) {
+export async function renderVertical(clips, { audio = 'clips', audioOffset = 0, W = 1080, H = 1920, fps = 30, bitrate = 12_000_000, mode = 'cover', onProgress = () => {}, audioContext = null } = {}) {
   const mime = recorderMime();
   if (!mime) throw new Error('Este navegador no permite grabar vídeo (MediaRecorder). Actualiza iOS a 14.5 o superior.');
   const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
   const stream = canvas.captureStream(fps);
-  const ac = Ctx();
+  const ac = audioContext || Ctx();
   const dest = ac.createMediaStreamDestination();
   dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
   let song = null;
@@ -126,12 +134,30 @@ export function extOf(blob) { return /mp4/.test(blob.type) ? 'mp4' : /webm/.test
 export async function shareOrDownload(blob, filename) {
   const file = new File([blob], filename, { type: blob.type });
   if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: filename }); return 'shared'; } catch (e) { if (e.name === 'AbortError') return 'cancelled'; }
+    try { await navigator.share({ files: [file], title: filename }); return 'shared'; } catch (e) {
+      if (e.name === 'AbortError') return 'cancelled';
+      // Safari exige un gesto reciente: si se perdió por las lecturas previas, se ofrece un botón que lo renueva.
+      if (e.name === 'NotAllowedError') return tapToShare(file);
+    }
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
   return 'downloaded';
+}
+
+function tapToShare(file) {
+  return new Promise(resolve => {
+    const b = document.createElement('button');
+    b.textContent = 'Toca para guardar «' + file.name + '»';
+    b.style.cssText = 'position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:30';
+    b.onclick = () => {
+      navigator.share({ files: [file], title: file.name })
+        .then(() => resolve('shared'), e => resolve(e.name === 'AbortError' ? 'cancelled' : 'failed'))
+        .finally(() => b.remove());
+    };
+    document.body.appendChild(b);
+  });
 }
 
 export function blobToDataUrl(blob) {

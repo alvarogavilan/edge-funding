@@ -676,6 +676,7 @@ async function renderMontage() {
 $('renderMaster').onclick = async () => {
   const p = state.project;
   if (!P.projectReadyForMaster(p).ok) return;
+  const audioContext = media.unlockAudio(); // antes de cualquier await (requisito de iOS)
   const btn = $('renderMaster'); btn.disabled = true;
   try {
     const clips = [];
@@ -685,7 +686,7 @@ $('renderMaster').onclick = async () => {
       if (!p.audio?.blobKey || !p.audio.license?.ok) throw new Error('Para usar la canción completa, cárgala y confirma su licencia.');
       audio = await db.get('blobs', p.audio.blobKey); offset = p.scenes[0].audioRange?.[0] ?? p.audio.offset ?? 0;
     }
-    const blob = await media.renderVertical(clips, { audio, audioOffset: offset, onProgress: m => { $('renderLog').textContent = m; } });
+    const blob = await media.renderVertical(clips, { audio, audioOffset: offset, audioContext, onProgress: m => { $('renderLog').textContent = m; } });
     const key = db.uid('master'); await db.put('blobs', key, blob);
     const v = document.createElement('video'); v.src = URL.createObjectURL(blob);
     const duration = await new Promise(r => { v.onloadedmetadata = () => r(Number.isFinite(v.duration) ? v.duration : p.scenes.reduce((a, s) => a + s.seconds, 0)); v.onerror = () => r(null); });
