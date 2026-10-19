@@ -18,6 +18,19 @@ class Wan21VACE(Wan22TI2V):
     id = "wan21-vace-1.3b"
     role = "video"
 
+    def _placement(self) -> dict | None:
+        """VACE 1.3B prioriza una sola T4 incluso si Kaggle asigna dos.
+        Evita transferencias VAE entre cuda:0/cuda:1 y conserva la segunda libre.
+        Respeta LIORA_DEVICES cuando se especifica explícitamente.
+        """
+        import os
+        import torch
+        if os.environ.get("LIORA_DEVICES"):
+            return super()._placement()
+        if torch.cuda.is_available() and torch.cuda.get_device_properties(0).total_memory / 1024**3 >= 8:
+            return {"text_encoder": "cpu", "transformer": "cuda:0", "vae": "cuda:0"}
+        return super()._placement()
+
     def _pipeline_class(self, task: str):
         from diffusers import WanVACEPipeline
         return WanVACEPipeline
