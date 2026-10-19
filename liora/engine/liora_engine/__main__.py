@@ -73,6 +73,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--width", type=int, default=704)
     p.add_argument("--height", type=int, default=1280)
     p.add_argument("--seed", type=int, default=20261019)
+    p.add_argument("--image", help="Imagen SINTÉTICA de partida (imagen→vídeo). No usar la foto oficial fuera de entornos privados")
 
     p = sub.add_parser("conform", help="Convierte cualquier vídeo a MP4 1080×1920 compatible con Safari")
     p.add_argument("src")
@@ -134,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
         _print(pipeline.assemble(a.manifest, a.out, song=a.song, offset=a.offset))
         return 0
     if a.cmd == "smoke":
-        ev = pipeline.smoke(a.work, a.backend, seconds=a.seconds, steps=a.steps, width=a.width, height=a.height, seed=a.seed)
+        ev = pipeline.smoke(a.work, a.backend, seconds=a.seconds, steps=a.steps, width=a.width, height=a.height, seed=a.seed, start_image=a.image)
         _print({k: ev.get(k) for k in ("status", "generated", "total_s", "mp4", "params", "model_revision", "frame_health", "error")})
         return 0 if ev.get("generated") else 2
     if a.cmd == "conform":

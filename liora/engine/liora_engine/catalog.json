@@ -6,9 +6,9 @@
       "id": "wan22-ti2v-5b", "role": "video", "class": "wan22.Wan22TI2V", "status": "untested",
       "model": "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
       "capabilities": ["image-to-video", "text-to-video", "720p", "24fps", "4n+1 frames"],
-      "requirements": {"min_vram_gb_offload": 15, "official_vram_gb": 24, "min_ram_gb": 24, "disk_gb": 40},
+      "requirements": {"min_vram_gb_offload": 15, "official_vram_gb": 24, "min_ram_gb": 24, "disk_gb": 30},
       "license": {"spdx": "Apache-2.0", "commercial_use": true, "source": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt", "verified": false},
-      "notes": "Motor visual principal. 24 GB es la configuración oficial (4090 con offload). En 16 GB (T4/P100) se intenta con descarga secuencial a CPU: sin verificar."
+      "notes": "Motor visual principal. Con 2 × T4: codificador de texto en CPU (bf16), transformador en cuda:0 (fp16) y VAE en cuda:1 (fp32, teselado). Con 1 GPU de 15 GB: descarga de modelos a CPU. Sin verificar en GPU real."
     },
     {
       "id": "wan22-ti2v-5b-official", "role": "video", "class": "command", "status": "untested",

@@ -203,8 +203,9 @@ def _model_revision(model_id: str) -> str | None:
 
 def smoke(workdir: str | Path, backend_id: str = "wan22-ti2v-5b", *, seconds: float = 3.5, width: int = 704, height: int = 1280,
           fps: int = 24, steps: int = 30, guidance: float = 5.0, seed: int = 20261019, prompt: str = SMOKE_PROMPT,
-          backend=None, log=print) -> dict:
-    """Prueba P0: una escena real de texto→vídeo con una mujer ficticia (sin la imagen oficial)."""
+          start_image: str | Path | None = None, backend=None, log=print) -> dict:
+    """Prueba P0: escena real con una mujer ficticia. Sin imagen: texto→vídeo; con imagen sintética: imagen→vídeo.
+    Nunca debe recibir la foto oficial de Liora en servicios sin privacidad verificada."""
     from . import probe
     work = Path(workdir)
     work.mkdir(parents=True, exist_ok=True)
@@ -228,7 +229,9 @@ def smoke(workdir: str | Path, backend_id: str = "wan22-ti2v-5b", *, seconds: fl
         media.write_json(work / "evidence.json", ev)
         return ev
     raw, out = work / "smoke-raw.mp4", work / "liora-smoke.mp4"
-    req = GenerationRequest(out_path=raw, prompt=prompt, negative_prompt=json.loads(STAGES_FILE.read_text(encoding="utf-8"))["negative_prompt"],
+    if start_image:
+        ev["start_image"] = {"file": Path(start_image).name, "sha256": media.sha256(start_image)}
+    req = GenerationRequest(out_path=raw, prompt=prompt, start_image=Path(start_image) if start_image else None, negative_prompt=json.loads(STAGES_FILE.read_text(encoding="utf-8"))["negative_prompt"],
                             seconds=seconds, width=width, height=height, fps=fps, seed=seed, steps=steps, guidance=guidance)
     say(f"Generando {seconds} s a {width}×{height}, {steps} pasos, semilla {seed}…")
     t0 = time.time()
@@ -242,7 +245,9 @@ def smoke(workdir: str | Path, backend_id: str = "wan22-ti2v-5b", *, seconds: fl
     say(f"Generación terminada en {res.elapsed_s} s; normalizando para Safari…")
     info = media.encode_safari(raw, out, width=width, height=height, keep_audio=False)
     health = media.degenerate_frames(out)
-    ev.update(status="generated" if health["ok"] else "invalid_output", generated=health["ok"], total_s=round(time.time() - t0, 1),
+    test_only = bool(pre.facts.get("cpu_test_mode"))
+    status = "pipeline_test_only" if test_only else ("generated" if health["ok"] else "invalid_output")
+    ev.update(status=status, generated=health["ok"] and not test_only, test_mode=test_only, total_s=round(time.time() - t0, 1),
               generation_s=res.elapsed_s, params=res.params, environment=res.environment,
               model_revision=_model_revision(res.params.get("model", "")),
               raw={"file": raw.name, "sha256": media.sha256(raw), "frames": media.count_frames(raw), "probe": media.probe(raw)},
@@ -250,6 +255,7 @@ def smoke(workdir: str | Path, backend_id: str = "wan22-ti2v-5b", *, seconds: fl
                    "safari_issues": media.safari_check(info)},
               frame_health=health, finished_at=datetime.now(timezone.utc).isoformat())
     say(f"MP4 {out.name}: {info.get('width')}×{info.get('height')}, {info.get('duration')} s, sha256 {ev['mp4']['sha256'][:16]}… · "
-        f"fotogramas {'válidos' if health['ok'] else 'INVÁLIDOS: ' + ', '.join(health['issues'])}")
+        f"fotogramas {'válidos' if health['ok'] else 'INVÁLIDOS: ' + ', '.join(health['issues'])}"
+        + (" · MODO PRUEBA DE CANALIZACIÓN (modelo diminuto aleatorio): NO es una generación" if test_only else ""))
     media.write_json(work / "evidence.json", ev)
     return ev

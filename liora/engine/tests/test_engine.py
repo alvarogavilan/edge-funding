@@ -182,6 +182,39 @@ class Pipeline(unittest.TestCase):
             pipeline.render(job, TMP / "w2", "fixture", backend=FixtureZoomBackend())
 
 
+def _has_diffusers():
+    try:
+        import diffusers, torch  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+@unittest.skipUnless(_has_diffusers(), "diffusers/torch no instalados")
+class WanPipelinePlumbing(unittest.TestCase):
+    """Canalización Wan 2.2 diminuta con pesos aleatorios: valida carga, reparto, t2v/i2v y exportación. No es generación."""
+
+    def test_tiny_t2v_and_i2v(self):
+        import subprocess, sys
+        tiny = TMP / "tinywan"
+        subprocess.run([sys.executable, "tools/tiny_wan_pipeline.py", str(tiny)], check=True, capture_output=True)
+        env = {"LIORA_ALLOW_CPU": "1", "LIORA_DTYPE": "float32", "LIORA_DEVICES": "text_encoder=cpu,transformer=cpu,vae=cpu", "LIORA_WAN22_TI2V": str(tiny)}
+        old = {k: os.environ.get(k) for k in env}
+        os.environ.update(env)
+        try:
+            ev = pipeline.smoke(TMP / "tiny", seconds=1, steps=2, width=64, height=96)
+            self.assertEqual(ev["status"], "pipeline_test_only")
+            self.assertFalse(ev["generated"])
+            self.assertEqual(ev["mp4"]["frames"], 25)
+            self.assertEqual(ev["params"]["placement"]["transformer"], "cpu")
+            media.first_frame(TMP / "tiny" / "liora-smoke.mp4", TMP / "tiny.png")
+            ev2 = pipeline.smoke(TMP / "tiny-i2v", seconds=1, steps=2, width=64, height=96, start_image=TMP / "tiny.png")
+            self.assertEqual(ev2["params"]["task"], "image-to-video")
+        finally:
+            for k, v in old.items():
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+
 class Catalog(unittest.TestCase):
     def test_all_backends_load_and_preflight(self):
         for bid in specs():
