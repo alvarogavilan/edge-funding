@@ -1,0 +1,26 @@
+{
+  "pieza": "Teaser gráfico original (animación procedural; no es vídeo generado con IA ni imagen de Liora)",
+  "teaser": {
+    "archivo": "teaser-reina-del-eclipse.mp4",
+    "sha256": "80ce09eef17ef2d2e869d97662d5d7b8e815f47ae057f667a8479810b2dcfeaa",
+    "fotogramas": 360,
+    "probe": {
+      "path": "teaser-reina-del-eclipse.mp4",
+      "duration": 12.0,
+      "video_codec": "h264",
+      "pix_fmt": "yuv420p",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "audio_codec": "aac",
+      "faststart": true
+    },
+    "safari": []
+  },
+  "portadas": {
+    "portada-9x16.jpg": "6552ae736811cb592a6df1a5c8b2741aecf7483f84b89ca3b5ff0c4c3c67070e",
+    "portada-4x5.jpg": "9977efa1fc90cd76419e956303063b17d30043dcf38dabd22f85064514fce798"
+  },
+  "musica": "Instrumental original de Liora Studio (js/music-original.js), primeros 12 s",
+  "fuentes": "Caladea (Apache-2.0), Inter (OFL)"
+}
