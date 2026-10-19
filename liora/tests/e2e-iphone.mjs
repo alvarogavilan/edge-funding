@@ -123,6 +123,19 @@ log('datos persistidos tras recargar');
 await page.click('nav button[data-t="identidad"]');
 await page.screenshot({ path: OUT + '/e2e-identidad.png', fullPage: false });
 
+// 7) Publicaciones: solo archivos finales, con estado derivado de comprobaciones reales
+await page.click('nav button[data-t="publicar"]');
+await page.waitForFunction(() => document.querySelectorAll('#finalFiles .card.final').length >= 10, null, { timeout: 60000 });
+const finals = await page.$$eval('#finalFiles .card.final', cs => cs.map(c => ({ file: c.dataset.file, state: c.querySelector('.pill')?.textContent, reason: c.querySelector('.reason')?.textContent, dl: !!c.querySelector('a[download]') })));
+const teaser = finals.find(f => f.file === 'teaser-reina-del-eclipse.mp4');
+teaser?.state === 'NO PUBLICAR' && /RESERVADO/.test(teaser.reason) ? log('teaser: NO PUBLICAR ·', teaser.reason) : fail('teaser mal clasificado ' + JSON.stringify(teaser));
+const sc1 = finals.find(f => f.file.startsWith('liora-escena-001-'));
+sc1 && sc1.state === 'NO PUBLICAR' && /MP4/.test(sc1.reason) ? log('escena 001 (WebM de prueba):', sc1.state, '·', sc1.reason) : fail('escena 001 ' + JSON.stringify(sc1));
+const mst = finals.find(f => /^liora-la-reina-del-eclipse\./.test(f.file));
+mst?.state === 'REVISAR' ? log('máster (candado de prueba, escenas con RENDER APROBADO):', mst.state, '·', mst.reason) : fail('máster ' + JSON.stringify(mst));
+finals.every(f => f.dl) ? log(finals.length, 'archivos finales con enlace de descarga') : fail('falta enlace de descarga');
+await page.screenshot({ path: OUT + '/e2e-publicaciones.png', fullPage: true });
+
 const relevant = errors.filter(e => !/favicon/.test(e));
 if (relevant.length) { console.log('Errores de consola:', relevant); fail('errores en consola'); }
 await browser.close();

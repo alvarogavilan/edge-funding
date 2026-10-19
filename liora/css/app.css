@@ -69,3 +69,10 @@ th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertic
 #statusline{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 a{color:#efb1e2}
 footer{padding:22px;text-align:center;color:#af9fb6;font-size:12px}
+
+/* archivos finales */
+.card.final { display:grid; grid-template-columns:96px 1fr; gap:12px; align-items:start }
+.card.final .thumb img, .card.final .thumb video { width:96px; aspect-ratio:9/16; object-fit:cover; border-radius:8px; background:#000; display:block }
+.card.final .btn { display:block; text-align:center; margin-top:8px; padding:10px; border-radius:10px; text-decoration:none; background:var(--acc, #da76c0); color:#130e1c; font-weight:600 }
+.card.final .btn.alt { background:transparent; color:inherit; border:1px solid currentColor; font-weight:400 }
+.card.final textarea { width:100% }

@@ -1,0 +1,21 @@
+{
+  "format": "liora-catalogo-v1",
+  "items": [
+    {
+      "file": "teaser-reina-del-eclipse.mp4",
+      "title": "Teaser «La Reina del Eclipse»",
+      "kind": "grafico",
+      "sha256": "80ce09eef17ef2d2e869d97662d5d7b8e815f47ae057f667a8479810b2dcfeaa",
+      "mime": "video/mp4",
+      "width": 1080,
+      "height": 1920,
+      "duration": 12.0,
+      "thumb": "portada-9x16.jpg",
+      "extras": ["portada-9x16.jpg", "portada-4x5.jpg"],
+      "platforms": ["Instagram", "TikTok"],
+      "reserved": true,
+      "reserved_reason": "RESERVADO — NO PUBLICAR POR AHORA: animación gráfica que todavía no representa a Liora. No es su debut hiperrealista.",
+      "caption": "Cuando la luna cubra el sol, empezará la transformación. 🌑✨\nLa Reina del Eclipse · muy pronto.\nLiora Vale es una creadora virtual. Música original.\n\n#lioravale #makeuptransformation #fantasymakeup #eclipse #virtualinfluencer"
+    }
+  ]
+}

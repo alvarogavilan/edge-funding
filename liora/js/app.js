@@ -9,6 +9,7 @@ import * as C from './content.js';
 import { buildEclipseInstrumental, ECLIPSE_TITLE } from './music-original.js';
 import * as IL from '../identity/identity-lock.js';
 import * as PP from '../identity/passport.js';
+import * as EDT from './editorial.js';
 
 const $ = id => document.getElementById(id);
 const S = P.STATUS;
@@ -50,7 +51,7 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
   document.querySelectorAll('nav button').forEach(z => z.classList.toggle('on', z === b));
   document.querySelectorAll('.tab').forEach(z => z.classList.toggle('hidden', z.id !== b.dataset.t));
   try { localStorage.setItem('liora_tab', b.dataset.t); } catch { /* */ }
-  if (state.project) ({ montaje: renderMontage, audio: renderAudio, motores: renderModels, produccion: renderProject })[b.dataset.t]?.();
+  if (state.project) ({ montaje: renderMontage, audio: renderAudio, motores: renderModels, produccion: renderProject, publicar: renderFinals })[b.dataset.t]?.();
   window.scrollTo({ top: 0 });
 }));
 
@@ -867,6 +868,106 @@ $('dlCover').onclick = () => deliver('cover');
 $('dlText').onclick = () => deliver('text');
 
 /* ------------------------------------------------------------------ 5 · publicaciones */
+/* archivos finales: decisión editorial derivada de comprobaciones reales */
+function probeVideo(blob) {
+  return new Promise(res => {
+    const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true;
+    const done = r => { URL.revokeObjectURL(v.src); res(r); };
+    v.onloadedmetadata = () => done({ width: v.videoWidth, height: v.videoHeight, duration: Number.isFinite(v.duration) ? v.duration : null });
+    v.onerror = () => done({});
+    setTimeout(() => done({}), 8000);
+    v.src = URL.createObjectURL(blob);
+  });
+}
+
+// URL estable por archivo: solo se renueva si cambia su huella (evita revocar enlaces aún visibles).
+const finalUrls = new Map();
+function stableUrl(key, blob, sha) {
+  const c = finalUrls.get(key);
+  if (c?.sha === sha) return c.url;
+  if (c) URL.revokeObjectURL(c.url);
+  const url = URL.createObjectURL(blob);
+  finalUrls.set(key, { sha, url });
+  return url;
+}
+
+async function finalItems() {
+  const items = [];
+  try {
+    const cat = await (await fetch('lanzamiento/catalogo.json', { cache: 'no-store' })).json();
+    for (const it of cat.items) {
+      let sha = null;
+      try { const r = await fetch('lanzamiento/' + it.file, { cache: 'no-store' }); if (r.ok) sha = await IL.sha256Hex(await r.arrayBuffer()); } catch { /* sin conexión */ }
+      items.push({ ...it, name: it.file, href: 'lanzamiento/' + it.file, thumb: h('img', { src: 'lanzamiento/' + it.thumb, alt: 'Miniatura de ' + it.file }),
+        extras: (it.extras || []).map(f => ({ name: f, href: 'lanzamiento/' + f })), sha_expected: it.sha256, sha_actual: sha });
+    }
+  } catch { /* catálogo no disponible */ }
+  const p = state.project;
+  if (!p) return items;
+  const tags = C.DEFAULT_TAGS;
+  for (const [i, sc] of p.scenes.entries()) {
+    if (!sc.currentClip || ![S.APROBADO, S.EXPORTADO].includes(sc.status)) continue;
+    const blob = await sceneClipBlob(sc);
+    if (!blob) continue;
+    const name = `liora-escena-${String(i + 1).padStart(3, '0')}-${sc.key}.${/mp4/.test(blob.type) ? 'mp4' : 'webm'}`;
+    const sha = await IL.sha256Hex(blob);
+    const url = stableUrl('fin' + name, blob, sha);
+    items.push({ name, title: `${p.title} · ${sc.name}`, kind: 'liora', mime: blob.type, width: sc.auto?.width, height: sc.auto?.height, duration: sc.auto?.duration,
+      platforms: ['Instagram', 'TikTok'], href: url, thumb: h('video', { src: url + '#t=0.5', muted: true, playsinline: true, preload: 'metadata' }),
+      sha_expected: sc.identityLock?.clip_sha256 || null, sha_actual: sha,
+      identity: { master_sha256: sc.identityLock?.master_sha256, states: [sc.identityLock?.state] },
+      caption: `${p.title} · ${sc.name} ✨\n\nLiora Vale es una creadora virtual generada con IA. 🎨\n\n${tags.instagram.join(' ')}` });
+  }
+  const ex = p.exports?.at(-1);
+  const master = ex?.masterKey ? await db.get('blobs', ex.masterKey) : null;
+  if (master) {
+    const meta = await probeVideo(master);
+    const masters = new Set(p.scenes.map(s => s.identityLock?.master_sha256));
+    const name = `liora-${(p.title || 'master').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.${/mp4/.test(master.type) ? 'mp4' : 'webm'}`;
+    const sha = await IL.sha256Hex(master);
+    const url = stableUrl('fin' + name, master, sha);
+    items.push({ name, title: p.title + ' · máster', kind: 'liora', mime: master.type, width: meta.width, height: meta.height, duration: meta.duration ?? ex.duration,
+      platforms: ['Instagram', 'TikTok'], href: url, thumb: h('video', { src: url + '#t=0.5', muted: true, playsinline: true, preload: 'metadata' }),
+      sha_expected: null, sha_actual: sha,
+      identity: { master_sha256: masters.size === 1 ? [...masters][0] : null, states: p.scenes.map(s => s.identityLock?.state) },
+      caption: ex.captions?.instagram ?? C.caption(p, 'instagram') });
+  }
+  return items;
+}
+
+let finalsSeq = 0;
+async function renderFinals() {
+  const box = $('finalFiles');
+  if (!box) return;
+  const seq = ++finalsSeq;
+  const reviews = (await db.get('kv', 'editorial_reviews')) || {};
+  const ls = lockState();
+  const items = await finalItems();
+  if (seq !== finalsSeq) return; // otra actualización más reciente ya está en curso
+  const cls = { [EDT.ED.NO]: 'fail', [EDT.ED.REVISAR]: 'review', [EDT.ED.APTO]: 'pass' };
+  box.replaceChildren(...(items.length ? items.map(it => {
+    const d = EDT.decide({ ...it, review: reviews[it.sha_actual] || null }, { lockState: ls.state, lockSha: state.lock?.master?.sha256 });
+    return h('div', { class: 'card final', 'data-file': it.name },
+      h('div', { class: 'thumb' }, it.thumb),
+      h('div', {},
+        h('b', {}, it.name), h('div', { class: 'sub' }, it.title),
+        h('div', { class: 'sub' }, `${it.duration ? (+it.duration).toFixed(1) + ' s' : 'duración —'} · ${it.width && it.height ? it.width + '×' + it.height : 'resolución —'} · ${it.platforms.join(' y ')}`),
+        h('p', {}, pill(cls[d.state], d.state)), h('p', { class: 'sub reason' }, d.reason),
+        h('a', { class: 'btn', href: it.href, download: it.name }, 'Descargar ' + it.name),
+        ...(it.extras || []).map(x => h('a', { class: 'btn alt', href: x.href, download: x.name }, 'Descargar ' + x.name)),
+        d.state === EDT.ED.REVISAR ? h('button', { class: 'alt', onclick: async () => {
+          if (!confirm('Revisión editorial final de ' + it.name + ':\n\n• ' + EDT.REVIEW_CHECKS.join('\n• ') + '\n\n¿Confirmas todo lo anterior?')) return;
+          const by = (prompt('Nombre o iniciales de quien revisa:') || '').trim();
+          if (!by) return;
+          const cur = (await db.get('kv', 'editorial_reviews')) || {};
+          cur[it.sha_actual] = { by, at: new Date().toISOString(), sha256: it.sha_actual, file: it.name };
+          await db.put('kv', 'editorial_reviews', cur); renderFinals();
+        } }, 'Revisión editorial final') : null,
+        h('details', {}, h('summary', {}, 'Texto para publicar'), h('textarea', { rows: 6, readonly: true }, it.caption || '')),
+        h('div', { class: 'sub' }, 'SHA-256 ' + (it.sha_actual ? it.sha_actual.slice(0, 16) + '…' : '—'))));
+  }) : [h('p', { class: 'sub' }, 'Todavía no hay archivos finales.')]));
+}
+
 async function renderPubs() {
   const pubs = (await db.all('posts')).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   $('pubList').replaceChildren(...pubs.map(pb => {
@@ -1026,7 +1127,7 @@ async function boot() {
   await loadLock();
   await loadIdentityText();
   await loadProjects();
-  renderIdentity(); renderAll(); renderTrends(); renderPubs(); renderStorage();
+  renderIdentity(); renderAll(); renderTrends(); renderPubs(); renderFinals(); renderStorage();
   $('beUrl').value = be.backendUrl();
   try { const t = localStorage.getItem('liora_tab'); if (t) document.querySelector(`nav button[data-t="${t}"]`)?.click(); } catch { /* */ }
   // Si hay una oficial sin descriptor (p. ej. migrada), analizarla en cuanto cargue el motor.
