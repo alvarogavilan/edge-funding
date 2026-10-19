@@ -19,6 +19,19 @@ from . import __version__, media
 from .backends import BackendError, GenerationRequest, get
 
 STAGES_FILE = Path(__file__).resolve().parent / "stages.json"
+IDENTITY_LOCK = Path(__file__).resolve().parents[2] / "identity" / "identity-lock.json"
+
+
+def _identity_lock():
+    """Carga liora/identity/identity_lock.py (LIORA IDENTITY LOCK), fuera del paquete del motor."""
+    import importlib.util
+    import sys
+    if "liora_identity_lock" not in sys.modules:
+        spec = importlib.util.spec_from_file_location("liora_identity_lock", IDENTITY_LOCK.parent / "identity_lock.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        sys.modules["liora_identity_lock"] = mod
+    return sys.modules["liora_identity_lock"]
 
 
 def build_prompt(identity_text: str, setting: str, stage: dict, previous: list[dict]) -> str:
@@ -59,7 +72,7 @@ def _versions() -> dict:
 
 
 def render(job: dict, workdir: str | Path, backend_id: str, *, only: int | None = None, check_identity: bool = True,
-           check_continuity: bool = True, backend=None, log=print) -> dict:
+           check_continuity: bool = True, backend=None, identity_lock: str | Path = IDENTITY_LOCK, log=print) -> dict:
     work = Path(workdir)
     work.mkdir(parents=True, exist_ok=True)
     be = backend or get(backend_id)
@@ -77,6 +90,9 @@ def render(job: dict, workdir: str | Path, backend_id: str, *, only: int | None 
     pack = encoder = mesh = None
     if check_identity:
         from .identity import FaceEncoder, IdentityPack, check_video
+        # Identity Lock: sin maestro sellado (o con otra imagen) no se genera contenido facial de Liora.
+        lock = _identity_lock().require_master(job["official_image"], identity_lock)
+        manifest["identity_lock"] = {"identity_id": lock["identity_id"], "master_sha256": lock["master"]["sha256"], "lock_sha256": lock["lock_sha256"]}
         pack, encoder = IdentityPack.load(job["identity_pack"]), FaceEncoder()
         if media.sha256(job["official_image"]) != pack.official["sha256"]:
             raise ValueError("La imagen oficial del trabajo no coincide con la huella del paquete de identidad")

@@ -2,6 +2,7 @@
 // Uso: LIORA_URL=http://127.0.0.1:8765/liora/ FACE_IMG=/ruta/rostro.png PW=/ruta/node_modules/playwright-core node tests/e2e-iphone.mjs
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { routeSealedLock } from './sealed-lock.mjs';
 const require = createRequire(import.meta.url);
 const { chromium, devices } = require(process.env.PW || 'playwright-core');
 
@@ -19,6 +20,7 @@ page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('dialog', async d => { log('diálogo:', d.message().slice(0, 90)); await d.accept(d.type() === 'prompt' ? 'prueba e2e' : undefined); });
 
+await routeSealedLock(page, FACE);
 await page.goto(URL_);
 await page.waitForSelector('#statusline .pill');
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);

@@ -1,0 +1,16 @@
+{
+  "format": "liora-identity-lock-v1",
+  "identity_id": "LIORA-VALE-0001",
+  "display_name": "Liora Vale",
+  "handles": {"instagram": "@lioravalemakeup", "tiktok": "@lioravalemakeup"},
+  "status": "REFERENCIA_AUSENTE",
+  "master": null,
+  "lock_sha256": null,
+  "rules": [
+    "Una única mujer virtual para toda la vida de la marca.",
+    "Pueden cambiar maquillaje, expresión, ropa, peinado e iluminación; nunca la identidad facial.",
+    "La fotografía maestra es privada: solo se registra su SHA-256, nunca el archivo.",
+    "Ningún render se aprueba sin referencia verificada, medición facial y revisión humana."
+  ],
+  "derivatives": []
+}

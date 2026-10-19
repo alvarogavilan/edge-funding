@@ -1,6 +1,7 @@
 // Flujo de generación real de la interfaz contra el Worker ejecutado en local (tests/mock-backend.mjs, fal simulado).
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { routeSealedLock } from './sealed-lock.mjs';
 const require = createRequire(import.meta.url);
 const { chromium, devices } = require(process.env.PW || 'playwright-core');
 const URL_ = process.env.LIORA_URL || 'http://127.0.0.1:8765/liora/produccion.html';
@@ -12,6 +13,7 @@ const page = await ctx.newPage();
 const dialogs = [];
 page.on('dialog', async d => { dialogs.push(d.message()); await d.accept(d.type() === 'prompt' ? 'e2e' : undefined); });
 page.on('pageerror', e => fail('pageerror ' + e.message));
+await routeSealedLock(page, readFileSync(process.env.FACE_IMG));
 await page.goto(URL_);
 await page.selectOption('#refAngle', 'oficial');
 await page.setInputFiles('#refFile', { name: 'oficial.png', mimeType: 'image/png', buffer: readFileSync(process.env.FACE_IMG) });

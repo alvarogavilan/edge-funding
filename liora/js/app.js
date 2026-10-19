@@ -7,6 +7,7 @@ import * as media from './media.js';
 import * as be from './backend.js';
 import * as C from './content.js';
 import { buildEclipseInstrumental, ECLIPSE_TITLE } from './music-original.js';
+import * as IL from '../identity/identity-lock.js';
 
 const $ = id => document.getElementById(id);
 const S = P.STATUS;
@@ -39,7 +40,7 @@ const urls = new Map();
 function blobUrl(key, blob) { if (urls.has(key)) URL.revokeObjectURL(urls.get(key)); const u = URL.createObjectURL(blob); urls.set(key, u); return u; }
 
 /* ------------------------------------------------------------------ estado */
-const state = { refs: [], project: null, projects: [], cfg: null, verify: null, faceStatus: 'bajo demanda', polling: new Set() };
+const state = { refs: [], project: null, projects: [], cfg: null, verify: null, faceStatus: 'bajo demanda', polling: new Set(), lock: null, lockIssues: [], masterSha: null };
 
 async function saveProject() { await db.put('projects', state.project.id, state.project); }
 
@@ -55,7 +56,9 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
 function renderStatusLine() {
   const usable = usableRefs();
   const official = state.refs.find(r => r.official);
+  const ls = lockState();
   const items = [
+    pill(ls.state === IL.REF.VERIFICADA ? 'pass' : ls.state === IL.REF.PENDIENTE_SELLO ? 'review' : 'fail', 'Identity Lock: ' + LOCK_LABEL[ls.state]),
     official ? (official.descriptor ? pill('pass', 'Identidad fijada') : pill('review', 'Oficial sin analizar')) : pill('fail', 'Sin foto oficial'),
     pill(usable.length > 1 ? 'pass' : 'info', usable.length + ' referencias válidas'),
     pill(be.hasAccessKey() && state.cfg ? 'pass' : 'info', state.cfg ? (state.cfg.allowPaid ? 'Backend: gasto AUTORIZADO' : 'Backend: sin gasto') : 'Backend sin conectar'),
@@ -64,13 +67,63 @@ function renderStatusLine() {
   $('statusline').replaceChildren(...items);
 }
 
+/* ------------------------------------------------------------------ identity lock */
+const LOCK_LABEL = { [IL.REF.AUSENTE]: 'REFERENCIA AUSENTE', [IL.REF.VERIFICADA]: 'REFERENCIA VERIFICADA', [IL.REF.SUSTITUCION]: 'SUSTITUCIÓN BLOQUEADA',
+  [IL.REF.PENDIENTE_SELLO]: 'PENDIENTE DE SELLAR', SIN_MANIFIESTO: 'MANIFIESTO NO DISPONIBLE', INTEGRIDAD: 'INTEGRIDAD ROTA' };
+
+// Manifiesto canónico publicado (identity/identity-lock.json): solo huellas, nunca la imagen.
+async function loadLock() {
+  try {
+    const r = await fetch('identity/identity-lock.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    state.lock = await r.json();
+    state.lockIssues = await IL.validateLock(state.lock);
+  } catch (e) { state.lock = null; state.lockIssues = ['No se pudo leer el manifiesto: ' + e.message]; }
+}
+
+async function computeMasterSha() {
+  const official = state.refs.find(r => r.official);
+  state.masterSha = official?.blob ? await IL.sha256Hex(official.blob) : null;
+}
+
+function lockState() {
+  if (!state.lock) return { state: 'SIN_MANIFIESTO', reason: state.lockIssues[0] || 'Manifiesto no cargado.' };
+  if (state.lockIssues.length) return { state: 'INTEGRIDAD', reason: state.lockIssues.join('; ') };
+  return IL.referenceState(state.lock, state.masterSha);
+}
+
+function renderLock() {
+  const ls = lockState();
+  const m = state.lock?.master;
+  const official = state.refs.find(r => r.official);
+  $('lockPanel').replaceChildren(
+    h('b', {}, 'LIORA IDENTITY LOCK · ' + (state.lock?.identity_id || '—') + ' · '), pill(ls.state === IL.REF.VERIFICADA ? 'pass' : ls.state === IL.REF.PENDIENTE_SELLO ? 'review' : 'fail', LOCK_LABEL[ls.state]),
+    h('p', { class: 'sub' }, ls.reason),
+    h('p', { class: 'sub' }, 'Huella sellada: ' + (m ? m.sha256.slice(0, 16) + '…' : 'ninguna') + ' · Huella local: ' + (state.masterSha ? state.masterSha.slice(0, 16) + '…' : 'sin foto oficial en este dispositivo')),
+    ls.state !== IL.REF.VERIFICADA ? h('p', { class: 'sub' }, 'Mientras la referencia no esté VERIFICADA no se aprueba ninguna escena (RENDER PENDIENTE).') : null,
+    official && !m ? h('button', { onclick: sealOfficial }, 'Sellar identidad oficial') : null,
+    official && !m ? h('p', { class: 'sub' }, 'Genera un archivo con la huella SHA-256 y las medidas de la fotografía oficial (no contiene la imagen). Envíalo una sola vez para fijar el candado.') : null
+  );
+}
+
+async function sealOfficial() {
+  const official = state.refs.find(r => r.official);
+  if (!official?.blob) { toast('No hay fotografía oficial en este dispositivo.'); return; }
+  if (!confirm('¿Es esta la fotografía maestra aprobada de Liora? El sello la fija para siempre: ninguna otra imagen podrá sustituirla.')) return;
+  const img = await face.blobToImage(official.blob);
+  const seal = await IL.buildSeal(official.blob, { width: img.naturalWidth || img.width, height: img.naturalHeight || img.height, source: 'Liora Studio (Safari iPhone) · ' + (official.name || 'oficial') });
+  await db.put('kv', 'identity_seal', seal);
+  await media.shareOrDownload(new Blob([JSON.stringify(seal, null, 2)], { type: 'application/json' }), 'liora-sello-identidad.json');
+  toast('Sello generado. Huella ' + seal.sha256.slice(0, 12) + '…', 6000);
+}
+
 /* ------------------------------------------------------------------ 1 · identidad */
 const ANGLE_LABEL = { oficial: 'Fotografía oficial', frontal: 'Frontal', 'tres-cuartos-izq': '3/4 izquierda', 'tres-cuartos-der': '3/4 derecha', 'perfil-izq': 'Perfil izq.', 'perfil-der': 'Perfil der.', sonrisa: 'Sonrisa', cantando: 'Cantando', manos: 'Manos / plano medio' };
 
 function usableRefs() { return state.refs.filter(r => r.descriptor && (r.official || r.accepted)); }
 function refDescriptors() { return usableRefs().map(r => r.descriptor); }
 
-async function loadRefs() { state.refs = (await db.all('refs')).sort((a, b) => (b.official - a.official) || a.addedAt.localeCompare(b.addedAt)); }
+async function loadRefs() { state.refs = (await db.all('refs')).sort((a, b) => (b.official - a.official) || a.addedAt.localeCompare(b.addedAt)); await computeMasterSha(); }
 
 async function analyzeRef(ref) {
   const img = await face.blobToImage(ref.blob);
@@ -109,6 +162,10 @@ async function addRef(file, angle) {
   if (!file) return;
   const isOfficial = angle === 'oficial';
   const current = state.refs.find(r => r.official);
+  if (isOfficial && state.lock?.master && !IL.canBecomeOfficial(state.lock, await IL.sha256Hex(file))) {
+    toast('SUSTITUCIÓN BLOQUEADA: esta imagen no es la fotografía maestra sellada de Liora (' + state.lock.identity_id + ').', 7000);
+    return;
+  }
   const lock = await db.get('kv', 'identity_lock');
   if (isOfficial && current && lock) {
     const ok = prompt('La identidad oficial está bloqueada. Escribe CAMBIAR IDENTIDAD para sustituir la fotografía oficial (todas las escenas se tendrán que revalidar):');
@@ -159,6 +216,7 @@ function renderIdentity() {
       } }, 'Analizar rostro') : null
     );
   }));
+  renderLock();
   renderStatusLine();
 }
 
@@ -198,6 +256,9 @@ $('importIdentity').addEventListener('change', async e => {
   try {
     const pack = JSON.parse(await f.text());
     if (pack.format !== 'liora-identity-v1') throw new Error('Archivo no reconocido');
+    const packOfficial = pack.refs.find(r => r.official);
+    if (state.lock?.master && !(packOfficial && IL.canBecomeOfficial(state.lock, await IL.sha256Hex(await (await fetch(packOfficial.blob)).blob()))))
+      throw new Error('SUSTITUCIÓN BLOQUEADA: la foto oficial del paquete no es el maestro sellado');
     if (state.refs.some(r => r.official) && !confirm('Ya hay una identidad oficial. ¿Sustituir todas las referencias por las del paquete?')) return;
     for (const r of state.refs) await db.del('refs', r.id);
     for (const r of pack.refs) { const blob = await (await fetch(r.blob)).blob(); await db.put('refs', r.id, { ...r, blob }); }
@@ -459,7 +520,15 @@ async function runQc(i, logEl) {
 async function approveScene(i) {
   const sc = state.project.scenes[i];
   const gate = P.approvalGate(state.project, i);
-  if (!gate.ok) { $('gateMsg').replaceChildren(h('div', { class: 'note bad' }, h('b', {}, 'No se puede aprobar:'), h('ul', {}, gate.problems.map(x => h('li', {}, x))))); return; }
+  // Identity Lock: un render solo se aprueba con la referencia verificada, medición facial y revisión humana.
+  const ls = lockState();
+  const id = sc.auto?.identity;
+  const verdict = ls.state === IL.REF.VERIFICADA
+    ? IL.renderVerdict(state.lock, { master_sha256: state.masterSha, identity_distance: typeof id?.median === 'number' ? Math.max(0, id.median - (id.tolerance || 0)) : null, human_approved: true })
+    : { state: IL.RENDER.PENDIENTE, reason: 'Identity Lock: ' + LOCK_LABEL[ls.state] + '. ' + ls.reason };
+  if (verdict.state !== IL.RENDER.APROBADO) gate.problems.push(verdict.state.replace('_', ' ') + ': ' + verdict.reason);
+  if (!gate.ok || verdict.state !== IL.RENDER.APROBADO) { $('gateMsg').replaceChildren(h('div', { class: 'note bad' }, h('b', {}, 'No se puede aprobar:'), h('ul', {}, gate.problems.map(x => h('li', {}, x))))); return; }
+  sc.identityLock = { identity_id: state.lock.identity_id, master_sha256: state.masterSha, clip_sha256: await IL.sha256Hex(await sceneClipBlob(sc)), state: verdict.state, at: new Date().toISOString() };
   P.transition(sc, S.APROBADO, `revisado por ${sc.reviewer}`);
   const att = sc.attempts.find(a => a.blobKey === sc.currentClip.blobKey); if (att) att.outcome = 'aprobado';
   await saveProject(); renderProject(); renderMontage(); toast('Escena aprobada. Su último fotograma es el punto de partida de la siguiente.');
@@ -901,6 +970,7 @@ async function boot() {
   } catch (e) { toast('Migración: ' + e.message, 6000); }
   await loadRefs();
   for (const r of state.refs) evaluateAngle(r);
+  await loadLock();
   await loadIdentityText();
   await loadProjects();
   renderIdentity(); renderAll(); renderTrends(); renderPubs(); renderStorage();
@@ -915,4 +985,4 @@ async function boot() {
   }
 }
 boot();
-window.__liora = { state, db, P };
+window.__liora = { state, db, P, IL };

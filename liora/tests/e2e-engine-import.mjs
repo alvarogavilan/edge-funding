@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { routeSealedLock } from './sealed-lock.mjs';
 const require = createRequire(import.meta.url);
 const { chromium, devices } = require(process.env.PW || 'playwright-core');
 const URL_ = process.env.LIORA_URL || 'http://127.0.0.1:8765/liora/produccion.html';
@@ -33,6 +34,7 @@ const page = await (await browser.newContext({ ...devices['iPhone 13'] })).newPa
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('dialog', d => d.accept(d.type() === 'prompt' ? 'e2e' : undefined));
+await routeSealedLock(page, readFileSync(process.env.OFFICIAL));
 await page.goto(URL_);
 
 // Instrumental original vinculada automáticamente al proyecto «La Reina del Eclipse»

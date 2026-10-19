@@ -15,6 +15,15 @@ from liora_engine.backends.wan22 import frames_for
 
 FACE = os.environ.get("FACE_IMG")
 TMP = Path(tempfile.mkdtemp(prefix="liora-engine-test-"))
+IL = pipeline._identity_lock()
+
+
+def sealed_lock(image, dest) -> Path:
+    """Candado temporal sellado con una imagen de PRUEBA (nunca el manifiesto real)."""
+    seal = {"format": IL.SEAL_FORMAT, "identity_id": "LIORA-VALE-0001", "sha256": IL.sha256_file(image), "bytes": Path(image).stat().st_size,
+            "mime": "image/png", "width": None, "height": None, "source": "prueba automatizada", "sealed_at": "2026-10-19T00:00:00Z"}
+    IL.save(IL.apply_seal(IL.load(), seal), dest)
+    return Path(dest)
 
 
 def tone(path, seconds=12):
@@ -143,7 +152,8 @@ class Pipeline(unittest.TestCase):
         enroll(pack, off, official=True)
         pack.save(TMP / "p-pack.json")
         job = pipeline.plan(str(off), str(TMP / "p-pack.json"), scenes=2, seconds=2, steps=1)
-        m = pipeline.render(job, TMP / "work", "fixture", backend=FixtureZoomBackend())
+        m = pipeline.render(job, TMP / "work", "fixture", backend=FixtureZoomBackend(), identity_lock=sealed_lock(off, TMP / "lock.json"))
+        self.assertEqual(m["identity_lock"]["master_sha256"], media.sha256(off))
         self.assertEqual(m["status"], "completed", json.dumps(m["scenes"], default=str)[:1500])
         s1, s2 = m["scenes"]
         self.assertEqual(s2["start_image"], s1["last_frame"])
@@ -178,8 +188,64 @@ class Pipeline(unittest.TestCase):
             self.skipTest("depende de la prueba de cadena")
         Image.open(TMP / "p-oficial.png").convert("RGB").transpose(Image.FLIP_LEFT_RIGHT).save(TMP / "suplantada.png")
         job = pipeline.plan(str(TMP / "suplantada.png"), str(TMP / "p-pack.json"), scenes=1)
-        with self.assertRaises(ValueError):
-            pipeline.render(job, TMP / "w2", "fixture", backend=FixtureZoomBackend())
+        with self.assertRaisesRegex(IL.IdentityLockError, "SUSTITUCION_BLOQUEADA"):
+            pipeline.render(job, TMP / "w2", "fixture", backend=FixtureZoomBackend(), identity_lock=sealed_lock(TMP / "p-oficial.png", TMP / "lock2.json"))
+
+
+class IdentityLock(unittest.TestCase):
+    def setUp(self):
+        self.img = TMP / "maestro-prueba.png"
+        Image.fromarray(np.random.default_rng(1).integers(0, 255, (64, 48, 3), dtype=np.uint8)).save(self.img)
+
+    def test_manifiesto_publicado_integro_y_ausente(self):
+        lock = IL.load()
+        self.assertEqual(IL.validate(lock), [])
+        self.assertEqual((lock["status"], lock["master"]), (IL.AUSENTE, None))
+
+    def test_motor_se_niega_sin_maestro_sellado(self):
+        from tests.fixtures import FixtureZoomBackend
+        job = {"scenes": [{}], "official_image": str(self.img), "identity_pack": str(TMP / "no-existe.json")}
+        with self.assertRaisesRegex(IL.IdentityLockError, "REFERENCIA_AUSENTE"):
+            pipeline.render(job, TMP / "w-lock", "fixture", backend=FixtureZoomBackend(), check_continuity=False)
+
+    def test_sello_sustitucion_y_manipulacion(self):
+        path = sealed_lock(self.img, TMP / "lock-ok.json")
+        lock = IL.load(path)
+        self.assertEqual(IL.validate(lock), [])
+        self.assertEqual(IL.require_master(self.img, path)["identity_id"], "LIORA-VALE-0001")
+        otra = TMP / "otra.png"
+        Image.new("RGB", (8, 8), "red").save(otra)
+        with self.assertRaisesRegex(IL.IdentityLockError, "SUSTITUCION_BLOQUEADA"):
+            IL.require_master(otra, path)
+        with self.assertRaisesRegex(IL.IdentityLockError, "sustitución bloqueada"):
+            IL.apply_seal(lock, {"format": IL.SEAL_FORMAT, "identity_id": "LIORA-VALE-0001", "sha256": IL.sha256_file(otra)})
+        lock["master"]["sha256"] = "0" * 64
+        IL.save(lock, TMP / "lock-mal.json")
+        with self.assertRaisesRegex(IL.IdentityLockError, "no íntegro"):
+            IL.require_master(self.img, TMP / "lock-mal.json")
+
+    def test_veredicto_render(self):
+        lock = IL.load(sealed_lock(self.img, TMP / "lock-v.json"))
+        m = lock["master"]["sha256"]
+        self.assertEqual(IL.render_verdict(IL.load(), m, 0.2, True), IL.RENDER_PENDIENTE)
+        self.assertEqual(IL.render_verdict(lock, "f" * 64, 0.2, True), IL.RENDER_RECHAZADO)
+        self.assertEqual(IL.render_verdict(lock, m, 0.7, True), IL.RENDER_RECHAZADO)
+        self.assertEqual(IL.render_verdict(lock, m, None, True), IL.RENDER_PENDIENTE)
+        self.assertEqual(IL.render_verdict(lock, m, 0.3, False), IL.RENDER_PENDIENTE)
+        self.assertEqual(IL.render_verdict(lock, m, 0.3, True), IL.RENDER_APROBADO)
+
+    def test_huella_identica_en_navegador_y_python(self):
+        import shutil
+        import subprocess
+        if not shutil.which("node"):
+            self.skipTest("node no disponible")
+        path = sealed_lock(self.img, TMP / "lock-js.json")
+        js = (IL.LOCK_PATH.parent / "identity-lock.js").as_uri()
+        code = f"import {{ lockDigest, validateLock }} from '{js}'; const l = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'));"
+        code = code.replace("require('fs')", "(await import('node:fs'))") + " console.log(JSON.stringify([await lockDigest(l), await validateLock(l)]));"
+        out = subprocess.run(["node", "--input-type=module", "-e", code, str(path)], capture_output=True, text=True, check=True).stdout
+        digest, problems = json.loads(out)
+        self.assertEqual((digest, problems), (IL.load(path)["lock_sha256"], []))
 
 
 def _has_diffusers():
