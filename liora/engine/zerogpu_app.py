@@ -68,7 +68,9 @@ def render(image_path, prompt):
         digest = hashlib.sha256(exported.read_bytes()).hexdigest()
         return str(exported), "MP4 real generado; SHA-256: " + digest + ". Falta revisión visual y autorización comercial."
 
-PRIVATE_VERIFIED = os.environ.get("LIORA_PRIVATE_RUNTIME") == "1"\n\nwith gr.Blocks(title="Liora — prueba ZeroGPU 0 €") as demo:
+PRIVATE_VERIFIED = os.environ.get("LIORA_PRIVATE_RUNTIME") == "1"
+
+with gr.Blocks(title="Liora — prueba ZeroGPU 0 €") as demo:
     gr.Markdown("# Prueba experimental de vídeo real — Liora Engine\nNo garantiza GPU, privacidad de Space público ni generación dentro de cuota. No usar fotografía maestra confidencial hasta asegurar el acceso.")
     image = gr.Image(type="filepath", label="Imagen autorizada para la prueba", interactive=PRIVATE_VERIFIED)
     prompt = gr.Textbox(value="The fictional woman applies a makeup brush slowly to her cheek, realistic brush contact with skin, fixed identity, natural face motion, static camera.", label="Movimiento")
