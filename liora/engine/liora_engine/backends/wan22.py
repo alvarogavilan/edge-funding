@@ -31,7 +31,8 @@ class Wan22TI2V(Backend):
 
     def __init__(self, spec: dict):
         super().__init__(spec)
-        self.model_id = os.environ.get("LIORA_WAN22_TI2V", spec["model"])
+        self.model_id = os.environ.get(spec.get("model_env", "LIORA_WAN22_TI2V"), spec["model"])
+        self.label = spec.get("label", "Wan 2.2")
         self._pipe = None
         self._mode = self._task = None
         self._placement_used = None
@@ -99,18 +100,36 @@ class Wan22TI2V(Backend):
         if torch.cuda.device_count() >= 2 and all(
                 torch.cuda.get_device_properties(i).total_memory / 1024 ** 3 >= 14 for i in (0, 1)):
             return {"text_encoder": "cpu", "transformer": "cuda:0", "vae": "cuda:1"}
+        if torch.cuda.device_count() == 1 and self.spec.get("fits_single_gpu"):
+            return {"text_encoder": "cpu", "transformer": "cuda:0", "vae": "cuda:0"}
         return None
+
+    # Puntos de extensión para otros modelos de la familia Wan (p. ej. VACE).
+    def _pipeline_class(self, task: str):
+        from diffusers import WanImageToVideoPipeline, WanPipeline
+        return WanImageToVideoPipeline if task == "image-to-video" else WanPipeline
+
+    def _post_load(self, pipe) -> None:
+        pass
+
+    def _task_and_args(self, req: GenerationRequest, nf: int) -> tuple[str, dict]:
+        task = "image-to-video" if req.start_image else "text-to-video"
+        args = dict(prompt=req.prompt, negative_prompt=req.negative_prompt, height=req.height, width=req.width, num_frames=nf,
+                    num_inference_steps=req.steps, guidance_scale=req.guidance)
+        if req.start_image:
+            args["image"] = fit_image(req.start_image, req.width, req.height)
+        return task, args
 
     def _load(self, task: str, mode: str | None = None):
         """Carga una sola canalización a la vez (texto→vídeo o imagen→vídeo; mismos pesos)."""
         if self._pipe is not None and self._task == task and (mode is None or mode == self._mode):
             return self._pipe
         import torch
-        from diffusers import AutoencoderKLWan, WanImageToVideoPipeline, WanPipeline
+        from diffusers import AutoencoderKLWan
         from transformers import UMT5EncoderModel
         self._unload()
         dtype = self._dtype()
-        cls = WanImageToVideoPipeline if task == "image-to-video" else WanPipeline
+        cls = self._pipeline_class(task)
         placement = self._placement() if mode in (None, "split") else None
         vae = AutoencoderKLWan.from_pretrained(self.model_id, subfolder="vae", torch_dtype=torch.float32)
         if placement:
@@ -139,6 +158,7 @@ class Wan22TI2V(Backend):
             pipe.vae.enable_tiling()
         except Exception:  # noqa: BLE001
             pass
+        self._post_load(pipe)
         self._mode, self._task, self._dtype_name = mode, task, str(dtype).split(".")[-1]
         self._pipe = pipe
         return pipe
@@ -153,14 +173,10 @@ class Wan22TI2V(Backend):
     def generate(self, req: GenerationRequest) -> GenerationResult:
         pre = self.preflight()
         if not pre.ok:
-            raise BackendError("Wan 2.2 no ejecutable: " + "; ".join(pre.issues))
+            raise BackendError(f"{self.label} no ejecutable: " + "; ".join(pre.issues))
         import torch
         nf = frames_for(req.seconds, req.fps)
-        task = "image-to-video" if req.start_image else "text-to-video"
-        args = dict(prompt=req.prompt, negative_prompt=req.negative_prompt, height=req.height, width=req.width, num_frames=nf,
-                    num_inference_steps=req.steps, guidance_scale=req.guidance)
-        if req.start_image:
-            args["image"] = fit_image(req.start_image, req.width, req.height)
+        task, args = self._task_and_args(req, nf)
         t_load = time.time()
         self._load(task)
         load_s = time.time() - t_load

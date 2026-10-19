@@ -57,8 +57,9 @@ def verify(out: Path) -> dict:
         if evid and rep.get("generated"):
             rep["sha256_matches_evidence"] = rep["mp4"]["sha256"] == ev.get("mp4", {}).get("sha256")
     model = str((rep.get("params") or {}).get("model", ""))
-    rep["real_wan22_weights"] = "Wan2.2-TI2V-5B" in model  # ruta de pesos reales (caché de Hugging Face), no el modelo diminuto
-    rep["verified_real_mp4"] = bool(clip and rep.get("generated") and rep["real_wan22_weights"] and rep.get("sha256_matches_evidence")
+    # ruta de pesos reales (caché de Hugging Face), no el modelo diminuto de pruebas
+    rep["real_model_weights"] = next((m for m in ("Wan2.2-TI2V-5B", "Wan2.1-VACE-1.3B") if m in model), None)
+    rep["verified_real_mp4"] = bool(clip and rep.get("generated") and rep["real_model_weights"] and rep.get("sha256_matches_evidence")
                                     and rep["mp4"]["frame_health"]["ok"] and not rep["mp4"]["safari_issues"])
     return rep
 

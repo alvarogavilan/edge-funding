@@ -97,7 +97,8 @@ def render(job: dict, workdir: str | Path, backend_id: str, *, only: int | None 
             raw, out = sdir / f"attempt-{a + 1}-raw.mp4", sdir / f"attempt-{a + 1}.mp4"
             att = {"attempt": a + 1, "seed": seed}
             rec["attempts"].append(att)
-            req = GenerationRequest(out_path=raw, prompt=sc["prompt"], negative_prompt=sc.get("negative_prompt", ""), start_image=start_image,
+            refs = [Path(job["official_image"])] if "reference-images" in getattr(be, "spec", {}).get("capabilities", []) else []
+            req = GenerationRequest(out_path=raw, prompt=sc["prompt"], negative_prompt=sc.get("negative_prompt", ""), start_image=start_image, ref_images=refs,
                                     seconds=sc["seconds"], width=job["width"], height=job["height"], fps=job["fps"], seed=seed,
                                     steps=job["steps"], guidance=job["guidance"])
             log(f"[{sc['name']}] intento {a + 1} · semilla {seed} · generando con {be.id}…")

@@ -3,54 +3,251 @@
   "note": "status: untested = adaptador escrito pero nunca ejecutado con éxito; tested = generación real registrada en tests/results. license.verified=false: licencia tomada del repositorio oficial conocido, pendiente de confirmar la versión exacta descargada.",
   "backends": [
     {
-      "id": "wan22-ti2v-5b", "role": "video", "class": "wan22.Wan22TI2V", "status": "untested",
+      "id": "wan22-ti2v-5b",
+      "role": "video",
+      "class": "wan22.Wan22TI2V",
+      "status": "untested",
       "model": "Wan-AI/Wan2.2-TI2V-5B-Diffusers",
-      "capabilities": ["image-to-video", "text-to-video", "720p", "24fps", "4n+1 frames"],
-      "requirements": {"min_vram_gb_offload": 15, "official_vram_gb": 24, "min_ram_gb": 24, "disk_gb": 30},
-      "license": {"spdx": "Apache-2.0", "commercial_use": true, "source": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt", "verified": false},
+      "capabilities": [
+        "image-to-video",
+        "text-to-video",
+        "720p",
+        "24fps",
+        "4n+1 frames"
+      ],
+      "requirements": {
+        "min_vram_gb_offload": 15,
+        "official_vram_gb": 24,
+        "min_ram_gb": 24,
+        "disk_gb": 30
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "commercial_use": true,
+        "source": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt",
+        "verified": false
+      },
       "notes": "Motor visual principal. Con 2 × T4: codificador de texto en CPU (bf16), transformador en cuda:0 (fp16) y VAE en cuda:1 (fp32, teselado). Con 1 GPU de 15 GB: descarga de modelos a CPU. Sin verificar en GPU real."
     },
     {
-      "id": "wan22-ti2v-5b-official", "role": "video", "class": "command", "status": "untested",
-      "command": ["{python}", "generate.py", "--task", "ti2v-5B", "--size", "{size}", "--frame_num", "{frames}", "--ckpt_dir", "{ckpt}",
-                  "--offload_model", "True", "--convert_model_dtype", "--t5_cpu", "--image", "{image}", "--prompt", "{prompt}",
-                  "--base_seed", "{seed}", "--sample_steps", "{steps}", "--save_file", "{out}"],
-      "requirements": {"min_vram_gb_offload": 24, "min_ram_gb": 32},
-      "license": {"spdx": "Apache-2.0", "commercial_use": true, "source": "https://github.com/Wan-Video/Wan2.2", "verified": false},
+      "id": "wan22-ti2v-5b-official",
+      "role": "video",
+      "class": "command",
+      "status": "untested",
+      "command": [
+        "{python}",
+        "generate.py",
+        "--task",
+        "ti2v-5B",
+        "--size",
+        "{size}",
+        "--frame_num",
+        "{frames}",
+        "--ckpt_dir",
+        "{ckpt}",
+        "--offload_model",
+        "True",
+        "--convert_model_dtype",
+        "--t5_cpu",
+        "--image",
+        "{image}",
+        "--prompt",
+        "{prompt}",
+        "--base_seed",
+        "{seed}",
+        "--sample_steps",
+        "{steps}",
+        "--save_file",
+        "{out}"
+      ],
+      "requirements": {
+        "min_vram_gb_offload": 24,
+        "min_ram_gb": 32
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "commercial_use": true,
+        "source": "https://github.com/Wan-Video/Wan2.2",
+        "verified": false
+      },
       "notes": "Mismo modelo con el script oficial de Wan-Video (alternativa si diffusers falla)."
     },
     {
-      "id": "wan22-s2v-14b", "role": "singing", "class": "command", "status": "untested",
-      "command": ["{python}", "generate.py", "--task", "s2v-14B", "--size", "{size}", "--ckpt_dir", "{ckpt}", "--offload_model", "True",
-                  "--convert_model_dtype", "--prompt", "{prompt}", "--image", "{image}", "--audio", "{audio}", "--base_seed", "{seed}", "--save_file", "{out}"],
-      "requirements": {"min_vram_gb_offload": 48, "min_ram_gb": 64},
-      "license": {"spdx": "Apache-2.0", "commercial_use": true, "source": "https://github.com/Wan-Video/Wan2.2", "verified": false},
+      "id": "wan21-vace-1.3b",
+      "role": "video",
+      "class": "vace.Wan21VACE",
+      "status": "untested",
+      "model": "Wan-AI/Wan2.1-VACE-1.3B-diffusers",
+      "model_env": "LIORA_WAN21_VACE",
+      "label": "Wan 2.1 VACE 1.3B",
+      "fits_single_gpu": true,
+      "flow_shift": 3.0,
+      "capabilities": [
+        "image-to-video",
+        "text-to-video",
+        "reference-images",
+        "480p",
+        "16fps",
+        "4n+1 frames"
+      ],
+      "defaults": {
+        "width": 480,
+        "height": 832,
+        "fps": 16
+      },
+      "requirements": {
+        "min_vram_gb_offload": 8,
+        "min_ram_gb": 16,
+        "disk_gb": 30
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "commercial_use": true,
+        "source": "https://huggingface.co/Wan-AI/Wan2.1-VACE-1.3B-diffusers",
+        "verified": false
+      },
+      "notes": "Alternativa si Wan 2.2 5B falla en T4: 1,3 B parámetros en una sola T4 (fp16), codificador UMT5 en CPU. Menor calidad que Wan 2.2 5B (480p, 16 fps). Admite referencia de identidad. Sin probar en GPU real."
+    },
+    {
+      "id": "wan22-s2v-14b",
+      "role": "singing",
+      "class": "command",
+      "status": "untested",
+      "command": [
+        "{python}",
+        "generate.py",
+        "--task",
+        "s2v-14B",
+        "--size",
+        "{size}",
+        "--ckpt_dir",
+        "{ckpt}",
+        "--offload_model",
+        "True",
+        "--convert_model_dtype",
+        "--prompt",
+        "{prompt}",
+        "--image",
+        "{image}",
+        "--audio",
+        "{audio}",
+        "--base_seed",
+        "{seed}",
+        "--save_file",
+        "{out}"
+      ],
+      "requirements": {
+        "min_vram_gb_offload": 48,
+        "min_ram_gb": 64
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "commercial_use": true,
+        "source": "https://github.com/Wan-Video/Wan2.2",
+        "verified": false
+      },
       "notes": "Vídeo movido por audio con canto. 14B: fuera del alcance de las GPU gratuitas conocidas (16 GB)."
     },
     {
-      "id": "latentsync-1.6", "role": "lipsync", "class": "command", "status": "untested",
-      "command": ["{python}", "-m", "scripts.inference", "--unet_config_path", "configs/unet/stage2_512.yaml", "--inference_ckpt_path", "{ckpt}",
-                  "--inference_steps", "20", "--guidance_scale", "1.5", "--video_path", "{video}", "--audio_path", "{audio}", "--video_out_path", "{out}"],
-      "requirements": {"min_vram_gb_offload": 18, "min_ram_gb": 16},
-      "license": {"spdx": "Apache-2.0", "commercial_use": true, "source": "https://github.com/bytedance/LatentSync", "verified": false},
+      "id": "latentsync-1.6",
+      "role": "lipsync",
+      "class": "command",
+      "status": "untested",
+      "command": [
+        "{python}",
+        "-m",
+        "scripts.inference",
+        "--unet_config_path",
+        "configs/unet/stage2_512.yaml",
+        "--inference_ckpt_path",
+        "{ckpt}",
+        "--inference_steps",
+        "20",
+        "--guidance_scale",
+        "1.5",
+        "--video_path",
+        "{video}",
+        "--audio_path",
+        "{audio}",
+        "--video_out_path",
+        "{out}"
+      ],
+      "requirements": {
+        "min_vram_gb_offload": 18,
+        "min_ram_gb": 16
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "commercial_use": true,
+        "source": "https://github.com/bytedance/LatentSync",
+        "verified": false
+      },
       "notes": "Rehace la boca sobre un clip aprobado conservando manos y maquillaje. Entrenado con habla: el canto debe validarse. La versión 1.5 (256 px) necesita ~8 GB."
     },
     {
-      "id": "yue-s1-7b", "role": "music", "class": "command", "status": "untested", "output_glob": "*.mp3",
-      "command": ["{python}", "infer.py", "--cuda_idx", "0", "--stage1_model", "m-a-p/YuE-s1-7B-anneal-en-cot", "--stage2_model", "m-a-p/YuE-s2-1B-general",
-                  "--genre_txt", "{genre_txt}", "--lyrics_txt", "{lyrics_txt}", "--run_n_segments", "2", "--stage2_batch_size", "4", "--output_dir", "{out_dir}",
-                  "--max_new_tokens", "3000", "--seed", "{seed}"],
+      "id": "yue-s1-7b",
+      "role": "music",
+      "class": "command",
+      "status": "untested",
+      "output_glob": "*.mp3",
+      "command": [
+        "{python}",
+        "infer.py",
+        "--cuda_idx",
+        "0",
+        "--stage1_model",
+        "m-a-p/YuE-s1-7B-anneal-en-cot",
+        "--stage2_model",
+        "m-a-p/YuE-s2-1B-general",
+        "--genre_txt",
+        "{genre_txt}",
+        "--lyrics_txt",
+        "{lyrics_txt}",
+        "--run_n_segments",
+        "2",
+        "--stage2_batch_size",
+        "4",
+        "--output_dir",
+        "{out_dir}",
+        "--max_new_tokens",
+        "3000",
+        "--seed",
+        "{seed}"
+      ],
       "needs_ckpt": false,
-      "requirements": {"min_vram_gb_offload": 24, "min_ram_gb": 32},
-      "license": {"spdx": "Apache-2.0", "commercial_use": true, "source": "https://github.com/multimodal-art-projection/YuE", "verified": false},
+      "requirements": {
+        "min_vram_gb_offload": 24,
+        "min_ram_gb": 32
+      },
+      "license": {
+        "spdx": "Apache-2.0",
+        "commercial_use": true,
+        "source": "https://github.com/multimodal-art-projection/YuE",
+        "verified": false
+      },
       "notes": "Canción completa con voz desde letra + género (archivos .txt). Modelos publicados para inglés/chino/japonés/coreano: español no garantizado. La voz cambia entre canciones: no fija la voz de Liora por sí solo."
     }
   ],
   "excluded": [
-    {"model": "MusicGen / AudioCraft", "reason": "Pesos CC-BY-NC 4.0: uso no comercial"},
-    {"model": "Wav2Lip", "reason": "Licencia de uso no comercial/investigación"},
-    {"model": "InsightFace (antelopev2, buffalo_l) y derivados (LivePortrait con InsightFace, PuLID, InstantID)", "reason": "Modelos de InsightFace: uso no comercial"},
-    {"model": "dlib shape_predictor_68", "reason": "Entrenado con iBUG 300-W (no comercial); se usa el de 5 puntos"},
-    {"model": "APIs comerciales (fal, Veo, Kling, Runway…)", "reason": "Presupuesto 0 €"}
+    {
+      "model": "MusicGen / AudioCraft",
+      "reason": "Pesos CC-BY-NC 4.0: uso no comercial"
+    },
+    {
+      "model": "Wav2Lip",
+      "reason": "Licencia de uso no comercial/investigación"
+    },
+    {
+      "model": "InsightFace (antelopev2, buffalo_l) y derivados (LivePortrait con InsightFace, PuLID, InstantID)",
+      "reason": "Modelos de InsightFace: uso no comercial"
+    },
+    {
+      "model": "dlib shape_predictor_68",
+      "reason": "Entrenado con iBUG 300-W (no comercial); se usa el de 5 puntos"
+    },
+    {
+      "model": "APIs comerciales (fal, Veo, Kling, Runway…)",
+      "reason": "Presupuesto 0 €"
+    }
   ]
 }

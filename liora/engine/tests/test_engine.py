@@ -215,6 +215,33 @@ class WanPipelinePlumbing(unittest.TestCase):
                 os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
 
 
+@unittest.skipUnless(_has_diffusers(), "diffusers/torch no instalados")
+class VacePlumbing(unittest.TestCase):
+    """Wan 2.1 VACE diminuto (pesos aleatorios): t2v, primer fotograma fijo y referencia de identidad. No es generación."""
+
+    def test_tiny_vace_modes(self):
+        import subprocess, sys
+        from liora_engine.backends import get
+        from liora_engine.backends.base import GenerationRequest
+        tiny = TMP / "tinyvace"
+        subprocess.run([sys.executable, "tools/tiny_wan_pipeline.py", str(tiny), "--vace"], check=True, capture_output=True)
+        env = {"LIORA_ALLOW_CPU": "1", "LIORA_DTYPE": "float32", "LIORA_DEVICES": "text_encoder=cpu,transformer=cpu,vae=cpu", "LIORA_WAN21_VACE": str(tiny)}
+        old = {k: os.environ.get(k) for k in env}
+        os.environ.update(env)
+        try:
+            ev = pipeline.smoke(TMP / "vace", "wan21-vace-1.3b", seconds=1, steps=2, width=64, height=96, fps=16)
+            self.assertEqual(ev["status"], "pipeline_test_only")
+            self.assertEqual(ev["mp4"]["frames"], 17)
+            media.first_frame(TMP / "vace" / "liora-smoke.mp4", TMP / "vace.png")
+            r = get("wan21-vace-1.3b").generate(GenerationRequest(out_path=TMP / "vace-ref.mp4", prompt="she", start_image=TMP / "vace.png",
+                                                                  ref_images=[TMP / "vace.png"], seconds=1, width=64, height=96, fps=16, steps=2))
+            self.assertEqual(r.params["task"], "image-to-video+reference")
+            self.assertEqual(media.count_frames(TMP / "vace-ref.mp4"), 17)
+        finally:
+            for k, v in old.items():
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+
+
 class Catalog(unittest.TestCase):
     def test_all_backends_load_and_preflight(self):
         for bid in specs():
