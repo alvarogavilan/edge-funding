@@ -14,6 +14,7 @@ function prudent(c){
  try{const b=window.CVPrimeValuation?.bucket?.(c);return b&&["CONFIRMED","PROVISIONAL"].includes(b.bucket)?N(b.amount):0}catch{return 0}
 }
 function cost(c){
+ if(window.CVMoney){const r=window.CVMoney.remaining(c);return r.cents==null?0:r.cents/100}
  const q=Math.max(1,N(c.quantity)||1);
  if(c.landedCostUnit!=null&&N(c.landedCostUnit)>0)return N(c.landedCostUnit)*q;
  if(c.purchase!=null&&N(c.purchase)>=0)return (N(c.purchase)*q)+N(c.purchaseShipping)+N(c.purchaseFees);

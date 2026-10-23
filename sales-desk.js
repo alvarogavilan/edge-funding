@@ -71,7 +71,7 @@ function markSold(id){
  state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
  const snap={
   universe:c.universe||"pokemon",name:c.name||"",set:c.set||"",number:c.number||"",year:c.year||"",language:c.language||"",
-  variant:c.buyVariant||c.variant||"",condition:c.buyCondition||c.condition||c.grade||"",grading:c.grading||"RAW",grade:c.grade||"",cert:c.cert||"",
+  variant:c.buyVariant||c.variant||"",condition:c.buyCondition||c.condition||c.grade||"",grading:c.grading||"",grade:c.grade||"",cert:c.cert||"",
   referenceImage:c.referenceImage||"",photoKey:c.photoKey||"",quantity:1,purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",
   purchaseShipping:c.purchaseShipping??0,purchaseFees:c.purchaseFees??0,landedCostUnit:c.landedCostUnit??null,
   seller:c.buySeller||c.seller||"",purchaseUrl:c.buySourceUrl||c.marketPricing?.url||"",marketUrl:c.marketPricing?.url||c.buySourceUrl||"",

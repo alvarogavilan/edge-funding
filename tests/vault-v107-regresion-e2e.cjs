@@ -77,7 +77,7 @@ async function newPage(browser,opts={},mode='normal'){
   const cardId=await page.evaluate(()=>{const it=window.CVVault.allItems().find(i=>i.id==='rest-base1-2');it.listing={url:'https://shop.example/p/1',shop:'Tienda',seller:'S',price:40,country:'Alemania',zone:'ue'};
    const r=window.CVVault.engine.addToCollection(it,{price:40,costs:{shipping:6,vat:0,duty:0,handling:0,fxFee:NaN},costsPaid:'pagados',language:'Inglés',condition:'PO',date:'2026-10-20'});
    const c=window.CVStateBridge.get().cards;return r===true?c[c.length-1].id:null});
-  ok('Alta en colección con coste desconocido conservado como desconocido',!!cardId&&await page.evaluate(id=>{const c=window.CVStateBridge.get().cards.find(x=>x.id===id);return c.purchaseFees===null&&c.purchaseCosts.unknown.includes('fxFee')&&c.valuationStatus==='cost'},cardId));
+  ok('Alta en colección con coste desconocido conservado como desconocido',!!cardId&&await page.evaluate(id=>{const c=window.CVStateBridge.get().cards.find(x=>x.id===id);return c.purchaseFees===null&&c.costLot.status==='desconocido'&&c.costLot.unknown.includes('cambio / pago')&&c.costLot.totalCents===null&&c.valuationStatus==='cost'},cardId));
   const dup=await page.evaluate(()=>{const it=window.CVVault.allItems().find(i=>i.id==='rest-base1-2');return window.CVVault.engine.addToCollection(it,{price:40,costs:{},costsPaid:'pagados',date:'2026-10-20'})});
   ok('Misma compra registrada dos veces: bloqueada',dup==='dup');
   const answers=['95','8','5','Cardmarket','PED-1','prueba'];page.removeAllListeners('dialog');page.on('dialog',d=>d.type()==='prompt'?d.accept(answers.shift()):d.accept());

@@ -199,6 +199,7 @@ function salesList(it,cfg){
 }
 /* Escenario ESTIMADO: solo con referencias de tipo «estimación» que el usuario introduce. Nunca cambia el veredicto
    ni cuenta como venta; si faltan costes, no se calcula. */
+function boughtDate(id){const c=appState()?.cards?.find(x=>x.buyOpportunityId===id);return c?c.purchaseDate:user.bought?.[id]||""}
 function riskList(it,ec){
  const l=it.listing||{},r=[];if(!l.url&&!N(l.price))return r;
  if(ec.basis!=="venta")r.push("sin ventas cerradas comparables: salida no demostrada");
@@ -256,7 +257,7 @@ function card(ev,cfg){
   (safeUrl(l.url)?'<a class="v4btn primary" href="'+E(safeUrl(l.url))+'" target="_blank" rel="noopener noreferrer">'+(prec.ok?"Abrir anuncio":"Abrir ficha del producto")+' ↗</a>':'')+
   '<button type="button" class="v4btn '+(st.code==="comprobada"?"":"primary")+'" data-v4-verify="'+E(it.id)+'">'+(st.code==="objetivo"?"Registrar anuncio":"Comprobar ahora")+'</button>'+
   '<button type="button" class="v4btn" data-v4-sale="'+E(it.id)+'">Añadir venta real</button>'+
-  (N(l.price)>0&&st.code!=="objetivo"?(user.bought[it.id]?'<span class="v4btn off">Comprada el '+DAY(user.bought[it.id])+'</span>':'<button type="button" class="v4btn" data-v4-bought="'+E(it.id)+'">He comprado</button>'):'')+
+  (N(l.price)>0&&st.code!=="objetivo"?(boughtDate(it.id)?'<span class="v4btn off">Comprada el '+DAY(boughtDate(it.id))+'</span>':'<button type="button" class="v4btn" data-v4-bought="'+E(it.id)+'">He comprado</button>'):'')+
   (it.links?.cardmarket&&it.links.cardmarket!==safeUrl(l.url)?'<a class="v4btn" href="'+E(it.links.cardmarket)+'" target="_blank" rel="noopener noreferrer">Cardmarket ↗</a>':'')+
   (it.links?.tcgplayer?'<a class="v4btn" href="'+E(it.links.tcgplayer)+'" target="_blank" rel="noopener noreferrer">Ventas TCGplayer ↗</a>':'')+
  '</div>'+
@@ -373,7 +374,7 @@ function renderSales(){
  '<li><b>PSA · Auction Prices Realized</b> · ventas de cartas graduadas con fecha y casa de subastas. Para cartas restauradas no sirve como comparable directo.</li>'+
  '<li>No se usan datos de eBay ni de herramientas que solo recopilan eBay.</li></ul></details></section>'+
  (rows.length?Object.values(by).map(({it,list})=>'<article class="v4salecard"><h3>'+E(it.name)+'</h3><p class="v4id">'+E([it.set,it.number&&"nº "+it.number].filter(Boolean).join(" · "))+' · '+(it.lane==="restaurar"?"Comprar para restaurar":"Compra YA")+'</p>'+salesList({...it,sales:list},cfg)+'<div class="v4actions"><button type="button" class="v4btn" data-v4-sale="'+E(it.id)+'">Añadir venta real</button></div></article>').join(""):'<p class="v4empty big">Aún no hay referencias.</p>')+
- '<details class="v4settings"><summary>Copia de mis comprobaciones</summary><p>Tus comprobaciones, ventas añadidas y fichas propias se guardan en este iPhone. Exporta una copia para no perderlas.</p><div class="v4actions"><button type="button" class="v4btn" data-v4-export>Exportar copia</button><label class="v4btn">Importar copia<input type="file" accept="application/json" data-v4-import hidden></label></div></details>';
+ '<details class="v4settings"><summary>Exportación PARCIAL de oportunidades</summary><p>Solo incluye oportunidades, comprobaciones de anuncios, referencias de venta y fotos de anuncios. <b>No incluye tu colección, compras, ventas ni caja.</b> Para una copia completa usa «Copia de seguridad» en Datos (incluye también todo esto).</p><div class="v4actions"><button type="button" class="v4btn" data-v4-export>Exportar parcial</button><label class="v4btn">Importar copia<input type="file" accept="application/json" data-v4-import hidden></label></div></details>';
 }
 
 /* ---------- hoja de edición ---------- */
@@ -470,18 +471,37 @@ function boughtSheet(id){
 }
 /* Alta en Mi colección. Conserva cada coste con su estado (pagado / estimado / desconocido). Una carta para restaurar
    se valora a su coste: nunca hereda el precio de un ejemplar original sin alterar. */
+/* Alta en Mi colección (V109). Coste en lote canónico (cv-money.js), graduación separada del estado físico,
+   movimiento de compra en el libro y guardado CONFIRMADO: si el guardado falla, se deshace todo y se devuelve "nosave".
+   Idempotente: la misma compra (oportunidad + fecha + precio) no se registra dos veces. */
 function addToCollection(it,f){
- const st=appState();if(!st)return false;st.cards=Array.isArray(st.cards)?st.cards:[];
- if(st.cards.some(c=>c.buyOpportunityId===it.id&&c.purchaseDate===f.date&&c.purchase===f.price))return "dup";
- const l=it.listing||{},ref=economics(it,user.cfg),known=Object.values(f.costs).filter(Number.isFinite);
- const extras=known.reduce((a,b)=>a+b,0),unknown=Object.entries(f.costs).filter(([,v])=>!Number.isFinite(v)).map(([k])=>k);
- st.cards.push({id:"cv106-"+uid(),universe:it.game,name:it.name,set:it.set||"",number:it.number||"",language:f.language||"",grading:it.grade||"RAW",grade:f.condition||"",condition:f.condition||"",
+ const st=appState();if(!st)return false;st.cards=Array.isArray(st.cards)?st.cards:[];st.investmentLedger=Array.isArray(st.investmentLedger)?st.investmentLedger:[];
+ const M=window.CVMoney,G=window.CVGrade,l=it.listing||{},pc=M?M.cents(f.price):Math.round(f.price*100);
+ const opKey=it.id+"|"+f.date+"|"+pc;
+ if(st.cards.some(c=>c.buyOpKey===opKey||(c.buyOpportunityId===it.id&&c.purchaseDate===f.date&&c.purchase===f.price)))return "dup";
+ const status=f.costsPaid==="pagados"?"pagado":"estimado",na=l.notApplicable||[],ex={};
+ for(const k of ["shipping","vat","duty","handling","fxFee"]){const v=f.costs[k];ex[k]=Number.isFinite(v)?{eur:v,status:na.includes(k)&&v===0?"no-aplica":status}:null}
+ const lot=M?M.newLot({qty:1,unitPriceCents:pc,extras:ex,note:"Registrada con «He comprado»"}):null;
+ const gr=G?G.parse(l.grade||it.grade||""):{company:"",grade:""},ref=economics(it,user.cfg);
+ const sum=k=>["vat","duty","handling","fxFee"].reduce((a,x)=>a+(Number.isFinite(f.costs[x])?f.costs[x]:0),0);
+ const cardId="cv109-"+uid();
+ const card={id:cardId,universe:it.game,name:it.name,set:it.set||"",number:it.number||"",language:f.language||"",
+  grading:gr.company,grade:gr.company&&gr.company!=="RAW"?gr.grade:"",gradingRaw:l.grade||it.grade||"",gradingComplete:!!gr.complete,cert:l.cert||"",condition:f.condition||"",
   value:it.lane==="compra"&&ref.basis==="venta"&&ref.n>=2?ref.sale.low:f.price,valuationStatus:it.lane==="compra"&&ref.basis==="venta"&&ref.n>=2?"reference":"cost",
-  purchase:f.price,purchaseShipping:Number.isFinite(f.costs.shipping)?f.costs.shipping:null,purchaseFees:Number.isFinite(f.costs.fxFee)?f.costs.fxFee:null,
-  purchaseCosts:{...f.costs,status:f.costsPaid||"desconocido",fx:f.fx||{currency:"EUR",documented:true},unknown,knownTotal:f.price+extras,currency:"EUR",recordedAt:new Date().toISOString()},
-  quantity:1,purchaseDate:f.date,purpose:it.lane==="restaurar"?"restoration":"investment",referenceImage:safeUrl(it.image)||"",buySource:l.shop||"",buySourceUrl:safeUrl(l.url)||"",buySeller:l.seller||"",buyCountry:l.country||"",buyOpportunityId:it.id,
-  notes:(it.lane==="restaurar"?"Comprada para restaurar; valorada a coste hasta tener ventas comparables de cartas intervenidas. ":"")+"Costes "+(f.costsPaid||"sin clasificar")+(f.fx&&!f.fx.documented?"; cambio de divisa NO documentado ("+f.fx.currency+")":"")+(unknown.length?"; desconocidos: "+unknown.join(", "):"")+". Registrada desde Card Vault V108.",updatedAt:new Date().toISOString()});
- try{window.CVStateBridge.save();window.CVRenderCollection?.()}catch{st.cards.pop();return false}
+  purchase:f.price,purchaseShipping:Number.isFinite(f.costs.shipping)?f.costs.shipping:null,
+  purchaseFees:["vat","duty","handling","fxFee"].every(k=>Number.isFinite(f.costs[k]))?sum():null,
+  landedCostUnit:lot&&lot.totalCents!=null?lot.totalCents/100:null,costLot:lot,
+  purchaseCosts:{...f.costs,status:f.costsPaid||"desconocido",notApplicable:na,fx:f.fx||{currency:"EUR",documented:true},currency:"EUR",recordedAt:new Date().toISOString()},
+  quantity:1,purchaseDate:f.date,purpose:it.lane==="restaurar"?"restoration":"investment",referenceImage:safeUrl(it.image)||"",buySource:l.shop||"",buySourceUrl:safeUrl(l.url)||"",buySeller:l.seller||"",buyCountry:l.country||"",buyOpportunityId:it.id,buyOpKey:opKey,
+  notes:(it.lane==="restaurar"?"Comprada para restaurar; valorada a coste hasta tener ventas comparables de cartas intervenidas. ":"")+"Coste "+(lot?M.STATUS_TXT[lot.status]:"sin calcular")+(lot&&lot.unknown.length?" ("+lot.unknown.join(", ")+")":"")+(f.fx&&!f.fx.documented?"; cambio de divisa NO documentado ("+f.fx.currency+")":"")+". Registrada desde Card Vault V109.",updatedAt:new Date().toISOString()};
+ // Libro: sale de caja el precio y los gastos PAGADOS; los estimados quedan aparte y no afectan a la caja.
+ const paid=status==="pagado",row={id:"buy-"+cardId,type:"buy",assetType:"card",assetKey:"card:"+cardId,name:it.name+(gr.company&&gr.company!=="RAW"?" · "+gr.label:""),date:f.date,qty:1,unitPrice:f.price,
+  shipping:paid&&Number.isFinite(f.costs.shipping)?f.costs.shipping:0,fees:paid?sum():0,estimatedExtras:paid?0:(Number.isFinite(f.costs.shipping)?f.costs.shipping:0)+sum(),
+  costsPending:!lot||lot.status!=="pagado",cashImpact:true,buyOpportunityId:it.id,notes:"Compra registrada con «He comprado». "+(paid?"Gastos pagados.":"Gastos estimados: no salen de caja hasta confirmarlos."),updatedAt:new Date().toISOString()};
+ st.cards.push(card);st.investmentLedger.push(row);
+ const ok=window.CVStateBridge.save();
+ if(ok===false){st.cards.splice(st.cards.indexOf(card),1);st.investmentLedger.splice(st.investmentLedger.indexOf(row),1);return "nosave"}
+ try{window.CVRenderCollection?.()}catch{}
  return true;
 }
 /* Importación: fusiona sin borrar nada local. Fichas propias por id; referencias de venta sin duplicar;
@@ -538,15 +558,18 @@ async function submitInner(form){
   Object.assign(s,{transactionId:g("transactionId"),set:g("set"),number:g("number"),sameVariant:g("sameVariant")==="true",verified:g("verified")==="true",verifiedAt:new Date().toISOString(),restored:g("restored")==="unknown"?null:g("restored")==="true",sameIntervention:g("sameIntervention")==="true",grade:GRADE(g("grade")),fxRate:N(g("fxRate")),fxDate:g("fxDate"),fxSource:safeUrl(g("fxSource"))});
   const c=customRef(id);if(c)(c.sales=c.sales||[]).push(s);else (patch(id).sales=patch(id).sales||[]).push(s);
  }else if(kind==="bought"){
-  if(user.bought?.[id])return err("Esta compra ya está registrada.");
+  if(user.bought?.[id]||appState()?.cards?.some(c=>c.buyOpportunityId===id))return err("Esta compra ya está registrada en Mi colección.");
   const price=N(g("price"));if(!(price>0))return err("Indica el precio pagado.");
   const costs={};for(const k of ["shipping","vat","duty","handling","fxFee"]){costs[k]=g(k)===""?NaN:N(g(k));if(g(k)!==""&&!(costs[k]>=0))return err("Importe no válido.")}
   if(!g("costsPaid"))return err("Indica si los importes son pagados o estimados.");
   if(!g("date")||Date.parse(g("date"))>Date.now()+864e5)return err("Fecha de compra no válida.");
   const cur=g("currency")||"EUR",fx={currency:cur,originalTotal:N(g("originalTotal")),fxApplied:N(g("fxApplied")),fxDate:g("fxDate"),documented:cur==="EUR"||(N(g("fxApplied"))>0&&!!g("fxDate"))};
   const it=findItem(id),r=it&&addToCollection(it,{price,costs,fx,costsPaid:g("costsPaid"),language:g("language"),condition:g("condition"),date:g("date")});
-  if(r==="dup")return err("Esta compra ya está en Mi colección.");if(!r)return err("No se ha podido añadir a Mi colección.");
-  (user.bought=user.bought||{})[id]=g("date");
+  if(r==="dup")return err("Esta compra ya está en Mi colección.");
+  if(r==="nosave")return err(window.CVLastSaveError==="otra-pestana"?"No se ha guardado: otra pestaña o ventana tiene datos más recientes. La compra NO se ha registrado. Recarga esta pestaña y repítela.":"No se ha guardado: el almacenamiento del navegador está lleno o bloqueado. La compra NO se ha registrado y tus datos siguen como antes. Libera espacio o exporta una copia y vuelve a intentarlo.");
+  if(!r)return err("No se ha podido añadir a Mi colección.");
+  (user.bought=user.bought||{})[id]=g("date");try{localStorage.setItem(STORE,JSON.stringify(user))}catch{}
+  closeSheet();renderAll();toast("Guardada en Mi colección");return;
  }else if(kind==="new"){
   if(!g("name"))return err("Indica el nombre.");
   const img=g("image");if(img&&!safeUrl(img))return err("Enlace de imagen no válido.");
@@ -611,6 +634,15 @@ function migrateV103(){
 async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();refreshFx();resolveLorcanaImages();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
 setInterval(()=>{if(!document.getElementById("v4Sheet")||document.getElementById("v4Sheet").hidden)renderAll()},5*60*1000);
 function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Añadida a "+(x.lane==="restaurar"?"Comprar para restaurar":"Compra YA"));const tab=x.lane==="restaurar"?"comprar-restaurar":"radar";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
-window.CVVault={addCustom,fx:fxNow,funnel,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
+async function exportData(){await photoLoadAll();return {user:JSON.parse(JSON.stringify(user)),photos:{...photoCache}}}
+/* Importación desde la copia completa: fusiona sin borrar; fotos de anuncio solo si no hay una local con el mismo id. */
+async function importData(v){
+ if(!v||typeof v!=="object"||!v.user||typeof v.user!=="object")return {ok:true,added:0};
+ const r=mergeImport(user,v.user);let saved=false;try{localStorage.setItem(STORE,JSON.stringify(r.user));saved=true}catch{}
+ if(!saved)return {ok:false,added:0};
+ user=r.user;for(const [k,d] of Object.entries(v.photos||{}))if(!photoCache[k]&&/^data:image\//.test(d))await photoPut(k,d);
+ renderAll();return {ok:true,added:r.added};
+}
+window.CVVault={addCustom,fx:fxNow,funnel,exportData,importData,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(start,300));else setTimeout(start,300);
 })();

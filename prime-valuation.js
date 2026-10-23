@@ -45,7 +45,9 @@ function bucket(c){
  if(t.tier==="A")return out("CONFIRMED","Identidad + condición/grado + fuente ≤7 días");
  return out("PROVISIONAL",!t.condition?"Condición pendiente":"Evidencia ≤30 días sin cierre completo");
 }
+/* Coste unitario restante desde el cálculo canónico (cv-money.js). null = coste desconocido o en conflicto. */
 function basisUnit(c){
+ if(window.CVMoney){const r=window.CVMoney.remaining(c);return r.unitAvg}
  if(c.landedCostUnit!=null&&N(c.landedCostUnit)>0)return N(c.landedCostUnit);
  if(c.purchase!=null&&c.purchase!==""&&N(c.purchase)>=0)return N(c.purchase)+(N(c.purchaseShipping)+N(c.purchaseFees))/Math.max(1,N(c.quantity)||1);
  return null;

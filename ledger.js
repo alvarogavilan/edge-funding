@@ -58,21 +58,22 @@ function saleReconciled(r){
   String(r.fulfillmentStatus||"")===String(h.fulfillmentStatus||"")&&
   same(h.net,num(h.unitPrice)*num(h.qty||1)-num(h.shipping)-num(h.fees))&&!!h.cardSnapshot;
 }
-function confirmShipment(id){
+function guardedSave(bk){if(save()!==false)return true;if(bk)window.CVStateBridge.restore(bk);alert("NO se ha guardado: el almacenamiento del navegador ha fallado. El estado de la venta no ha cambiado; vuelve a intentarlo.");try{render()}catch{}return false}
+function confirmShipment(id){const bk=window.CVStateBridge?.snapshot?.();
  const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
  if(String(r.fulfillmentStatus||"")!=="sold-awaiting-shipment")return;
  if(!confirm("¿Confirmar que esta venta ya ha sido enviada? Pasará a COBRO PENDIENTE."))return;
  r.fulfillmentStatus="sold-awaiting-payment";r.shippedAt=new Date().toISOString();r.updatedAt=new Date().toISOString();
  const h=(state.saleHistory||[]).find(x=>x.id===id);if(h){h.fulfillmentStatus="sold-awaiting-payment";h.shippedAt=r.shippedAt}
- save();render();try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
+ if(!guardedSave(bk))return;render();try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
 }
-function confirmSaleCash(id){
+function confirmSaleCash(id){const bk=window.CVStateBridge?.snapshot?.();
  const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
  if(String(r.fulfillmentStatus||"")==="sold-awaiting-shipment"){alert("Primero confirma el envío. La venta aún está en ENVÍO PENDIENTE.");return}
  if(!confirm("¿Confirmar que esta venta ya está cobrada y puede entrar en caja disponible?"))return;
  r.fulfillmentStatus="paid-confirmed";r.paidAt=new Date().toISOString();r.updatedAt=new Date().toISOString();
  const h=(state.saleHistory||[]).find(x=>x.id===id);if(h){h.fulfillmentStatus="paid-confirmed";h.paidAt=r.paidAt}
- save();render();try{renderRebalance()}catch{}try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
+ if(!guardedSave(bk))return;render();try{renderRebalance()}catch{}try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
 }
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
