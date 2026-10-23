@@ -6,8 +6,8 @@ const store={};
 const win={};
 const ctx={window:win,document:{readyState:'complete',addEventListener(){},getElementById:()=>null,body:{classList:{add(){}}}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>{store[k]=String(v)}},
  setTimeout(){},setInterval(){},URL,Date,Number,String,Array,Object,Math,JSON,Intl,console};
-ctx.window=ctx;vm.createContext(ctx);
-for(const f of ['vault-data.js','vault-v104.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
+ctx.window=ctx;ctx.addEventListener=()=>{};vm.createContext(ctx);
+for(const f of ['vault-data.js','vault-v104.js','vault-radar.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
 const {status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,DEFAULTS}=ctx.CVVault.engine;
 const cfg={...DEFAULTS},now=Date.parse('2026-10-23T12:00:00Z');
 const base={id:'t',lane:'compra',game:'pokemon',name:'X',language:'Inglés',sales:[]};
@@ -31,4 +31,15 @@ t('envío de compra estimado si falta',()=>{const e=economics({...base,listing:L
 t('restaurada se rebaja respecto a sin alterar',()=>{const it={...base,lane:'restaurar',listing:L(),sales:[{kind:'venta',price:200,currency:'EUR'}]};const e=economics(it,cfg);assert.equal(e.unaltered.mid,200);assert.equal(e.sale.mid,150);assert.equal(e.sale.low,120);assert.equal(e.sale.high,180)});
 t('USD convertido con el cambio configurado',()=>{const e=economics({...base,listing:L(),sales:[{kind:'venta',price:100,currency:'USD'}]},cfg);assert.ok(Math.abs(e.sale.mid-86)<1e-9)});
 t('12 objetivos de restauración con imagen y enlaces',()=>{const r=ctx.CV_VAULT_DATA.restoreTargets;assert.equal(r.length,12);for(const x of r){assert.ok(/^https:\/\/images\.pokemontcg\.io\//.test(x.image));assert.ok(x.links.cardmarket&&x.links.tcgplayer);assert.ok(!isSearchUrl(x.links.tcgplayer))}});
+const R=ctx.CVRadar,c={...DEFAULTS},row=['sv03.5-199','Charizard ex','151','199','165','Special illustration rare','sv','sv'];
+t('radar: id TCGdex → pokemontcg',()=>{assert.equal(R.ptcgId('sv03.5-199'),'sv3pt5-199');assert.equal(R.ptcgId('base1-4'),'base1-4');assert.equal(R.ptcgId('swsh7-215'),'swsh7-215');assert.equal(R.ptcgId('me01-005'),'me1-5')});
+t('radar: margen conservador de restauración',()=>{const x=R.evaluatePk(row,{trend:300,avg30:280,avg7:290,low:90},c,false);assert.ok(Math.abs(x.restore.low-(280*0.6*0.95-5-90-6))<1e-9);assert.equal(x.pass,true)});
+t('radar: descarta por margen, precio bajo, duplicado y compra > 150 €',()=>{
+ assert.match(R.evaluatePk(row,{trend:60,avg30:58,low:55},c,false).reasons[0],/Margen/);
+ assert.match(R.evaluatePk(row,{trend:10,avg30:9,low:2},c,false).reasons[0],/< 20/);
+ assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:90},c,true).reasons[0],/Mi colección/);
+ assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:300},c,false).reasons[0],/150/)});
+t('radar: sin anuncios o sin media no hay señal',()=>{assert.equal(R.evaluatePk(row,{trend:300,avg30:300},c,false).pass,undefined);assert.equal(R.evaluatePk(row,{low:20},c,false).pass,undefined)});
+t('radar: volatilidad señalada como riesgo',()=>{assert.ok(R.evaluatePk(row,{trend:300,avg30:200,avg7:400,low:20},c,false).risks.length>=1)});
+t('radar: lectura del formato TCGdex',()=>{const p=R.parseTcgdex({pricing:{cardmarket:{trend:'12.5',avg30:10,low:2,updated:'2026-10-22'},tcgplayer:{holofoil:{marketPrice:20},normal:{marketPrice:5}}}});assert.equal(p.trend,12.5);assert.equal(p.usd,5);assert.equal(p.cmUpdated,'2026-10-22')});
 console.log('\n'+n+' pruebas del motor superadas');

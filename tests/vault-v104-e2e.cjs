@@ -16,7 +16,15 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  const ctx=await browser.newContext({...pw.devices['iPhone 13']});
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url();
   if(/images\.pokemontcg\.io\/base1\/15_hires/.test(u))return route.fulfill({status:404,body:''});
-  if(/images\.pokemontcg\.io/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
+  if(/images\.pokemontcg\.io|assets\.tcgdex\.net|lorcast\.io/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
+  // Respuestas SIMULADAS con el formato de las APIs públicas (no son datos de mercado):
+  if(/api\.frankfurter\.app/.test(u))return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({amount:1,base:'USD',date:'2026-10-23',rates:{EUR:0.9}})});
+  let m=u.match(/api\.tcgdex\.net\/v2\/en\/cards\/([^?]+)/);
+  if(m){const id=decodeURIComponent(m[1]);if(id==='base1-6')return route.fulfill({status:500,body:''});
+   const cm=id==='base1-4'||id==='base1-15'?{updated:'2026-10-22T00:00:00Z',unit:'EUR',trend:400,avg30:380,avg7:390,avg1:395,low:120}:id==='base1-2'?{updated:'2026-10-22T00:00:00Z',unit:'EUR',trend:12,avg30:11,low:3}:{updated:'2026-10-22T00:00:00Z',unit:'EUR',trend:60,avg30:58,avg7:59,low:55};
+   return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({id,pricing:{cardmarket:cm,tcgplayer:{updated:'2026-10-22',unit:'USD',holofoil:{marketPrice:500}}}})})}
+  if(/api\.lorcast\.com\/v0\/sets$/.test(u))return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({results:[{id:'s1',code:'1',name:'The First Chapter'}]})});
+  if(/api\.lorcast\.com\/v0\/sets\/1\/cards/.test(u))return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify([{id:'c1',name:'Elsa',version:'Spirit of Winter',collector_number:'207',rarity:'Enchanted',prices:{usd:null,usd_foil:'100.00'},tcgplayer_id:123,set:{name:'The First Chapter'},image_uris:{digital:{normal:'https://cards.lorcast.io/x.avif'}}},{id:'c2',name:'Cheap',collector_number:'1',rarity:'Common',prices:{usd:'0.10'}}])});
   return route.abort()});
  const page=await ctx.newPage();const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
@@ -73,9 +81,9 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
   await page.fill('#v4Sheet [name=url]','https://www.tcgplayer.com/product/42382/pokemon-base-set-charizard');
   await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(300);
  }
- // Cálculo esperado: ventas 600 y 700 USD ×0,86 = 516 / 602; restaurada ×0,6 / mediana 559×0,75 / ×0,9
+ // Cálculo esperado con cambio BCE simulado 0,9: 600/700 USD = 540/630; restaurada ×0,6 / mediana 585×0,75 / ×0,9
  const exp=(s)=>s*(0.95)-5-180.5-7;
- const want={low:exp(516*0.6),mid:exp(559*0.75),high:exp(602*0.9)};
+ const want={low:exp(540*0.6),mid:exp(585*0.75),high:exp(630*0.9)};
  const scen=await page.evaluate(i=>[...document.querySelectorAll('#card-'+i+' .v4scen tbody tr td:last-child')].map(td=>td.textContent),id);
  const parse=t=>Number(t.replace(/[^\d,−-]/g,'').replace('−','-').replace(',','.'));
  ok('Escenarios calculados con ventas cerradas (no con el anuncio)',Math.abs(parse(scen[0])-want.low)<0.02&&Math.abs(parse(scen[1])-want.mid)<0.02&&Math.abs(parse(scen[2])-want.high)<0.02,JSON.stringify({scen,want}));
@@ -91,6 +99,31 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  const vr=await page.textContent('#v4Sales');
  ok('Pestaña Ventas reales distingue tipos',/VENTA CERRADA/.test(vr)&&/DATO AGREGADO/.test(vr)&&/ANUNCIO ACTIVO/.test(vr));
  if(shots)await page.screenshot({path:path.join(shots,'4-ventas-reales.png')});
+ // 6b. He comprado → Mi colección
+ await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
+ const before=await page.evaluate(()=>window.CVStateBridge.get().cards.length);
+ await page.click('#card-'+id+' [data-v4-bought]');await page.waitForSelector('#v4Sheet form');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(400);
+ const after=await page.evaluate(()=>{const c=window.CVStateBridge.get().cards;return {n:c.length,last:c[c.length-1]}});
+ ok('He comprado añade la carta a Mi colección con su coste',after.n===before+1&&after.last.purchase===180.5&&after.last.purchaseShipping===7&&after.last.name==='Charizard',JSON.stringify(after.last).slice(0,160));
+ ok('Botón pasa a «Comprada»',/Comprada el/.test(await page.textContent('#card-'+id+' .v4actions')));
+ // 6c. Radar «En investigación» (APIs simuladas)
+ ok('El universo de cartas no se descarga al abrir la app',!(await page.evaluate(()=>!!window.CV_UNIVERSE)));
+ await page.click('.mainNav [data-tab="investigacion"]');await page.waitForSelector('[data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
+ await page.selectOption('[data-rd-group]','vintage');await page.click('[data-rd-scan]');
+ await page.waitForFunction(()=>/Última consulta/.test(document.getElementById('v4Radar').textContent),null,{timeout:120000});
+ const rd=await page.evaluate(()=>({first:document.querySelector('#v4Radar .v4card h3')?.textContent,n:document.querySelectorAll('#v4Radar .v4card').length,txt:document.getElementById('v4Radar').textContent}));
+ ok('Radar consulta el grupo vintage y registra fallos',/1 fallidas|1 fallida/.test(rd.txt),rd.txt.match(/Última consulta[^.]*\./)?.[0]);
+ ok('Top 1 del radar: Venusaur (Charizard excluido por estar ya en Mi colección)',rd.first==='Venusaur',String(rd.first));
+ ok('Radar nunca marca compra comprobada',!/COMPRA COMPROBADA/.test(rd.txt)&&/EN INVESTIGACIÓN/.test(rd.txt));
+ await page.click('[data-rd-view="disc"]');
+ ok('Descartadas con motivo (< 20 €) y duplicado de Mi colección',/\(< 20 €\)/.test(await page.textContent('#v4Radar'))&&/Charizard · Base Set nº 4\/102 — Ya está en Mi colección/.test(await page.textContent('#v4Radar')));
+ await page.click('[data-rd-view="top"]');
+ await page.click('[data-rd-lorcana]');await page.waitForFunction(()=>/Lorcana · referencia/.test(document.getElementById('v4Radar').textContent),null,{timeout:30000});
+ ok('Lorcana: referencia en € con cambio y sin beneficio inventado',/90,00\s€/.test(await page.textContent('#v4Radar details.v4old'))&&/no se calcula beneficio/.test(await page.textContent('#v4Radar details.v4old')));
+ await page.click('#v4Radar [data-rd-promote="base1-15|restaurar"]');await page.waitForTimeout(500);
+ const promo=await page.evaluate(()=>{const c=[...document.querySelectorAll('#v4Restore .v4card')].find(a=>/Radar/.test(a.textContent)||/Detectada por el radar/.test(a.textContent));return c?{status:c.querySelector('.v4status').textContent,profit:c.querySelector('.v4profit').textContent}:null});
+ ok('Promover desde el radar crea ficha en Restaurar sin beneficio (solo agregados)',promo&&promo.status==='OBJETIVO · SIN ANUNCIO'&&/—/.test(promo.profit),JSON.stringify(promo));
+ if(shots){await page.click('.mainNav [data-tab="investigacion"]');await page.waitForTimeout(300);await page.screenshot({path:path.join(shots,'5-investigacion.png')});const c1=await page.$('#v4Radar .v4card');if(c1)await c1.screenshot({path:path.join(shots,'6-radar-ficha.png')})}
  // 7. Persistencia y caducidad a las 24 h
  await page.reload({waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});await page.waitForTimeout(700);
  ok('Comprobación persiste tras recargar',(await page.locator('#card-'+id+' .v4status').textContent())==='COMPRA COMPROBADA');
@@ -99,7 +132,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.reload({waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});await page.waitForTimeout(500);
  ok('Pasadas 24 h pasa a CADUCADA',(await page.locator('#card-'+id+' .v4status').textContent())==='CADUCADA');
  // 8. Otras pestañas siguen funcionando
- for(const t of ['collection','sealed','pregrade','arbitraje','archive','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
+ for(const t of ['collection','sealed','pregrade','arbitraje','archive','investigacion','ventas-reales','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
  ok('Mi colección sigue con cartas',await page.evaluate(()=>window.CVStateBridge.get().cards.length>=15));
  ok('Sin errores de JavaScript',errors.length===0,errors.slice(0,5).join(' | '));
  await browser.close();server.close();

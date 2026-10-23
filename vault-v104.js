@@ -34,7 +34,7 @@ function listingPrecision(l){const u=safeUrl(l?.url);if(!u)return {ok:false,txt:
  return {ok:true,txt:"anuncio individual"}}
 
 /* ---------- configuración y datos del usuario ---------- */
-function readUser(){try{const x=JSON.parse(localStorage.getItem(STORE)||"{}");return {cfg:{...DEFAULTS,...(x.cfg||{})},patches:x.patches||{},custom:Array.isArray(x.custom)?x.custom:[],migratedV103:!!x.migratedV103}}catch{return {cfg:{...DEFAULTS},patches:{},custom:[]}}}
+function readUser(){try{const x=JSON.parse(localStorage.getItem(STORE)||"{}");return {cfg:{...DEFAULTS,...(x.cfg||{})},patches:x.patches||{},custom:Array.isArray(x.custom)?x.custom:[],migratedV103:!!x.migratedV103,fx:x.fx||null,bought:x.bought||{}}}catch{return {cfg:{...DEFAULTS},patches:{},custom:[]}}}
 let user=readUser();
 function writeUser(){try{localStorage.setItem(STORE,JSON.stringify(user));return true}catch{toast("No se ha podido guardar en este navegador (almacenamiento lleno o bloqueado).");return false}}
 
@@ -91,7 +91,9 @@ function merge(base){
 function allItems(){return [...baseItems(),...user.custom].map(merge)}
 
 /* ---------- motor ---------- */
-function toEUR(s,cfg){const p=N(s.price);if(!(p>0))return NaN;return String(s.currency||"EUR").toUpperCase()==="USD"?p*cfg.usdToEur:p}
+function fxNow(){const f=user.fx;return f&&f.rate>0?f:{rate:user.cfg.usdToEur,date:"",source:"manual"}}
+function toEUR(s,cfg){const p=N(s.price);if(!(p>0))return NaN;return String(s.currency||"EUR").toUpperCase()==="USD"?p*(cfg===user.cfg?fxNow().rate:cfg.usdToEur):p}
+async function refreshFx(){if(user.fx&&Date.now()-Date.parse(user.fx.fetchedAt||0)<12*3600e3)return;try{const r=await fetch("https://api.frankfurter.app/latest?from=USD&to=EUR",{cache:"no-store"});if(!r.ok)return;const j=await r.json();const rate=Number(j?.rates?.EUR);if(rate>0&&rate<2){user.fx={rate,date:j.date||"",source:"BCE vía frankfurter.app",fetchedAt:new Date().toISOString()};writeUser();renderAll()}}catch{}}
 function status(it,now,cfg){
  const l=it.listing;
  if(!l||!(safeUrl(l.url)||N(l.price)>0))return {code:"objetivo",label:"OBJETIVO · SIN ANUNCIO",missing:["registrar un anuncio concreto"]};
@@ -142,7 +144,7 @@ function photoBlock(it){
 function salesList(it,cfg){
  if(!it.sales.length)return '<p class="v4empty">Sin referencias de venta todavía.</p>';
  return '<ul class="v4sales">'+it.sales.map(s=>{const k=KIND[s.kind]||KIND.anuncio,eur=toEUR(s,cfg);
-  return '<li><span class="v4kind '+k[1]+'">'+k[0]+'</span><b>'+(String(s.currency).toUpperCase()==="USD"?E(N(s.price).toLocaleString("es-ES",{style:"currency",currency:"USD"}))+' ≈ '+EUR(eur):EUR(eur))+'</b>'+
+  return '<li><span class="v4kind '+k[1]+'">'+k[0]+'</span><b>'+(String(s.currency).toUpperCase()==="USD"?E(N(s.price).toLocaleString("es-ES",{style:"currency",currency:"USD"}))+' ≈ '+EUR(eur)+' <small>(cambio '+String(fxNow().rate).replace(".",",")+(fxNow().date?' BCE '+DAY(fxNow().date):' manual')+')</small>':EUR(eur))+'</b>'+
   '<span>'+E([s.date?DAY(s.date):"fecha de operación no registrada",s.condition&&"estado "+s.condition,s.language&&lang(s.language).flag+" "+lang(s.language).name,s.platform].filter(Boolean).join(" · "))+'</span>'+
   (s.note?'<small>'+E(s.note)+'</small>':'')+
   '<span class="v4row">'+(safeUrl(s.url)?'<a href="'+E(safeUrl(s.url))+'" target="_blank" rel="noopener noreferrer">Ver fuente ↗</a>':'<small>Sin enlace verificable</small>')+
@@ -178,6 +180,7 @@ function card(ev,cfg){
   (safeUrl(l.url)?'<a class="v4btn primary" href="'+E(safeUrl(l.url))+'" target="_blank" rel="noopener noreferrer">'+(prec.ok?"Abrir anuncio":"Abrir ficha del producto")+' ↗</a>':'')+
   '<button type="button" class="v4btn '+(st.code==="comprobada"?"":"primary")+'" data-v4-verify="'+E(it.id)+'">'+(st.code==="objetivo"?"Registrar anuncio":"Comprobar ahora")+'</button>'+
   '<button type="button" class="v4btn" data-v4-sale="'+E(it.id)+'">Añadir venta real</button>'+
+  (N(l.price)>0&&st.code!=="objetivo"?(user.bought[it.id]?'<span class="v4btn off">Comprada el '+DAY(user.bought[it.id])+'</span>':'<button type="button" class="v4btn" data-v4-bought="'+E(it.id)+'">He comprado</button>'):'')+
   (it.links?.cardmarket&&it.links.cardmarket!==safeUrl(l.url)?'<a class="v4btn" href="'+E(it.links.cardmarket)+'" target="_blank" rel="noopener noreferrer">Cardmarket ↗</a>':'')+
   (it.links?.tcgplayer?'<a class="v4btn" href="'+E(it.links.tcgplayer)+'" target="_blank" rel="noopener noreferrer">Ventas TCGplayer ↗</a>':'')+
  '</div>'+
@@ -218,7 +221,7 @@ function renderLane(lane){
  host.innerHTML='<section class="v4head"><span class="v4kicker">'+(isR?"POKÉMON · CARTAS DETERIORADAS · REVENTA COMO RESTAURADA":"POKÉMON + LORCANA · 20–100 € · OBJETIVO ≥ "+EUR(cfg.minProfit)+" · SIN EBAY")+'</span>'+
   '<h2>'+(isR?"Comprar para restaurar":"Compra YA")+'</h2>'+
   '<p>'+(isR?"Cartas baratas en mal estado cuya versión mejor conservada se vende bien. La reventa se calcula con ventas cerradas de ejemplares en mejor estado, rebajadas por ser carta restaurada. Se descuentan compra, comisiones y envíos; no tus materiales ni tus horas.":"Cada ficha muestra el anuncio, el precio de compra, la venta estimada a partir de ventas cerradas reales y el beneficio tras comisiones y envíos. Una compra comprobada no implica beneficio seguro.")+'</p>'+
-  summary(evs,lane,cfg,hiddenOwned)+
+  summary(evs,lane,cfg,hiddenOwned)+top3(live)+
   '<div class="v4filters" role="group" aria-label="Juego">'+[["all","Todas"],["pokemon","Pokémon"],["lorcana","Lorcana"]].map(([k,t])=>'<button type="button" data-v4-filter="'+k+'" class="'+(gameFilter===k?"on":"")+'">'+t+'</button>').join("")+
   '<button type="button" class="v4btn primary" data-v4-new="'+lane+'">+ Nueva oportunidad</button></div>'+
   '<p class="v4honest">Comprobación en directo: Card Vault no puede leer Cardmarket ni TCGplayer desde el navegador (lo bloquean). Pulsa «Comprobar ahora», abre el enlace, confirma precio, envío, vendedor, estado y stock, y la ficha queda fechada. Válido '+cfg.freshHours+' h.</p></section>'+
@@ -227,13 +230,17 @@ function renderLane(lane){
   settingsBlock(cfg);
  wireImages(host);
 }
+function top3(live){
+ const top=live.filter(e=>e.ec.net).slice(0,3);if(!top.length)return "";
+ return '<div class="v4top"><b>Las 3 mejores ahora</b>'+top.map((e,i)=>'<a href="#card-'+E(e.it.id)+'" class="t-'+e.vd.tone+'"><span>#'+(i+1)+' '+E(e.it.name)+'</span><strong>'+SIGNED(e.ec.net.mid)+'</strong><small>'+E(e.st.label)+' · '+E(e.vd.label)+'</small></a>').join("")+'</div>';
+}
 function settingsBlock(cfg){
  const f=(k,l,s)=>'<label>'+l+'<input inputmode="decimal" data-v4-cfg="'+k+'" value="'+E(String(cfg[k]).replace(".",","))+'"><small>'+s+'</small></label>';
  return '<details class="v4settings"><summary>Supuestos del cálculo (editables)</summary><div class="v4grid">'+
   f("feePct","Comisión de venta %","Cardmarket vendedor particular: 5 %. Ajusta si vendes en otra plataforma.")+
   f("sellShip","Envío de venta €","Estimado: envío certificado con seguimiento.")+
   f("buyShip","Envío de compra por defecto €","Solo se usa si el anuncio no indica envío (aparece como «estimado»).")+
-  f("usdToEur","Cambio USD → EUR","Para ventas en dólares (TCGplayer). Revisa el tipo actual.")+
+  f("usdToEur","Cambio USD → EUR manual",fxNow().source==="manual"?"Se usa este valor: no se pudo obtener el cambio del BCE.":"En uso el cambio del BCE "+String(fxNow().rate).replace(".",",")+" del "+DAY(fxNow().date)+"; este valor solo es reserva.")+
   f("minProfit","Beneficio mínimo €","Umbral para considerar la operación interesante.")+
   f("restLow","Restaurada · conservador","Fracción del precio de ejemplares sin alterar.")+
   f("restMid","Restaurada · central","")+f("restHigh","Restaurada · optimista","")+
@@ -314,6 +321,25 @@ function newSheet(lane){
  '<p class="v4note">Después pulsa «Registrar anuncio» y «Añadir venta real» en la ficha.</p>'+
  '<div class="v4actions"><button type="submit" class="v4btn primary">Crear ficha</button><button type="button" class="v4btn" data-v4-close>Cancelar</button></div><p class="v4err" aria-live="polite"></p></form>');
 }
+function boughtSheet(id){
+ const it=findItem(id);if(!it)return;const l=it.listing||{};
+ sheet('<h3>He comprado</h3><p class="v4id">'+E(it.name)+' · '+E([it.set,it.number].filter(Boolean).join(" · "))+'</p><p class="v4note">Solo confirma si ya has pagado. La carta se añadirá a Mi colección con estos datos.</p>'+
+ '<form data-v4-form="bought" data-id="'+E(id)+'" class="v4form">'+fld("price","Precio pagado €",N(l.price)>0?String(l.price).replace(".",","):"",'inputmode="decimal" required')+
+ fld("shipping","Envío y comisiones de compra €",N(l.shipping)>=0?String(l.shipping).replace(".",","):"",'inputmode="decimal"')+
+ sel("language","Idioma recibido",lang(l.language||it.language).known?lang(l.language||it.language).name:"",LANG_OPTS)+sel("condition","Estado",l.condition||"",COND_OPTS)+
+ fld("date","Fecha de compra",new Date().toISOString().slice(0,10),'type="date" required')+
+ '<div class="v4actions"><button type="submit" class="v4btn primary">Añadir a Mi colección</button><button type="button" class="v4btn" data-v4-close>Cancelar</button></div><p class="v4err" aria-live="polite"></p></form>');
+}
+function addToCollection(it,f){
+ const st=appState();if(!st)return false;st.cards=Array.isArray(st.cards)?st.cards:[];
+ const l=it.listing||{},ref=economics(it,user.cfg);
+ st.cards.push({id:"cv105-"+uid(),universe:it.game,name:it.name,set:it.set||"",number:it.number||"",language:f.language||"",grading:"RAW",grade:f.condition||"",condition:f.condition||"",
+  value:ref.basis==="venta"?(it.lane==="restaurar"?ref.unaltered.mid:ref.sale.mid):f.price,valuationStatus:ref.basis==="venta"?"reference":"cost",purchase:f.price,purchaseShipping:f.shipping,purchaseFees:0,quantity:1,purchaseDate:f.date,
+  purpose:it.lane==="restaurar"?"restoration":"investment",referenceImage:safeUrl(it.image)||"",buySource:l.shop||"",buySourceUrl:safeUrl(l.url)||"",buySeller:l.seller||"",buyOpportunityId:it.id,
+  notes:(it.lane==="restaurar"?"Comprada para restaurar. ":"")+"Registrada desde Card Vault V105.",updatedAt:new Date().toISOString()});
+ try{window.CVStateBridge.save();window.CVRenderCollection?.()}catch{return false}
+ return true;
+}
 function patch(id){return user.patches[id]=user.patches[id]||{}}
 function customRef(id){return user.custom.find(c=>c.id===id)}
 async function submit(form){
@@ -337,22 +363,28 @@ async function submit(form){
   const url=g("url");if(url&&!safeUrl(url))return err("Enlace no válido (https, sin eBay).");
   const s={id:uid(),kind:g("kind"),price,currency:g("currency"),date:g("date"),condition:g("condition"),language:g("language"),platform:g("platform"),url:safeUrl(url),note:g("note")+(url?"":(g("note")?" · ":"")+"Sin enlace: precio no verificable por terceros."),addedBy:"usuario"};
   const c=customRef(id);if(c)(c.sales=c.sales||[]).push(s);else (patch(id).sales=patch(id).sales||[]).push(s);
+ }else if(kind==="bought"){
+  const price=N(g("price")),ship=g("shipping")===""?0:N(g("shipping"));
+  if(!(price>0))return err("Indica el precio pagado.");if(!(ship>=0))return err("Envío no válido.");
+  const it=findItem(id);if(!it||!addToCollection(it,{price,shipping:ship,language:g("language"),condition:g("condition"),date:g("date")}))return err("No se ha podido añadir a Mi colección.");
+  user.bought[id]=g("date");
  }else if(kind==="new"){
   if(!g("name"))return err("Indica el nombre.");
   const img=g("image");if(img&&!safeUrl(img))return err("Enlace de imagen no válido.");
   user.custom.unshift({id:"own-"+uid(),custom:true,lane:form.dataset.lane,game:g("game"),name:g("name"),set:g("set"),number:g("number"),rarity:g("rarity"),language:"",image:safeUrl(img),why:g("why"),links:{},listing:null,sales:[],source:"Añadida por el usuario"});
  }
- if(writeUser()){closeSheet();renderAll();toast(kind==="verify"?"Comprobación guardada · "+WHEN(Date.now()):kind==="sale"?"Referencia de venta guardada":"Ficha creada")}
+ if(writeUser()){closeSheet();renderAll();toast(kind==="bought"?"Añadida a Mi colección":kind==="verify"?"Comprobación guardada · "+WHEN(Date.now()):kind==="sale"?"Referencia de venta guardada":"Ficha creada")}
 }
 let toastT=0;
 function toast(m){let t=document.getElementById("v4Toast");if(!t){t=document.createElement("div");t.id="v4Toast";t.className="v4toast";t.setAttribute("role","status");document.body.appendChild(t)}t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3500)}
 
 /* ---------- eventos ---------- */
 document.addEventListener("click",e=>{
- const t=e.target.closest("[data-v4-verify],[data-v4-sale],[data-v4-new],[data-v4-close],[data-v4-filter],[data-v4-delsale],[data-v4-reset],[data-v4-copy],[data-v4-cfgsave],[data-v4-export],[data-v4-go]");
+ const t=e.target.closest("[data-v4-bought],[data-v4-verify],[data-v4-sale],[data-v4-new],[data-v4-close],[data-v4-filter],[data-v4-delsale],[data-v4-reset],[data-v4-copy],[data-v4-cfgsave],[data-v4-export],[data-v4-go]");
  if(!t){if(e.target.id==="v4Sheet")closeSheet();return}
  const d=t.dataset;
- if(d.v4Verify)verifySheet(d.v4Verify);
+ if(d.v4Bought)boughtSheet(d.v4Bought);
+ else if(d.v4Verify)verifySheet(d.v4Verify);
  else if(d.v4Sale)saleSheet(d.v4Sale);
  else if(d.v4New)newSheet(d.v4New);
  else if("v4Close" in d)closeSheet();
@@ -397,8 +429,9 @@ function migrateV103(){
  }
  user.migratedV103=true;writeUser();
 }
-async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
+async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();refreshFx();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
 setInterval(()=>{if(!document.getElementById("v4Sheet")||document.getElementById("v4Sheet").hidden)renderAll()},5*60*1000);
-window.CVVault={engine:{status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
+function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Añadida a "+(x.lane==="restaurar"?"Comprar para restaurar":"Compra YA"));const tab=x.lane==="restaurar"?"comprar-restaurar":"radar";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
+window.CVVault={addCustom,fx:fxNow,engine:{status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(start,300));else setTimeout(start,300);
 })();
