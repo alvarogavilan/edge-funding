@@ -13,6 +13,13 @@ Card Vault es una app iPhone-first para gestionar una colección de cartas Poké
 - Histórico de valoración, watchlist y radar.
 - Diagnóstico interno de build, fotos, OCR y escaneo.
 
+## V104 · Compra YA, Comprar para restaurar y Ventas reales
+- Fichas grandes con foto, identidad, idioma, estado, precio de compra, envío (confirmado/estimado), venta estimada, gastos y beneficio en tres escenarios.
+- Estados automáticos: COMPRA COMPROBADA (anuncio concreto, precio, stock y comprobación ≤ 24 h), EN OBSERVACIÓN y CADUCADA.
+- El precio de salida solo se sustenta en ventas cerradas; las medias agregadas y los anuncios activos se muestran pero no generan beneficio.
+- La comprobación del anuncio la hace el usuario desde el iPhone (el navegador no puede leer Cardmarket ni TCGplayer) y queda fechada.
+- Pruebas: `node tests/vault-v104-engine.test.cjs` y `node tests/vault-v104-e2e.cjs` (Chromium con emulación de iPhone).
+
 ## Privacidad
 GitHub Pages aloja el código de la aplicación. Las fotos y la colección del usuario permanecen en el navegador del dispositivo salvo exportación manual.
 

@@ -1,0 +1,34 @@
+// Pruebas del motor de Card Vault V104 (sin navegador). Ejecutar: node tests/vault-v104-engine.test.cjs
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..');
+const store={};
+const win={};
+const ctx={window:win,document:{readyState:'complete',addEventListener(){},getElementById:()=>null,body:{classList:{add(){}}}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>{store[k]=String(v)}},
+ setTimeout(){},setInterval(){},URL,Date,Number,String,Array,Object,Math,JSON,Intl,console};
+ctx.window=ctx;vm.createContext(ctx);
+for(const f of ['vault-data.js','vault-v104.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
+const {status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,DEFAULTS}=ctx.CVVault.engine;
+const cfg={...DEFAULTS},now=Date.parse('2026-10-23T12:00:00Z');
+const base={id:'t',lane:'compra',game:'pokemon',name:'X',language:'Inglés',sales:[]};
+const L=o=>({url:'https://www.tcgplayer.com/product/1/x',shop:'TCGplayer',seller:'s',price:50,shipping:5,condition:'NM',language:'Inglés',available:'si',checkedAt:'2026-10-23T08:00:00Z',...o});
+let n=0;const t=(name,fn)=>{fn();n++;console.log('OK ·',name)};
+t('objetivo sin anuncio',()=>assert.equal(status({...base,listing:null},now,cfg).code,'objetivo'));
+t('comprobada con todo y ≤24 h',()=>assert.equal(status({...base,listing:L()},now,cfg).code,'comprobada'));
+t('caducada a las 25 h',()=>assert.equal(status({...base,listing:L({checkedAt:'2026-10-22T10:00:00Z'})},now,cfg).code,'caducada'));
+t('caducada si no disponible',()=>assert.equal(status({...base,listing:L({available:'no'})},now,cfg).code,'caducada'));
+t('observación si stock desconocido',()=>assert.equal(status({...base,listing:L({available:'desconocido'})},now,cfg).code,'observacion'));
+t('observación si idioma sin confirmar',()=>assert.equal(status({...base,language:'',listing:L({language:'PENDIENTE'})},now,cfg).code,'observacion'));
+t('ficha Cardmarket sin vendedor no es anuncio concreto',()=>assert.equal(listingPrecision({url:'https://www.cardmarket.com/en/Pokemon/Products/Singles/Base-Set/Charizard-V1-BS4'}).ok,false));
+t('búsquedas detectadas',()=>{assert.ok(isSearchUrl('https://www.tcgplayer.com/search/pokemon/product?q=x'));assert.ok(isSearchUrl('https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=x'))});
+t('eBay excluido',()=>{assert.equal(safeUrl('https://www.ebay.es/itm/1'),'');assert.equal(safeUrl('https://i.ebayimg.com/x.jpg'),'')});
+t('anuncio activo no sustenta precio de venta',()=>{const e=economics({...base,listing:L(),sales:[{kind:'anuncio',price:500,currency:'EUR'}]},cfg);assert.equal(e.basis,null)});
+t('media agregada no genera beneficio',()=>{const it={...base,listing:L(),sales:[{kind:'agregado',price:500,currency:'EUR'}]};const e=economics(it,cfg);assert.equal(e.net,null);assert.equal(verdict(status(it,now,cfg),e,cfg).code,'solo-agregado')});
+t('cálculo compra con ventas cerradas',()=>{const it={...base,listing:L(),sales:[{kind:'venta',price:120,currency:'EUR'},{kind:'venta',price:140,currency:'EUR'},{kind:'venta',price:160,currency:'EUR'}]};const e=economics(it,cfg);
+ assert.equal(e.sale.low,120);assert.equal(e.sale.mid,140);assert.equal(e.sale.high,160);assert.ok(Math.abs(e.net.mid-(140*0.95-5-50-5))<1e-9);assert.equal(evaluate(it,now,cfg).vd.code,'rentable')});
+t('una sola venta nunca es «rentable»',()=>{const it={...base,listing:L(),sales:[{kind:'venta',price:300,currency:'EUR'}]};assert.equal(evaluate(it,now,cfg).vd.code,'potencial')});
+t('envío de compra estimado si falta',()=>{const e=economics({...base,listing:L({shipping:NaN}),sales:[]},cfg);assert.equal(e.buyShip,cfg.buyShip);assert.equal(e.shipKnown,false)});
+t('restaurada se rebaja respecto a sin alterar',()=>{const it={...base,lane:'restaurar',listing:L(),sales:[{kind:'venta',price:200,currency:'EUR'}]};const e=economics(it,cfg);assert.equal(e.unaltered.mid,200);assert.equal(e.sale.mid,150);assert.equal(e.sale.low,120);assert.equal(e.sale.high,180)});
+t('USD convertido con el cambio configurado',()=>{const e=economics({...base,listing:L(),sales:[{kind:'venta',price:100,currency:'USD'}]},cfg);assert.ok(Math.abs(e.sale.mid-86)<1e-9)});
+t('12 objetivos de restauración con imagen y enlaces',()=>{const r=ctx.CV_VAULT_DATA.restoreTargets;assert.equal(r.length,12);for(const x of r){assert.ok(/^https:\/\/images\.pokemontcg\.io\//.test(x.image));assert.ok(x.links.cardmarket&&x.links.tcgplayer);assert.ok(!isSearchUrl(x.links.tcgplayer))}});
+console.log('\n'+n+' pruebas del motor superadas');
