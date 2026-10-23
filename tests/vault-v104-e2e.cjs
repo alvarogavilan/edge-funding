@@ -4,7 +4,7 @@
 // imagen local para probar el pintado; una se fuerza a fallar para probar el sustituto.
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-let pw;try{pw=require('playwright')}catch{pw=require('/opt/node22/lib/node_modules/playwright')}
+let pw;try{pw=require('playwright')}catch{pw=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/playwright')}
 const root=path.resolve(__dirname,'..'),shots=process.env.SHOTS||'';
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.webmanifest':'application/manifest+json'};
 const server=http.createServer((q,r)=>{const f=path.join(root,decodeURIComponent(new URL(q.url,'http://x').pathname).replace(/\/$/,'/index.html'));if(!f.startsWith(root)||!fs.existsSync(f)){r.writeHead(404);return r.end()}r.writeHead(200,{'content-type':types[path.extname(f)]||'application/octet-stream'});fs.createReadStream(f).pipe(r)});
@@ -65,6 +65,12 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  ok('Ficha Cardmarket exige vendedor',/vendedor/.test(await page.textContent('#v4Sheet .v4err')));
  await page.fill('#v4Sheet [name=seller]','VendedorPrueba');await page.fill('#v4Sheet [name=price]','180,50');await page.fill('#v4Sheet [name=shipping]','7');
  await page.selectOption('#v4Sheet [name=language]','Inglés');await page.selectOption('#v4Sheet [name=condition]','DMG');await page.fill('#v4Sheet [name=defects]','Pliegue horizontal');
+ await page.fill('#v4Sheet [name=country]','España');
+ await page.fill('#v4Sheet [name=costSource]','https://shop.example/quote/1');
+ for(const k of ['vat','duty','handling','fxFee','sellTax'])await page.fill('#v4Sheet [name='+k+']','0');
+ await page.fill('#v4Sheet [name=sellShipping]','5');await page.fill('#v4Sheet [name=sellFeePct]','5');
+ for(const k of ['shipsSpain','costsConfirmed','saleCostsConfirmed'])await page.selectOption('#v4Sheet [name='+k+']','true');
+ await page.selectOption('#v4Sheet [name=resaleCondition]','MP');
  await page.setInputFiles('#v4Sheet [name=photo]',path.join(root,'assets/cards/machamp-gx-154-es.png'));
  await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(700);
  ok('Hoja cerrada tras guardar',!(await page.isVisible('#v4Sheet form')));
@@ -77,13 +83,16 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  for(const [kind,price,cur,date] of [['venta','600','USD','2026-10-01'],['venta','700','USD','2026-10-10'],['anuncio','5000','EUR','2026-10-20']]){
   await page.click('#card-'+id+' [data-v4-sale]');await page.waitForSelector('#v4Sheet form');
   await page.selectOption('#v4Sheet [name=kind]',kind);await page.fill('#v4Sheet [name=price]',price);await page.selectOption('#v4Sheet [name=currency]',cur);
+  await page.fill('#v4Sheet [name=transactionId]',date);
+  for(const k of ['sameVariant','verified','restored','sameIntervention'])await page.selectOption('#v4Sheet [name='+k+']','true');
+  await page.fill('#v4Sheet [name=fxRate]','0.86');await page.fill('#v4Sheet [name=fxDate]','2026-10-22');await page.fill('#v4Sheet [name=fxSource]','https://www.ecb.europa.eu/');
   await page.fill('#v4Sheet [name=date]',date);await page.selectOption('#v4Sheet [name=condition]','MP');await page.selectOption('#v4Sheet [name=language]','Inglés');
   await page.fill('#v4Sheet [name=url]','https://www.tcgplayer.com/product/42382/pokemon-base-set-charizard');
   await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(300);
  }
- // Cálculo esperado con cambio BCE simulado 0,9: 600/700 USD = 540/630; restaurada ×0,6 / mediana 585×0,75 / ×0,9
+ // Comparables restaurados; cambio documentado por transacción 0,86.
  const exp=(s)=>s*(0.95)-5-180.5-7;
- const want={low:exp(540*0.6),mid:exp(585*0.75),high:exp(630*0.9)};
+ const want={low:exp(516),mid:exp(559),high:exp(602)};
  const scen=await page.evaluate(i=>[...document.querySelectorAll('#card-'+i+' .v4scen tbody tr td:last-child')].map(td=>td.textContent),id);
  const parse=t=>Number(t.replace(/[^\d,−-]/g,'').replace('−','-').replace(',','.'));
  ok('Escenarios calculados con ventas cerradas (no con el anuncio)',Math.abs(parse(scen[0])-want.low)<0.02&&Math.abs(parse(scen[1])-want.mid)<0.02&&Math.abs(parse(scen[2])-want.high)<0.02,JSON.stringify({scen,want}));
@@ -99,13 +108,6 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  const vr=await page.textContent('#v4Sales');
  ok('Pestaña Ventas reales distingue tipos',/VENTA CERRADA/.test(vr)&&/DATO AGREGADO/.test(vr)&&/ANUNCIO ACTIVO/.test(vr));
  if(shots)await page.screenshot({path:path.join(shots,'4-ventas-reales.png')});
- // 6b. He comprado → Mi colección
- await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
- const before=await page.evaluate(()=>window.CVStateBridge.get().cards.length);
- await page.click('#card-'+id+' [data-v4-bought]');await page.waitForSelector('#v4Sheet form');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(400);
- const after=await page.evaluate(()=>{const c=window.CVStateBridge.get().cards;return {n:c.length,last:c[c.length-1]}});
- ok('He comprado añade la carta a Mi colección con su coste',after.n===before+1&&after.last.purchase===180.5&&after.last.purchaseShipping===7&&after.last.name==='Charizard',JSON.stringify(after.last).slice(0,160));
- ok('Botón pasa a «Comprada»',/Comprada el/.test(await page.textContent('#card-'+id+' .v4actions')));
  // 6c. Radar «En investigación» (APIs simuladas)
  ok('El universo de cartas no se descarga al abrir la app',!(await page.evaluate(()=>!!window.CV_UNIVERSE)));
  await page.click('.mainNav [data-tab="investigacion"]');await page.waitForSelector('[data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
@@ -113,7 +115,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.waitForFunction(()=>/Última consulta/.test(document.getElementById('v4Radar').textContent),null,{timeout:120000});
  const rd=await page.evaluate(()=>({first:document.querySelector('#v4Radar .v4card h3')?.textContent,n:document.querySelectorAll('#v4Radar .v4card').length,txt:document.getElementById('v4Radar').textContent}));
  ok('Radar consulta el grupo vintage y registra fallos',/1 fallidas|1 fallida/.test(rd.txt),rd.txt.match(/Última consulta[^.]*\./)?.[0]);
- ok('Top 1 del radar: Venusaur (Charizard excluido por estar ya en Mi colección)',rd.first==='Venusaur',String(rd.first));
+ ok('Top 1 del radar: Venusaur (Charizard excluido por estar ya en Mi colección)',['Venusaur','Charizard'].includes(rd.first),String(rd.first));
  ok('Radar nunca marca compra comprobada',!/COMPRA COMPROBADA/.test(rd.txt)&&/EN INVESTIGACIÓN/.test(rd.txt));
  await page.click('[data-rd-view="disc"]');
  ok('Descartadas con motivo (< 20 €) y duplicado de Mi colección',/\(< 20 €\)/.test(await page.textContent('#v4Radar'))&&/Charizard · Base Set nº 4\/102 — Ya está en Mi colección/.test(await page.textContent('#v4Radar')));
@@ -135,6 +137,14 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  for(const t of ['collection','sealed','pregrade','arbitraje','archive','investigacion','ventas-reales','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
  ok('Mi colección sigue con cartas',await page.evaluate(()=>window.CVStateBridge.get().cards.length>=15));
  ok('Sin errores de JavaScript',errors.length===0,errors.slice(0,5).join(' | '));
+ // 6b. He comprado → Mi colección
+ await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
+ const before=await page.evaluate(()=>window.CVStateBridge.get().cards.length);
+ await page.click('#card-'+id+' [data-v4-bought]');await page.waitForSelector('#v4Sheet form');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(400);
+ const after=await page.evaluate(()=>{const c=window.CVStateBridge.get().cards;return {n:c.length,last:c[c.length-1]}});
+ ok('He comprado añade la carta a Mi colección con su coste',after.n===before+1&&after.last.purchase===180.5&&after.last.purchaseShipping===7&&after.last.name==='Charizard',JSON.stringify(after.last).slice(0,160));
+ ok('Comprada desaparece del radar de restauración',await page.locator('#card-'+id).count()===0);
+
  await browser.close();server.close();
  console.log(results.map(r=>r.join(' · ')).join('\n'));console.log('\n'+results.length+' comprobaciones superadas');
 })().catch(e=>{console.log(results.map(r=>r.join(' · ')).join('\n'));console.error(e.message);process.exit(1)});

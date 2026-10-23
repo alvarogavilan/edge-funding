@@ -29,9 +29,9 @@ function safeUrl(u){try{const x=new URL(String(u||"").trim());return x.protocol=
 function isSearchUrl(u){try{const x=new URL(u);return /\/search\b|\/s-|\/buscar|\/busqueda/i.test(x.pathname)||["q","searchString","query","_nkw","keywords"].some(k=>x.searchParams.has(k))}catch{return true}}
 function isCardmarketProduct(u){try{const x=new URL(u);return /(^|\.)cardmarket\.com$/i.test(x.hostname)&&/\/Products\//.test(x.pathname)}catch{return false}}
 /* Cardmarket no tiene URL por anuncio: la ficha de producto + el vendedor identifican la oferta concreta. */
-function listingPrecision(l){const u=safeUrl(l?.url);if(!u)return {ok:false,txt:"sin enlace"};if(isSearchUrl(u))return {ok:false,txt:"enlace de búsqueda (no vale)"};
+function listingPrecision(l){const u=safeUrl(l?.url);if(!u)return {ok:false,txt:"sin enlace"};if(new URL(u).pathname==="/"||/\/(collections|versions)\/?$/i.test(new URL(u).pathname))return {ok:false,txt:"catálogo general, no anuncio"};if(isSearchUrl(u))return {ok:false,txt:"enlace de búsqueda (no vale)"};
  if(isCardmarketProduct(u))return l.seller?{ok:true,txt:"ficha Cardmarket · vendedor «"+l.seller+"»"}:{ok:false,txt:"ficha de producto sin vendedor identificado"};
- return {ok:true,txt:"anuncio individual"}}
+ return l.seller?{ok:true,txt:"producto · vendedor identificado"}:{ok:false,txt:"producto sin vendedor identificado"}}
 
 /* ---------- configuración y datos del usuario ---------- */
 function readUser(){try{const x=JSON.parse(localStorage.getItem(STORE)||"{}");return {cfg:{...DEFAULTS,...(x.cfg||{})},patches:x.patches||{},custom:Array.isArray(x.custom)?x.custom:[],migratedV103:!!x.migratedV103,fx:x.fx||null,bought:x.bought||{}}}catch{return {cfg:{...DEFAULTS},patches:{},custom:[]}}}
@@ -51,7 +51,7 @@ function fromResearch(o){
  const sales=[];
  const cs=o.closedSaleEvidence;
  if(cs&&cs.transactionType==="closed-sale")for(const p of (cs.pricesEUR||[]))sales.push({id:"r-"+o.id+"-cs"+p,kind:"venta",price:N(p),currency:"EUR",date:o.lastSaleDate||"",capturedAt:cs.at||"",condition:cs.condition||"",language:cs.language||"",platform:"Cardmarket (vía "+String(cs.source||"").split("·")[0].trim()+")",url:safeUrl(cs.url),note:(o.lastSaleDate?"":"Fecha exacta de la operación no registrada; capturada el "+DAY(cs.at)+". ")+"Investigación previa, no reverificada.",addedBy:"investigación"});
- if(N(o.observedSalePrice)>0)sales.push({id:"r-"+o.id+"-obs",kind:"venta",price:N(o.observedSalePrice),currency:"EUR",date:o.observedSaleDate||"",condition:"",language:"",platform:"Última venta visible (TCGGraph)",url:safeUrl(o.marketEvidence?.url),note:"Idioma y estado de esa venta no registrados.",addedBy:"investigación"});
+ if(N(o.observedSalePrice)>0)sales.push({id:"r-"+o.id+"-obs",kind:"agregado",price:N(o.observedSalePrice),currency:"EUR",date:o.observedSaleDate||"",condition:"",language:"",platform:"Última venta visible (TCGGraph)",url:safeUrl(o.marketEvidence?.url),note:"Idioma y estado de esa venta no registrados.",addedBy:"investigación"});
  if(N(o.avg30)>0)sales.push({id:"r-"+o.id+"-avg30",kind:"agregado",price:N(o.avg30),currency:"EUR",date:o.checkedAt||"",condition:"todas",language:"todos",platform:"Cardmarket · media de ventas 30 días",url:safeUrl(o.url),note:"Media agregada de todos los idiomas y estados: no es una venta individual.",addedBy:"investigación"});
  if(N(o.marketEvidence?.currentExitEUR)>0)sales.push({id:"r-"+o.id+"-ask",kind:"anuncio",price:N(o.marketEvidence.currentExitEUR),currency:"EUR",date:o.marketEvidence.at||o.checkedAt||"",condition:o.condition||"",language:o.offerLanguage||"",platform:"Cardmarket · anuncios activos",url:safeUrl(o.url),note:"Precio pedido por vendedores. NO es una venta.",addedBy:"investigación"});
  const url=safeUrl(o.url);
@@ -61,8 +61,8 @@ function fromResearch(o){
   sales,origStatus:o.status||"",ownedFlag:!!o.ownedDuplicateBlocked||/YA EN MI COLECCI/i.test(String(o.status||""))};
 }
 function owned(x){
- const st=appState();if(!st)return false;
- if(x.ownedFlag)return true;
+ const st=appState();if(x.ownedFlag)return true;
+ if(!st)return false;
  const n=v=>String(v||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\s+/g," ");
  const num=v=>n(v).replace(/\s/g,"").replace(/^0+/,"");
  return (st.cards||[]).some(c=>{
@@ -92,14 +92,14 @@ function allItems(){return [...baseItems(),...user.custom].map(merge)}
 
 /* ---------- motor ---------- */
 function fxNow(){const f=user.fx;return f&&f.rate>0?f:{rate:user.cfg.usdToEur,date:"",source:"manual"}}
-function toEUR(s,cfg){const p=N(s.price);if(!(p>0))return NaN;return String(s.currency||"EUR").toUpperCase()==="USD"?p*(cfg===user.cfg?fxNow().rate:cfg.usdToEur):p}
+function toEUR(s,cfg){const p=N(s.price);if(!(p>0))return NaN;return String(s.currency||"EUR").toUpperCase()==="EUR"?p:N(s.fxRate)>0?p*N(s.fxRate):NaN}
 async function refreshFx(){if(user.fx&&Date.now()-Date.parse(user.fx.fetchedAt||0)<12*3600e3)return;try{const r=await fetch("https://api.frankfurter.app/latest?from=USD&to=EUR",{cache:"no-store"});if(!r.ok)return;const j=await r.json();const rate=Number(j?.rates?.EUR);if(rate>0&&rate<2){user.fx={rate,date:j.date||"",source:"BCE vía frankfurter.app",fetchedAt:new Date().toISOString()};writeUser();renderAll()}}catch{}}
 function status(it,now,cfg){
  const l=it.listing;
  if(!l||!(safeUrl(l.url)||N(l.price)>0))return {code:"objetivo",label:"OBJETIVO · SIN ANUNCIO",missing:["registrar un anuncio concreto"]};
  if(l.available==="no")return {code:"caducada",label:"CADUCADA",missing:["ya no está disponible"],why:"Marcada como no disponible el "+WHEN(l.checkedAt)};
  const t=Date.parse(l.checkedAt||""),age=(now-t)/3600000;
- if(!(t>0)||age>cfg.freshHours)return {code:"caducada",label:"CADUCADA",missing:["volver a comprobar precio y stock"],why:t>0?"Comprobación de "+WHEN(t)+" (hace más de "+cfg.freshHours+" h)":"Sin fecha de comprobación"};
+ if(!(t>0)||age<0||age>cfg.freshHours)return {code:"caducada",label:"CADUCADA",missing:["volver a comprobar precio y stock"],why:t>0?"Comprobación de "+WHEN(t)+" (hace más de "+cfg.freshHours+" h)":"Sin fecha de comprobación"};
  const miss=[],prec=listingPrecision(l);
  if(!prec.ok)miss.push("anuncio concreto ("+prec.txt+")");
  if(!(N(l.price)>0))miss.push("precio actual");
@@ -108,32 +108,53 @@ function status(it,now,cfg){
  if(!l.condition)miss.push("estado de conservación");
  return miss.length?{code:"observacion",label:"EN OBSERVACIÓN",missing:miss}:{code:"comprobada",label:"COMPRA COMPROBADA",missing:[]};
 }
+// Importes adicionales en EUR: nunca se supone que un coste desconocido sea cero.
+function acquisition(l,cfg){
+ const keys=["shipping","vat","duty","handling","fxFee"], missing=keys.filter(k=>!(N(l[k])>=0));
+ const confirmed=!missing.length&&l.costsConfirmed===true&&l.shipsSpain===true&&!!l.country&&!!safeUrl(l.costSource);
+ return {missing,confirmed,total:N(l.price)>0&&!missing.length?N(l.price)+keys.reduce((v,k)=>v+N(l[k]),0):NaN};
+}
+function comparable(s,it){
+ const l=it.listing||{}, norm=v=>String(v||"").trim().toLowerCase();
+ const d=Date.parse(s.date||""), verified=Date.parse(s.verifiedAt||"");
+ return s.kind==="venta"&&s.verified===true&&safeUrl(s.url)&&!isSearchUrl(s.url)&&!/(ebay)/i.test(s.platform||"")&&
+  d>0&&d<=Date.now()&&verified>=d&&verified<=Date.now()&&Date.now()-d<=90*86400000&&
+  !!s.transactionId&&!!s.platform&&s.sameVariant===true&&!!it.set&&!!it.number&&
+  norm(s.set)===norm(it.set)&&norm(s.number)===norm(it.number)&&
+  lang(s.language).known&&lang(s.language).name===lang(l.language||it.language).name&&
+  !!s.condition&&s.condition===(it.lane==="restaurar"?l.resaleCondition:l.condition)&&
+  (s.grade||"RAW")===(it.grade||"RAW")&&
+  (it.lane==="restaurar"?s.restored===true&&s.sameIntervention===true:s.restored===false);
+}
 function economics(it,cfg){
- const l=it.listing||{},buy=N(l.price),shipKnown=N(l.shipping)>=0,buyShip=shipKnown?N(l.shipping):cfg.buyShip;
- const ventas=it.sales.filter(s=>s.kind==="venta").map(s=>toEUR(s,cfg)).filter(v=>v>0);
- const agreg=it.sales.filter(s=>s.kind==="agregado").map(s=>toEUR(s,cfg)).filter(v=>v>0);
+ const l=it.listing||{},buy=N(l.price),shipKnown=N(l.shipping)>=0,buyShip=shipKnown?N(l.shipping):cfg.buyShip,acq=acquisition(l,cfg);
+ const seen=new Set(),matched=(it.sales||[]).filter(s=>{if(!comparable(s,it))return false;const key=s.platform+"|"+s.transactionId;if(seen.has(key))return false;seen.add(key);return true});
+ const ventas=matched.map(s=>toEUR(s,cfg)).filter(v=>v>0),agreg=(it.sales||[]).filter(s=>s.kind==="agregado").map(s=>toEUR(s,cfg)).filter(v=>v>0);
  const basis=ventas.length?"venta":agreg.length?"agregado":null,arr=ventas.length?ventas:agreg;
- if(!basis)return {basis:null,buy,buyShip,shipKnown,n:0};
- let low=Math.min(...arr),mid=median(arr),high=Math.max(...arr);
- const unaltered={low,mid,high};
- if(it.lane==="restaurar"){low*=cfg.restLow;mid*=cfg.restMid;high*=cfg.restHigh}
- const net=s=>s*(1-cfg.feePct/100)-cfg.sellShip-buy-buyShip;
- const costs=s=>s*cfg.feePct/100+cfg.sellShip+buyShip;
- return {basis,n:arr.length,buy,buyShip,shipKnown,sale:{low,mid,high},unaltered,costs:{low:costs(low),mid:costs(mid),high:costs(high)},net:buy>0&&basis==="venta"?{low:net(low),mid:net(mid),high:net(high)}:null};
+ const base={basis,buy,buyShip,shipKnown,acq,n:arr.length,excluded:(it.sales||[]).filter(s=>s.kind==="venta").length-ventas.length,net:null};
+ if(!basis)return base;
+ const low=Math.min(...arr),mid=median(arr),high=Math.max(...arr),sale={low,mid,high};
+ const sellingKnown=[l.sellFeePct,l.sellShipping,l.sellTax].every(v=>N(v)>=0)&&N(l.sellFeePct)<100;
+ const fxKnown=matched.every(s=>String(s.currency||"EUR").toUpperCase()==="EUR"||(N(s.fxRate)>0&&safeUrl(s.fxSource)&&Date.parse(s.fxDate)>0));
+ const costs=v=>v*N(l.sellFeePct)/100+N(l.sellShipping)+N(l.sellTax)+acq.total-buy;
+ const net=v=>v-buy-costs(v);
+ return {...base,sale,unaltered:sale,costs:{low:costs(low),mid:costs(mid),high:costs(high)},
+  net:buy>0&&basis==="venta"&&Number.isFinite(acq.total)&&sellingKnown&&fxKnown?{low:net(low),mid:net(mid),high:net(high)}:null,
+  ready:acq.confirmed&&sellingKnown&&l.saleCostsConfirmed===true&&fxKnown};
 }
 function verdict(st,ec,cfg){
- if(!ec.basis)return {code:"sin-datos",label:"Sin ventas reales registradas",tone:"muted"};
- if(ec.basis==="agregado")return {code:"solo-agregado",label:"Sin ventas cerradas: no se calcula beneficio con medias agregadas",tone:"muted"};
- if(!ec.net)return {code:"sin-precio",label:"Falta el precio de compra",tone:"muted"};
- if(st.code==="comprobada"&&ec.basis==="venta"&&ec.n>=2&&ec.net.low>=cfg.minProfit)return {code:"rentable",label:"Rentable según ventas reales · no garantizado",tone:"good"};
+ if(!ec.basis)return {code:"sin-datos",label:"Sin ventas comparables verificadas",tone:"muted"};
+ if(ec.basis==="agregado")return {code:"solo-agregado",label:"Datos agregados: no se calcula beneficio con medias",tone:"muted"};
+ if(!ec.net)return {code:"sin-precio",label:"En investigación: faltan costes completos o cambio documentado",tone:"muted"};
+ if(st.code==="comprobada"&&ec.basis==="venta"&&ec.n>=2&&ec.ready&&ec.net.low>=cfg.minProfit)return {code:"rentable",label:"Rentable según ventas reales · no garantizado",tone:"good"};
  if(ec.net.mid>=cfg.minProfit)return {code:"potencial",label:ec.basis==="venta"?(ec.n<2?"Potencial · solo 1 venta de referencia":"Potencial · faltan comprobaciones de compra"):"Potencial",tone:"warn"};
  if(ec.net.mid>0)return {code:"bajo",label:"Margen inferior a "+EUR(cfg.minProfit),tone:"muted"};
  return {code:"negativo",label:"Pérdida estimada",tone:"bad"};
 }
-function evaluate(it,now=Date.now(),cfg=user.cfg){const st=status(it,now,cfg),ec=economics(it,cfg);return {it,st,ec,vd:verdict(st,ec,cfg)}}
+function evaluate(it,now=Date.now(),cfg=user.cfg){const st=status(it,now,cfg),ec=economics(it,cfg);if(st.code==="comprobada"&&(!ec.acq.confirmed||(it.lane==="restaurar"&&!(it.listingPhoto||safeUrl(it.listing?.photoUrl))))){st.code="observacion";st.label="EN INVESTIGACIÓN";st.missing.push("coste completo y envío a Sevilla documentados; foto real para restauración")}return {it,st,ec,vd:verdict(st,ec,cfg)}}
 
 /* ---------- vistas ---------- */
-const KIND={venta:["VENTA CERRADA","k-venta"],agregado:["DATO AGREGADO","k-agregado"],anuncio:["ANUNCIO ACTIVO · NO ES VENTA","k-anuncio"]};
+const KIND={estimacion:["ESTIMACIÓN · NO ES VENTA","k-agregado"],venta:["VENTA CERRADA","k-venta"],agregado:["DATO AGREGADO","k-agregado"],anuncio:["ANUNCIO ACTIVO · NO ES VENTA","k-anuncio"]};
 function photoBlock(it){
  const own=it.listingPhoto||safeUrl(it.listing?.photoUrl);
  const src=own||safeUrl(it.image)||window.CVCardImages?.entry?.({name:it.name,number:it.number,set:it.set,universe:it.game})?.path||"";
@@ -143,8 +164,8 @@ function photoBlock(it){
 }
 function salesList(it,cfg){
  if(!it.sales.length)return '<p class="v4empty">Sin referencias de venta todavía.</p>';
- return '<ul class="v4sales">'+it.sales.map(s=>{const k=KIND[s.kind]||KIND.anuncio,eur=toEUR(s,cfg);
-  return '<li><span class="v4kind '+k[1]+'">'+k[0]+'</span><b>'+(String(s.currency).toUpperCase()==="USD"?E(N(s.price).toLocaleString("es-ES",{style:"currency",currency:"USD"}))+' ≈ '+EUR(eur)+' <small>(cambio '+String(fxNow().rate).replace(".",",")+(fxNow().date?' BCE '+DAY(fxNow().date):' manual')+')</small>':EUR(eur))+'</b>'+
+ return '<ul class="v4sales">'+it.sales.map(s=>{const k=s.kind==="venta"&&!comparable(s,it)?["VENTA DECLARADA · NO COMPARABLE VERIFICADO","k-agregado"]:KIND[s.kind]||KIND.anuncio,eur=toEUR(s,cfg);
+  return '<li><span class="v4kind '+k[1]+'">'+k[0]+'</span><b>'+(String(s.currency).toUpperCase()==="USD"?E(N(s.price).toLocaleString("es-ES",{style:"currency",currency:"USD"}))+' ≈ '+EUR(eur):EUR(eur))+'</b>'+
   '<span>'+E([s.date?DAY(s.date):"fecha de operación no registrada",s.condition&&"estado "+s.condition,s.language&&lang(s.language).flag+" "+lang(s.language).name,s.platform].filter(Boolean).join(" · "))+'</span>'+
   (s.note?'<small>'+E(s.note)+'</small>':'')+
   '<span class="v4row">'+(safeUrl(s.url)?'<a href="'+E(safeUrl(s.url))+'" target="_blank" rel="noopener noreferrer">Ver fuente ↗</a>':'<small>Sin enlace verificable</small>')+
@@ -162,12 +183,15 @@ function card(ev,cfg){
  (l.defects?'<p class="v4defects"><b>Defectos visibles:</b> '+E(l.defects)+'</p>':'')+
  '<div class="v4money">'+
   '<div><span>PRECIO DE COMPRA</span><b>'+(N(l.price)>0?EUR(N(l.price)):"—")+'</b><small>'+(N(l.price)>0?'+ envío '+EUR(ec.buyShip)+(ec.shipKnown?' (confirmado)':' (estimado)'):'pendiente de anuncio')+'</small></div>'+
-  '<div><span>PRECIO DE VENTA ESTIMADO</span><b>'+(ec.basis==="venta"?EUR(ec.sale.mid):"—")+'</b><small>'+(ec.basis==="agregado"?'Referencia agregada '+EUR(ec.unaltered.mid)+' (no es venta). Añade ventas cerradas.':ec.basis?(isR?'restaurada declarada · '+Math.round(cfg.restMid*100)+' % de '+EUR(ec.unaltered.mid)+' · ':'')+basisTxt:'sin ventas reales')+'</small></div>'+
-  '<div><span>GASTOS Y COMISIONES</span><b>'+(ec.net?EUR(ec.costs.mid):"—")+'</b><small>'+cfg.feePct+' % comisión + envíos</small></div>'+
+  '<div><span>PRECIO DE VENTA ESTIMADO</span><b>'+(ec.basis==="venta"?EUR(ec.sale.mid):"—")+'</b><small>'+(ec.basis==="agregado"?'Referencia agregada '+EUR(ec.unaltered.mid)+' (no es venta). Añade ventas cerradas.':ec.basis?(isR?'restaurada declarada · comparables equivalentes · ':'')+basisTxt:'sin ventas reales')+'</small></div>'+
+  '<div><span>GASTOS Y COMISIONES</span><b>'+(ec.net?EUR(ec.costs.mid):"—")+'</b><small>'+E(l.sellFeePct??'—')+' % comisión + envíos e impuestos</small></div>'+
   '<div class="v4profit t-'+vd.tone+'"><span>BENEFICIO POTENCIAL</span><b>'+(ec.net?SIGNED(ec.net.mid):"—")+'</b><small>'+E(vd.label)+'</small></div>'+
  '</div>'+
  (scen?'<table class="v4scen"><thead><tr><th>Escenario</th><th>Venta</th><th>Beneficio</th></tr></thead><tbody>'+scen.map(([n,s,p])=>'<tr><td>'+n+'</td><td>'+EUR(s)+'</td><td class="'+(p>=cfg.minProfit?"pos":p<0?"neg":"")+'">'+SIGNED(p)+'</td></tr>').join("")+'</tbody></table>'+
-  '<p class="v4basis">Fundamento: conservador = venta más baja, central = mediana, optimista = venta más alta'+(isR?', multiplicadas por '+[cfg.restLow,cfg.restMid,cfg.restHigh].map(f=>Math.round(f*100)+" %").join(" / ")+' por ser carta restaurada (ajuste editable, no es dato de mercado)':'')+'. Beneficio = venta − '+cfg.feePct+' % − envío de venta '+EUR(cfg.sellShip)+' − compra − envío de compra. '+(isR?'No incluye materiales ni horas. ':'')+'Nunca es un beneficio garantizado.</p>':'')+
+  '<p class="v4basis">Escenarios: mínimo, mediana y máximo de ventas comparables verificadas. Se descuentan compra, envíos, IVA adicional, aranceles, gestión, cambio, comisiones e impuestos de venta registrados. No se descuentan horas ni materiales. No es beneficio garantizado.</p>':'')+
+ '<div class="v4money"><div><span>TOTAL PUESTO EN SEVILLA</span><b>'+EUR(ec.acq.total)+'</b><small>'+(ec.acq.confirmed?'Costes confirmados':'Estimación o costes pendientes: '+E(ec.acq.missing.join(', ')))+'</small></div></div>'+
+ '<p class="v4note">País de expedición: '+E(l.country||'sin confirmar')+'. IVA adicional: '+EUR(N(l.vat))+' · Aranceles: '+EUR(N(l.duty))+' · Gestión: '+EUR(N(l.handling))+' · Cambio/pago: '+EUR(N(l.fxFee))+'. '+ec.excluded+' referencia(s) declarada(s) excluida(s) del cálculo por falta de comparabilidad o verificación.</p>'+
+
  (st.missing.length?'<p class="v4missing"><b>'+(st.code==="caducada"?E(st.why||"Comprobación vencida")+'. ':'')+'Falta:</b> '+E(st.missing.join(" · "))+'</p>':'')+
  (it.why?'<p class="v4why"><b>Por qué merece la pena mirarla:</b> '+E(it.why)+'</p>':'')+
  '<dl class="v4facts">'+
@@ -207,43 +231,55 @@ function summary(evs,lane,cfg,hiddenOwned){
   (lane==="restaurar"?'<div class="s-objetivo"><b>'+n("objetivo")+'</b><span>Objetivos sin anuncio</span></div>':'<div class="s-objetivo"><b>'+rent+'</b><span>Rentables con evidencia</span></div>')+'</div>'+
   (hiddenOwned?'<p class="v4note">'+hiddenOwned+' oportunidad(es) ocultas porque esa carta ya está en Mi colección.</p>':'');
 }
-function order(a,b){const r={comprobada:0,observacion:1,objetivo:2,caducada:3};return (r[a.st.code]-r[b.st.code])||((b.vd.code==="rentable")-(a.vd.code==="rentable"))||((b.ec.net?.mid??-1e9)-(a.ec.net?.mid??-1e9))}
+function order(a,b){const r={comprobada:0,observacion:1,objetivo:2,caducada:3};return ((b.vd.code==="rentable")-(a.vd.code==="rentable"))||(r[a.st.code]-r[b.st.code])||((b.ec.net?.mid??-1e9)-(a.ec.net?.mid??-1e9))}
 let gameFilter="all";
 function renderLane(lane){
  const host=document.getElementById(lane==="compra"?"v4Buy":"v4Restore");if(!host)return;
  const cfg=user.cfg,now=Date.now();
  let items=allItems().filter(i=>i.lane===lane&&!i.hidden),hiddenOwned=0;
- if(lane==="compra"){const keep=[];for(const i of items){if(owned(i))hiddenOwned++;else keep.push(i)}items=keep}
+ {const keep=[];for(const i of items){if(owned(i))hiddenOwned++;else keep.push(i)}items=keep}
  const evs=items.map(i=>evaluate(i,now,cfg)).sort(order);
  const view=evs.filter(e=>gameFilter==="all"||e.it.game===gameFilter);
  const live=view.filter(e=>e.st.code!=="caducada"),old=view.filter(e=>e.st.code==="caducada");
- const isR=lane==="restaurar";
- host.innerHTML='<section class="v4head"><span class="v4kicker">'+(isR?"POKÉMON · CARTAS DETERIORADAS · REVENTA COMO RESTAURADA":"POKÉMON + LORCANA · 20–100 € · OBJETIVO ≥ "+EUR(cfg.minProfit)+" · SIN EBAY")+'</span>'+
+ const isR=lane==="restaurar",qualified=live.filter(e=>e.vd.code==="rentable"),pending=live.filter(e=>e.vd.code!=="rentable");
+ host.innerHTML='<section class="v4head"><span class="v4kicker">'+(isR?"POKÉMON + LORCANA · CARTAS DETERIORADAS · REVENTA COMO RESTAURADA":"POKÉMON + LORCANA · 20–100 € · OBJETIVO ≥ "+EUR(cfg.minProfit)+" · SIN EBAY")+'</span>'+
   '<h2>'+(isR?"Comprar para restaurar":"Compra YA")+'</h2>'+
-  '<p>'+(isR?"Cartas baratas en mal estado cuya versión mejor conservada se vende bien. La reventa se calcula con ventas cerradas de ejemplares en mejor estado, rebajadas por ser carta restaurada. Se descuentan compra, comisiones y envíos; no tus materiales ni tus horas.":"Cada ficha muestra el anuncio, el precio de compra, la venta estimada a partir de ventas cerradas reales y el beneficio tras comisiones y envíos. Una compra comprobada no implica beneficio seguro.")+'</p>'+
-  summary(evs,lane,cfg,hiddenOwned)+top3(live)+
+  '<p>'+(isR?"Cartas baratas en mal estado cuya versión mejor conservada se vende bien. Las ventas de ejemplares sin alterar son referencias; solo las ventas equivalentes de cartas intervenidas sustentan el beneficio. Se descuentan compra, comisiones y envíos; no tus materiales ni tus horas.":"Cada ficha muestra el anuncio, el precio de compra, la venta estimada a partir de ventas cerradas reales y el beneficio tras comisiones y envíos. Una compra comprobada no implica beneficio seguro.")+'</p>'+
+  summary(evs,lane,cfg,hiddenOwned)+
   '<div class="v4filters" role="group" aria-label="Juego">'+[["all","Todas"],["pokemon","Pokémon"],["lorcana","Lorcana"]].map(([k,t])=>'<button type="button" data-v4-filter="'+k+'" class="'+(gameFilter===k?"on":"")+'">'+t+'</button>').join("")+
   '<button type="button" class="v4btn primary" data-v4-new="'+lane+'">+ Nueva oportunidad</button></div>'+
   '<p class="v4honest">Comprobación en directo: Card Vault no puede leer Cardmarket ni TCGplayer desde el navegador (lo bloquean). Pulsa «Comprobar ahora», abre el enlace, confirma precio, envío, vendedor, estado y stock, y la ficha queda fechada. Válido '+cfg.freshHours+' h.</p></section>'+
-  (live.length?'<div class="v4list">'+live.map(e=>card(e,cfg)).join("")+'</div>':'<p class="v4empty big">'+(isR?"No hay objetivos activos.":"Ahora mismo no hay ninguna compra comprobada ni en observación. Revisa las caducadas de abajo: son oportunidades investigadas que hay que volver a comprobar.")+'</p>')+
+  (qualified.length?'<h3>Mejores operaciones verificadas</h3><div class="v4list">'+qualified.slice(0,3).map(e=>card(e,cfg)).join('')+'</div>'+(qualified.length>3?'<details><summary>Ampliar ranking ('+qualified.length+')</summary>'+qualified.slice(3).map(e=>card(e,cfg)).join('')+'</details>':''):'<p class="v4empty big">No hay operaciones con margen y costes completos suficientemente verificados.</p>')+
+  (pending.length?'<h3>En observación · no son recomendaciones de compra</h3><div class="v4list">'+pending.map(e=>card(e,cfg)).join('')+'</div>':'')+
+
   (old.length?'<details class="v4old"'+(live.length?'':' open')+'><summary>Caducadas · volver a comprobar ('+old.length+')</summary><div class="v4list">'+old.map(e=>card(e,cfg)).join("")+'</div></details>':'')+
-  settingsBlock(cfg);
+  comparisonBlock(evs,cfg)+researchBlock()+settingsBlock(cfg);
  wireImages(host);
 }
-function top3(live){
- const top=live.filter(e=>e.ec.net).slice(0,3);if(!top.length)return "";
- return '<div class="v4top"><b>Las 3 mejores ahora</b>'+top.map((e,i)=>'<a href="#card-'+E(e.it.id)+'" class="t-'+e.vd.tone+'"><span>#'+(i+1)+' '+E(e.it.name)+'</span><strong>'+SIGNED(e.ec.net.mid)+'</strong><small>'+E(e.st.label)+' · '+E(e.vd.label)+'</small></a>').join("")+'</div>';
+function compareOffers(items,cfg){
+ const groups=new Map();
+ for(const it of items){const l=it.listing||{},lg=lang(l.language||it.language);if(!it.set||!it.number||!l.condition||!lg.known)continue;
+  const key=[it.game,it.set,it.number,lg.name,l.condition,it.grade||"RAW",it.lane].map(v=>String(v).trim().toLowerCase()).join("|");
+  const group=groups.get(key)||[];group.push({it,acq:acquisition(l,cfg)});groups.set(key,group);
+ }
+ return [...groups.values()].filter(g=>g.length>1).map(g=>g.sort((a,b)=>(Number.isFinite(a.acq.total)?a.acq.total:Infinity)-(Number.isFinite(b.acq.total)?b.acq.total:Infinity)));
+}
+function comparisonBlock(evs,cfg){
+ const groups=compareOffers(evs.map(e=>e.it),cfg);
+ return '<details class="v4settings"><summary>Arbitraje internacional · comparar coste en Sevilla</summary><p>Solo se comparan misma colección, número, idioma, estado y graduación. Un coste menor no demuestra una venta futura.</p>'+(groups.length?groups.map(g=>'<h3>'+E(g[0].it.name)+'</h3><ul class="v4sales">'+g.map(({it,acq})=>'<li>'+E([it.listing.country,it.listing.seller].filter(Boolean).join(' · ')||'Vendedor pendiente')+' <b>'+EUR(acq.total)+'</b> '+(acq.confirmed?'Costes documentados':'Costes pendientes o estimados')+' · '+E(status(it,Date.now(),cfg).label)+'</li>').join('')+'</ul>').join(''):'<p>Faltan dos ofertas equivalentes con costes completos. No se ha verificado un cruce internacional ejecutable.</p>')+'</details>';
+}
+function researchBlock(){
+ const rows=window.CV_VAULT_DATA?.internationalResearch||[];
+ return '<details class="v4settings"><summary>Investigación internacional · 23/10/2026</summary><p>Fuentes revisadas, no ofertas verificadas ni vigilancia automática. No se ha acreditado una compra con margen neto ≥40 € y entrega a Sevilla.</p>'+rows.map(r=>'<article><h3>'+E(r.name)+'</h3><p>'+E(r.result)+'</p><a class="v4btn" href="'+E(safeUrl(r.url))+'" target="_blank" rel="noopener noreferrer">Consultar fuente de investigación ↗</a></article>').join('')+'</details>';
 }
 function settingsBlock(cfg){
  const f=(k,l,s)=>'<label>'+l+'<input inputmode="decimal" data-v4-cfg="'+k+'" value="'+E(String(cfg[k]).replace(".",","))+'"><small>'+s+'</small></label>';
  return '<details class="v4settings"><summary>Supuestos del cálculo (editables)</summary><div class="v4grid">'+
-  f("feePct","Comisión de venta %","Cardmarket vendedor particular: 5 %. Ajusta si vendes en otra plataforma.")+
-  f("sellShip","Envío de venta €","Estimado: envío certificado con seguimiento.")+
+
   f("buyShip","Envío de compra por defecto €","Solo se usa si el anuncio no indica envío (aparece como «estimado»).")+
-  f("usdToEur","Cambio USD → EUR manual",fxNow().source==="manual"?"Se usa este valor: no se pudo obtener el cambio del BCE.":"En uso el cambio del BCE "+String(fxNow().rate).replace(".",",")+" del "+DAY(fxNow().date)+"; este valor solo es reserva.")+
+
   f("minProfit","Beneficio mínimo €","Umbral para considerar la operación interesante.")+
-  f("restLow","Restaurada · conservador","Fracción del precio de ejemplares sin alterar.")+
-  f("restMid","Restaurada · central","")+f("restHigh","Restaurada · optimista","")+
+
  '</div><button type="button" class="v4btn" data-v4-cfgsave>Guardar supuestos</button></details>';
 }
 function wireImages(root){root.querySelectorAll("img[data-v4img]").forEach(im=>{const fail=()=>{im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false};if(im.complete&&im.naturalWidth===0&&im.src)fail();im.addEventListener("error",fail,{once:true})})}
@@ -251,9 +287,9 @@ function wireImages(root){root.querySelectorAll("img[data-v4img]").forEach(im=>{
 function renderSales(){
  const host=document.getElementById("v4Sales");if(!host)return;const cfg=user.cfg;
  const rows=[];for(const it of allItems())for(const s of it.sales)rows.push({it,s});
- const c=k=>rows.filter(r=>r.s.kind===k).length;
+ const c=k=>rows.filter(r=>r.s.kind===k&&(k!=="venta"||comparable(r.s,r.it))).length;
  const by={};for(const r of rows)(by[r.it.id]=by[r.it.id]||{it:r.it,list:[]}).list.push(r.s);
- host.innerHTML='<section class="v4head"><span class="v4kicker">PRECIOS QUE HAN PAGADO COMPRADORES REALES</span><h2>Ventas reales</h2>'+
+ host.innerHTML='<section class="v4head"><span class="v4kicker">EVIDENCIA · REFERENCIAS DECLARADAS Y COMPROBADAS</span><h2>Ventas reales</h2>'+
  '<p>Cada referencia indica carta, fecha, precio, estado, idioma, plataforma y enlace. Se separan tres tipos que nunca se mezclan:</p>'+
  '<div class="v4legend"><span class="v4kind k-venta">VENTA CERRADA</span> operación individual completada · <span class="v4kind k-agregado">DATO AGREGADO</span> media de transacciones (p. ej. media 30 días de Cardmarket o «Market Price» de TCGplayer) · <span class="v4kind k-anuncio">ANUNCIO ACTIVO · NO ES VENTA</span> precio pedido.</div>'+
  '<div class="v4summary"><div class="s-comprobada"><b>'+c("venta")+'</b><span>Ventas cerradas</span></div><div class="s-observacion"><b>'+c("agregado")+'</b><span>Datos agregados</span></div><div class="s-caducada"><b>'+c("anuncio")+'</b><span>Anuncios (no ventas)</span></div></div>'+
@@ -291,6 +327,14 @@ function verifySheet(id){
  fld("shipping","Envío de compra € (vacío = estimado)",N(l.shipping)>=0?String(l.shipping).replace(".",","):"",'inputmode="decimal"')+
  sel("language","Idioma del ejemplar",lang(l.language||it.language).known?lang(l.language||it.language).name:"",LANG_OPTS)+
  sel("condition","Estado",l.condition||"",COND_OPTS)+
+ fld("country","País de expedición",l.country||"")+
+ sel("shipsSpain","Envío a Sevilla confirmado",String(l.shipsSpain===true),[["false","Pendiente"],["true","Sí"]])+
+ fld("costSource","Fuente del presupuesto completo (URL)",l.costSource||"",'type="url"')+
+ [ ["vat","IVA adicional no incluido"],["duty","Aranceles"],["handling","Gestión aduanera"],["fxFee","Cambio y pago"],["sellShipping","Envío de venta"],["sellTax","Impuestos de venta aplicables"] ].map(([k,label])=>fld(k,label+" € (vacío = pendiente)",l[k]??"",'inputmode="decimal"')).join("")+
+ fld("sellFeePct","Comisión de venta %",l.sellFeePct??"",'inputmode="decimal"')+
+ sel("costsConfirmed","Costes de adquisición",String(l.costsConfirmed===true),[["false","Estimados / pendientes"],["true","Confirmados en fuente"]])+
+ sel("saleCostsConfirmed","Costes e impuestos de venta",String(l.saleCostsConfirmed===true),[["false","Estimados / pendientes"],["true","Confirmados para esta operación"]])+
+ sel("resaleCondition","Estado de salida para restaurada",l.resaleCondition||"",COND_OPTS)+
  fld("defects","Defectos visibles",l.defects||"",'placeholder="Pliegue, esquinas, rayas, suciedad…"')+
  sel("available","¿Sigue disponible ahora?",l.available==="no"?"no":"si",[["si","Sí, disponible"],["no","No, ya no está"]])+
  fld("photoUrl","Enlace a la foto del anuncio (opcional)",l.photoUrl||"",'type="url" inputmode="url"')+
@@ -300,14 +344,22 @@ function verifySheet(id){
 function saleSheet(id){
  const it=findItem(id);if(!it)return;
  sheet('<h3>Añadir venta real</h3><p class="v4id">'+E(it.name)+' · '+E([it.set,it.number].filter(Boolean).join(" · "))+'</p>'+
- '<p class="v4note">'+(it.lane==="restaurar"?"Registra ventas del mismo modelo en mejor estado (sin alterar). La app aplicará el ajuste por restauración.":"Registra ventas de la misma carta, variante e idioma.")+' Un anuncio activo no es una venta.</p>'+
+ '<p class="v4note">'+(it.lane==="restaurar"?"Registra ventas de cartas intervenidas equivalentes. Las ventas sin alterar se conservan como referencias, sin trasladarlas al beneficio.":"Registra ventas de la misma carta, variante e idioma.")+' Un anuncio activo no es una venta.</p>'+
  '<form data-v4-form="sale" data-id="'+E(id)+'" class="v4form">'+
- sel("kind","Tipo de dato","venta",[["venta","Venta cerrada individual"],["agregado","Dato agregado de transacciones"],["anuncio","Anuncio activo (no es venta)"]])+
+ sel("kind","Tipo de dato","venta",[["venta","Venta cerrada individual"],["agregado","Dato agregado de transacciones"],["anuncio","Anuncio activo (no es venta)"],["estimacion","Estimación calculada (no es venta)"]])+
  fld("price","Precio realizado","",'inputmode="decimal" required')+sel("currency","Moneda","EUR",[["EUR","EUR €"],["USD","USD $"]])+
  fld("date","Fecha de la operación","",'type="date" required')+
  sel("condition","Estado del ejemplar vendido","",COND_OPTS)+sel("language","Idioma","",LANG_OPTS)+
  fld("platform","Plataforma","TCGplayer",'list="v4platforms"')+'<datalist id="v4platforms"><option>TCGplayer</option><option>Cardmarket</option><option>PSA Auction Prices Realized</option><option>PokeValue (ventas Cardmarket)</option><option>Heritage Auctions</option></datalist>'+
  fld("url","Enlace verificable","",'type="url" inputmode="url" placeholder="https://…"')+
+ fld("transactionId","Identificador individual de la venta","")+
+ fld("set","Colección exacta",it.set||"")+fld("number","Número exacto",it.number||"")+
+ sel("sameVariant","Edición, acabado y variante coinciden","false",[["false","Sin confirmar"],["true","Sí, comprobado"]])+
+ sel("verified","Venta individual comprobada en la fuente","false",[["false","Pendiente"],["true","Sí"]])+
+ sel("restored","Ejemplar vendido intervenido","unknown",[["unknown","Sin confirmar"],["false","Sin intervenir"],["true","Intervenido y declarado"]])+
+ sel("sameIntervention","Intervención equivalente (restauración)","false",[["false","No / pendiente"],["true","Sí"]])+
+ fld("fxRate","Cambio a EUR documentado (si moneda extranjera)","",'inputmode="decimal"')+
+ fld("fxDate","Fecha del cambio","",'type="date"')+fld("fxSource","Fuente del cambio","",'type="url"')+
  fld("note","Nota (variante exacta, edición…)","")+
  '<div class="v4actions"><button type="submit" class="v4btn primary">Guardar referencia</button><button type="button" class="v4btn" data-v4-close>Cancelar</button></div><p class="v4err" aria-live="polite"></p></form>');
 }
@@ -354,6 +406,8 @@ async function submit(form){
   if(g("shipping")!==""&&!(ship>=0))return err("Envío no válido.");
   const photoUrl=g("photoUrl");if(photoUrl&&!safeUrl(photoUrl))return err("Enlace de foto no válido.");
   const listing={url,shop:g("shop"),seller:g("seller"),price,shipping:ship,shippingKind:Number.isFinite(ship)?"confirmado":"estimado",language:g("language"),condition:g("condition"),defects:g("defects"),available:g("available")||"si",photoUrl:safeUrl(photoUrl),checkedAt:new Date().toISOString(),checkedBy:"usuario"};
+  for(const k of ["vat","duty","handling","fxFee","sellShipping","sellTax","sellFeePct"]){listing[k]=g(k)===""?null:N(g(k));if(g(k)!==""&&!(listing[k]>=0))return err("Coste no válido: "+k)}
+  Object.assign(listing,{country:g("country"),shipsSpain:g("shipsSpain")==="true",costSource:safeUrl(g("costSource")),costsConfirmed:g("costsConfirmed")==="true",saleCostsConfirmed:g("saleCostsConfirmed")==="true",resaleCondition:g("resaleCondition")});
   const file=form.elements.namedItem("photo")?.files?.[0];
   if(file){try{const d=await compress(file);if(!(await photoPut(id,d)))toast("La foto se verá en esta sesión, pero el navegador no permite guardarla.")}catch{return err("No se ha podido leer la foto.")}}
   const c=customRef(id);if(c)c.listing=listing;else patch(id).listing=listing;
@@ -362,6 +416,7 @@ async function submit(form){
   if(!g("date"))return err("Indica la fecha de la operación.");
   const url=g("url");if(url&&!safeUrl(url))return err("Enlace no válido (https, sin eBay).");
   const s={id:uid(),kind:g("kind"),price,currency:g("currency"),date:g("date"),condition:g("condition"),language:g("language"),platform:g("platform"),url:safeUrl(url),note:g("note")+(url?"":(g("note")?" · ":"")+"Sin enlace: precio no verificable por terceros."),addedBy:"usuario"};
+  Object.assign(s,{transactionId:g("transactionId"),set:g("set"),number:g("number"),sameVariant:g("sameVariant")==="true",verified:g("verified")==="true",verifiedAt:new Date().toISOString(),restored:g("restored")==="unknown"?null:g("restored")==="true",sameIntervention:g("sameIntervention")==="true",grade:"RAW",fxRate:N(g("fxRate")),fxDate:g("fxDate"),fxSource:safeUrl(g("fxSource"))});
   const c=customRef(id);if(c)(c.sales=c.sales||[]).push(s);else (patch(id).sales=patch(id).sales||[]).push(s);
  }else if(kind==="bought"){
   const price=N(g("price")),ship=g("shipping")===""?0:N(g("shipping"));
@@ -432,6 +487,6 @@ function migrateV103(){
 async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();refreshFx();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
 setInterval(()=>{if(!document.getElementById("v4Sheet")||document.getElementById("v4Sheet").hidden)renderAll()},5*60*1000);
 function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Añadida a "+(x.lane==="restaurar"?"Comprar para restaurar":"Compra YA"));const tab=x.lane==="restaurar"?"comprar-restaurar":"radar";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
-window.CVVault={addCustom,fx:fxNow,engine:{status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
+window.CVVault={addCustom,fx:fxNow,engine:{status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(start,300));else setTimeout(start,300);
 })();

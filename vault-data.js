@@ -41,3 +41,14 @@ window.CV_VAULT_DATA={
  ]
 };
 })();
+
+// Investigación fechada; no se crean ofertas, stock ni ventas a partir de estas páginas.
+window.CV_VAULT_DATA.internationalResearch = [
+ {name:"Bella 214/204 · UE / EE. UU.",url:"https://tcggraph.com/cards/lor_1_214",result:"Fuente secundaria actualizada el 22/10: mínimo anunciado francés 70 €, inglés 180 €. No son ventas ni ofertas individuales verificadas. Sus precios diarios realizados son agregados de idiomas y estados. No se puede comprar en francés y valorar como inglés."},
+ {name:"Bella · CardTrader",url:"https://www.cardtrader.com/es/cards/258456-belle-strange-but-special-enchanted-the-first-chapter/versions",result:"Página de versiones localizada; no confirma vendedor, idioma, stock ni transporte a Sevilla. Sin coste completo ni beneficio calculable."},
+ {name:"Blastoise Base Set · Estados Unidos",url:"https://www.tcgplayer.com/product/42360/pokemon-base-set-blastoise",result:"Ficha localizada. La respuesta accesible requiere JavaScript y no muestra Latest Sales ni anuncios: no se ha verificado ninguna compra o venta. Restauración pendiente de fotos del ejemplar y comparables de cartas intervenidas."},
+ {name:"Mandarake · Japón",url:"https://earth.mandarake.co.jp/help/es/faq/faq.html",result:"Política de envío internacional consultada: coste según destino, peso y tamaño; importación no incluida. No hay presupuesto de una carta concreta a Sevilla. No se presume disponibilidad de un objetivo de restauración."},
+ {name:"Chaos Cards · Reino Unido",url:"https://www.chaoscards.co.uk/worldwide-shipping",result:"Política internacional y sección de liquidación revisadas. Falta una oferta concreta con portes a Sevilla, impuestos y venta comparable. Los portes mínimos publicitados no son un presupuesto para España."},
+ {name:"Cherry Collectables · Australia",url:"https://www.cherrycollectables.com.au/pages/shipping-options",result:"La tienda anuncia envío mundial gratuito para singles desde 75 $ y seguimiento internacional. Deben confirmarse moneda, elegibilidad de España y costes de importación en el pedido. No es aún una compra recomendada."},
+ {name:"Canadá · Arthur encantada",url:"https://beansgems.com/products/lorcana-arthur-wizards-apprentice-enchanted-nm",result:"Resultado indexado con indicación de agotado y botón de compra contradictorio. Sin stock ni envío a Sevilla verificados: excluido de Compra YA. No se toma el precio de un agotado como venta cerrada."}
+];
