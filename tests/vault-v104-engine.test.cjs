@@ -42,15 +42,24 @@ t('Restaurada requiere intervención comparable',()=>{const it={...base,lane:'re
 t('12 objetivos de restauración con imagen y enlaces',()=>{const r=ctx.CV_VAULT_DATA.restoreTargets;assert.equal(r.length,12);for(const x of r){assert.ok(/^https:\/\/images\.pokemontcg\.io\//.test(x.image));assert.ok(x.links.cardmarket&&x.links.tcgplayer);assert.ok(!isSearchUrl(x.links.tcgplayer))}});
 const R=ctx.CVRadar,c={...DEFAULTS},row=['sv03.5-199','Charizard ex','151','199','165','Special illustration rare','sv','sv'];
 t('radar: id TCGdex → pokemontcg',()=>{assert.equal(R.ptcgId('sv03.5-199'),'sv3pt5-199');assert.equal(R.ptcgId('base1-4'),'base1-4');assert.equal(R.ptcgId('swsh7-215'),'swsh7-215');assert.equal(R.ptcgId('me01-005'),'me1-5')});
-t('radar: margen conservador de restauración',()=>{const x=R.evaluatePk(row,{trend:300,avg30:280,avg7:290,low:90},c,false);assert.ok(Math.abs(x.restore.low-(280*0.6*0.95-5-90-6))<1e-9);assert.equal(x.pass,true)});
-t('radar: descarta por margen, precio bajo, duplicado y compra > 150 €',()=>{
- assert.match(R.evaluatePk(row,{trend:60,avg30:58,low:55},c,false).reasons[0],/Margen/);
+t('radar: solo diferencia bruta como indicador, nunca beneficio',()=>{const x=R.evaluatePk(row,{trend:300,avg30:280,avg7:290,low:90},c,false);assert.equal(x.gap,190);assert.equal(x.pass,true);assert.equal(x.restore,undefined);assert.equal(x.good,undefined)});
+t('radar: descarta por diferencia, precio bajo, duplicado, compra > 150 € y anuncio < 5 €',()=>{
+ assert.match(R.evaluatePk(row,{trend:60,avg30:58,low:55},c,false).reasons[0],/Diferencia bruta/);
  assert.match(R.evaluatePk(row,{trend:10,avg30:9,low:2},c,false).reasons[0],/< 20/);
  assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:90},c,true).reasons[0],/Mi colección/);
- assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:300},c,false).reasons[0],/150/)});
+ assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:300},c,false).reasons[0],/150/);
+ assert.match(R.evaluatePk(row,{trend:200,avg30:200,low:3},c,false).reasons[0],/casi seguro/);
+ assert.match(R.evaluatePk(row,{trend:400,avg30:400,low:300-100+80},c,false).reasons[0]||'',/%|150/)});
+t('radar: ranking penaliza volatilidad',()=>{const a=R.evaluatePk(row,{trend:300,avg30:300,avg7:300,low:100},c,false),b=R.evaluatePk(row,{trend:300,avg30:300,avg7:500,low:100},c,false);assert.ok(a.score>b.score)});
 t('radar: sin anuncios o sin media no hay señal',()=>{assert.equal(R.evaluatePk(row,{trend:300,avg30:300},c,false).pass,undefined);assert.equal(R.evaluatePk(row,{low:20},c,false).pass,undefined)});
 t('radar: volatilidad señalada como riesgo',()=>{assert.ok(R.evaluatePk(row,{trend:300,avg30:200,avg7:400,low:20},c,false).risks.length>=1)});
 t('radar: lectura del formato TCGdex',()=>{const p=R.parseTcgdex({pricing:{cardmarket:{trend:'12.5',avg30:10,low:2,updated:'2026-10-22'},tcgplayer:{holofoil:{marketPrice:20},normal:{marketPrice:5}}}});assert.equal(p.trend,12.5);assert.equal(p.usd,5);assert.equal(p.cmUpdated,'2026-10-22')});
+const {mergeImport}=ctx.CVVault.engine;
+t('importación fusiona sin borrar ni duplicar',()=>{const cur={cfg:{},patches:{a:{listing:{checkedAt:'2026-10-23T10:00:00Z',price:1},sales:[{id:'s1',price:5}]}},custom:[{id:'c1',sales:[{id:'x',price:1}]}],bought:{c1:'2026-10-20'}};
+ const inc={patches:{a:{listing:{checkedAt:'2026-10-20T10:00:00Z',price:9},sales:[{id:'s1',price:5},{id:'s2',price:6}]}},custom:[{id:'c1',sales:[{id:'x',price:1}]},{id:'c2'}],bought:{c2:'2026-10-21'}};
+ const r=mergeImport(cur,inc);assert.equal(r.user.custom.length,2);assert.equal(r.user.patches.a.sales.length,2);assert.equal(r.user.patches.a.listing.price,1);assert.deepEqual(Object.keys(r.user.bought).sort(),['c1','c2']);assert.equal(r.added,1);assert.equal(r.salesAdded,1);
+ const r2=mergeImport(r.user,inc);assert.equal(r2.added,0);assert.equal(r2.salesAdded,0)});
+t('comprobación con fecha futura no es válida',()=>assert.equal(status({...base,listing:L({checkedAt:'2027-01-01T00:00:00Z'})},now,cfg).code,'caducada'));
 console.log('\n'+n+' pruebas del motor superadas');
 // Render integration without network: catches missing properties / template exceptions.
 const hosts={v4Buy:{innerHTML:'',querySelectorAll:()=>[]},v4Restore:{innerHTML:'',querySelectorAll:()=>[]},v4Sales:{innerHTML:'',querySelectorAll:()=>[]}};

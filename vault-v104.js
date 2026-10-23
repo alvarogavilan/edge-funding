@@ -56,7 +56,7 @@ function fromResearch(o){
  if(N(o.marketEvidence?.currentExitEUR)>0)sales.push({id:"r-"+o.id+"-ask",kind:"anuncio",price:N(o.marketEvidence.currentExitEUR),currency:"EUR",date:o.marketEvidence.at||o.checkedAt||"",condition:o.condition||"",language:o.offerLanguage||"",platform:"Cardmarket · anuncios activos",url:safeUrl(o.url),note:"Precio pedido por vendedores. NO es una venta.",addedBy:"investigación"});
  const url=safeUrl(o.url);
  return {id:"buy-"+o.id,lane:"compra",game:o.universe==="lorcana"?"lorcana":"pokemon",name:o.name,set:o.set||"",number:o.number||"",rarity:o.rarity||o.variant||"",language:o.offerLanguage||o.language||"",
-  image:o.image||"",links:{cardmarket:url},why:o.note||"",source:"Investigación V76–V101 (septiembre 2026)",
+  image:o.image||"",links:{cardmarket:url},why:o.note||"",historical:true,source:"Investigación V76–V101 (septiembre 2026)",
   listing:{url,shop:o.shop||"Cardmarket",seller:o.seller||"",price:N(o.price),shipping:NaN,shippingKind:"estimado",condition:o.condition||"",defects:"",language:o.offerLanguage||"",checkedAt:o.checkedAt||o.evidenceCheckedAt||"",checkedBy:"investigación",available:"desconocido"},
   sales,origStatus:o.status||"",ownedFlag:!!o.ownedDuplicateBlocked||/YA EN MI COLECCI/i.test(String(o.status||""))};
 }
@@ -86,7 +86,32 @@ function merge(base){
  const p=user.patches[base.id]||{};
  const it={...base,listing:p.listing?{...(base.listing||{}),...p.listing}:base.listing,sales:[...(base.sales||[]).filter(s=>!(p.removedSales||[]).includes(s.id)),...(p.sales||[])],interventions:p.interventions||[],hidden:!!p.hidden};
  if(photoCache[it.id])it.listingPhoto=photoCache[it.id];
+ if(!it.image&&lorImg.map[it.id])it.image=lorImg.map[it.id];
  return it;
+}
+/* Fotos de Lorcana de las fichas antiguas: se buscan por identidad exacta (colección + número) en la API pública
+   de Lorcast. Si no hay número o no coincide, no se pone ninguna foto (nunca la de otra variante). */
+const LOR_IMG="cv_v107_lorcana_img";
+const lorImg=(()=>{try{const x=JSON.parse(localStorage.getItem(LOR_IMG)||"{}");return {map:x.map||{},at:x.at||0,tried:x.tried||{}}}catch{return {map:{},at:0,tried:{}}}})();
+async function resolveLorcanaImages(){
+ const need=baseItems().filter(i=>i.game==="lorcana"&&!i.image&&!lorImg.map[i.id]&&/^\d+/.test(String(i.number))&&i.set&&!(lorImg.tried[i.id]>Date.now()-7*864e5));
+ if(!need.length)return;
+ try{
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),15000);
+  const r=await fetch("https://api.lorcast.com/v0/sets",{signal:ctl.signal});clearTimeout(tm);if(!r.ok)return;
+  const sets=(await r.json()).results||[],bySet={};
+  for(const it of need){const st=sets.find(x=>String(x.name).toLowerCase()===String(it.set).toLowerCase());if(!st){lorImg.tried[it.id]=Date.now();continue}(bySet[st.code||st.id]=bySet[st.code||st.id]||[]).push(it)}
+  for(const [code,items] of Object.entries(bySet)){
+   const c2=new AbortController(),t2=setTimeout(()=>c2.abort(),15000);
+   try{const rr=await fetch("https://api.lorcast.com/v0/sets/"+encodeURIComponent(code)+"/cards",{signal:c2.signal});if(!rr.ok)continue;const j=await rr.json(),cards=Array.isArray(j)?j:(j.results||[]);
+    for(const it of items){const num=String(it.number).split("/")[0].replace(/^0+/,"");const base=String(it.name).replace(/\s*\(V\.\d\)\s*$/,"").split(" - ")[0].trim().toLowerCase();
+     const hit=cards.find(c=>String(c.collector_number).replace(/^0+/,"")===num&&String(c.name).trim().toLowerCase()===base);
+     const u=safeUrl(hit?.image_uris?.digital?.large||hit?.image_uris?.digital?.normal);if(u)lorImg.map[it.id]=u;else lorImg.tried[it.id]=Date.now()}}
+   catch{}finally{clearTimeout(t2)}
+  }
+  lorImg.at=Date.now();try{localStorage.setItem(LOR_IMG,JSON.stringify(lorImg))}catch{}
+  renderAll();
+ }catch{}
 }
 function allItems(){return [...baseItems(),...user.custom].map(merge)}
 
@@ -160,7 +185,7 @@ function photoBlock(it){
  const src=own||safeUrl(it.image)||window.CVCardImages?.entry?.({name:it.name,number:it.number,set:it.set,universe:it.game})?.path||"";
  const tag=own?"Foto del ejemplar anunciado":src?(it.lane==="restaurar"?"Imagen de catálogo · NO es el ejemplar dañado":"Imagen de catálogo de la carta"):"";
  return '<figure class="v4photo">'+(src?'<img src="'+E(src)+'" alt="'+E(it.name)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-v4img>':"")+
-  '<div class="v4noimg"'+(src?' hidden':'')+'><b>'+E(it.name)+'</b><span>Foto no disponible</span></div>'+(tag?'<figcaption class="'+(own?"own":"")+'">'+tag+'</figcaption>':'')+'</figure>';
+  '<div class="v4noimg"'+(src?' hidden':'')+'><b>'+E(it.name)+'</b><span>'+(src?'La foto no ha cargado (sin conexión o enlace roto)':'Sin foto verificada de esta variante exacta')+'</span></div>'+(tag?'<figcaption class="'+(own?"own":"")+'">'+tag+'</figcaption>':'')+'</figure>';
 }
 function salesList(it,cfg){
  if(!it.sales.length)return '<p class="v4empty">Sin referencias de venta todavía.</p>';
@@ -184,16 +209,16 @@ function card(ev,cfg){
  '<div class="v4money">'+
   '<div><span>PRECIO DE COMPRA</span><b>'+(N(l.price)>0?EUR(N(l.price)):"—")+'</b><small>'+(N(l.price)>0?'+ envío '+EUR(ec.buyShip)+(ec.shipKnown?' (confirmado)':' (estimado)'):'pendiente de anuncio')+'</small></div>'+
   '<div><span>PRECIO DE VENTA ESTIMADO</span><b>'+(ec.basis==="venta"?EUR(ec.sale.mid):"—")+'</b><small>'+(ec.basis==="agregado"?'Referencia agregada '+EUR(ec.unaltered.mid)+' (no es venta). Añade ventas cerradas.':ec.basis?(isR?'restaurada declarada · comparables equivalentes · ':'')+basisTxt:'sin ventas reales')+'</small></div>'+
-  '<div><span>GASTOS Y COMISIONES</span><b>'+(ec.net?EUR(ec.costs.mid):"—")+'</b><small>'+E(l.sellFeePct??'—')+' % comisión + envíos e impuestos</small></div>'+
+  '<div><span>GASTOS Y COMISIONES</span><b>'+(ec.net?EUR(ec.costs.mid):"—")+'</b><small>'+(N(l.sellFeePct)>=0?E(String(l.sellFeePct).replace(".",","))+' % comisión + envíos e impuestos':'comisión, envío e impuestos de venta pendientes')+'</small></div>'+
   '<div class="v4profit t-'+vd.tone+'"><span>BENEFICIO POTENCIAL</span><b>'+(ec.net?SIGNED(ec.net.mid):"—")+'</b><small>'+E(vd.label)+'</small></div>'+
  '</div>'+
  (scen?'<table class="v4scen"><thead><tr><th>Escenario</th><th>Venta</th><th>Beneficio</th></tr></thead><tbody>'+scen.map(([n,s,p])=>'<tr><td>'+n+'</td><td>'+EUR(s)+'</td><td class="'+(p>=cfg.minProfit?"pos":p<0?"neg":"")+'">'+SIGNED(p)+'</td></tr>').join("")+'</tbody></table>'+
   '<p class="v4basis">Escenarios: mínimo, mediana y máximo de ventas comparables verificadas. Se descuentan compra, envíos, IVA adicional, aranceles, gestión, cambio, comisiones e impuestos de venta registrados. No se descuentan horas ni materiales. No es beneficio garantizado.</p>':'')+
  '<div class="v4money"><div><span>TOTAL PUESTO EN SEVILLA</span><b>'+EUR(ec.acq.total)+'</b><small>'+(ec.acq.confirmed?'Costes confirmados':'Estimación o costes pendientes: '+E(ec.acq.missing.join(', ')))+'</small></div></div>'+
- '<p class="v4note">País de expedición: '+E(l.country||'sin confirmar')+'. IVA adicional: '+EUR(N(l.vat))+' · Aranceles: '+EUR(N(l.duty))+' · Gestión: '+EUR(N(l.handling))+' · Cambio/pago: '+EUR(N(l.fxFee))+'. '+ec.excluded+' referencia(s) declarada(s) excluida(s) del cálculo por falta de comparabilidad o verificación.</p>'+
+ '<p class="v4note">País de expedición: '+E(l.country||'sin confirmar')+(l.zone?' ('+({es:"España",ue:"UE",fuera:"fuera de la UE"}[l.zone])+')':'')+'. '+[["vat","IVA adicional"],["duty","Aranceles"],["handling","Gestión"],["fxFee","Cambio/pago"]].map(([k,t])=>t+': '+((l.notApplicable||[]).includes(k)?'no aplica (UE)':N(l[k])>=0?EUR(N(l[k])):'desconocido')).join(' · ')+'. '+ec.excluded+' referencia(s) declarada(s) excluida(s) del cálculo por falta de comparabilidad o verificación.</p>'+
 
  (st.missing.length?'<p class="v4missing"><b>'+(st.code==="caducada"?E(st.why||"Comprobación vencida")+'. ':'')+'Falta:</b> '+E(st.missing.join(" · "))+'</p>':'')+
- (it.why?'<p class="v4why"><b>Por qué merece la pena mirarla:</b> '+E(it.why)+'</p>':'')+
+ (it.why?(it.historical?'<p class="v4why hist"><b>Nota histórica · '+E(it.source||"investigación anterior")+' · no reverificada, no es recomendación actual:</b> '+E(it.why)+'</p>':'<p class="v4why"><b>Por qué merece la pena mirarla:</b> '+E(it.why)+'</p>'):'')+
  '<dl class="v4facts">'+
   '<div><dt>Tienda / vendedor</dt><dd>'+E([l.shop,l.seller].filter(Boolean).join(" · ")||"—")+'</dd></div>'+
   '<div><dt>Comprobado</dt><dd>'+(l.checkedAt?WHEN(l.checkedAt)+' · por '+E(l.checkedBy||"usuario"):"nunca")+'</dd></div>'+
@@ -253,7 +278,7 @@ function renderLane(lane){
   (pending.length?'<h3>En observación · no son recomendaciones de compra</h3><div class="v4list">'+pending.map(e=>card(e,cfg)).join('')+'</div>':'')+
 
   (old.length?'<details class="v4old"'+(live.length?'':' open')+'><summary>Caducadas · volver a comprobar ('+old.length+')</summary><div class="v4list">'+old.map(e=>card(e,cfg)).join("")+'</div></details>':'')+
-  comparisonBlock(evs,cfg)+researchBlock()+settingsBlock(cfg);
+  (lane==="compra"?funnelBlock():"")+comparisonBlock(evs,cfg)+researchBlock()+settingsBlock(cfg);
  wireImages(host);
 }
 function compareOffers(items,cfg){
@@ -272,6 +297,12 @@ function researchBlock(){
  const rows=window.CV_VAULT_DATA?.internationalResearch||[];
  return '<details class="v4settings"><summary>Investigación internacional · 23/10/2026</summary><p>Fuentes revisadas, no ofertas verificadas ni vigilancia automática. No se ha acreditado una compra con margen neto ≥40 € y entrega a Sevilla.</p>'+rows.map(r=>'<article><h3>'+E(r.name)+'</h3><p>'+E(r.result)+'</p><a class="v4btn" href="'+E(safeUrl(r.url))+'" target="_blank" rel="noopener noreferrer">Consultar fuente de investigación ↗</a></article>').join('')+'</details>';
 }
+function funnel(){
+ const now=Date.now(),cfg=user.cfg,evs=allItems().filter(i=>!owned(i)).map(i=>evaluate(i,now,cfg));
+ const withListing=evs.filter(e=>e.st.code!=="caducada"&&e.it.listing&&listingPrecision(e.it.listing).ok);
+ return {individual:withListing.length,stock:evs.filter(e=>e.st.code==="comprobada"||(e.st.code==="observacion"&&e.it.listing?.available==="si"&&(now-Date.parse(e.it.listing.checkedAt))/36e5<=cfg.freshHours)).length,
+  fullCost:evs.filter(e=>e.ec.acq.confirmed).length,comparables:evs.filter(e=>e.ec.basis==="venta").length,pass:evs.filter(e=>e.vd.code==="rentable").length};
+}
 function settingsBlock(cfg){
  const f=(k,l,s)=>'<label>'+l+'<input inputmode="decimal" data-v4-cfg="'+k+'" value="'+E(String(cfg[k]).replace(".",","))+'"><small>'+s+'</small></label>';
  return '<details class="v4settings"><summary>Supuestos del cálculo (editables)</summary><div class="v4grid">'+
@@ -282,7 +313,23 @@ function settingsBlock(cfg){
 
  '</div><button type="button" class="v4btn" data-v4-cfgsave>Guardar supuestos</button></details>';
 }
-function wireImages(root){root.querySelectorAll("img[data-v4img]").forEach(im=>{const fail=()=>{im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false};if(im.complete&&im.naturalWidth===0&&im.src)fail();im.addEventListener("error",fail,{once:true})})}
+/* Imagen rota: un único reintento a los 2,5 s; si vuelve a fallar, aviso honesto (no se sustituye por otra variante). */
+function wireImages(root){root.querySelectorAll("img[data-v4img]").forEach(im=>{
+ const fail=()=>{im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false};
+ const onErr=()=>{if(im.dataset.retried){fail();return}im.dataset.retried="1";const src=im.getAttribute("src");setTimeout(()=>{if(!im.isConnected)return;im.addEventListener("error",onErr,{once:true});im.src=src+(src.includes("?")?"&":"?")+"r=1"},2500)};
+ if(im.complete&&im.naturalWidth===0&&im.getAttribute("src"))onErr();else im.addEventListener("error",onErr,{once:true})})}
+function funnelBlock(){
+ const f=funnel(),r=window.CVRadar?.counts?.()||{};
+ const row=(n,t,s)=>'<li><b>'+(Number.isFinite(n)?n.toLocaleString("es-ES"):"—")+'</b><span>'+t+(s?'<small>'+s+'</small>':'')+'</span></li>';
+ return '<details class="v4settings v4funnel"><summary>Embudo de verificación · qué está realmente comprobado</summary><ol>'+
+  row(r.catalog,"Referencias del catálogo",(Number.isFinite(r.catalog)?"":"se cargan al abrir «En investigación» · ")+"identidad de cartas; no son ofertas")+
+  row(r.consulted,"Referencias con precio consultado (≤ 24 h)","medias agregadas y anuncio más barato; sin vendedor ni stock")+
+  row(f.individual,"Anuncios individuales vigentes","enlace + vendedor, comprobados hace ≤ 24 h (los caducados no cuentan)")+
+  row(f.stock,"Con stock comprobado hace ≤ 24 h","")+
+  row(f.fullCost,"Con coste completo puesto en Sevilla documentado","")+
+  row(f.comparables,"Con ventas cerradas comparables verificadas","")+
+  row(f.pass,"Superan el filtro económico","margen conservador ≥ "+EUR(user.cfg.minProfit))+'</ol></details>';
+}
 
 function renderSales(){
  const host=document.getElementById("v4Sales");if(!host)return;const cfg=user.cfg;
@@ -328,6 +375,7 @@ function verifySheet(id){
  sel("language","Idioma del ejemplar",lang(l.language||it.language).known?lang(l.language||it.language).name:"",LANG_OPTS)+
  sel("condition","Estado",l.condition||"",COND_OPTS)+
  fld("country","País de expedición",l.country||"")+
+ sel("zone","Zona de origen",l.zone||"",[["","— elegir —"],["es","España"],["ue","Otro país de la UE"],["fuera","Fuera de la UE (Reino Unido, EE. UU., Japón…)"]])+
  sel("shipsSpain","Envío a Sevilla confirmado",String(l.shipsSpain===true),[["false","Pendiente"],["true","Sí"]])+
  fld("costSource","Fuente del presupuesto completo (URL)",l.costSource||"",'type="url"')+
  [ ["vat","IVA adicional no incluido"],["duty","Aranceles"],["handling","Gestión aduanera"],["fxFee","Cambio y pago"],["sellShipping","Envío de venta"],["sellTax","Impuestos de venta aplicables"] ].map(([k,label])=>fld(k,label+" € (vacío = pendiente)",l[k]??"",'inputmode="decimal"')).join("")+
@@ -375,26 +423,54 @@ function newSheet(lane){
 }
 function boughtSheet(id){
  const it=findItem(id);if(!it)return;const l=it.listing||{};
- sheet('<h3>He comprado</h3><p class="v4id">'+E(it.name)+' · '+E([it.set,it.number].filter(Boolean).join(" · "))+'</p><p class="v4note">Solo confirma si ya has pagado. La carta se añadirá a Mi colección con estos datos.</p>'+
+ const v=k=>N(l[k])>=0?String(l[k]).replace(".",","):"";
+ sheet('<h3>He comprado</h3><p class="v4id">'+E(it.name)+' · '+E([it.set,it.number].filter(Boolean).join(" · "))+'</p><p class="v4note">Solo confirma si ya has pagado. Escribe los importes REALES del pedido. Un campo vacío queda como «desconocido», nunca como 0 €.</p>'+
  '<form data-v4-form="bought" data-id="'+E(id)+'" class="v4form">'+fld("price","Precio pagado €",N(l.price)>0?String(l.price).replace(".",","):"",'inputmode="decimal" required')+
- fld("shipping","Envío y comisiones de compra €",N(l.shipping)>=0?String(l.shipping).replace(".",","):"",'inputmode="decimal"')+
+ fld("shipping","Envío pagado €",v("shipping"),'inputmode="decimal"')+fld("vat","IVA de importación pagado €",v("vat"),'inputmode="decimal"')+fld("duty","Aranceles pagados €",v("duty"),'inputmode="decimal"')+
+ fld("handling","Gestión aduanera €",v("handling"),'inputmode="decimal"')+fld("fxFee","Comisión de cambio o pago €",v("fxFee"),'inputmode="decimal"')+
+ sel("costsPaid","Estos importes son",l.costsConfirmed?"pagados":"",[["","— elegir —"],["pagados","Pagados (según el pedido)"],["estimados","Estimados (aún no cobrados)"]])+
  sel("language","Idioma recibido",lang(l.language||it.language).known?lang(l.language||it.language).name:"",LANG_OPTS)+sel("condition","Estado",l.condition||"",COND_OPTS)+
  fld("date","Fecha de compra",new Date().toISOString().slice(0,10),'type="date" required')+
  '<div class="v4actions"><button type="submit" class="v4btn primary">Añadir a Mi colección</button><button type="button" class="v4btn" data-v4-close>Cancelar</button></div><p class="v4err" aria-live="polite"></p></form>');
 }
+/* Alta en Mi colección. Conserva cada coste con su estado (pagado / estimado / desconocido). Una carta para restaurar
+   se valora a su coste: nunca hereda el precio de un ejemplar original sin alterar. */
 function addToCollection(it,f){
  const st=appState();if(!st)return false;st.cards=Array.isArray(st.cards)?st.cards:[];
- const l=it.listing||{},ref=economics(it,user.cfg);
- st.cards.push({id:"cv105-"+uid(),universe:it.game,name:it.name,set:it.set||"",number:it.number||"",language:f.language||"",grading:"RAW",grade:f.condition||"",condition:f.condition||"",
-  value:ref.basis==="venta"?(it.lane==="restaurar"?ref.unaltered.mid:ref.sale.mid):f.price,valuationStatus:ref.basis==="venta"?"reference":"cost",purchase:f.price,purchaseShipping:f.shipping,purchaseFees:0,quantity:1,purchaseDate:f.date,
-  purpose:it.lane==="restaurar"?"restoration":"investment",referenceImage:safeUrl(it.image)||"",buySource:l.shop||"",buySourceUrl:safeUrl(l.url)||"",buySeller:l.seller||"",buyOpportunityId:it.id,
-  notes:(it.lane==="restaurar"?"Comprada para restaurar. ":"")+"Registrada desde Card Vault V105.",updatedAt:new Date().toISOString()});
- try{window.CVStateBridge.save();window.CVRenderCollection?.()}catch{return false}
+ if(st.cards.some(c=>c.buyOpportunityId===it.id&&c.purchaseDate===f.date&&c.purchase===f.price))return "dup";
+ const l=it.listing||{},ref=economics(it,user.cfg),known=Object.values(f.costs).filter(Number.isFinite);
+ const extras=known.reduce((a,b)=>a+b,0),unknown=Object.entries(f.costs).filter(([,v])=>!Number.isFinite(v)).map(([k])=>k);
+ st.cards.push({id:"cv106-"+uid(),universe:it.game,name:it.name,set:it.set||"",number:it.number||"",language:f.language||"",grading:it.grade||"RAW",grade:f.condition||"",condition:f.condition||"",
+  value:it.lane==="compra"&&ref.basis==="venta"&&ref.n>=2?ref.sale.low:f.price,valuationStatus:it.lane==="compra"&&ref.basis==="venta"&&ref.n>=2?"reference":"cost",
+  purchase:f.price,purchaseShipping:Number.isFinite(f.costs.shipping)?f.costs.shipping:null,purchaseFees:Number.isFinite(f.costs.fxFee)?f.costs.fxFee:null,
+  purchaseCosts:{...f.costs,status:f.costsPaid||"desconocido",unknown,knownTotal:f.price+extras,currency:"EUR",recordedAt:new Date().toISOString()},
+  quantity:1,purchaseDate:f.date,purpose:it.lane==="restaurar"?"restoration":"investment",referenceImage:safeUrl(it.image)||"",buySource:l.shop||"",buySourceUrl:safeUrl(l.url)||"",buySeller:l.seller||"",buyCountry:l.country||"",buyOpportunityId:it.id,
+  notes:(it.lane==="restaurar"?"Comprada para restaurar; valorada a coste hasta tener ventas comparables de cartas intervenidas. ":"")+"Costes "+(f.costsPaid||"sin clasificar")+(unknown.length?"; desconocidos: "+unknown.join(", "):"")+". Registrada desde Card Vault V107.",updatedAt:new Date().toISOString()});
+ try{window.CVStateBridge.save();window.CVRenderCollection?.()}catch{st.cards.pop();return false}
  return true;
+}
+/* Importación: fusiona sin borrar nada local. Fichas propias por id; referencias de venta sin duplicar;
+   la comprobación más reciente de cada anuncio prevalece; compras registradas se conservan. */
+function mergeImport(cur,inc){
+ const out=JSON.parse(JSON.stringify(cur));let added=0,salesAdded=0;
+ const saleKey=s=>[s.id,s.platform,s.transactionId,s.date,s.price].join("|");
+ const mergeSales=(a=[],b=[])=>{const keys=new Set(a.map(saleKey));for(const s of b)if(s&&!keys.has(saleKey(s))){a.push(s);keys.add(saleKey(s));salesAdded++}return a};
+ const newer=(a,b)=>!a?b:!b?a:(Date.parse(b.checkedAt||0)>Date.parse(a.checkedAt||0)?b:a);
+ for(const c of (Array.isArray(inc.custom)?inc.custom:[])){if(!c||!c.id)continue;const m=out.custom.find(x=>x.id===c.id);
+  if(!m){out.custom.push(c);added++}else{m.sales=mergeSales(m.sales||[],c.sales||[]);m.listing=newer(m.listing,c.listing)}}
+ for(const [id,p] of Object.entries(inc.patches||{})){const m=out.patches[id]=out.patches[id]||{};m.listing=newer(m.listing,p.listing);m.sales=mergeSales(m.sales||[],p.sales||[]);
+  m.removedSales=[...new Set([...(m.removedSales||[]),...(p.removedSales||[])])];if(!m.interventions?.length&&p.interventions)m.interventions=p.interventions}
+ out.bought={...(inc.bought||{}),...(out.bought||{})};
+ if(!out.fx&&inc.fx)out.fx=inc.fx;out.migratedV103=out.migratedV103||!!inc.migratedV103;
+ return {user:out,added,salesAdded};
 }
 function patch(id){return user.patches[id]=user.patches[id]||{}}
 function customRef(id){return user.custom.find(c=>c.id===id)}
 async function submit(form){
+ if(form.dataset.busy)return;form.dataset.busy="1";const btn=form.querySelector("[type=submit]");if(btn)btn.disabled=true;
+ try{return await submitInner(form)}finally{delete form.dataset.busy;if(btn&&form.isConnected)btn.disabled=false}
+}
+async function submitInner(form){
  const g=n=>String(form.elements.namedItem(n)?.value||"").trim(),err=m=>{form.querySelector(".v4err").textContent=m};
  const kind=form.dataset.v4Form,id=form.dataset.id;
  if(kind==="verify"){
@@ -406,7 +482,13 @@ async function submit(form){
   if(g("shipping")!==""&&!(ship>=0))return err("Envío no válido.");
   const photoUrl=g("photoUrl");if(photoUrl&&!safeUrl(photoUrl))return err("Enlace de foto no válido.");
   const listing={url,shop:g("shop"),seller:g("seller"),price,shipping:ship,shippingKind:Number.isFinite(ship)?"confirmado":"estimado",language:g("language"),condition:g("condition"),defects:g("defects"),available:g("available")||"si",photoUrl:safeUrl(photoUrl),checkedAt:new Date().toISOString(),checkedBy:"usuario"};
+  if(!g("zone"))return err("Indica la zona de origen (España, UE o fuera de la UE).");
+  if(N(g("price"))>5000)return err("Precio fuera de rango: revisa el importe.");
   for(const k of ["vat","duty","handling","fxFee","sellShipping","sellTax","sellFeePct"]){listing[k]=g(k)===""?null:N(g(k));if(g(k)!==""&&!(listing[k]>=0))return err("Coste no válido: "+k)}
+  if(listing.sellFeePct!=null&&listing.sellFeePct>=100)return err("La comisión de venta debe ser menor del 100 %.");
+  /* Dentro de la UE no hay IVA de importación, arancel ni despacho aduanero: «no aplica», no un cero supuesto. */
+  listing.zone=g("zone");listing.notApplicable=[];
+  if(listing.zone!=="fuera")for(const k of ["vat","duty","handling"])if(listing[k]==null){listing[k]=0;listing.notApplicable.push(k)}
   Object.assign(listing,{country:g("country"),shipsSpain:g("shipsSpain")==="true",costSource:safeUrl(g("costSource")),costsConfirmed:g("costsConfirmed")==="true",saleCostsConfirmed:g("saleCostsConfirmed")==="true",resaleCondition:g("resaleCondition")});
   const file=form.elements.namedItem("photo")?.files?.[0];
   if(file){try{const d=await compress(file);if(!(await photoPut(id,d)))toast("La foto se verá en esta sesión, pero el navegador no permite guardarla.")}catch{return err("No se ha podido leer la foto.")}}
@@ -414,14 +496,20 @@ async function submit(form){
  }else if(kind==="sale"){
   const price=N(g("price"));if(!(price>0))return err("Indica el precio realizado.");
   if(!g("date"))return err("Indica la fecha de la operación.");
+  if(Date.parse(g("date"))>Date.now())return err("La fecha de la venta no puede ser futura.");
+  if(g("kind")==="venta"&&g("verified")==="true"&&!safeUrl(g("url")))return err("Una venta comprobada necesita enlace a la evidencia.");
   const url=g("url");if(url&&!safeUrl(url))return err("Enlace no válido (https, sin eBay).");
   const s={id:uid(),kind:g("kind"),price,currency:g("currency"),date:g("date"),condition:g("condition"),language:g("language"),platform:g("platform"),url:safeUrl(url),note:g("note")+(url?"":(g("note")?" · ":"")+"Sin enlace: precio no verificable por terceros."),addedBy:"usuario"};
   Object.assign(s,{transactionId:g("transactionId"),set:g("set"),number:g("number"),sameVariant:g("sameVariant")==="true",verified:g("verified")==="true",verifiedAt:new Date().toISOString(),restored:g("restored")==="unknown"?null:g("restored")==="true",sameIntervention:g("sameIntervention")==="true",grade:"RAW",fxRate:N(g("fxRate")),fxDate:g("fxDate"),fxSource:safeUrl(g("fxSource"))});
   const c=customRef(id);if(c)(c.sales=c.sales||[]).push(s);else (patch(id).sales=patch(id).sales||[]).push(s);
  }else if(kind==="bought"){
-  const price=N(g("price")),ship=g("shipping")===""?0:N(g("shipping"));
-  if(!(price>0))return err("Indica el precio pagado.");if(!(ship>=0))return err("Envío no válido.");
-  const it=findItem(id);if(!it||!addToCollection(it,{price,shipping:ship,language:g("language"),condition:g("condition"),date:g("date")}))return err("No se ha podido añadir a Mi colección.");
+  if(user.bought?.[id])return err("Esta compra ya está registrada.");
+  const price=N(g("price"));if(!(price>0))return err("Indica el precio pagado.");
+  const costs={};for(const k of ["shipping","vat","duty","handling","fxFee"]){costs[k]=g(k)===""?NaN:N(g(k));if(g(k)!==""&&!(costs[k]>=0))return err("Importe no válido.")}
+  if(!g("costsPaid"))return err("Indica si los importes son pagados o estimados.");
+  if(!g("date")||Date.parse(g("date"))>Date.now()+864e5)return err("Fecha de compra no válida.");
+  const it=findItem(id),r=it&&addToCollection(it,{price,costs,costsPaid:g("costsPaid"),language:g("language"),condition:g("condition"),date:g("date")});
+  if(r==="dup")return err("Esta compra ya está en Mi colección.");if(!r)return err("No se ha podido añadir a Mi colección.");
   (user.bought=user.bought||{})[id]=g("date");
  }else if(kind==="new"){
   if(!g("name"))return err("Indica el nombre.");
@@ -448,7 +536,7 @@ document.addEventListener("click",e=>{
  else if(d.v4Reset){if(!confirm("¿Seguro?"))return;if(customRef(d.v4Reset))user.custom=user.custom.filter(c=>c.id!==d.v4Reset);else if(user.patches[d.v4Reset])delete user.patches[d.v4Reset].listing;writeUser();renderAll()}
  else if(d.v4Copy){const ta=t.parentElement.querySelector("textarea");const done=()=>toast("Texto copiado");if(navigator.clipboard?.writeText)navigator.clipboard.writeText(ta.value).then(done,()=>{ta.select();document.execCommand("copy");done()});else{ta.select();document.execCommand("copy");done()}}
  else if("v4Cfgsave" in d){const c={...user.cfg};let bad=false;document.querySelectorAll("[data-v4-cfg]").forEach(i=>{if(!i.closest(".tab:not(.hidden)"))return;const v=N(i.value);if(!(v>=0))bad=true;else c[i.dataset.v4Cfg]=v});if(bad||c.feePct>=100||c.restLow>c.restMid||c.restMid>c.restHigh){toast("Valores no válidos: comprueba que conservador ≤ central ≤ optimista.");return}user.cfg=c;writeUser();renderAll();toast("Supuestos guardados")}
- else if("v4Export" in d){const blob=new Blob([JSON.stringify({app:"Card Vault V104",exportedAt:new Date().toISOString(),user,photos:photoCache},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="cardvault-comprobaciones-"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+ else if("v4Export" in d){const blob=new Blob([JSON.stringify({app:"Card Vault",format:"cv-user-v2",exportedAt:new Date().toISOString(),user,photos:photoCache},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="cardvault-comprobaciones-"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
  else if(d.v4Go){window.CVSimpleNav?.showTab?.(d.v4Go);history.replaceState(null,"","#"+d.v4Go);window.scrollTo({top:0,behavior:"smooth"})}
 });
 document.addEventListener("submit",e=>{const f=e.target.closest("[data-v4-form]");if(!f)return;e.preventDefault();submit(f)});
@@ -456,7 +544,7 @@ document.addEventListener("change",e=>{
  const box=e.target.closest("[data-v4-declare]");
  if(box){const id=box.dataset.v4Declare,iv=[...box.querySelectorAll("input:checked")].map(i=>i.value);const c=customRef(id);if(c)c.interventions=iv;else patch(id).interventions=iv;writeUser();const it=findItem(id);box.querySelector("textarea").value=declareText(it);return}
  const imp=e.target.closest("[data-v4-import]");
- if(imp&&imp.files[0]){const fr=new FileReader();fr.onload=async()=>{try{const j=JSON.parse(fr.result);if(!j.user||typeof j.user!=="object")throw 0;user={cfg:{...DEFAULTS,...(j.user.cfg||{})},patches:j.user.patches||{},custom:Array.isArray(j.user.custom)?j.user.custom:[],bought:j.user.bought||{},fx:j.user.fx||null,migratedV103:!!j.user.migratedV103};for(const [k,v] of Object.entries(j.photos||{}))if(/^data:image\//.test(v))await photoPut(k,v);writeUser();renderAll();toast("Copia importada")}catch{toast("Archivo no válido")}};fr.readAsText(imp.files[0])}
+ if(imp&&imp.files[0]){const fr=new FileReader();fr.onload=async()=>{try{const j=JSON.parse(fr.result);if(!j.user||typeof j.user!=="object")throw 0;const r=mergeImport(user,j.user);user=r.user;toast("Copia importada: "+r.added+" ficha(s) nuevas, "+r.salesAdded+" referencia(s) nuevas; nada local se ha borrado.");for(const [k,v] of Object.entries(j.photos||{}))if(/^data:image\//.test(v))await photoPut(k,v);writeUser();renderAll()}catch{toast("Archivo no válido: no se ha cambiado nada")}};fr.readAsText(imp.files[0])}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 
@@ -484,9 +572,9 @@ function migrateV103(){
  }
  user.migratedV103=true;writeUser();
 }
-async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();refreshFx();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
+async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();refreshFx();resolveLorcanaImages();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
 setInterval(()=>{if(!document.getElementById("v4Sheet")||document.getElementById("v4Sheet").hidden)renderAll()},5*60*1000);
 function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Añadida a "+(x.lane==="restaurar"?"Comprar para restaurar":"Compra YA"));const tab=x.lane==="restaurar"?"comprar-restaurar":"radar";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
-window.CVVault={addCustom,fx:fxNow,engine:{status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
+window.CVVault={addCustom,fx:fxNow,funnel,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(start,300));else setTimeout(start,300);
 })();

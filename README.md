@@ -26,6 +26,13 @@ Card Vault es una app iPhone-first para gestionar una colección de cartas Poké
 - Cambio USD→EUR del BCE (frankfurter.app) con fecha; si falla, valor manual identificado.
 - «He comprado» añade la carta a Mi colección con su coste.
 
+## V107 · verdad comercial e integridad del historial
+- El radar solo muestra una «diferencia bruta» como indicador; nunca beneficio ni porcentajes de restauración.
+- «He comprado» guarda cada coste (pagado / estimado / desconocido), evita duplicados y valora a coste las cartas para restaurar.
+- Importar copia fusiona sin borrar; aviso visible si Safari no puede guardar.
+- Auditoría y límites: `research/card-vault-v107-auditoria-2026-10-23.md`.
+- Pruebas: `node tests/vault-v104-engine.test.cjs`, `node tests/vault-v104-e2e.cjs`, `node tests/vault-v107-regresion-e2e.cjs`, `node tests/card-images.test.cjs` (Chromium con emulación móvil; no es Safari real).
+
 ## Privacidad
 GitHub Pages aloja el código de la aplicación. Las fotos y la colección del usuario permanecen en el navegador del dispositivo salvo exportación manual.
 

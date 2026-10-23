@@ -297,7 +297,7 @@ const provisionalTotal=()=>{const p=primePortfolio();return p?p.provisional:acti
 const total=()=>confirmedTotal()+provisionalTotal();
 const invested=()=>activeCards().reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase||0)*qty(x)),0);const confirmedInvested=()=>activeCards().filter(x=>x.valuationStatus!=="reference").reduce((a,x)=>a+(x.purchase==null?0:(+x.purchase||0)*qty(x)),0);
 const drafts=()=>activeCards().filter(x=>x.draft).length;
-const gain=()=>{const p=primePortfolio();return p?p.latentPrudent:confirmedTotal()-confirmedInvested()};function save(){localStorage.setItem(KEY,JSON.stringify(state))}window.CVStateBridge={get:()=>state,save:()=>save(),key:KEY};
+const gain=()=>{const p=primePortfolio();return p?p.latentPrudent:confirmedTotal()-confirmedInvested()};function save(){try{localStorage.setItem(KEY,JSON.stringify(state));window.CVStorageFailedAt=0;document.getElementById("cvStorageAlert")?.remove()}catch(e){window.CVStorageFailedAt=Date.now();try{if(!document.getElementById("cvStorageAlert")&&document.body){const d=document.createElement("div");d.id="cvStorageAlert";d.setAttribute("role","alert");d.style.cssText="position:sticky;top:0;z-index:100002;background:#ffdf8a;color:#2b1d00;font:700 15px/1.4 system-ui;padding:12px 14px;border-bottom:2px solid #8a6a1c";d.textContent="⚠️ No se están guardando los cambios: el almacenamiento de Safari está lleno o bloqueado (por ejemplo, navegación privada). Exporta una copia de seguridad en Datos antes de cerrar.";document.body.prepend(d)}}catch{}console.warn("Card Vault: no se pudo guardar",e&&e.name)}}window.CVStateBridge={get:()=>state,save:()=>save(),key:KEY};
 let __cvBridgeCfg=null;
 async function __cvLoadBridgeCfg(){
  if(__cvBridgeCfg!==null)return __cvBridgeCfg;
