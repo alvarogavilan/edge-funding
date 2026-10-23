@@ -86,6 +86,31 @@ async function newPage(browser,opts={},mode='normal'){
   ok('Venta posterior: historial creado, costes de compra conservados, carta archivada',sold.h&&sold.costs&&sold.archived,JSON.stringify(sold));
   ok('Sin errores de JavaScript (historial)',page.errors.length===0,page.errors.join(' | '));
   await ctx.close();}
+ // 5b. Copia antigua V104, compra en USD sin cambio documentado y evaluación de restauración
+ {const {ctx,page}=await newPage(browser);page.on('dialog',d=>d.accept());
+  await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Sales',{state:'attached'});await page.waitForTimeout(800);
+  const old={app:'Card Vault V104',exportedAt:'2026-10-23T10:00:00Z',user:{cfg:{feePct:5},patches:{'rest-base1-15':{sales:[{id:'uold1',kind:'agregado',price:300,currency:'EUR',date:'2026-10-01',platform:'Antigua'}]}},custom:[{id:'own-v104',custom:true,lane:'restaurar',game:'pokemon',name:'Copia V104',set:'Neo',number:'9/111',listing:null,sales:[]}]},photos:{}};
+  const f=path.join(require('node:os').tmpdir(),'cv-old-'+Date.now()+'.json');fs.writeFileSync(f,JSON.stringify(old));
+  await page.click('.mainNav [data-tab="ventas-reales"]');await page.evaluate(()=>{const d=[...document.querySelectorAll('#v4Sales details')].pop();d.open=true});
+  await page.setInputFiles('[data-v4-import]',f);await page.waitForTimeout(500);
+  ok('Copia antigua (formato V104) importada sin perder datos',await page.evaluate(()=>window.CVVault.user().custom.some(c=>c.id==='own-v104')&&(window.CVVault.user().patches['rest-base1-15']?.sales||[]).length===1));
+  await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
+  await page.click('[data-v4-verify="rest-base1-15"]');await page.waitForSelector('#v4Sheet form');
+  for(const k of ['defectsUnknown','plannedIntervention','exitScenario'])ok('Formulario restauración incluye '+k,await page.locator('#v4Sheet [name='+k+']').count()===1);
+  await page.fill('#v4Sheet [name=url]','https://shop.example.co.uk/p/venusaur');await page.fill('#v4Sheet [name=seller]','Tienda UK');await page.fill('#v4Sheet [name=price]','60');
+  await page.selectOption('#v4Sheet [name=language]','Inglés');await page.selectOption('#v4Sheet [name=condition]','PO');await page.fill('#v4Sheet [name=country]','Reino Unido');await page.selectOption('#v4Sheet [name=zone]','fuera');
+  await page.fill('#v4Sheet [name=defects]','Pliegue central');await page.selectOption('#v4Sheet [name=irreversibleRisk]','alto');
+  await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(500);
+  const card=await page.textContent('#card-rest-base1-15');
+  ok('Ficha restauración separa estado, defectos, no evaluables, riesgo y foto real',/Defectos no evaluables/.test(card)&&/Riesgo irreversible/.test(card)&&/NO: imprescindible/.test(card));
+  ok('Importación extracomunitaria: IVA/aranceles desconocidos, no cero',/IVA adicional: desconocido/.test(card)&&/Aranceles: desconocido/.test(card)&&/importación: IVA, arancel/.test(card));
+  await page.evaluate(()=>{const d=document.getElementById('card-rest-base1-15')?.closest('details');if(d)d.open=true});
+  await page.click('#card-rest-base1-15 [data-v4-bought]');await page.waitForSelector('#v4Sheet form');
+  await page.selectOption('#v4Sheet [name=currency]','GBP');await page.fill('#v4Sheet [name=originalTotal]','52');await page.selectOption('#v4Sheet [name=costsPaid]','estimados');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(400);
+  const last=await page.evaluate(()=>{const c=window.CVStateBridge.get().cards;return c[c.length-1]});
+  ok('Compra en GBP sin cambio documentado: queda marcada, costes estimados no pasan a pagados',last.name==='Venusaur'&&last.purchaseCosts.fx.currency==='GBP'&&last.purchaseCosts.fx.documented===false&&last.purchaseCosts.status==='estimados'&&last.purchaseShipping===null,JSON.stringify(last.purchaseCosts));
+  ok('Sin errores de JavaScript (copias, importación, divisa)',page.errors.length===0,page.errors.join('|'));
+  await ctx.close();}
  // 6. Almacenamiento no disponible
  {const {ctx,page}=await newPage(browser);page.on('dialog',d=>d.accept());
   await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});

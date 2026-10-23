@@ -139,6 +139,7 @@ function acquisition(l,cfg){
  const confirmed=!missing.length&&l.costsConfirmed===true&&l.shipsSpain===true&&!!l.country&&!!safeUrl(l.costSource);
  return {missing,confirmed,total:N(l.price)>0&&!missing.length?N(l.price)+keys.reduce((v,k)=>v+N(l[k]),0):NaN};
 }
+const GRADE=v=>{const x=String(v||"RAW").trim().toUpperCase().replace(/\s+/g," ");return x===""?"RAW":x};
 function comparable(s,it){
  const l=it.listing||{}, norm=v=>String(v||"").trim().toLowerCase();
  const d=Date.parse(s.date||""), verified=Date.parse(s.verifiedAt||"");
@@ -148,7 +149,7 @@ function comparable(s,it){
   norm(s.set)===norm(it.set)&&norm(s.number)===norm(it.number)&&
   lang(s.language).known&&lang(s.language).name===lang(l.language||it.language).name&&
   !!s.condition&&s.condition===(it.lane==="restaurar"?l.resaleCondition:l.condition)&&
-  (s.grade||"RAW")===(it.grade||"RAW")&&
+  GRADE(s.grade)===GRADE(l.grade||it.grade)&&
   (it.lane==="restaurar"?s.restored===true&&s.sameIntervention===true:s.restored===false);
 }
 function economics(it,cfg){
@@ -196,6 +197,28 @@ function salesList(it,cfg){
   '<span class="v4row">'+(safeUrl(s.url)?'<a href="'+E(safeUrl(s.url))+'" target="_blank" rel="noopener noreferrer">Ver fuente ↗</a>':'<small>Sin enlace verificable</small>')+
   ' <small>· añadida por '+E(s.addedBy||"usuario")+'</small> <button type="button" class="v4link" data-v4-delsale="'+E(it.id)+'|'+E(s.id)+'">Quitar</button></span></li>'}).join("")+'</ul>';
 }
+/* Escenario ESTIMADO: solo con referencias de tipo «estimación» que el usuario introduce. Nunca cambia el veredicto
+   ni cuenta como venta; si faltan costes, no se calcula. */
+function riskList(it,ec){
+ const l=it.listing||{},r=[];if(!l.url&&!N(l.price))return r;
+ if(ec.basis!=="venta")r.push("sin ventas cerradas comparables: salida no demostrada");
+ else if(ec.n<3)r.push("solo "+ec.n+" comparable(s): muestra pequeña");
+ if(ec.basis==="venta"&&ec.sale.high>ec.sale.low*1.5)r.push("dispersión de precios alta");
+ if(l.zone==="fuera")r.push("importación: IVA, arancel y gestión según el pedido; posible retraso aduanero");
+ if(!l.country)r.push("país del vendedor sin confirmar");
+ if(N(l.price)>100)r.push("capital por encima del presupuesto habitual (20–100 €)");
+ if(/charizard|pikachu|umbreon|lugia|★|star/i.test(it.name)&&GRADE(l.grade||it.grade)==="RAW")r.push("carta muy falsificada: verificar autenticidad con fotos de frente, reverso y luz");
+ if(it.lane==="restaurar"&&l.irreversibleRisk==="alto")r.push("riesgo irreversible alto en la intervención");
+ if(it.lane==="restaurar")r.push("la carta restaurada se vende declarada y puede no aceptarse en graduación");
+ return r;
+}
+function estimateBlock(it,ec){
+ const est=(it.sales||[]).filter(s=>s.kind==="estimacion").map(s=>toEUR(s)).filter(v=>v>0);if(!est.length)return "";
+ const l=it.listing||{},sellOk=[l.sellFeePct,l.sellShipping,l.sellTax].every(v=>N(v)>=0);
+ const net=v=>v-v*N(l.sellFeePct)/100-N(l.sellShipping)-N(l.sellTax)-ec.acq.total;
+ const lo=Math.min(...est),hi=Math.max(...est),ok=Number.isFinite(ec.acq.total)&&sellOk;
+ return '<div class="v4estimate"><span class="v4kind k-agregado">ESCENARIO ESTIMADO · NO VERIFICADO</span><p>Salida estimada por ti: <b>'+EUR(lo)+(hi>lo?' – '+EUR(hi):'')+'</b>. '+(ok?'Margen estimado: <b>'+SIGNED(net(lo))+(hi>lo?' a '+SIGNED(net(hi)):'')+'</b> tras coste puesto en Sevilla y costes de venta.':'Margen no calculable: faltan coste completo de compra o costes de venta.')+' No es una venta ni una ganancia comprobada; la ficha sigue en investigación.</p></div>';
+}
 function card(ev,cfg){
  const {it,st,ec,vd}=ev,l=it.listing||{},lg=lang(l.language||it.language),isR=it.lane==="restaurar",prec=listingPrecision(l);
  const scen=ec.net?[["Conservador",ec.sale.low,ec.net.low],["Central",ec.sale.mid,ec.net.mid],["Optimista",ec.sale.high,ec.net.high]]:null;
@@ -205,7 +228,8 @@ function card(ev,cfg){
  '<div class="v4badges"><span class="v4status s-'+st.code+'">'+st.label+'</span><span class="v4tag">'+(it.game==="lorcana"?"Lorcana":"Pokémon")+'</span>'+range+'</div>'+
  '<h3>'+E(it.name)+'</h3><p class="v4id">'+E([it.set,it.number&&"nº "+it.number,it.rarity].filter(Boolean).join(" · "))+'</p>'+
  '<p class="v4lang"><span class="v4flag">'+lg.flag+'</span> '+E(lg.name)+(l.condition?' · Estado: <b>'+E(l.condition)+'</b>':isR?' · Objetivo: ejemplares dañados; reventa comparada con '+E(it.targetCondition||"HP / MP"):'')+'</p>'+
- (l.defects?'<p class="v4defects"><b>Defectos visibles:</b> '+E(l.defects)+'</p>':'')+
+ (isR&&it.listing?'<dl class="v4facts v4assess">'+[["Estado de compra",l.condition],["Graduación",GRADE(l.grade||it.grade)],["Defectos observados",l.defects],["Defectos no evaluables",l.defectsUnknown],["Intervención prevista",l.plannedIntervention],["Riesgo irreversible",l.irreversibleRisk],["Escenario de salida",l.exitScenario],["Foto real del ejemplar",(it.listingPhoto||safeUrl(l.photoUrl))?"Sí":"NO: imprescindible antes de decidir"]].map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+E(v||"sin evaluar")+'</dd></div>').join("")+'</dl>':(l.defects?'<p class="v4defects"><b>Defectos visibles:</b> '+E(l.defects)+'</p>':''))+
+ estimateBlock(it,ec)+
  '<div class="v4money">'+
   '<div><span>PRECIO DE COMPRA</span><b>'+(N(l.price)>0?EUR(N(l.price)):"—")+'</b><small>'+(N(l.price)>0?'+ envío '+EUR(ec.buyShip)+(ec.shipKnown?' (confirmado)':' (estimado)'):'pendiente de anuncio')+'</small></div>'+
   '<div><span>PRECIO DE VENTA ESTIMADO</span><b>'+(ec.basis==="venta"?EUR(ec.sale.mid):"—")+'</b><small>'+(ec.basis==="agregado"?'Referencia agregada '+EUR(ec.unaltered.mid)+' (no es venta). Añade ventas cerradas.':ec.basis?(isR?'restaurada declarada · comparables equivalentes · ':'')+basisTxt:'sin ventas reales')+'</small></div>'+
@@ -217,6 +241,7 @@ function card(ev,cfg){
  '<div class="v4money"><div><span>TOTAL PUESTO EN SEVILLA</span><b>'+EUR(ec.acq.total)+'</b><small>'+(ec.acq.confirmed?'Costes confirmados':'Estimación o costes pendientes: '+E(ec.acq.missing.join(', ')))+'</small></div></div>'+
  '<p class="v4note">País de expedición: '+E(l.country||'sin confirmar')+(l.zone?' ('+({es:"España",ue:"UE",fuera:"fuera de la UE"}[l.zone])+')':'')+'. '+[["vat","IVA adicional"],["duty","Aranceles"],["handling","Gestión"],["fxFee","Cambio/pago"]].map(([k,t])=>t+': '+((l.notApplicable||[]).includes(k)?'no aplica (UE)':N(l[k])>=0?EUR(N(l[k])):'desconocido')).join(' · ')+'. '+ec.excluded+' referencia(s) declarada(s) excluida(s) del cálculo por falta de comparabilidad o verificación.</p>'+
 
+ (riskList(it,ec).length?'<p class="v4missing"><b>Riesgos:</b> '+E(riskList(it,ec).join(" · "))+'</p>':'')+
  (st.missing.length?'<p class="v4missing"><b>'+(st.code==="caducada"?E(st.why||"Comprobación vencida")+'. ':'')+'Falta:</b> '+E(st.missing.join(" · "))+'</p>':'')+
  (it.why?(it.historical?'<p class="v4why hist"><b>Nota histórica · '+E(it.source||"investigación anterior")+' · no reverificada, no es recomendación actual:</b> '+E(it.why)+'</p>':'<p class="v4why"><b>Por qué merece la pena mirarla:</b> '+E(it.why)+'</p>'):'')+
  '<dl class="v4facts">'+
@@ -224,6 +249,8 @@ function card(ev,cfg){
   '<div><dt>Comprobado</dt><dd>'+(l.checkedAt?WHEN(l.checkedAt)+' · por '+E(l.checkedBy||"usuario"):"nunca")+'</dd></div>'+
   '<div><dt>Disponibilidad</dt><dd>'+({si:"Disponible al comprobar",no:"No disponible",desconocido:"No verificable"}[l.available]||"Sin anuncio")+'</dd></div>'+
   '<div><dt>Enlace</dt><dd>'+E(prec.txt)+'</dd></div>'+
+  '<div><dt>País del vendedor</dt><dd>'+E(l.country||"sin confirmar")+'</dd></div>'+
+  '<div><dt>Comparables válidos</dt><dd>'+(ec.basis==="venta"?ec.n:0)+(ec.excluded>0?' · '+ec.excluded+' excluida(s)':'')+'</dd></div>'+
  '</dl>'+
  '<div class="v4actions">'+
   (safeUrl(l.url)?'<a class="v4btn primary" href="'+E(safeUrl(l.url))+'" target="_blank" rel="noopener noreferrer">'+(prec.ok?"Abrir anuncio":"Abrir ficha del producto")+' ↗</a>':'')+
@@ -383,7 +410,12 @@ function verifySheet(id){
  sel("costsConfirmed","Costes de adquisición",String(l.costsConfirmed===true),[["false","Estimados / pendientes"],["true","Confirmados en fuente"]])+
  sel("saleCostsConfirmed","Costes e impuestos de venta",String(l.saleCostsConfirmed===true),[["false","Estimados / pendientes"],["true","Confirmados para esta operación"]])+
  sel("resaleCondition","Estado de salida para restaurada",l.resaleCondition||"",COND_OPTS)+
- fld("defects","Defectos visibles",l.defects||"",'placeholder="Pliegue, esquinas, rayas, suciedad…"')+
+ fld("grade","Graduación (RAW, PSA 9…)",l.grade||it.grade||"RAW")+
+ fld("defects","Defectos observados en las fotos",l.defects||"",'placeholder="Pliegue, esquinas, rayas, suciedad…"')+
+ (it.lane==="restaurar"?fld("defectsUnknown","Defectos NO evaluables con las fotos",l.defectsUnknown||"",'placeholder="Reverso, brillo holo, presión…"')+
+ fld("plannedIntervention","Intervención prevista (sin técnicas)",l.plannedIntervention||"")+
+ sel("irreversibleRisk","Riesgo irreversible",l.irreversibleRisk||"",[["","— sin evaluar —"],["bajo","Bajo"],["medio","Medio"],["alto","Alto"]])+
+ fld("exitScenario","Escenario de salida previsto",l.exitScenario||"",'placeholder="Ej.: vender como restaurada declarada, estado de salida…"'):"")+
  sel("available","¿Sigue disponible ahora?",l.available==="no"?"no":"si",[["si","Sí, disponible"],["no","No, ya no está"]])+
  fld("photoUrl","Enlace a la foto del anuncio (opcional)",l.photoUrl||"",'type="url" inputmode="url"')+
  '<label>Foto del ejemplar (captura o foto, opcional)<input type="file" name="photo" accept="image/*"></label>'+
@@ -398,6 +430,7 @@ function saleSheet(id){
  fld("price","Precio realizado","",'inputmode="decimal" required')+sel("currency","Moneda","EUR",[["EUR","EUR €"],["USD","USD $"]])+
  fld("date","Fecha de la operación","",'type="date" required')+
  sel("condition","Estado del ejemplar vendido","",COND_OPTS)+sel("language","Idioma","",LANG_OPTS)+
+ fld("grade","Graduación (RAW, PSA 9, BGS 8,5…)","RAW")+
  fld("platform","Plataforma","TCGplayer",'list="v4platforms"')+'<datalist id="v4platforms"><option>TCGplayer</option><option>Cardmarket</option><option>PSA Auction Prices Realized</option><option>PokeValue (ventas Cardmarket)</option><option>Heritage Auctions</option></datalist>'+
  fld("url","Enlace verificable","",'type="url" inputmode="url" placeholder="https://…"')+
  fld("transactionId","Identificador individual de la venta","")+
@@ -428,6 +461,8 @@ function boughtSheet(id){
  '<form data-v4-form="bought" data-id="'+E(id)+'" class="v4form">'+fld("price","Precio pagado €",N(l.price)>0?String(l.price).replace(".",","):"",'inputmode="decimal" required')+
  fld("shipping","Envío pagado €",v("shipping"),'inputmode="decimal"')+fld("vat","IVA de importación pagado €",v("vat"),'inputmode="decimal"')+fld("duty","Aranceles pagados €",v("duty"),'inputmode="decimal"')+
  fld("handling","Gestión aduanera €",v("handling"),'inputmode="decimal"')+fld("fxFee","Comisión de cambio o pago €",v("fxFee"),'inputmode="decimal"')+
+ sel("currency","Moneda del pedido","EUR",[["EUR","EUR €"],["USD","USD $"],["GBP","GBP £"],["JPY","JPY ¥"],["CAD","CAD $"],["AUD","AUD $"]])+
+ fld("originalTotal","Importe total en la moneda original (si no es EUR)","",'inputmode="decimal"')+fld("fxApplied","Cambio aplicado a EUR (del cargo real)","",'inputmode="decimal"')+fld("fxDate","Fecha del cargo / cambio","",'type="date"')+
  sel("costsPaid","Estos importes son",l.costsConfirmed?"pagados":"",[["","— elegir —"],["pagados","Pagados (según el pedido)"],["estimados","Estimados (aún no cobrados)"]])+
  sel("language","Idioma recibido",lang(l.language||it.language).known?lang(l.language||it.language).name:"",LANG_OPTS)+sel("condition","Estado",l.condition||"",COND_OPTS)+
  fld("date","Fecha de compra",new Date().toISOString().slice(0,10),'type="date" required')+
@@ -443,9 +478,9 @@ function addToCollection(it,f){
  st.cards.push({id:"cv106-"+uid(),universe:it.game,name:it.name,set:it.set||"",number:it.number||"",language:f.language||"",grading:it.grade||"RAW",grade:f.condition||"",condition:f.condition||"",
   value:it.lane==="compra"&&ref.basis==="venta"&&ref.n>=2?ref.sale.low:f.price,valuationStatus:it.lane==="compra"&&ref.basis==="venta"&&ref.n>=2?"reference":"cost",
   purchase:f.price,purchaseShipping:Number.isFinite(f.costs.shipping)?f.costs.shipping:null,purchaseFees:Number.isFinite(f.costs.fxFee)?f.costs.fxFee:null,
-  purchaseCosts:{...f.costs,status:f.costsPaid||"desconocido",unknown,knownTotal:f.price+extras,currency:"EUR",recordedAt:new Date().toISOString()},
+  purchaseCosts:{...f.costs,status:f.costsPaid||"desconocido",fx:f.fx||{currency:"EUR",documented:true},unknown,knownTotal:f.price+extras,currency:"EUR",recordedAt:new Date().toISOString()},
   quantity:1,purchaseDate:f.date,purpose:it.lane==="restaurar"?"restoration":"investment",referenceImage:safeUrl(it.image)||"",buySource:l.shop||"",buySourceUrl:safeUrl(l.url)||"",buySeller:l.seller||"",buyCountry:l.country||"",buyOpportunityId:it.id,
-  notes:(it.lane==="restaurar"?"Comprada para restaurar; valorada a coste hasta tener ventas comparables de cartas intervenidas. ":"")+"Costes "+(f.costsPaid||"sin clasificar")+(unknown.length?"; desconocidos: "+unknown.join(", "):"")+". Registrada desde Card Vault V107.",updatedAt:new Date().toISOString()});
+  notes:(it.lane==="restaurar"?"Comprada para restaurar; valorada a coste hasta tener ventas comparables de cartas intervenidas. ":"")+"Costes "+(f.costsPaid||"sin clasificar")+(f.fx&&!f.fx.documented?"; cambio de divisa NO documentado ("+f.fx.currency+")":"")+(unknown.length?"; desconocidos: "+unknown.join(", "):"")+". Registrada desde Card Vault V108.",updatedAt:new Date().toISOString()});
  try{window.CVStateBridge.save();window.CVRenderCollection?.()}catch{st.cards.pop();return false}
  return true;
 }
@@ -489,7 +524,7 @@ async function submitInner(form){
   /* Dentro de la UE no hay IVA de importación, arancel ni despacho aduanero: «no aplica», no un cero supuesto. */
   listing.zone=g("zone");listing.notApplicable=[];
   if(listing.zone!=="fuera")for(const k of ["vat","duty","handling"])if(listing[k]==null){listing[k]=0;listing.notApplicable.push(k)}
-  Object.assign(listing,{country:g("country"),shipsSpain:g("shipsSpain")==="true",costSource:safeUrl(g("costSource")),costsConfirmed:g("costsConfirmed")==="true",saleCostsConfirmed:g("saleCostsConfirmed")==="true",resaleCondition:g("resaleCondition")});
+  Object.assign(listing,{grade:GRADE(g("grade")),defectsUnknown:g("defectsUnknown"),plannedIntervention:g("plannedIntervention"),irreversibleRisk:g("irreversibleRisk"),exitScenario:g("exitScenario"),country:g("country"),shipsSpain:g("shipsSpain")==="true",costSource:safeUrl(g("costSource")),costsConfirmed:g("costsConfirmed")==="true",saleCostsConfirmed:g("saleCostsConfirmed")==="true",resaleCondition:g("resaleCondition")});
   const file=form.elements.namedItem("photo")?.files?.[0];
   if(file){try{const d=await compress(file);if(!(await photoPut(id,d)))toast("La foto se verá en esta sesión, pero el navegador no permite guardarla.")}catch{return err("No se ha podido leer la foto.")}}
   const c=customRef(id);if(c)c.listing=listing;else patch(id).listing=listing;
@@ -500,7 +535,7 @@ async function submitInner(form){
   if(g("kind")==="venta"&&g("verified")==="true"&&!safeUrl(g("url")))return err("Una venta comprobada necesita enlace a la evidencia.");
   const url=g("url");if(url&&!safeUrl(url))return err("Enlace no válido (https, sin eBay).");
   const s={id:uid(),kind:g("kind"),price,currency:g("currency"),date:g("date"),condition:g("condition"),language:g("language"),platform:g("platform"),url:safeUrl(url),note:g("note")+(url?"":(g("note")?" · ":"")+"Sin enlace: precio no verificable por terceros."),addedBy:"usuario"};
-  Object.assign(s,{transactionId:g("transactionId"),set:g("set"),number:g("number"),sameVariant:g("sameVariant")==="true",verified:g("verified")==="true",verifiedAt:new Date().toISOString(),restored:g("restored")==="unknown"?null:g("restored")==="true",sameIntervention:g("sameIntervention")==="true",grade:"RAW",fxRate:N(g("fxRate")),fxDate:g("fxDate"),fxSource:safeUrl(g("fxSource"))});
+  Object.assign(s,{transactionId:g("transactionId"),set:g("set"),number:g("number"),sameVariant:g("sameVariant")==="true",verified:g("verified")==="true",verifiedAt:new Date().toISOString(),restored:g("restored")==="unknown"?null:g("restored")==="true",sameIntervention:g("sameIntervention")==="true",grade:GRADE(g("grade")),fxRate:N(g("fxRate")),fxDate:g("fxDate"),fxSource:safeUrl(g("fxSource"))});
   const c=customRef(id);if(c)(c.sales=c.sales||[]).push(s);else (patch(id).sales=patch(id).sales||[]).push(s);
  }else if(kind==="bought"){
   if(user.bought?.[id])return err("Esta compra ya está registrada.");
@@ -508,7 +543,8 @@ async function submitInner(form){
   const costs={};for(const k of ["shipping","vat","duty","handling","fxFee"]){costs[k]=g(k)===""?NaN:N(g(k));if(g(k)!==""&&!(costs[k]>=0))return err("Importe no válido.")}
   if(!g("costsPaid"))return err("Indica si los importes son pagados o estimados.");
   if(!g("date")||Date.parse(g("date"))>Date.now()+864e5)return err("Fecha de compra no válida.");
-  const it=findItem(id),r=it&&addToCollection(it,{price,costs,costsPaid:g("costsPaid"),language:g("language"),condition:g("condition"),date:g("date")});
+  const cur=g("currency")||"EUR",fx={currency:cur,originalTotal:N(g("originalTotal")),fxApplied:N(g("fxApplied")),fxDate:g("fxDate"),documented:cur==="EUR"||(N(g("fxApplied"))>0&&!!g("fxDate"))};
+  const it=findItem(id),r=it&&addToCollection(it,{price,costs,fx,costsPaid:g("costsPaid"),language:g("language"),condition:g("condition"),date:g("date")});
   if(r==="dup")return err("Esta compra ya está en Mi colección.");if(!r)return err("No se ha podido añadir a Mi colección.");
   (user.bought=user.bought||{})[id]=g("date");
  }else if(kind==="new"){

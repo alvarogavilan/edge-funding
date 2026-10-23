@@ -58,3 +58,17 @@ Embudo de verificación nuevo (Compra YA): referencias del catálogo → consult
 - `node tests/card-images.test.cjs`.
 
 Pendiente: Safari real en iPhone, APIs reales, fotos externas en producción.
+
+## V108 · segunda pasada (misma fecha)
+
+Base: `main` en `4fdc705` (V107), sin cambios ajenos.
+
+| Gravedad | Fallo | Corrección |
+|---|---|---|
+| Alta | La graduación de la venta se fijaba siempre en «RAW» y la del anuncio no se registraba: una PSA 10 podía compararse con una RAW | Campo de graduación en anuncio y venta; el comparable exige la misma graduación |
+| Alta | Restaurar no separaba defectos observados / no evaluables, intervención prevista, riesgo irreversible y escenario de salida | Campos propios en el formulario y bloque «evaluación del ejemplar» en la ficha; aviso si falta foto real |
+| Media | Sin comparables intervenidos no había forma honesta de ver un escenario | Las referencias de tipo «estimación» del usuario se muestran como «ESCENARIO ESTIMADO · NO VERIFICADO»; no cambian el veredicto ni cuentan como venta; sin costes completos no se calcula margen |
+| Media | «He comprado» no guardaba la moneda original ni el cambio aplicado | Moneda, importe original, cambio y fecha; si no se documenta, la compra queda marcada «cambio no documentado» |
+| Media | Las tarjetas no mostraban país del vendedor, número de comparables válidos ni riesgos | Añadidos: país, comparables válidos/excluidos, riesgos (muestra pequeña, dispersión, importación, capital > 100 €, falsificación, restauración declarada) |
+
+Mercado: sin cambios respecto a V107; la red de este entorno sigue bloqueando las fuentes. 0 ofertas y 0 ventas verificadas.
