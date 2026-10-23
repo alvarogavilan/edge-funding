@@ -34,7 +34,7 @@ function listingPrecision(l){const u=safeUrl(l?.url);if(!u)return {ok:false,txt:
  return l.seller?{ok:true,txt:"producto · vendedor identificado"}:{ok:false,txt:"producto sin vendedor identificado"}}
 
 /* ---------- configuración y datos del usuario ---------- */
-function readUser(){try{const x=JSON.parse(localStorage.getItem(STORE)||"{}");return {cfg:{...DEFAULTS,...(x.cfg||{})},patches:x.patches||{},custom:Array.isArray(x.custom)?x.custom:[],migratedV103:!!x.migratedV103,fx:x.fx||null,bought:x.bought||{}}}catch{return {cfg:{...DEFAULTS},patches:{},custom:[]}}}
+function readUser(){try{const x=JSON.parse(localStorage.getItem(STORE)||"{}");return {cfg:{...DEFAULTS,...(x.cfg||{})},patches:x.patches||{},custom:Array.isArray(x.custom)?x.custom:[],migratedV103:!!x.migratedV103,fx:x.fx||null,bought:x.bought||{}}}catch{return {cfg:{...DEFAULTS},patches:{},custom:[],bought:{},fx:null}}}
 let user=readUser();
 function writeUser(){try{localStorage.setItem(STORE,JSON.stringify(user));return true}catch{toast("No se ha podido guardar en este navegador (almacenamiento lleno o bloqueado).");return false}}
 
@@ -110,7 +110,7 @@ function status(it,now,cfg){
 }
 // Importes adicionales en EUR: nunca se supone que un coste desconocido sea cero.
 function acquisition(l,cfg){
- const keys=["shipping","vat","duty","handling","fxFee"], missing=keys.filter(k=>!(N(l[k])>=0));
+ const keys=["shipping","vat","duty","handling","fxFee"], labels={shipping:"envío",vat:"IVA",duty:"aranceles",handling:"gestión de importación",fxFee:"comisión de cambio"}, missing=keys.filter(k=>!(N(l[k])>=0)).map(k=>labels[k]);
  const confirmed=!missing.length&&l.costsConfirmed===true&&l.shipsSpain===true&&!!l.country&&!!safeUrl(l.costSource);
  return {missing,confirmed,total:N(l.price)>0&&!missing.length?N(l.price)+keys.reduce((v,k)=>v+N(l[k]),0):NaN};
 }
@@ -290,7 +290,7 @@ function renderSales(){
  const c=k=>rows.filter(r=>r.s.kind===k&&(k!=="venta"||comparable(r.s,r.it))).length;
  const by={};for(const r of rows)(by[r.it.id]=by[r.it.id]||{it:r.it,list:[]}).list.push(r.s);
  host.innerHTML='<section class="v4head"><span class="v4kicker">EVIDENCIA · REFERENCIAS DECLARADAS Y COMPROBADAS</span><h2>Ventas reales</h2>'+
- '<p>Cada referencia indica carta, fecha, precio, estado, idioma, plataforma y enlace. Se separan tres tipos que nunca se mezclan:</p>'+
+ '<p>Cada referencia indica carta, fecha, precio, estado, idioma, plataforma y enlace. Se separan ventas individuales, agregados, anuncios y estimaciones; nunca se mezclan:</p>'+
  '<div class="v4legend"><span class="v4kind k-venta">VENTA CERRADA</span> operación individual completada · <span class="v4kind k-agregado">DATO AGREGADO</span> media de transacciones (p. ej. media 30 días de Cardmarket o «Market Price» de TCGplayer) · <span class="v4kind k-anuncio">ANUNCIO ACTIVO · NO ES VENTA</span> precio pedido.</div>'+
  '<div class="v4summary"><div class="s-comprobada"><b>'+c("venta")+'</b><span>Ventas cerradas</span></div><div class="s-observacion"><b>'+c("agregado")+'</b><span>Datos agregados</span></div><div class="s-caducada"><b>'+c("anuncio")+'</b><span>Anuncios (no ventas)</span></div></div>'+
  '<details class="v4settings"><summary>Dónde consultar ventas cerradas legítimas</summary><ul class="v4help">'+
@@ -422,7 +422,7 @@ async function submit(form){
   const price=N(g("price")),ship=g("shipping")===""?0:N(g("shipping"));
   if(!(price>0))return err("Indica el precio pagado.");if(!(ship>=0))return err("Envío no válido.");
   const it=findItem(id);if(!it||!addToCollection(it,{price,shipping:ship,language:g("language"),condition:g("condition"),date:g("date")}))return err("No se ha podido añadir a Mi colección.");
-  user.bought[id]=g("date");
+  (user.bought=user.bought||{})[id]=g("date");
  }else if(kind==="new"){
   if(!g("name"))return err("Indica el nombre.");
   const img=g("image");if(img&&!safeUrl(img))return err("Enlace de imagen no válido.");
@@ -456,7 +456,7 @@ document.addEventListener("change",e=>{
  const box=e.target.closest("[data-v4-declare]");
  if(box){const id=box.dataset.v4Declare,iv=[...box.querySelectorAll("input:checked")].map(i=>i.value);const c=customRef(id);if(c)c.interventions=iv;else patch(id).interventions=iv;writeUser();const it=findItem(id);box.querySelector("textarea").value=declareText(it);return}
  const imp=e.target.closest("[data-v4-import]");
- if(imp&&imp.files[0]){const fr=new FileReader();fr.onload=async()=>{try{const j=JSON.parse(fr.result);if(!j.user||typeof j.user!=="object")throw 0;user={cfg:{...DEFAULTS,...(j.user.cfg||{})},patches:j.user.patches||{},custom:Array.isArray(j.user.custom)?j.user.custom:[]};for(const [k,v] of Object.entries(j.photos||{}))if(/^data:image\//.test(v))await photoPut(k,v);writeUser();renderAll();toast("Copia importada")}catch{toast("Archivo no válido")}};fr.readAsText(imp.files[0])}
+ if(imp&&imp.files[0]){const fr=new FileReader();fr.onload=async()=>{try{const j=JSON.parse(fr.result);if(!j.user||typeof j.user!=="object")throw 0;user={cfg:{...DEFAULTS,...(j.user.cfg||{})},patches:j.user.patches||{},custom:Array.isArray(j.user.custom)?j.user.custom:[],bought:j.user.bought||{},fx:j.user.fx||null,migratedV103:!!j.user.migratedV103};for(const [k,v] of Object.entries(j.photos||{}))if(/^data:image\//.test(v))await photoPut(k,v);writeUser();renderAll();toast("Copia importada")}catch{toast("Archivo no válido")}};fr.readAsText(imp.files[0])}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 
