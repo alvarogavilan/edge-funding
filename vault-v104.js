@@ -74,6 +74,10 @@ function owned(x){
 }
 function baseItems(){
  const st=appState(),out=[];
+ for(const o of (window.CV_MARKET_OFFERS?.offers||[])){
+  if(!o?.id||!['pokemon','lorcana'].includes(o.game)||!['compra','restaurar'].includes(o.lane)||!safeUrl(o.listing?.url))continue;
+  out.push({...o,sales:o.sales||[]});
+ }
  for(const o of (st?.manualOpportunities||[])){
   if(!o||!["pokemon","lorcana"].includes(o.universe)||String(o.condition).toUpperCase()==="SEALED"||!(N(o.price)>0))continue;
   if(/^DESCARTADA/i.test(String(o.status||""))||o.resolvedMarketNoEdge)continue;
@@ -136,7 +140,7 @@ function status(it,now,cfg){
 // Importes adicionales en EUR: nunca se supone que un coste desconocido sea cero.
 function acquisition(l,cfg){
  const keys=["shipping","vat","duty","handling","fxFee"], labels={shipping:"envío",vat:"IVA",duty:"aranceles",handling:"gestión de importación",fxFee:"comisión de cambio"}, missing=keys.filter(k=>!(N(l[k])>=0)).map(k=>labels[k]);
- const confirmed=!missing.length&&l.costsConfirmed===true&&l.shipsSpain===true&&!!l.country&&!!safeUrl(l.costSource);
+ const confirmed=!missing.length&&l.priceEstimated!==true&&l.costsConfirmed===true&&l.shipsSpain===true&&!!l.country&&!!safeUrl(l.costSource);
  return {missing,confirmed,total:N(l.price)>0&&!missing.length?N(l.price)+keys.reduce((v,k)=>v+N(l[k]),0):NaN};
 }
 const GRADE=v=>{const x=String(v||"RAW").trim().toUpperCase().replace(/\s+/g," ");return x===""?"RAW":x};
@@ -183,7 +187,7 @@ function evaluate(it,now=Date.now(),cfg=user.cfg){const st=status(it,now,cfg),ec
 const KIND={estimacion:["ESTIMACIÓN · NO ES VENTA","k-agregado"],venta:["VENTA CERRADA","k-venta"],agregado:["DATO AGREGADO","k-agregado"],anuncio:["ANUNCIO ACTIVO · NO ES VENTA","k-anuncio"]};
 function photoBlock(it){
  const own=it.listingPhoto||safeUrl(it.listing?.photoUrl);
- const src=own||safeUrl(it.image)||window.CVCardImages?.entry?.({name:it.name,number:it.number,set:it.set,universe:it.game})?.path||"";
+ const src=own||(it.noCatalogueImage?'':safeUrl(it.image)||window.CVCardImages?.entry?.({name:it.name,number:it.number,set:it.set,universe:it.game})?.path)||"";
  const tag=own?"Foto del ejemplar anunciado":src?(it.lane==="restaurar"?"Imagen de catálogo · NO es el ejemplar dañado":"Imagen de catálogo de la carta"):"";
  return '<figure class="v4photo">'+(src?'<img src="'+E(src)+'" alt="'+E(it.name)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-v4img>':"")+
   '<div class="v4noimg"'+(src?' hidden':'')+'><b>'+E(it.name)+'</b><span>'+(src?'La foto no ha cargado (sin conexión o enlace roto)':'Sin foto verificada de esta variante exacta')+'</span></div>'+(tag?'<figcaption class="'+(own?"own":"")+'">'+tag+'</figcaption>':'')+'</figure>';
@@ -232,7 +236,7 @@ function card(ev,cfg){
  (isR&&it.listing?'<dl class="v4facts v4assess">'+[["Estado de compra",l.condition],["Graduación",GRADE(l.grade||it.grade)],["Defectos observados",l.defects],["Defectos no evaluables",l.defectsUnknown],["Intervención prevista",l.plannedIntervention],["Riesgo irreversible",l.irreversibleRisk],["Escenario de salida",l.exitScenario],["Foto real del ejemplar",(it.listingPhoto||safeUrl(l.photoUrl))?"Sí":"NO: imprescindible antes de decidir"]].map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+E(v||"sin evaluar")+'</dd></div>').join("")+'</dl>':(l.defects?'<p class="v4defects"><b>Defectos visibles:</b> '+E(l.defects)+'</p>':''))+
  estimateBlock(it,ec)+
  '<div class="v4money">'+
-  '<div><span>PRECIO DE COMPRA</span><b>'+(N(l.price)>0?EUR(N(l.price)):"—")+'</b><small>'+(N(l.price)>0?'+ envío '+EUR(ec.buyShip)+(ec.shipKnown?' (confirmado)':' (estimado)'):'pendiente de anuncio')+'</small></div>'+
+  '<div><span>PRECIO DE COMPRA</span><b>'+(N(l.price)>0?(l.priceEstimated?'≈ ':'')+EUR(N(l.price)):"—")+'</b><small>'+(l.originalPrice?E(l.originalPrice)+' · conversión orientativa de la plataforma. ':'')+(N(l.price)>0?(ec.shipKnown?'+ envío '+EUR(ec.buyShip)+' (tarifa publicada)':'Envío a Sevilla pendiente de cotizar'):'pendiente de anuncio')+'</small></div>'+
   '<div><span>PRECIO DE VENTA ESTIMADO</span><b>'+(ec.basis==="venta"?EUR(ec.sale.mid):"—")+'</b><small>'+(ec.basis==="agregado"?'Referencia agregada '+EUR(ec.unaltered.mid)+' (no es venta). Añade ventas cerradas.':ec.basis?(isR?'restaurada declarada · comparables equivalentes · ':'')+basisTxt:'sin ventas reales')+'</small></div>'+
   '<div><span>GASTOS Y COMISIONES</span><b>'+(ec.net?EUR(ec.costs.mid):"—")+'</b><small>'+(N(l.sellFeePct)>=0?E(String(l.sellFeePct).replace(".",","))+' % comisión + envíos e impuestos':'comisión, envío e impuestos de venta pendientes')+'</small></div>'+
   '<div class="v4profit t-'+vd.tone+'"><span>BENEFICIO POTENCIAL</span><b>'+(ec.net?SIGNED(ec.net.mid):"—")+'</b><small>'+E(vd.label)+'</small></div>'+
@@ -244,7 +248,10 @@ function card(ev,cfg){
 
  (riskList(it,ec).length?'<p class="v4missing"><b>Riesgos:</b> '+E(riskList(it,ec).join(" · "))+'</p>':'')+
  (st.missing.length?'<p class="v4missing"><b>'+(st.code==="caducada"?E(st.why||"Comprobación vencida")+'. ':'')+'Falta:</b> '+E(st.missing.join(" · "))+'</p>':'')+
- (it.why?(it.historical?'<p class="v4why hist"><b>Nota histórica · '+E(it.source||"investigación anterior")+' · no reverificada, no es recomendación actual:</b> '+E(it.why)+'</p>':'<p class="v4why"><b>Por qué merece la pena mirarla:</b> '+E(it.why)+'</p>'):'')+
+ (it.why?(it.historical?'<p class="v4why hist"><b>Nota histórica · '+E(it.source||"investigación anterior")+' · no reverificada, no es recomendación actual:</b> '+E(it.why)+'</p>':'<p class="v4why"><b>Comprobación y límites:</b> '+E(it.why)+'</p>'):'')+
+ (l.reliability?'<p class="v4note"><b>Vendedor:</b> '+E(l.reliability)+'</p>':'')+
+ (l.costNote?'<p class="v4note">'+E(l.costNote)+'</p>':'')+
+ (safeUrl(l.costSource)?'<p><a href="'+E(safeUrl(l.costSource))+'" target="_blank" rel="noopener noreferrer">Condiciones y envío ↗</a></p>':'')+
  '<dl class="v4facts">'+
   '<div><dt>Tienda / vendedor</dt><dd>'+E([l.shop,l.seller].filter(Boolean).join(" · ")||"—")+'</dd></div>'+
   '<div><dt>Comprobado</dt><dd>'+(l.checkedAt?WHEN(l.checkedAt)+' · por '+E(l.checkedBy||"usuario"):"nunca")+'</dd></div>'+
@@ -294,16 +301,17 @@ function renderLane(lane){
  const evs=items.map(i=>evaluate(i,now,cfg)).sort(order);
  const view=evs.filter(e=>gameFilter==="all"||e.it.game===gameFilter);
  const live=view.filter(e=>e.st.code!=="caducada"),old=view.filter(e=>e.st.code==="caducada");
- const isR=lane==="restaurar",qualified=live.filter(e=>e.vd.code==="rentable"),pending=live.filter(e=>e.vd.code!=="rentable");
+ const isR=lane==="restaurar",qualified=live.filter(e=>e.vd.code==="rentable"),pending=live.filter(e=>e.vd.code!=="rentable"&&e.st.code!=="objetivo"),targets=live.filter(e=>e.st.code==="objetivo");
  host.innerHTML='<section class="v4head"><span class="v4kicker">'+(isR?"POKÉMON + LORCANA · CARTAS DETERIORADAS · REVENTA COMO RESTAURADA":"POKÉMON + LORCANA · 20–100 € · OBJETIVO ≥ "+EUR(cfg.minProfit)+" · SIN EBAY")+'</span>'+
   '<h2>'+(isR?"Comprar para restaurar":"Compra YA")+'</h2>'+
   '<p>'+(isR?"Cartas baratas en mal estado cuya versión mejor conservada se vende bien. Las ventas de ejemplares sin alterar son referencias; solo las ventas equivalentes de cartas intervenidas sustentan el beneficio. Se descuentan compra, comisiones y envíos; no tus materiales ni tus horas.":"Cada ficha muestra el anuncio, el precio de compra, la venta estimada a partir de ventas cerradas reales y el beneficio tras comisiones y envíos. Una compra comprobada no implica beneficio seguro.")+'</p>'+
   summary(evs,lane,cfg,hiddenOwned)+
   '<div class="v4filters" role="group" aria-label="Juego">'+[["all","Todas"],["pokemon","Pokémon"],["lorcana","Lorcana"]].map(([k,t])=>'<button type="button" data-v4-filter="'+k+'" class="'+(gameFilter===k?"on":"")+'">'+t+'</button>').join("")+
   '<button type="button" class="v4btn primary" data-v4-new="'+lane+'">+ Nueva oportunidad</button></div>'+
-  '<p class="v4honest">Comprobación en directo: Card Vault no puede leer Cardmarket ni TCGplayer desde el navegador (lo bloquean). Pulsa «Comprobar ahora», abre el enlace, confirma precio, envío, vendedor, estado y stock, y la ficha queda fechada. Válido '+cfg.freshHours+' h.</p></section>'+
+  '<p class="v4honest">Anuncios investigados: '+E(window.CV_MARKET_OFFERS?.checkedAt?WHEN(window.CV_MARKET_OFFERS.checkedAt):'sin actualización')+'. Son comprobaciones fechadas, no stock en tiempo real. Caducan a las '+cfg.freshHours+' h. Los costes desconocidos quedan pendientes; un anuncio no demuestra una venta ni un beneficio.</p></section>'+
   (qualified.length?'<h3>Mejores operaciones verificadas</h3><div class="v4list">'+qualified.slice(0,3).map(e=>card(e,cfg)).join('')+'</div>'+(qualified.length>3?'<details><summary>Ampliar ranking ('+qualified.length+')</summary>'+qualified.slice(3).map(e=>card(e,cfg)).join('')+'</details>':''):'<p class="v4empty big">No hay operaciones con margen y costes completos suficientemente verificados.</p>')+
-  (pending.length?'<h3>En observación · no son recomendaciones de compra</h3><div class="v4list">'+pending.map(e=>card(e,cfg)).join('')+'</div>':'')+
+  (pending.length?'<h3>Anuncios localizados · margen pendiente de verificar</h3><div class="v4list">'+pending.map(e=>card(e,cfg)).join('')+'</div>':'')+
+  (targets.length?'<details class="v4old"><summary>Objetivos sin anuncio ('+targets.length+')</summary><div class="v4list">'+targets.map(e=>card(e,cfg)).join('')+'</div></details>':'')+
 
   (old.length?'<details class="v4old"'+(live.length?'':' open')+'><summary>Caducadas · volver a comprobar ('+old.length+')</summary><div class="v4list">'+old.map(e=>card(e,cfg)).join("")+'</div></details>':'')+
   (lane==="compra"?funnelBlock():"")+comparisonBlock(evs,cfg)+researchBlock()+settingsBlock(cfg);

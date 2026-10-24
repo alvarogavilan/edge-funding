@@ -75,3 +75,35 @@ assert.ok(hosts.v4Restore.innerHTML.includes('TOTAL PUESTO EN SEVILLA'));
 assert.ok(hosts.v4Buy.innerHTML.includes('Investigación internacional'));
 assert.ok(!hosts.v4Restore.innerHTML.includes('NaN'));
 console.log('OK · Render integrado y campos internacionales sin errores');
+// Regression: published offers must reach both lanes without manual entry or storage writes.
+const beforeStore=JSON.stringify(store);
+vm.runInContext(fs.readFileSync(path.join(root,'market-offers-verified.js'),'utf8'),ctx);
+const snapshot=ctx.CV_MARKET_OFFERS,at=Date.parse(snapshot.checkedAt);
+ctx.Date=class extends Date {static now(){return at+1000}};
+const offers=ctx.CVVault.allItems().filter(x=>x.id.startsWith('market-'));
+assert.equal(offers.length,3);
+assert.equal(new Set(offers.map(x=>x.id)).size,offers.length);
+for(const it of offers){
+ assert.ok(listingPrecision(it.listing).ok);
+ assert.equal(evaluate(it,at+1000,cfg).ec.net,null,'Never invent margin from an active offer');
+ assert.notEqual(evaluate(it,at+1000,cfg).vd.code,'rentable');
+ assert.equal(status(it,at+25*3600000,cfg).code,'caducada');
+ assert.equal(it.sales.length,0,'Seller activity is not comparable sales');
+}
+assert.equal(economics(offers[0],cfg).acq.total,109.99);
+assert.equal(economics(offers[0],cfg).acq.confirmed,false);
+assert.ok(Number.isNaN(economics(offers[1],cfg).acq.total));
+assert.equal(offers[2].listing.priceEstimated,true);
+ctx.CVVault.renderAll();
+assert.equal(renderErrors.length,0,JSON.stringify(renderErrors));
+assert.ok(hosts.v4Buy.innerHTML.includes('The Black Cauldron'));
+assert.ok(hosts.v4Buy.innerHTML.includes('57766465601881'));
+assert.ok(hosts.v4Restore.innerHTML.includes('thecardfather_'));
+assert.ok(hosts.v4Restore.innerHTML.includes('Foto del ejemplar anunciado'));
+assert.ok(hosts.v4Restore.innerHTML.includes('35 USD'));
+assert.ok(hosts.v4Restore.innerHTML.indexOf('thecardfather_')<hosts.v4Restore.innerHTML.indexOf('<summary>Objetivos sin anuncio'));
+assert.equal(JSON.stringify(store),beforeStore,'Reading offers never modifies collection/history');
+ctx.CVStateBridge={get:()=>({cards:[{name:'Charizard',number:'11/108',universe:'pokemon',language:'Inglés'}]})};
+ctx.CVVault.renderAll();
+assert.ok(!hosts.v4Restore.innerHTML.includes('thecardfather_'),'Owned card excluded from proposals');
+console.log('OK · Feed real: ambas pestañas, enlace de variante, costes, caducidad, colección e historial');
