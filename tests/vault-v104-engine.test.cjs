@@ -7,7 +7,7 @@ const win={};
 const ctx={window:win,document:{readyState:'complete',addEventListener(){},getElementById:()=>null,body:{classList:{add(){}}}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>{store[k]=String(v)}},
  setTimeout(){},setInterval(){},URL,Date,Number,String,Array,Object,Math,JSON,Intl,console};
 ctx.window=ctx;ctx.addEventListener=()=>{};vm.createContext(ctx);
-for(const f of ['vault-data.js','vault-v104.js','vault-radar.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
+for(const f of ['vault-data.js','vault-v104.js','vault-ptcg-map.js','vault-radar.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
 const {status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,DEFAULTS}=ctx.CVVault.engine;
 const cfg={...DEFAULTS},now=Date.parse('2026-10-23T12:00:00Z');
 const base={id:'t',lane:'compra',game:'pokemon',name:'X',set:'Base',number:'1/102',language:'Inglés',sales:[]};
@@ -56,6 +56,18 @@ t('V112 en directo: anuncio cercano a la media → Compra YA si deja ≥ 40 € 
  assert.equal(Math.round(d.pr[1]*100),5050);assert.equal(R.liveDeal(row,p,c,'restaurar'),null)});
 t('V112 en directo: fuera de 20–200 €, sin ventas o margen corto → no se muestra',()=>{
  for(const p of [{trend:900,avg30:900,low:201},{trend:300,avg30:300,low:15},{low:100},{trend:120,avg30:120,low:80},{avg30:200,trend:200}])for(const l of ['compra','restaurar'])assert.equal(R.liveDeal(row,p,c,l),null,JSON.stringify(p)+l)});
+t('V113 enlaces y fotos: correspondencia exacta TCGdex → pokemontcg en colecciones especiales',()=>{
+ for(const [a,b] of [['swsh12.5gg-GG69','swsh12pt5gg-GG69'],['lc-1','base6-1'],['swsh4.5sv-SV107','swsh45sv-SV107'],['sm7.5-1','sm75-1'],['swsh10.5-10','pgo-10'],['sv10.5b-1','zsv10pt5-1'],['sv04.5-234','sv4pt5-234'],['ecard2-H01','ecard2-H1'],['sv03.5-199','sv3pt5-199'],['base1-4','base1-4']])assert.equal(R.ptcgId(a),b,a);
+ const gg=['swsh12.5gg-GG69','Giratina VSTAR','Crown Zenith Galarian Gallery','GG69','70','Secret Rare','swsh','swsh'];
+ const im=R.pkImages(gg,{});assert.equal(im[0],'https://images.pokemontcg.io/swsh12pt5gg/GG69_hires.png');assert.match(im[1],/assets\.tcgdex\.net/);
+ assert.equal(R.pkLinks(gg,{}).cardmarket,'https://prices.pokemontcg.io/cardmarket/swsh12pt5gg-GG69');
+ const un=['exu-A','Unown','Unseen Forces Unown Collection','A','28','Rare','ex','ex'];assert.equal(R.pkImages(un,{}).length,1);assert.match(R.pkLinks(un,{}).cardmarket,/cardmarket\.com\/es\/Pokemon\/Products\/Search/)});
+t('V113 idiomas: sin precios del mismo idioma no hay beneficio; en inglés usa ventas de TCGplayer',()=>{
+ const rows=R.langRows('sv04.5-234',{usd:200},{...c,usdToEur:.9},'compra');assert.ok(rows.every(x=>!Number.isFinite(x.profit)));
+ store['cv_v113_lang']=JSON.stringify({'sv04.5-234':{en:{buy:150},es:{buy:90,sell:110}}});R.reloadLang();
+ const r2=R.langRows('sv04.5-234',{usd:200},c,'compra');const en=r2.find(x=>x.k==='en'),es=r2.find(x=>x.k==='es');
+ assert.equal(Math.round(en.sellRef*100),17200);assert.equal(Math.round(en.profit*100),Math.round((172*.95-5-150-6)*100));assert.equal(Math.round(es.profit*100),Math.round((110*.95-5-90-6)*100));
+ const rr=R.langRows('sv04.5-234',{usd:200},c,'restaurar').find(x=>x.k==='en');assert.equal(Math.round(rr.sellRef*100),12900)});
 t('radar: ranking penaliza volatilidad',()=>{const a=R.evaluatePk(row,{trend:300,avg30:300,avg7:300,low:100},c,false),b=R.evaluatePk(row,{trend:300,avg30:300,avg7:500,low:100},c,false);assert.ok(a.score>b.score)});
 t('radar: sin anuncios o sin media no hay señal',()=>{assert.equal(R.evaluatePk(row,{trend:300,avg30:300},c,false).pass,undefined);assert.equal(R.evaluatePk(row,{low:20},c,false).pass,undefined)});
 t('radar: volatilidad señalada como riesgo',()=>{assert.ok(R.evaluatePk(row,{trend:300,avg30:200,avg7:400,low:20},c,false).risks.length>=1)});

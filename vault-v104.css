@@ -172,3 +172,9 @@ body.v104 .mainNav{margin:6px 0 14px}
 /* V112 · ofertas en directo en Compra YA y Restaurar */
 .rdlivebox{margin:14px 0;padding:14px;border:1px solid var(--v4line);border-radius:14px}
 .rdlivebox>h3{margin:0 0 6px}
+/* V113 · precios por idioma */
+.rdlang input{width:100%;min-width:0;min-height:44px;padding:6px 8px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit}
+.rdlang td,.rdlang th{padding:4px}
+.rdlang td:first-child{white-space:nowrap}
+.rdpos{color:var(--v4good)}.rdneg{color:#e5484d}
+.rdlangbox .v4btn{margin-top:8px}

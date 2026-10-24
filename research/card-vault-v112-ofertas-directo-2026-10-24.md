@@ -28,3 +28,35 @@ Al abrir Compra YA o Comprar para restaurar en el iPhone, la app consulta en dir
 - `vault-v107-regresion`: 60.
 - Matriz de aceptación: 0 filas fallidas.
 - cv-money 16, migración 5.
+
+---
+
+# V113 · idiomas separados y fotos exactas (24/10/2026)
+
+## Idiomas (aviso del propietario: Charizard ex de Destinos de Paldea)
+La guía diaria de Cardmarket que publica TCGdex (y también pokemontcg.io) da **una sola cifra por carta, con todos los idiomas y estados mezclados**. El «desde» puede ser un ejemplar italiano, portugués o dañado, y la media de ventas mezcla todos los idiomas. Por eso V112 mostraba beneficios que no existían para un mismo idioma.
+
+Ninguna fuente abierta y gratuita publica ventas de Cardmarket por idioma. La API oficial de Cardmarket requiere credenciales de cuenta.
+
+V113:
+- La diferencia «desde» vs media queda solo como **criba** («NO es beneficio»). Ya no aparece como beneficio.
+- **Ventas en inglés**: precio de mercado de TCGplayer (EE. UU.), calculado con ventas reales de ejemplares en inglés. Llega en el mismo dato de TCGdex.
+- **Precios por idioma** en cada ficha (inglés, español, francés, alemán, italiano y portugués): compra y venta del mismo idioma, anotadas tras filtrar por idioma en Cardmarket. En inglés se propone la venta de TCGplayer (× 75 % en Restaurar).
+- El **beneficio solo se calcula con compra y venta del mismo idioma**. La ficha pasa a «RENTABLE EN ‹IDIOMA›» si deja ≥ 40 € y sube al principio de la lista.
+- Los precios se guardan en el iPhone (`cv_v113_lang`) y se conservan al recargar. «Registrar este anuncio» pasa la carta en ese idioma, con sus precios etiquetados por idioma.
+- Las cartas japonesas son otra ficha en Cardmarket.
+
+## Fotos y enlaces (aviso: Giratina)
+La conversión antigua de códigos de colección solo cubría Escarlata/Púrpura y Megaevolución. Fallaban enlace y foto de respaldo en Colección Legendaria, Destinos Ocultos, Destinos Brillantes, Camino de Campeones, Majestad de Dragones, Cenit Supremo y su Galería de Galar (Giratina VSTAR GG69), Pokémon GO, Rayo Negro, Llama Blanca, 30 aniversario, Héroes Ascendidos y los holos «H» de e-Card.
+
+- Nuevo `vault-ptcg-map.js`, generado a partir de PokemonTCG/pokemon-tcg-data. **5.185 de 5.213 cartas** se emparejan por colección y número. Las 28 restantes (colección Unown de Unseen Forces) no tienen equivalente: se enlazan con la búsqueda de Cardmarket.
+- Foto: primero la de pokemontcg.io/scrydex (confirmada en su base de datos), después la de TCGdex, después un reintento, después aviso con nombre, colección y número.
+- Las 15 URLs fijas de imágenes del proyecto se han comprobado contra el dataset. 14 están allí; la de Eevee ex SVP 174 se sirve desde un archivo incluido en la app.
+
+## Pruebas V113
+- `tests/v113-ofertas-idiomas-e2e.cjs`: 16 comprobaciones (incluye inglés +2,40 € no rentable, español +55,25 € «RENTABLE EN ESPAÑOL», persistencia tras recargar y respaldo de foto).
+- Motor: 44 (correspondencias especiales y cálculo por idioma).
+- `vault-v104-e2e`: 47.
+- `vault-v107-regresion`: 60.
+- Matriz de aceptación: 0 filas fallidas.
+- cv-money 16, migración 5.

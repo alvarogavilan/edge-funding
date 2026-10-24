@@ -189,7 +189,7 @@ function photoBlock(it){
  const own=it.listingPhoto||safeUrl(it.listing?.photoUrl);
  const src=own||(it.noCatalogueImage?'':safeUrl(it.image)||window.CVCardImages?.entry?.({name:it.name,number:it.number,set:it.set,universe:it.game})?.path)||"";
  const tag=own?"Foto del ejemplar anunciado":src?(it.lane==="restaurar"?"Imagen de catálogo · NO es el ejemplar dañado":"Imagen de catálogo de la carta"):"";
- return '<figure class="v4photo">'+(src?'<img src="'+E(src)+'" alt="'+E(it.name)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-v4img>':"")+
+ return '<figure class="v4photo">'+(src?'<img src="'+E(src)+'"'+(!own&&safeUrl(it.imageAlt)&&safeUrl(it.imageAlt)!==src?' data-alt="'+E(safeUrl(it.imageAlt))+'"':'')+' alt="'+E(it.name)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-v4img>':"")+
   '<div class="v4noimg"'+(src?' hidden':'')+'><b>'+E(it.name)+'</b><span>'+(src?'La foto no ha cargado (sin conexión o enlace roto)':'Sin foto verificada de esta variante exacta')+'</span></div>'+(tag?'<figcaption class="'+(own?"own":"")+'">'+tag+'</figcaption>':'')+'</figure>';
 }
 function salesList(it,cfg){
@@ -354,7 +354,8 @@ function settingsBlock(cfg){
 /* Imagen rota: un único reintento a los 2,5 s; si vuelve a fallar, aviso honesto (no se sustituye por otra variante). */
 function wireImages(root){root.querySelectorAll("img[data-v4img]").forEach(im=>{
  const fail=()=>{im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false};
- const onErr=()=>{if(im.dataset.retried){fail();return}im.dataset.retried="1";const src=im.getAttribute("src");setTimeout(()=>{if(!im.isConnected)return;im.addEventListener("error",onErr,{once:true});im.src=src+(src.includes("?")?"&":"?")+"r=1"},2500)};
+ const onErr=()=>{const alt=im.dataset.alt;if(alt&&!im.dataset.usedAlt){im.dataset.usedAlt="1";im.addEventListener("error",onErr,{once:true});im.src=alt;return}/* V113: imagen alternativa */
+  if(im.dataset.retried){fail();return}im.dataset.retried="1";const src=im.getAttribute("src");setTimeout(()=>{if(!im.isConnected)return;im.addEventListener("error",onErr,{once:true});im.src=src+(src.includes("?")?"&":"?")+"r=1"},2500)};
  if(im.complete&&im.naturalWidth===0&&im.getAttribute("src"))onErr();else im.addEventListener("error",onErr,{once:true})})}
 function funnelBlock(){
  const f=funnel(),r=window.CVRadar?.counts?.()||{};
