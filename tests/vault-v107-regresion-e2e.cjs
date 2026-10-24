@@ -14,7 +14,7 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 const J=(route,obj,status=200)=>route.fulfill({status,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:typeof obj==='string'?obj:JSON.stringify(obj)});
 const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO',name,extra]);if(!cond)throw new Error('FALLO: '+name+' '+extra)};
 async function newPage(browser,opts={},mode='normal'){
- const ctx=await browser.newContext({...pw.devices['iPhone 13'],...opts});
+ const ctx=await browser.newContext({...pw.devices['iPhone 13'],...opts});await ctx.addInitScript(()=>{window.CV_LEGACY_LANES=true});/* V117: tablero anterior de Compra YA (motor de compra y comprobación que usa Favoritos) */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url();
   if(/images\.pokemontcg\.io|assets\.tcgdex\.net|cards\.lorcast\.io/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(/api\.frankfurter\.app/.test(u))return J(route,{amount:1,base:'USD',date:'2026-10-23',rates:{EUR:0.9}});

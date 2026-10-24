@@ -296,6 +296,13 @@ let gameFilter="all";
 function renderLane(lane){
  const host=document.getElementById(lane==="compra"?"v4Buy":"v4Restore");if(!host)return;
  const cfg=user.cfg,now=Date.now();
+ /* V117: Compra YA = ofertas en directo + supuestos. Lo registrado y lo vigilado vive en «Favoritos». */
+ if(!window.CV_LEGACY_LANES){
+  if(lane!=="compra"){host.innerHTML="";host.hidden=true;return}
+  host.innerHTML='<div data-rd-live="compra"></div>'+settingsBlock(cfg);
+  try{if(window.CVCompra)window.CVCompra.render();else window.CVRadar?.renderLive?.()}catch(err){console.error("Card Vault V117",err)}
+  return;
+ }
  let items=allItems().filter(i=>i.lane===lane&&!i.hidden),hiddenOwned=0;
  {const keep=[];for(const i of items){if(owned(i))hiddenOwned++;else keep.push(i)}items=keep}
  const evs=items.map(i=>evaluate(i,now,cfg)).sort(order);
@@ -631,7 +638,7 @@ function mountHosts(){
  const sales=document.getElementById("ventas-reales");
  if(sales&&!document.getElementById("v4Sales")){const d=document.createElement("div");d.id="v4Sales";d.className="v4board";sales.prepend(d)}
 }
-function renderAll(){mountHosts();for(const f of [()=>renderLane("compra"),()=>renderLane("restaurar"),renderSales])try{f()}catch(err){console.error("Card Vault V104",err)}}
+function renderAll(){mountHosts();for(const f of [()=>renderLane("compra"),()=>renderLane("restaurar"),renderSales,()=>window.CVCompra?.renderFavs?.()])try{f()}catch(err){console.error("Card Vault V104",err)}}
 /* Estudios guardados con V101–V103 («cv_buy_to_restore_v1»): se conservan como fichas propias. Los rangos de venta
    que eran hipótesis no se convierten en ventas; solo una venta cerrada declarada con fecha pasa a «venta». */
 function migrateV103(){
@@ -648,19 +655,34 @@ function migrateV103(){
 }
 async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();refreshFx();resolveLorcanaImages();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
 setInterval(()=>{if(!document.getElementById("v4Sheet")||document.getElementById("v4Sheet").hidden)renderAll()},5*60*1000);
-function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Añadida a "+(x.lane==="restaurar"?"Comprar para restaurar":"Compra YA"));const tab="radar";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
-async function exportData(){await photoLoadAll();return {user:JSON.parse(JSON.stringify(user)),photos:{...photoCache}}}
+function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Guardada en Favoritos");const tab="favoritos";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
+/* V117: la copia incluye también Favoritos vigilados y precios por idioma anotados (claves propias de Compra YA). */
+const EXTRA_KEYS={watch:"cv_v116_watch",lang:"cv_v113_lang"};
+const readKey=k=>{try{const x=JSON.parse(localStorage.getItem(k)||"{}");return x&&typeof x==="object"&&!Array.isArray(x)?x:{}}catch{return {}}};
+async function exportData(){await photoLoadAll();const extra={};for(const [n,k] of Object.entries(EXTRA_KEYS))extra[n]=readKey(k);return {user:JSON.parse(JSON.stringify(user)),photos:{...photoCache},extra}}
 /* Importación desde la copia completa: fusiona sin borrar; fotos de anuncio solo si no hay una local con el mismo id. */
 async function importData(v){
+ if(v&&typeof v==="object"&&v.extra&&typeof v.extra==="object")for(const [n,k] of Object.entries(EXTRA_KEYS)){const inc=v.extra[n];if(!inc||typeof inc!=="object"||Array.isArray(inc))continue;
+  const cur=readKey(k);let add=0;for(const [id,val] of Object.entries(inc))if(!(id in cur)&&!/^(__proto__|constructor|prototype)$/.test(id)&&val&&typeof val==="object"){cur[id]=val;add++}
+  if(add)try{localStorage.setItem(k,JSON.stringify(cur))}catch{}}
  if(!v||typeof v!=="object"||!v.user||typeof v.user!=="object")return {ok:true,added:0};
  const r=mergeImport(user,v.user);let saved=false;try{localStorage.setItem(STORE,JSON.stringify(r.user));saved=true}catch{}
  if(!saved)return {ok:false,added:0};
  user=r.user;let photosFailed=0;for(const [k,d] of Object.entries(v.photos||{}))if(!photoCache[k]&&/^data:image\//.test(d)){if(!(await photoPut(k,d)))photosFailed++}
  renderAll();return {ok:true,added:r.added,photosFailed};
 }
+/* V117: «Favoritos» — fichas registradas por ti (Compra YA, radar o a mano) con su comprobación y «He comprado». */
+function renderFavs(host,opt={}){
+ if(!host)return 0;const cfg=user.cfg,now=Date.now();
+ let items=allItems().filter(i=>i.custom&&!i.hidden);
+ if(opt.game&&opt.game!=="all")items=items.filter(i=>i.game===opt.game);
+ const evs=items.map(i=>evaluate(i,now,cfg)).sort(order);
+ host.innerHTML=evs.length?'<div class="v4list">'+evs.map(e=>card(e,cfg)).join("")+'</div>':"";
+ wireImages(host);return evs.length;
+}
 /* V115: filtro Estado de Compra YA → muestra u oculta las fichas de restauración registradas. */
 function setCondView(v){const rb=document.getElementById("v4Restore");if(rb)rb.hidden=v==="buen"}
 try{const v=JSON.parse(localStorage.getItem("cv_v115_view")||"{}").cond;if(v)setTimeout(()=>setCondView(v),0)}catch{}
-window.CVVault={setCondView,addCustom,fx:fxNow,funnel,exportData,importData,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
+window.CVVault={renderFavs,setCondView,addCustom,fx:fxNow,funnel,exportData,importData,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(start,300));else setTimeout(start,300);
 })();

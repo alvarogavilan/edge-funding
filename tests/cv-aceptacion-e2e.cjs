@@ -24,14 +24,14 @@ async function newPage(browser,base,{mode='normal'}={}){
  page.on('pageerror',e=>page.errors.push(e.message));
  page.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource|ERR_|net::/.test(m.text()))page.errors.push(m.text())});
  page.prompts=[];page.on('dialog',d=>{if(d.type()==='prompt'){const a=page.prompts.shift();d.accept(a==null?'':a)}else d.accept()});
- await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Buy .v4head');await page.waitForTimeout(600);
+ await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Buy [data-rd-live]',{state:'attached'});await page.waitForTimeout(600);
  await page.exposeFunction('__noop',()=>0).catch(()=>{});
  return {ctx,page};
 }
 // Crea una oportunidad ficticia y registra el anuncio por la interfaz.
 async function opportunity(page,{name='Carta Prueba A',grade='PSA 10',price='50',shipping='5',vat='12',duty='3',handling='7',fxFee='2',zone='fuera',country='Estados Unidos',condition='NM'}={}){
  const id=await page.evaluate(n=>{window.CVVault.addCustom({lane:'compra',game:'pokemon',name:n,set:'Set de prueba',number:'1/100',rarity:'Prueba',language:'Inglés',links:{}});return window.CVVault.user().custom.find(c=>c.name===n).id},name);
- await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
+ await page.click('.mainNav [data-tab="favoritos"]');await page.waitForTimeout(300);/* V117: lo registrado vive en Favoritos */
  await page.evaluate(i=>{const c=document.getElementById('card-'+i);c?.closest('details')?.setAttribute('open','');c?.scrollIntoView()},id);
  await page.click('#card-'+id+' [data-v4-verify]');await page.waitForSelector('#v4Sheet form');
  const f=async(k,v)=>{if(v!=null&&await page.locator('#v4Sheet [name='+k+']').count())await page.fill('#v4Sheet [name='+k+']',String(v))};
@@ -308,8 +308,8 @@ const MATRIX=[
   check('Sin errores JS',page.errors.length===0,page.errors.join('|'));await ctx.close();
  }),
  run('S','Móvil: sin desbordamientos y controles táctiles ≥ 44 px',async({browser,base})=>{
-  for(const w of [320,375,390,430]){const ctx=await browser.newContext({viewport:{width:w,height:780},isMobile:true,hasTouch:true});await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,r=>r.abort());const p=await ctx.newPage();await p.goto(base,{waitUntil:'load'});await p.waitForSelector('#v4Buy .v4head');
-   for(const tab of ['radar','comprar-restaurar','investigacion','ventas-reales','collection','archive']){await p.evaluate(t=>window.CVSimpleNav.showTab(t),tab);await p.waitForTimeout(200);
+  for(const w of [320,375,390,430]){const ctx=await browser.newContext({viewport:{width:w,height:780},isMobile:true,hasTouch:true});await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,r=>r.abort());const p=await ctx.newPage();await p.goto(base,{waitUntil:'load'});await p.waitForSelector('#v4Buy [data-rd-live]',{state:'attached'});await p.waitForTimeout(400);
+   for(const tab of ['radar','favoritos','collection','pregrade','psa-valorar','archive']){/* V117: pestañas visibles */await p.evaluate(t=>window.CVSimpleNav.showTab(t),tab);await p.waitForTimeout(200);
     const o=await p.evaluate(()=>({sw:document.documentElement.scrollWidth,iw:innerWidth,small:[...document.querySelectorAll('.tab:not(.hidden) .v4btn,.mainNav button')].filter(b=>b.offsetParent&&b.getBoundingClientRect().height<43.5).length}));
     check(w+' px · '+tab,o.sw<=o.iw+1&&o.small===0,JSON.stringify(o))}
    await ctx.close()}

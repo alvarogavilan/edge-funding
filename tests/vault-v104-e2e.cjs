@@ -14,7 +14,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch();
- const ctx=await browser.newContext({...pw.devices['iPhone 13']});
+ const ctx=await browser.newContext({...pw.devices['iPhone 13']});await ctx.addInitScript(()=>{window.CV_LEGACY_LANES=true});/* V117: tablero anterior de Compra YA (motor de compra y comprobación que usa Favoritos) */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url();
   if(/images\.pokemontcg\.io\/base1\/15_hires/.test(u))return route.fulfill({status:404,body:''});
   if(/images\.pokemontcg\.io|assets\.tcgdex\.net|lorcast\.io|cdn\.shopify\.com|whatnot/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
@@ -137,8 +137,8 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.reload({waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});await page.waitForTimeout(500);
  ok('Pasadas 24 h pasa a CADUCADA',(await page.locator('#card-'+id+' .v4status').textContent())==='CADUCADA');
  // 8. Otras pestañas siguen funcionando
- ok('V116: barra solo con Compra YA, Mi colección, Sellado, PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.dataset.tab)))===JSON.stringify(['radar','collection','sealed','pregrade','archive']));
- for(const t of ['collection','sealed','pregrade','archive','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
+ ok('V117: barra con Compra YA, Favoritos, Mi colección, Sellado, PSA, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.dataset.tab)))===JSON.stringify(['radar','favoritos','collection','sealed','pregrade','psa-valorar','archive']));
+ for(const t of ['favoritos','collection','sealed','pregrade','psa-valorar','archive','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
  ok('Mi colección sigue con cartas',await page.evaluate(()=>window.CVStateBridge.get().cards.length>=15));
  ok('Sin errores de JavaScript',errors.length===0,errors.slice(0,5).join(' | '));
  // 6b. He comprado → Mi colección
