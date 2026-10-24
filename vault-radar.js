@@ -5,7 +5,8 @@
    Todo lo que produce es INVESTIGACIÓN: medias agregadas y el anuncio más barato (sin estado ni idioma).
    Nunca crea una «compra comprobada» ni una «venta cerrada». */
 (()=>{"use strict";
-const CACHE="cv_v105_radar",TTL=24*3600e3;
+const CACHE="cv_v114_radar",TTL=24*3600e3;/* V114: clave nueva para no reutilizar precios sin el anuncio en inglés */
+try{localStorage.removeItem("cv_v105_radar")}catch{}
 const N=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:NaN};
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>Number.isFinite(v)?v.toLocaleString("es-ES",{style:"currency",currency:"EUR"}):"—";
