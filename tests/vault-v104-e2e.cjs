@@ -38,22 +38,22 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  ok('Compra YA tiene fichas',buy.cards>0,String(buy.cards));
  ok('Gyarados EX (ya en Mi colección) no aparece',!buy.titles.some(t=>/Gyarados EX/.test(t)));
  ok('Sin estados inventados: ninguna COMPRA COMPROBADA sin comprobación',!buy.status.includes('COMPRA COMPROBADA'));
- ok('Sin tableros antiguos superpuestos en Compra YA',buy.others.every(x=>x==='v4Buy'||/expertDrawer/.test(x)),buy.others.join(','));
+ ok('Sin tableros antiguos superpuestos en Compra YA',buy.others.every(x=>x==='v4Buy'||x==='v4Restore'/* V115: restauración integrada */||/expertDrawer/.test(x)),buy.others.join(','));
  ok('Sin desbordamiento horizontal',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  if(shots)await page.screenshot({path:path.join(shots,'1-compra-ya.png')});
- // 2. Comprar para restaurar desde la barra de pestañas
- await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(600);
+ // 2. V115: restauración integrada en Compra YA (sin pestaña propia)
+ await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(600);await page.locator('#v4Restore h2').scrollIntoViewIfNeeded();
  await page.evaluate(()=>document.querySelectorAll('#v4Restore details.v4old').forEach(d=>d.open=true));/* V110: objetivos plegados; se abren para comprobar todas las fotos */
  for(const el of await page.$$('#v4Restore .v4card figure')){await el.scrollIntoViewIfNeeded();await page.waitForTimeout(120)}
  await page.waitForTimeout(3500);await page.evaluate(()=>window.scrollTo(0,0));
- ok('Pestaña restaurar visible',await page.isVisible('#v4Restore h2'));
- ok('Compra YA oculta al cambiar de pestaña',!(await page.isVisible('#v4Buy h2')));
+ ok('Fichas de restauración visibles dentro de Compra YA',await page.isVisible('#v4Restore h2'));
+ ok('Compra YA y restauración en la misma pestaña',await page.evaluate(()=>document.getElementById('v4Restore').closest('section').id==='radar'&&!document.querySelector('.mainNav [data-tab="comprar-restaurar"]')));
  const rest=await page.evaluate(()=>({n:document.querySelectorAll('#v4Restore .v4card:not(.rdlive)').length,imgs:[...document.querySelectorAll('#v4Restore .v4card img')].map(i=>({ok:i.complete&&i.naturalWidth>0,h:i.getBoundingClientRect().height,hidden:i.hidden})),noimg:[...document.querySelectorAll('#v4Restore .v4noimg')].filter(n=>!n.hidden).length}));
  const restExpected=12+await page.evaluate(()=>(window.CV_MARKET_OFFERS?.offers||[]).filter(x=>x.lane==='restaurar').length);/* V110: 12 objetivos + anuncios concretos registrados */
  ok('12 objetivos de restauración + anuncios concretos',rest.n===restExpected,rest.n+'/'+restExpected);
  ok('Fotos grandes (≥ 250 px de alto en iPhone)',rest.imgs.filter(i=>!i.hidden).every(i=>i.ok&&i.h>=250),JSON.stringify(rest.imgs.slice(0,3)));
  ok('Foto que falla muestra sustituto legible',rest.noimg===1,String(rest.noimg));
- ok('Hash de URL directo',(await page.evaluate(()=>location.hash))==='#comprar-restaurar');
+ ok('Hash de URL directo',(await page.evaluate(()=>location.hash))==='#radar');
  if(shots)await page.screenshot({path:path.join(shots,'2-restaurar.png')});
  // 3. Registrar anuncio: búsqueda y eBay rechazados
  const id='rest-base1-4';
@@ -115,7 +115,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  ok('El universo de cartas no bloquea la carga (no va en el HTML; V112 lo pide tras pintar para las ofertas en directo)',!/vault-universe\.js/.test(fs.readFileSync(path.join(root,'index.html'),'utf8')));
  await page.click('.mainNav [data-tab="investigacion"]');await page.waitForSelector('#v4Radar [data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
  await page.selectOption('#v4Radar [data-rd-group]','vintage');await page.click('#v4Radar [data-rd-scan]');
- await page.waitForFunction(()=>/Última consulta/.test(document.getElementById('v4Radar').textContent),null,{timeout:120000});
+ await page.waitForFunction(()=>/Última consulta: Pokémon/.test(document.getElementById('v4Radar').textContent)&&!document.querySelector('#v4Radar .rdprog'),null,{timeout:120000});/* V115: la consulta automática también hace Lorcana */
  const rd=await page.evaluate(()=>({first:document.querySelector('#v4Radar .v4card h3')?.textContent,n:document.querySelectorAll('#v4Radar .v4card').length,txt:document.getElementById('v4Radar').textContent}));
  ok('Radar consulta el grupo vintage y registra fallos',/1 fallidas|1 fallida/.test(rd.txt),rd.txt.match(/Última consulta[^.]*\./)?.[0]);
  ok('Top 1 del radar: Venusaur (Charizard excluido por estar ya en Mi colección)',['Venusaur','Charizard'].includes(rd.first),String(rd.first));
@@ -126,7 +126,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.click('[data-rd-lorcana]');await page.waitForFunction(()=>/Lorcana · referencia/.test(document.getElementById('v4Radar').textContent),null,{timeout:30000});
  ok('Lorcana: referencia en € con cambio y sin beneficio inventado',/90,00\s€/.test(await page.textContent('#v4Radar details.v4old'))&&/no se calcula beneficio/.test(await page.textContent('#v4Radar details.v4old')));
  await page.click('#v4Radar [data-rd-promote="base1-15|restaurar"]');await page.waitForTimeout(500);
- const promo=await page.evaluate(()=>{const c=[...document.querySelectorAll('#v4Restore .v4card')].find(a=>/Radar/.test(a.textContent)||/Detectada por el radar/.test(a.textContent));return c?{status:c.querySelector('.v4status').textContent,profit:c.querySelector('.v4profit').textContent}:null});
+ const promo=await page.evaluate(()=>{const c=[...document.querySelectorAll('#v4Restore .v4card')].find(a=>/Radar/.test(a.textContent)||/Detectada (por el radar|en directo)/.test(a.textContent));return c?{status:c.querySelector('.v4status').textContent,profit:c.querySelector('.v4profit').textContent}:null});
  ok('Promover desde el radar crea ficha en Restaurar sin beneficio (solo agregados)',promo&&promo.status==='OBJETIVO · SIN ANUNCIO'&&/—/.test(promo.profit),JSON.stringify(promo));
  if(shots){await page.click('.mainNav [data-tab="investigacion"]');await page.waitForTimeout(300);await page.screenshot({path:path.join(shots,'5-investigacion.png')});const c1=await page.$('#v4Radar .v4card');if(c1)await c1.screenshot({path:path.join(shots,'6-radar-ficha.png')})}
  // 7. Persistencia y caducidad a las 24 h
@@ -141,7 +141,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  ok('Mi colección sigue con cartas',await page.evaluate(()=>window.CVStateBridge.get().cards.length>=15));
  ok('Sin errores de JavaScript',errors.length===0,errors.slice(0,5).join(' | '));
  // 6b. He comprado → Mi colección
- await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
+ await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
  const before=await page.evaluate(()=>window.CVStateBridge.get().cards.length);
  await page.evaluate(i=>{const d=document.getElementById('card-'+i)?.closest('details');if(d)d.open=true},id);await page.click('#card-'+id+' [data-v4-bought]');await page.waitForSelector('#v4Sheet form');await page.selectOption('#v4Sheet [name=costsPaid]','pagados');await page.dblclick('#v4Sheet button[type=submit]');await page.waitForTimeout(400);
  const after=await page.evaluate(()=>{const c=window.CVStateBridge.get().cards;return {n:c.length,last:c[c.length-1]}});

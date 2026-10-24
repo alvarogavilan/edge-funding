@@ -82,3 +82,36 @@ La conversión antigua de códigos de colección solo cubría Escarlata/Púrpura
 - `vault-v104-e2e`: 47.
 - `vault-v107-regresion`: 60.
 - Matriz de aceptación: 0 filas fallidas.
+
+---
+
+# V115 · Compra YA unificada, inglés en bloque y Lorcana (24/10/2026)
+
+**Causa raíz del «inglés vacío» (confirmada en el código de TCGdex en GitHub):** TCGdex obtiene TCGplayer de TCGCSV y lo guarda en una caché en memoria que se pierde (incidencia #2479). TCGCSV no se puede consultar desde un navegador: su documentación dice que su política CORS es restrictiva. El respaldo de V114 hacía una petición por carta a pokemontcg.io, con solo 12 s de espera (esa API es lenta) y un máximo de 40 cartas.
+
+**V115:**
+- **pokemontcg.io por colección:** una petición devuelve hasta 250 cartas con TCGplayer en inglés (`low` y `market` por variante) y Cardmarket (`lowPrice`, `lowPriceExPlus`, `avg30`, `trendPrice`). Los nombres de campo están comprobados en el SDK oficial en GitHub. Espera de 45 s, pausa de 2,1 s y tope propio de 900 peticiones al día (el límite sin clave es 1000 al día y 30 por minuto). Vintage necesita unas 15 peticiones; todo el catálogo, unas 200.
+- **Cada carta muestra:**
+  - **Dónde comprar**, con idioma, estado, precio y coste **puesto en 41020 Sevilla**: Cardmarket (cualquier estado; EX o mejor; idioma sin indicar) y TCGplayer (inglés, con envío, IVA y gestión).
+  - **Venta en inglés** con ventas reales de TCGplayer.
+  - **Operaciones con venta en el mismo idioma:** «Inglés confirmado» (TCGplayer → inglés), «Si es inglés» (Cardmarket → inglés, con **precio máximo en inglés** para ganar el mínimo) y «Restaurar» (Cardmarket en cualquier estado → venta mejorada al 75 %).
+  - Idiomas anotados (también japonés), cada uno con su estado.
+- **Comprar para restaurar** pasa a ser el filtro «Estado → Mal estado · restaurar» de Compra YA. Las fichas registradas de restauración se conservan y se muestran en Compra YA. Se ha corregido una regla CSS que las habría ocultado.
+- **Lorcana** en la misma lista: venta en inglés (TCGplayer vía Lorcast) y precio máximo de compra para ganar el mínimo. Lorcast no publica anuncios: si anotas la compra, se calcula el beneficio. La consulta automática hace Pokémon vintage y después Lorcana.
+- **Ordenar:** mayor beneficio, menor precio de compra, mayor margen %, mayor precio de venta, nombre. **Filtros:** juego, estado y «solo rentables / todas con precio». Se recuerdan en el iPhone.
+- **Estado de las fuentes:** peticiones correctas y fallidas, último error y cartas con venta en inglés por fuente.
+
+**Límites reales:**
+- Cardmarket no publica el idioma de su «desde».
+- No hay fuente abierta de ventas por idioma para español, francés, alemán, italiano o portugués.
+- TCGplayer solo admite vendedores de EE. UU., y pocos envían a España.
+- pokemontcg.io deja de funcionar el 1/3/2027.
+- No se han integrado otros mercados (CardTrader exige credenciales; TCGCSV bloquea navegadores; eBay está excluido).
+
+**Pruebas:**
+- `tests/v115-compra-ya-e2e.cjs`: 19 comprobaciones.
+- Motor: 46.
+- `vault-v104-e2e`: 47.
+- `vault-v107-regresion`: 55 (ya sin la pestaña eliminada).
+- Matriz de aceptación: 0 filas fallidas.
+- cv-money 16, migración 5.

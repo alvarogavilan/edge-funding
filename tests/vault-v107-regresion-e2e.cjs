@@ -35,7 +35,7 @@ async function newPage(browser,opts={},mode='normal'){
  for(const w of [320,375,390,430,1280]){
   const {ctx,page}=await newPage(browser,w===1280?{viewport:{width:1280,height:900},isMobile:false,hasTouch:false,deviceScaleFactor:1,userAgent:undefined}:{viewport:{width:w,height:800}});
   const t0=Date.now();await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Buy .v4head');const ms=Date.now()-t0;
-  for(const tab of ['radar','comprar-restaurar','investigacion','ventas-reales','collection']){
+  for(const tab of ['radar','investigacion','ventas-reales','collection']){/* V115: sin pestaña de restaurar */
    await page.click('.mainNav [data-tab="'+tab+'"]');await page.waitForTimeout(250);
    const o=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,iw:innerWidth}));
    ok('Sin desbordamiento horizontal · '+w+' px · '+tab,o.sw<=o.iw+1,JSON.stringify(o));
@@ -53,7 +53,7 @@ async function newPage(browser,opts={},mode='normal'){
   const pp=await page.evaluate(()=>{const c=[...document.querySelectorAll('#v4Buy .v4card')].find(a=>/EVS 008/.test(a.textContent));return c?.querySelector('.v4noimg:not([hidden])')?.textContent||''});
   ok('Variante sin foto exacta: aviso honesto, sin foto de otra variante',/Sin foto verificada de esta variante exacta/.test(pp),pp);
   // 3. Venta futura rechazada
-  await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
+  await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
   await openClick(page,'[data-v4-sale="rest-base1-2"]');await page.waitForSelector('#v4Sheet form');
   await page.fill('#v4Sheet [name=price]','100');await page.fill('#v4Sheet [name=date]','2030-01-01');await page.click('#v4Sheet button[type=submit]');
   ok('Venta con fecha futura rechazada',/futura/.test(await page.textContent('#v4Sheet .v4err')));
@@ -96,7 +96,7 @@ async function newPage(browser,opts={},mode='normal'){
   await page.click('.mainNav [data-tab="ventas-reales"]');await page.evaluate(()=>{const d=[...document.querySelectorAll('#v4Sales details')].pop();d.open=true});
   await page.setInputFiles('[data-v4-import]',f);await page.waitForTimeout(500);
   ok('Copia antigua (formato V104) importada sin perder datos',await page.evaluate(()=>window.CVVault.user().custom.some(c=>c.id==='own-v104')&&(window.CVVault.user().patches['rest-base1-15']?.sales||[]).length===1));
-  await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
+  await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
   await openClick(page,'[data-v4-verify="rest-base1-15"]');await page.waitForSelector('#v4Sheet form');
   for(const k of ['defectsUnknown','plannedIntervention','exitScenario'])ok('Formulario restauración incluye '+k,await page.locator('#v4Sheet [name='+k+']').count()===1);
   await page.fill('#v4Sheet [name=url]','https://shop.example.co.uk/p/venusaur');await page.fill('#v4Sheet [name=seller]','Tienda UK');await page.fill('#v4Sheet [name=price]','60');
@@ -117,7 +117,7 @@ async function newPage(browser,opts={},mode='normal'){
  {const {ctx,page}=await newPage(browser);page.on('dialog',d=>d.accept());
   await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});
   await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new Error('QuotaExceededError')}});
-  await page.click('.mainNav [data-tab="comprar-restaurar"]');await openClick(page,'[data-v4-new="restaurar"]');await page.fill('#v4Sheet [name=name]','Sin almacenamiento');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(300);
+  await page.click('.mainNav [data-tab="radar"]');await openClick(page,'[data-v4-new="restaurar"]');await page.fill('#v4Sheet [name=name]','Sin almacenamiento');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(300);
   ok('Almacenamiento lleno/bloqueado: aviso claro y sin bloqueo',/No se ha podido guardar/.test(await page.textContent('#v4Toast'))&&page.errors.length===0,page.errors.join('|'));
   await ctx.close();}
  // 7. API caída y respuesta malformada

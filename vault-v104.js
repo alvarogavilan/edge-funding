@@ -303,13 +303,13 @@ function renderLane(lane){
  const live=view.filter(e=>e.st.code!=="caducada"),old=view.filter(e=>e.st.code==="caducada");
  const isR=lane==="restaurar",qualified=live.filter(e=>e.vd.code==="rentable"),pending=live.filter(e=>e.vd.code!=="rentable"&&e.st.code!=="objetivo"),targets=live.filter(e=>e.st.code==="objetivo");
  host.innerHTML='<section class="v4head"><span class="v4kicker">'+(isR?"POKÉMON + LORCANA · CARTAS DETERIORADAS · 20–200 € · REVENTA COMO RESTAURADA":"POKÉMON + LORCANA · 20–200 € · OBJETIVO ≥ "+EUR(cfg.minProfit)+" · SIN EBAY")+'</span>'+
-  '<h2>'+(isR?"Comprar para restaurar":"Compra YA")+'</h2>'+
+  '<h2>'+(isR?"Para restaurar · fichas registradas":"Compra YA")+'</h2>'+
   '<p>'+(isR?"Cartas baratas en mal estado cuya versión mejor conservada se vende bien. Las ventas de ejemplares sin alterar son referencias; solo las ventas equivalentes de cartas intervenidas sustentan el beneficio. Se descuentan compra, comisiones y envíos; no tus materiales ni tus horas.":"Cada ficha muestra el anuncio, el precio de compra, la venta estimada a partir de ventas cerradas reales y el beneficio tras comisiones y envíos. Una compra comprobada no implica beneficio seguro.")+'</p>'+
   summary(evs,lane,cfg,hiddenOwned)+
   '<div class="v4filters" role="group" aria-label="Juego">'+[["all","Todas"],["pokemon","Pokémon"],["lorcana","Lorcana"]].map(([k,t])=>'<button type="button" data-v4-filter="'+k+'" class="'+(gameFilter===k?"on":"")+'">'+t+'</button>').join("")+
   '<button type="button" class="v4btn primary" data-v4-new="'+lane+'">+ Nueva oportunidad</button></div>'+
   '<p class="v4honest">Anuncios investigados: '+E(window.CV_MARKET_OFFERS?.checkedAt?WHEN(window.CV_MARKET_OFFERS.checkedAt):'sin actualización')+'. Son comprobaciones fechadas, no stock en tiempo real. Caducan a las '+cfg.freshHours+' h. Los costes desconocidos quedan pendientes; un anuncio no demuestra una venta ni un beneficio.</p></section>'+
-  '<div data-rd-live="'+lane+'"></div>'+
+  (lane==="compra"?'<div data-rd-live="compra"></div>':'')+
   (qualified.length?'<h3>Mejores operaciones verificadas</h3><div class="v4list">'+qualified.slice(0,3).map(e=>card(e,cfg)).join('')+'</div>'+(qualified.length>3?'<details><summary>Ampliar ranking ('+qualified.length+')</summary>'+qualified.slice(3).map(e=>card(e,cfg)).join('')+'</details>':''):'<p class="v4empty big">No hay operaciones con margen y costes completos suficientemente verificados.</p>')+
   (pending.length?'<h3>Anuncios localizados · margen pendiente de verificar</h3><div class="v4list">'+pending.map(e=>card(e,cfg)).join('')+'</div>':'')+
   (targets.length?'<details class="v4old"><summary>Objetivos sin anuncio ('+targets.length+')</summary><div class="v4list">'+targets.map(e=>card(e,cfg)).join('')+'</div></details>':'')+
@@ -625,8 +625,9 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 function mountHosts(){
  const radar=document.getElementById("radar");
  if(radar&&!document.getElementById("v4Buy")){const d=document.createElement("div");d.id="v4Buy";d.className="v4board";radar.prepend(d)}
- const rest=document.getElementById("comprar-restaurar");
- if(rest&&!document.getElementById("v4Restore")){rest.innerHTML='<div id="v4Restore" class="v4board"></div>'}
+ /* V115: «Comprar para restaurar» se integra en Compra YA (filtro Estado → Mal estado); sus fichas se conservan. */
+ try{let rb=document.getElementById("v4Restore");if(!rb){rb=document.createElement("div");rb.id="v4Restore";rb.className="v4board"}
+  const buy=document.getElementById("v4Buy");if(buy&&rb.previousElementSibling!==buy)buy.after(rb)}catch{}
  const sales=document.getElementById("ventas-reales");
  if(sales&&!document.getElementById("v4Sales")){const d=document.createElement("div");d.id="v4Sales";d.className="v4board";sales.prepend(d)}
 }
@@ -647,7 +648,7 @@ function migrateV103(){
 }
 async function start(){document.body.classList.add("v104");try{migrateV103()}catch(e){console.error(e)}mountHosts();renderAll();refreshFx();resolveLorcanaImages();await photoLoadAll();if(Object.keys(photoCache).length)renderAll()}
 setInterval(()=>{if(!document.getElementById("v4Sheet")||document.getElementById("v4Sheet").hidden)renderAll()},5*60*1000);
-function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Añadida a "+(x.lane==="restaurar"?"Comprar para restaurar":"Compra YA"));const tab=x.lane==="restaurar"?"comprar-restaurar":"radar";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
+function addCustom(x){const id="own-"+uid();user.custom.unshift({id,custom:true,listing:null,links:{},...x,sales:(x.sales||[]).map(s=>({id:uid(),addedBy:"radar",...s}))});if(writeUser()){renderAll();toast("Añadida a "+(x.lane==="restaurar"?"Comprar para restaurar":"Compra YA"));const tab="radar";window.CVSimpleNav?.showTab?.(tab);history.replaceState(null,"","#"+tab);setTimeout(()=>document.getElementById("card-"+id)?.scrollIntoView({behavior:"smooth"}),120)}}
 async function exportData(){await photoLoadAll();return {user:JSON.parse(JSON.stringify(user)),photos:{...photoCache}}}
 /* Importación desde la copia completa: fusiona sin borrar; fotos de anuncio solo si no hay una local con el mismo id. */
 async function importData(v){
@@ -657,6 +658,9 @@ async function importData(v){
  user=r.user;let photosFailed=0;for(const [k,d] of Object.entries(v.photos||{}))if(!photoCache[k]&&/^data:image\//.test(d)){if(!(await photoPut(k,d)))photosFailed++}
  renderAll();return {ok:true,added:r.added,photosFailed};
 }
-window.CVVault={addCustom,fx:fxNow,funnel,exportData,importData,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
+/* V115: filtro Estado de Compra YA → muestra u oculta las fichas de restauración registradas. */
+function setCondView(v){const rb=document.getElementById("v4Restore");if(rb)rb.hidden=v==="buen"}
+try{const v=JSON.parse(localStorage.getItem("cv_v115_view")||"{}").cond;if(v)setTimeout(()=>setCondView(v),0)}catch{}
+window.CVVault={setCondView,addCustom,fx:fxNow,funnel,exportData,importData,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(start,300));else setTimeout(start,300);
 })();

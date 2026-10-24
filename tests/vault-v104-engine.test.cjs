@@ -50,37 +50,42 @@ t('radar: descarta por diferencia, precio bajo, duplicado, compra > 200 € y an
  assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:300},c,false).reasons[0],/200/);
  assert.match(R.evaluatePk(row,{trend:200,avg30:200,low:3},c,false).reasons[0],/casi seguro/);
  assert.match(R.evaluatePk(row,{trend:400,avg30:400,low:300-100+80},c,false).reasons[0]||'',/%|200/)});
-t('V112 en directo: dañada a 50 € con ventas de 200 € → Restaurar con beneficio estimado, no Compra YA',()=>{const p={trend:210,avg30:200,low:50},d=R.liveDeal(row,p,c,'restaurar');
- assert.equal(d.ref,200);assert.equal(Math.round(d.sale[1]),150);assert.equal(Math.round(d.pr[1]*100),8150);assert.equal(Math.round(d.pr[0]*100),5300);assert.equal(R.liveDeal(row,p,c,'compra'),null)});
-t('V112 en directo: anuncio cercano a la media → Compra YA si deja ≥ 40 € tras costes',()=>{const p={trend:170,avg30:175,low:100},d=R.liveDeal(row,p,c,'compra');
- assert.equal(Math.round(d.pr[1]*100),5050);assert.equal(R.liveDeal(row,p,c,'restaurar'),null)});
-t('V112 en directo: fuera de 20–200 €, sin ventas o margen corto → no se muestra',()=>{
- for(const p of [{trend:900,avg30:900,low:201},{trend:300,avg30:300,low:15},{low:100},{trend:120,avg30:120,low:80},{avg30:200,trend:200}])for(const l of ['compra','restaurar'])assert.equal(R.liveDeal(row,p,c,l),null,JSON.stringify(p)+l)});
 t('V113 enlaces y fotos: correspondencia exacta TCGdex → pokemontcg en colecciones especiales',()=>{
  for(const [a,b] of [['swsh12.5gg-GG69','swsh12pt5gg-GG69'],['lc-1','base6-1'],['swsh4.5sv-SV107','swsh45sv-SV107'],['sm7.5-1','sm75-1'],['swsh10.5-10','pgo-10'],['sv10.5b-1','zsv10pt5-1'],['sv04.5-234','sv4pt5-234'],['ecard2-H01','ecard2-H1'],['sv03.5-199','sv3pt5-199'],['base1-4','base1-4']])assert.equal(R.ptcgId(a),b,a);
  const gg=['swsh12.5gg-GG69','Giratina VSTAR','Crown Zenith Galarian Gallery','GG69','70','Secret Rare','swsh','swsh'];
  const im=R.pkImages(gg,{});assert.equal(im[0],'https://images.pokemontcg.io/swsh12pt5gg/GG69_hires.png');assert.match(im[1],/assets\.tcgdex\.net/);
  assert.equal(R.pkLinks(gg,{}).cardmarket,'https://prices.pokemontcg.io/cardmarket/swsh12pt5gg-GG69');
  const un=['exu-A','Unown','Unseen Forces Unown Collection','A','28','Rare','ex','ex'];assert.equal(R.pkImages(un,{}).length,1);assert.match(R.pkLinks(un,{}).cardmarket,/cardmarket\.com\/es\/Pokemon\/Products\/Search/)});
-t('V113 idiomas: sin precios del mismo idioma no hay beneficio; en inglés usa ventas de TCGplayer',()=>{
- const rows=R.langRows('sv04.5-234',{usd:200},{...c,usdToEur:.9},'compra');assert.ok(rows.every(x=>!Number.isFinite(x.profit)));
- store['cv_v113_lang']=JSON.stringify({'sv04.5-234':{en:{buy:150},es:{buy:90,sell:110}}});R.reloadLang();
- const r2=R.langRows('sv04.5-234',{usd:200},c,'compra');const en=r2.find(x=>x.k==='en'),es=r2.find(x=>x.k==='es');
- assert.equal(Math.round(en.sellRef*100),17200);assert.equal(Math.round(en.profit*100),Math.round((172*.95-5-150-6)*100));assert.equal(Math.round(es.profit*100),Math.round((110*.95-5-90-6)*100));
- const rr=R.langRows('sv04.5-234',{usd:200},c,'restaurar').find(x=>x.k==='en');assert.equal(Math.round(rr.sellRef*100),12900)});
 t('V114 inglés: misma variante para anuncio y ventas; impresión principal antes que reverse o 1.ª edición',()=>{
  const tp={'reverse-holofoil':{lowPrice:5,marketPrice:9},'1st-edition-holofoil':{lowPrice:900,marketPrice:1500},holofoil:{lowPrice:120,marketPrice:200}};
  assert.deepEqual({...R.pickEN(tp,'marketPrice','lowPrice')},{variant:'holofoil',market:200,low:120});
  const p=R.parseTcgdex({pricing:{cardmarket:{trend:10},tcgplayer:tp}});assert.equal(p.usd,200);assert.equal(p.usdLow,120);assert.equal(p.enVariant,'holofoil');
  const q=R.parsePtcg({data:{tcgplayer:{updatedAt:'2026/10/23',prices:{normal:{low:3,market:4},holofoil:{low:80,market:150}}}}});assert.equal(q.usd,150);assert.equal(q.usdLow,80);assert.equal(q.enSrc,'pokemontcg.io');
  assert.equal(R.parsePtcg({data:{tcgplayer:null}}),null)});
-t('V114 inglés automático: compra en EE. UU. puesta en Sevilla frente a ventas en inglés',()=>{
- R.reloadLang();const cc={...c,usdToEur:.86,usShip:15,usVat:21,usHandling:5};
- const en=R.langRows('base1-99',{usd:200,usdLow:100},cc,'compra').find(x=>x.k==='en');
- assert.equal(en.buyAuto,true);assert.equal(Math.round(en.buyRef*100),8600);assert.equal(Math.round(en.cost*100),Math.round(((86+15)*1.21+5)*100));
- assert.equal(Math.round(en.profit*100),Math.round((172*.95-5-((86+15)*1.21+5))*100));
- const rs=R.langRows('base1-99',{usd:200,usdLow:100},cc,'restaurar').find(x=>x.k==='en');assert.equal(Math.round(rs.sellRef*100),12900);
- const none=R.langRows('base1-99',{},cc,'compra');assert.ok(none.every(x=>!Number.isFinite(x.profit)))});
+t('V115 pokemontcg.io en bloque: lectura de TCGplayer (inglés) y Cardmarket EX+ de la misma carta',()=>{
+ const x=R.parsePtcgCard({id:'base1-4',tcgplayer:{url:'https://prices.pokemontcg.io/tcgplayer/base1-4',updatedAt:'2026/10/24',prices:{'1stEditionHolofoil':{low:900,market:2000},holofoil:{low:90,market:200}}},cardmarket:{updatedAt:'2026/10/24',prices:{lowPrice:100,lowPriceExPlus:120,avg30:170,trendPrice:175,averageSellPrice:160}}});
+ assert.equal(x.tp.variant,'holofoil');assert.equal(x.tp.low,90);assert.equal(x.tp.market,200);assert.equal(x.cm.exPlus,120);assert.equal(x.cm.low,100);assert.equal(x.cm.avg30,170);
+ assert.equal(R.parsePtcgCard({id:'a'}).tp,null)});
+const seed=()=>{const C=R.cache();C.pk={};C.en={};C.lo={};store['cv_v113_lang']='{}';R.reloadLang();
+ C.pk['base1-4']={t:Date.now(),trend:175,avg30:170,low:100,cmUpdated:'2026-10-24'};
+ C.en['base1-4']={t:Date.now(),tp:{variant:'holofoil',market:200,low:90,updated:'2026/10/24'},cm:{low:100,exPlus:120,avg30:170,trend:175,updated:new Date().toISOString()}};return C};
+const row4=['base1-4','Charizard','Base Set','4','102','Rare','base','vintage'];
+const cent=v=>Math.round(v*100);
+t('V115 operaciones: inglés confirmado (TCGplayer → venta en inglés), «si es inglés» con precio máximo y restaurar',()=>{seed();
+ const ev=R.evalPk(row4,c),op=k=>ev.ops.find(o=>o.k===k);assert.equal(cent(ev.V),17200);
+ assert.equal(cent(op('en-us').buy),7740);assert.equal(cent(op('en-us').cost),cent((77.4+15)*1.21+5));assert.equal(cent(op('en-us').profit),cent(158.4-((77.4+15)*1.21+5)));assert.equal(op('en-us').sure,true);
+ assert.equal(cent(op('cm-ex').profit),3240);assert.equal(cent(op('cm-ex').maxBuy),11240);assert.equal(op('cm-ex').sure,false);
+ assert.equal(cent(op('cm-po').sale),12900);assert.equal(cent(op('cm-po').profit),1155);assert.equal(op('cm-po').cond,'mal');
+ assert.equal(R.bestOp(ev,'all').k,'en-us');assert.equal(R.bestOp(ev,'mal').k,'cm-po')});
+t('V115 idiomas anotados: compra y venta del mismo idioma; en inglés la venta automática',()=>{seed();
+ store['cv_v113_lang']=JSON.stringify({'base1-4':{es:{buy:90,sell:175,cond:'buen'},en:{buy:100,cond:'buen'}}});R.reloadLang();
+ const ev=R.evalPk(row4,c),es=ev.ops.find(o=>o.k==='own-es'),en=ev.ops.find(o=>o.k==='own-en');
+ assert.equal(cent(es.profit),cent(175*.95-5-96));assert.equal(cent(en.profit),cent(158.4-106));assert.equal(R.bestOp(ev,'all').k,'own-es')});
+t('V115 sin venta en inglés no hay beneficio (no se mezclan idiomas)',()=>{const C=seed();delete C.en['base1-4'];const ev=R.evalPk(row4,c);assert.ok(!Number.isFinite(ev.V));assert.equal(ev.ops.length,0)});
+t('V115 Lorcana: precio máximo de compra en inglés y beneficio si se anota la compra',()=>{seed();
+ const x={id:'lo-x',name:'Elsa – Spirit of Winter',set:'The First Chapter',number:'207',rarity:'Enchanted',eur:172,usd:200,t:Date.now()};
+ let ev=R.evalLo(x,c);assert.equal(cent(ev.maxBuy),11240);assert.equal(R.bestOp(ev,'all'),null);
+ store['cv_v113_lang']=JSON.stringify({'lo-x':{en:{buy:80}}});R.reloadLang();ev=R.evalLo(x,c);assert.equal(cent(R.bestOp(ev,'all').profit),cent(158.4-86))});
 t('radar: ranking penaliza volatilidad',()=>{const a=R.evaluatePk(row,{trend:300,avg30:300,avg7:300,low:100},c,false),b=R.evaluatePk(row,{trend:300,avg30:300,avg7:500,low:100},c,false);assert.ok(a.score>b.score)});
 t('radar: sin anuncios o sin media no hay señal',()=>{assert.equal(R.evaluatePk(row,{trend:300,avg30:300},c,false).pass,undefined);assert.equal(R.evaluatePk(row,{low:20},c,false).pass,undefined)});
 t('radar: volatilidad señalada como riesgo',()=>{assert.ok(R.evaluatePk(row,{trend:300,avg30:200,avg7:400,low:20},c,false).risks.length>=1)});
