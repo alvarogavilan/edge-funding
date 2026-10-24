@@ -60,3 +60,25 @@ La conversión antigua de códigos de colección solo cubría Escarlata/Púrpura
 - `vault-v107-regresion`: 60.
 - Matriz de aceptación: 0 filas fallidas.
 - cv-money 16, migración 5.
+
+---
+
+# V114 · compra y venta del mismo idioma, automática en inglés (24/10/2026)
+
+**Por qué salía vacío «Ventas en inglés»:** TCGdex tiene una incidencia abierta, sin respuesta, la [#2479](https://github.com/tcgdex/cards-database/issues/2479). Desde el 15/10/2026, cerca de la mitad de sus respuestas llegan sin el bloque de TCGplayer, y la misma petición unas veces lo trae y otras no. La app no lo reintentaba.
+
+**Qué hace ahora:**
+- **Inglés automático, compra y venta del mismo idioma y mercado.** De TCGplayer (EE. UU.) se toman el anuncio más barato (`low`) y el precio de mercado calculado con ventas reales (`market`), de la **misma variante** (impresión principal antes que reverse o 1.ª edición).
+- Si TCGdex no lo trae, se repite la petición hasta 2 veces. Si sigue faltando, se consulta pokemontcg.io (gratis, sin clave; como mucho 40 por consulta y con pausas). Solo se hace para las candidatas.
+- **Beneficio en inglés:** venta × (1 − comisión) − envío de venta − compra traída a Sevilla. La compra traída es (carta + envío desde EE. UU. 15 €) × (1 + IVA 21 %) + gestión 5 €; los tres valores se pueden editar en «Supuestos».
+- Si en las fotos está dañada, no es Compra YA. Pocos vendedores de TCGplayer envían a España: un precio en inglés anotado de Cardmarket manda sobre el automático.
+- **Español, francés, alemán, italiano y portugués:** no existe ninguna fuente abierta con precios por idioma. Cardmarket solo los da en su web o en su API, reservada a vendedores profesionales con credenciales. Se anotan en la ficha y el beneficio se calcula con compra y venta de ese idioma.
+- **Estados de la ficha:** «RENTABLE EN ‹IDIOMA›», «MISMO IDIOMA · ‹IDIOMA› SIN MARGEN SUFICIENTE» o «IDIOMA SIN CONFIRMAR». Las rentables van primero.
+- **Aviso:** pokemontcg.io dejará de funcionar el 1/3/2027 (lo sustituye Scrydex, de pago). Hasta entonces sirve de respaldo.
+
+**Pruebas:**
+- `tests/v114-mismo-idioma-e2e.cjs`: 21 comprobaciones. Cubre el reintento de TCGdex, el respaldo de pokemontcg.io, el inglés automático +41,60 €, el inglés anotado +2,40 €, el español +55,25 €, la persistencia, el orden, la foto alternativa y el registro en inglés.
+- Motor: 46.
+- `vault-v104-e2e`: 47.
+- `vault-v107-regresion`: 60.
+- Matriz de aceptación: 0 filas fallidas.

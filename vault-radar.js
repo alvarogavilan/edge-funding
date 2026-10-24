@@ -15,7 +15,7 @@ const WHEN=t=>{const d=new Date(t);return Number.isFinite(d.getTime())?d.toLocal
 function readCache(){try{const x=JSON.parse(localStorage.getItem(CACHE)||"{}");return {pk:x.pk||{},lo:x.lo||{},runs:Array.isArray(x.runs)?x.runs:[],universeCount:x.universeCount||0}}catch{return {pk:{},lo:{},runs:[]}}}
 let cache=readCache();
 function writeCache(){try{localStorage.setItem(CACHE,JSON.stringify(cache))}catch{try{cache.runs=cache.runs.slice(-5);localStorage.setItem(CACHE,JSON.stringify(cache))}catch{}}}
-const cfg=()=>window.CVVault?.user?.().cfg||{feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,usdToEur:.86};
+const cfg=()=>window.CVVault?.user?.().cfg||{feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,usdToEur:.86,usShip:15,usVat:21,usHandling:5};
 const fx=()=>window.CVVault?.fx?.()||{rate:cfg().usdToEur,date:"",source:"manual"};
 
 /* ---------- identidad y enlaces ---------- */
@@ -50,11 +50,34 @@ function wireImgs(root){root.querySelectorAll("img[data-v4img]").forEach(im=>{if
 const imgTag=(row,p,alt)=>{const [a,b]=pkImages(row,p);return '<img src="'+E(a)+'"'+(b?' data-alt="'+E(b)+'"':'')+' alt="'+E(alt)+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-v4img>'};
 
 /* ---------- lectura de precios ---------- */
+/* Inglés (TCGplayer, EE. UU.): misma variante para anuncio más barato (low) y precio de mercado (market, calculado con ventas reales).
+   Orden de preferencia: impresión principal antes que reverse y 1.ª edición. */
+const EN_ORDER=["holofoil","normal","unlimited-holofoil","unlimitedHolofoil","unlimited","reverse-holofoil","reverseHolofoil","1st-edition-holofoil","1stEditionHolofoil","1st-edition","1stEditionNormal"];
+function pickEN(variants,mk,lk){
+ if(!variants||typeof variants!=="object")return null;
+ const keys=[...EN_ORDER.filter(k=>k in variants),...Object.keys(variants).filter(k=>!EN_ORDER.includes(k))];
+ for(const k of keys){const o=variants[k];if(o&&typeof o==="object"&&N(o[mk]))return {variant:k,market:N(o[mk]),low:N(o[lk])}}
+ return null;
+}
 function parseTcgdex(j){
  const cm=j?.pricing?.cardmarket||{},tp=j?.pricing?.tcgplayer||{};
- let usd=NaN;for(const [k,o] of Object.entries(tp))if(o&&typeof o==="object"&&N(o.marketPrice)){usd=Number.isFinite(usd)?Math.min(usd,N(o.marketPrice)):N(o.marketPrice)}
+ const en=pickEN(tp,"marketPrice","lowPrice");
  return {t:Date.now(),trend:N(cm.trend),avg30:N(cm.avg30),avg7:N(cm.avg7),avg1:N(cm.avg1),avg:N(cm.avg),low:N(cm.low),cmUpdated:cm.updated||"",cmId:N(cm.idProduct)||N(cm.productId)||undefined,
-  usd,tpUpdated:tp.updated||"",tpId:N(tp.productId)||undefined,rarity:j?.rarity||"",image:j?.image?j.image+"/high.webp":""};
+  usd:en?en.market:NaN,usdLow:en?en.low:NaN,enVariant:en?en.variant:"",enSrc:en?"TCGdex":"",tpUpdated:tp.updated||"",tpId:N(tp.productId)||undefined,rarity:j?.rarity||"",image:j?.image?j.image+"/high.webp":""};
+}
+function parsePtcg(j){const tp=j?.data?.tcgplayer;const en=pickEN(tp?.prices,"market","low");return en?{usd:en.market,usdLow:en.low,enVariant:en.variant,enSrc:"pokemontcg.io",tpUpdated:tp.updatedAt||"",tpUrl:tp.url||""}:null}
+/* Completa el inglés de las candidatas: TCGdex pierde a veces el bloque de TCGplayer (incidencia pública #2479, desde el 15/10/2026),
+   así que se repite la petición hasta 2 veces y, si sigue faltando, se consulta pokemontcg.io (mismo dato, gratis, sin clave; ≤ 40 por consulta). */
+async function enrichEN(ctrl,rows){
+ const c=cfg(),need=rows.filter(r=>{const p=cache.pk[r[0]];return p&&Date.now()-p.t<TTL&&!Number.isFinite(p.usd)&&(liveDeal(r,p,c,"compra")||liveDeal(r,p,c,"restaurar"))});
+ if(!need.length||!running)return;running.label="Ventas en inglés de las candidatas";running.total=need.length;running.done=0;render();let ptcgCalls=0;
+ for(const r of need){if(ctrl.signal.aborted)break;const p=cache.pk[r[0]];
+  for(let k=0;k<2&&!Number.isFinite(p.usd);k++){try{const j=await getJSON("https://api.tcgdex.net/v2/en/cards/"+encodeURIComponent(r[0]),ctrl.signal,1);const q=parseTcgdex(j);if(Number.isFinite(q.usd))Object.assign(p,{usd:q.usd,usdLow:q.usdLow,enVariant:q.enVariant,enSrc:"TCGdex",tpUpdated:q.tpUpdated,tpId:q.tpId})}catch{if(ctrl.signal.aborted)break}}
+  if(!Number.isFinite(p.usd)&&hasPtcg(r[0])&&ptcgCalls<40){ptcgCalls++;
+   try{const j=await getJSON("https://api.pokemontcg.io/v2/cards/"+encodeURIComponent(ptcgId(r[0]))+"?select=id,tcgplayer",ctrl.signal,1);const q=parsePtcg(j);if(q)Object.assign(p,q)}catch(e){if(ctrl.signal.aborted)break;running.errors["pokemontcg.io: "+String(e.message||e).slice(0,40)]=1}
+   await new Promise(ok=>setTimeout(ok,2200))}
+  p.enTried=Date.now();running.done++;running.ok++;render()}
+ writeCache();
 }
 /* Petición con tiempo máximo (12 s) y un único reintento ante 429, 5xx o tiempo agotado. */
 async function getJSON(url,signal,tries=2){
@@ -116,6 +139,7 @@ async function scanPokemon(group){
    if(running.ok===rows.length-todo.length&&running.fail>=8)/* 8 fallos sin ningún acierto: sin conexión */{running.errors["Sin conexión con TCGdex: consulta detenida"]=1;ctrl.abort();break}}
   running.done++;if(Date.now()-lastSave>4000){writeCache();lastSave=Date.now();render()}}};
  await Promise.all(Array.from({length:4},worker));
+ try{if(!ctrl.signal.aborted)await enrichEN(ctrl,rows)}catch(e){console.error("Card Vault inglés",e)}
  finish();
 }
 async function scanLorcana(){
@@ -201,14 +225,20 @@ function writeLang(){try{localStorage.setItem(LSTORE,JSON.stringify(langData));r
 const NUM=v=>{const t=String(v??"").trim().replace(/\s|€/g,"");if(!t)return NaN;const x=Number(t.includes(",")?t.replace(/\./g,"").replace(",","."):t);return Number.isFinite(x)&&x>0?x:NaN};
 const netSale=(v,c)=>v*(1-c.feePct/100)-c.sellShip;
 function enSale(p){const f=fx();return Number.isFinite(p?.usd)?p.usd*f.rate:NaN}
-/* Precios del idioma: los anotados; en inglés, si no anotas venta, la referencia de TCGplayer (mejorada en Restaurar). */
+function enLow(p){const f=fx();return Number.isFinite(p?.usdLow)?p.usdLow*f.rate:NaN}
+/* Coste de traer a Sevilla una compra de EE. UU. (estimado y editable en Supuestos): envío internacional, IVA de importación sobre carta + envío y gestión. */
+function usLanded(buy,c){return (buy+(c.usShip??15))*(1+(c.usVat??21)/100)+(c.usHandling??5)}
+/* Precios por idioma. Inglés automático (mismo idioma en compra y venta): anuncio más barato y ventas de TCGplayer EE. UU.
+   Los demás idiomas: solo lo que anotes tras filtrar por idioma en Cardmarket. Lo anotado siempre manda sobre lo automático. */
 function langRows(id,p,c,lane){
- const saved=langData[id]||{},en=enSale(p);
- return LANGS.map(([k,name])=>{const v=saved[k]||{},buy=N(v.buy),sellOwn=N(v.sell);
-  const sellRef=k==="en"&&Number.isFinite(en)?(lane==="restaurar"?en*c.restMid:en):NaN;
-  const sell=Number.isFinite(sellOwn)?sellOwn:sellRef;
-  const profit=Number.isFinite(buy)&&Number.isFinite(sell)?netSale(sell,c)-buy-c.buyShip:NaN;
-  return {k,name,buy,sell,sellOwn,sellRef,profit,at:v.at||""}});
+ const saved=langData[id]||{},en=enSale(p),enL=enLow(p);
+ return LANGS.map(([k,name])=>{const v=saved[k]||{},buyOwn=N(v.buy),sellOwn=N(v.sell);
+  const auto=k==="en"&&Number.isFinite(en);
+  const sellRef=auto?(lane==="restaurar"?en*c.restMid:en):NaN,buyRef=auto&&Number.isFinite(enL)?enL:NaN;
+  const sell=Number.isFinite(sellOwn)?sellOwn:sellRef,buy=Number.isFinite(buyOwn)?buyOwn:buyRef,buyAuto=!Number.isFinite(buyOwn)&&Number.isFinite(buyRef);
+  const cost=Number.isFinite(buy)?(buyAuto?usLanded(buy,c):buy+c.buyShip):NaN;
+  const profit=Number.isFinite(cost)&&Number.isFinite(sell)?netSale(sell,c)-cost:NaN;
+  return {k,name,buy,buyOwn,buyRef,buyAuto,sell,sellOwn,sellRef,cost,profit,auto:buyAuto&&!Number.isFinite(sellOwn),at:v.at||""}});
 }
 function liveDeal(r,p,c,lane){
  const ref=Math.min(...[p.trend,p.avg30].filter(Number.isFinite));
@@ -229,22 +259,22 @@ function liveDeals(lane){
 function liveCard(d,rank){
  const c=cfg(),{r,p}=d,links=pkLinks(r,p),isR=d.lane==="restaurar",id=r[0],en=enSale(p),best=d.best,ok=best&&best.profit>=c.minProfit;
  const tbl='<table class="v4scen rdlang"><tr><th>Idioma</th><th>Compra '+(isR?'(mal estado)':'(buen estado)')+'</th><th>Venta '+(isR?'mejorada':'')+'</th><th>Beneficio</th></tr>'+
-  d.rows.map(x=>'<tr><td>'+x.name+'</td><td><input inputmode="decimal" aria-label="Compra en '+x.name+'" data-rd-lbuy="'+E(id)+'|'+x.k+'" value="'+(Number.isFinite(x.buy)?String(x.buy).replace(".",","):"")+'" placeholder="€"></td>'+
+  d.rows.map(x=>'<tr><td>'+x.name+'</td><td><input inputmode="decimal" aria-label="Compra en '+x.name+'" data-rd-lbuy="'+E(id)+'|'+x.k+'" value="'+(Number.isFinite(x.buyOwn)?String(x.buyOwn).replace(".",","):"")+'" placeholder="'+(Number.isFinite(x.buyRef)?E(EUR(x.buyRef))+' EE. UU.':'€')+'"></td>'+
    '<td><input inputmode="decimal" aria-label="Venta en '+x.name+'" data-rd-lsell="'+E(id)+'|'+x.k+'" value="'+(Number.isFinite(x.sellOwn)?String(x.sellOwn).replace(".",","):"")+'" placeholder="'+(Number.isFinite(x.sellRef)?E(EUR(x.sellRef))+' ref.':'€')+'"></td>'+
-   '<td>'+(Number.isFinite(x.profit)?'<b class="'+(x.profit>=c.minProfit?'rdpos':'rdneg')+'">'+SIGNED(x.profit)+'</b>':'—')+'</td></tr>').join("")+'</table>';
+   '<td>'+(Number.isFinite(x.profit)?'<b class="'+(x.profit>=c.minProfit?'rdpos':'rdneg')+'">'+SIGNED(x.profit)+'</b>'+(x.buyAuto?'<small> con importación</small>':''):'—')+'</td></tr>').join("")+'</table>';
  return '<article class="v4card s-observacion rdlive" id="live-'+E(id)+'">'+
  '<figure class="v4photo">'+imgTag(r,p,r[1])+'<div class="v4noimg" hidden><b>'+E(r[1])+'</b><span>Foto no disponible · '+E(r[2])+' nº '+E(r[3])+'</span></div><figcaption>Imagen de catálogo · el ejemplar anunciado se ve en Cardmarket</figcaption></figure>'+
- '<div class="v4body"><div class="v4badges"><span class="v4tag rank">#'+rank+'</span><span class="v4status '+(ok?'s-comprobada':'s-observacion')+'">'+(ok?'RENTABLE EN '+best.name.toUpperCase()+' · PRECIOS DEL IDIOMA':'EN DIRECTO · IDIOMA SIN CONFIRMAR')+'</span><span class="v4tag">Pokémon</span></div>'+
+ '<div class="v4body"><div class="v4badges"><span class="v4tag rank">#'+rank+'</span><span class="v4status '+(ok?'s-comprobada':'s-observacion')+'">'+(ok?'RENTABLE EN '+best.name.toUpperCase()+(best.auto?' · TCGPLAYER EE. UU.':' · PRECIOS DEL IDIOMA'):best?'MISMO IDIOMA · '+best.name.toUpperCase()+' SIN MARGEN SUFICIENTE':'EN DIRECTO · IDIOMA SIN CONFIRMAR')+'</span><span class="v4tag">Pokémon</span></div>'+
  '<h3>'+E(r[1])+'</h3><p class="v4id">'+E(r[2])+' · nº '+E(r[3]+(r[4]?"/"+r[4]:""))+' · '+E(r[5]||"—")+'</p>'+
  '<div class="v4money">'+
   '<div><span>DESDE · CUALQUIER IDIOMA Y ESTADO</span><b>'+EUR(p.low)+'</b><small>anuncio más barato de la ficha · a '+Math.round(d.ratio*100)+' % de la media'+(isR?' · casi seguro en mal estado':'')+'</small></div>'+
   '<div><span>MEDIA DE VENTAS CARDMARKET · TODOS LOS IDIOMAS</span><b>'+EUR(d.ref)+'</b><small>ventas reales mezcladas (30 días '+EUR(p.avg30)+' · tendencia '+EUR(p.trend)+')</small></div>'+
-  '<div><span>VENTAS EN INGLÉS · TCGPLAYER EE. UU.</span><b>'+EUR(en)+'</b><small>'+(Number.isFinite(en)?'precio de mercado con ventas reales en inglés · '+E(p.usd.toLocaleString("es-ES",{style:"currency",currency:"USD"})):'sin dato publicado')+'</small></div>'+
-  '<div class="v4profit '+(ok?'t-good':'t-muted')+'"><span>BENEFICIO EN UN MISMO IDIOMA</span><b>'+(best?SIGNED(best.profit):'—')+'</b><small>'+(best?'en '+best.name+(Number.isFinite(best.sellOwn)?' · venta anotada':' · venta: referencia TCGplayer'+(isR?' × '+Math.round(c.restMid*100)+' %':''))+' · tras comisión y envíos':'anota abajo la compra del idioma que veas en Cardmarket')+'</small></div>'+
+  '<div><span>INGLÉS · TCGPLAYER EE. UU.</span><b>'+EUR(en)+'</b><small>'+(Number.isFinite(en)?'ventas reales en inglés (precio de mercado '+E(p.usd.toLocaleString("es-ES",{style:"currency",currency:"USD"}))+') · anuncio más barato en inglés '+EUR(enLow(p))+' · variante '+E(p.enVariant||"—")+' · vía '+E(p.enSrc||"TCGdex"):(p.enTried?'no publicado: TCGdex lo pierde a menudo desde el 15/10 (incidencia #2479) y pokemontcg.io no lo devolvió':'pendiente: se completa al terminar la consulta'))+'</small></div>'+
+  '<div class="v4profit '+(ok?'t-good':'t-muted')+'"><span>BENEFICIO EN UN MISMO IDIOMA</span><b>'+(best?SIGNED(best.profit):'—')+'</b><small>'+(best?'en '+best.name+(best.auto?' · automático: compra y venta en inglés de TCGplayer'+(isR?' (venta mejorada × '+Math.round(c.restMid*100)+' %)':'')+' · coste puesto en Sevilla '+EUR(best.cost)+' (envío '+EUR(c.usShip??15)+', IVA '+(c.usVat??21)+' %, gestión '+EUR(c.usHandling??5)+')':(Number.isFinite(best.sellOwn)?' · venta anotada':' · venta: TCGplayer en inglés'))+' · tras comisión y envío de venta':'sin datos del mismo idioma todavía')+'</small></div>'+
  '</div>'+
  '<p class="v4missing"><b>Idiomas mezclados:</b> la diferencia entre «desde» y la media es '+EUR(d.ref-p.low)+' ('+(isR?'venta mejorada central '+EUR(d.sale[1])+' → ':'')+'cribado '+SIGNED(d.pr[1])+'), pero NO es beneficio: el «desde» puede ser otro idioma u otro estado. Las cartas japonesas son otra ficha en Cardmarket.</p>'+
  '<details class="v4more rdlangbox"'+(best?' open':'')+'><summary>Precios por idioma · compra y venta del mismo idioma</summary>'+
- '<p class="v4note">En Cardmarket abre la ficha, pulsa Filtros → Idioma'+(isR?'':' y Estado mínimo')+'. Anota el anuncio más barato '+(isR?'en mal estado':'en buen estado')+' de cada idioma y, si la conoces, la venta '+(isR?'de una carta mejorada ':'')+'en ese idioma. En inglés se propone la referencia de TCGplayer.</p>'+tbl+
+ '<p class="v4note"><b>Inglés:</b> automático con TCGplayer (EE. UU.): anuncio más barato y ventas reales del mismo idioma; la compra se calcula traída a Sevilla. Pocos vendedores de TCGplayer envían a España: si la encuentras en inglés en Cardmarket, anota ese precio y manda sobre el automático. <b>Español, francés, alemán, italiano y portugués:</b> no existe fuente abierta con precios por idioma (Cardmarket solo los da en su web o en su API para vendedores profesionales). En la ficha de Cardmarket pulsa Filtros → Idioma'+(isR?'':' y Estado mínimo')+' y anota compra y venta de ese idioma.</p>'+tbl+
  '<button type="button" class="v4btn primary" data-rd-lsave="'+E(id)+'">Guardar precios por idioma</button>'+(best&&best.at?'<small class="v4note"> Anotado el '+E(DAY(best.at))+'</small>':'')+'</details>'+
  '<p class="v4basis">'+(isR?'Se vende declarada como restaurada. No incluye tus materiales ni tus horas.':'Si en las fotos está dañada, no es Compra YA.')+' Envío de compra estimado '+EUR(c.buyShip)+', venta con '+String(c.feePct).replace(".",",")+' % de comisión y '+EUR(c.sellShip)+' de envío. Guía de Cardmarket publicada por TCGdex el '+E(p.cmUpdated?DAY(p.cmUpdated):"(sin fecha)")+' · consultada '+WHEN(p.t)+'. Los precios pueden haber cambiado.</p>'+
  '<div class="v4actions"><a class="v4btn primary" href="'+E(links.cardmarket)+'" target="_blank" rel="noopener noreferrer">Abrir en Cardmarket ↗</a>'+
@@ -307,6 +337,6 @@ function autoLive(){loadUniverse().then(()=>{render();const fresh=Object.values(
  if(!fresh&&!running&&!autoDone&&navigator.onLine!==false){autoDone=true;scanPokemon("vintage").catch(()=>{running=null;render()})}},()=>render())}
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"],.mainNav [data-tab="comprar-restaurar"]'))setTimeout(autoLive,60)});
 window.addEventListener("hashchange",()=>{if(location.hash==="#investigacion")loadUniverse().then(render,()=>render())});
-window.CVRadar={counts:()=>({catalog:window.CV_UNIVERSE?.cards.length||cache.universeCount||NaN,consulted:Object.values(cache.pk).filter(p=>Date.now()-p.t<TTL).length+Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL).length}),evaluatePk,parseTcgdex,evaluateLo,ptcgId,render,results,liveDeal,liveDeals,renderLive,autoLive,langRows,pkImages,pkLinks,reloadLang:()=>{langData=readLang()},cache:()=>cache};
+window.CVRadar={counts:()=>({catalog:window.CV_UNIVERSE?.cards.length||cache.universeCount||NaN,consulted:Object.values(cache.pk).filter(p=>Date.now()-p.t<TTL).length+Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL).length}),evaluatePk,parseTcgdex,evaluateLo,ptcgId,render,results,liveDeal,liveDeals,renderLive,autoLive,langRows,pkImages,pkLinks,pickEN,parsePtcg,usLanded,reloadLang:()=>{langData=readLang()},cache:()=>cache};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(mount,400));else setTimeout(mount,400);
 })();

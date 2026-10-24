@@ -68,10 +68,23 @@ t('V113 idiomas: sin precios del mismo idioma no hay beneficio; en inglés usa v
  const r2=R.langRows('sv04.5-234',{usd:200},c,'compra');const en=r2.find(x=>x.k==='en'),es=r2.find(x=>x.k==='es');
  assert.equal(Math.round(en.sellRef*100),17200);assert.equal(Math.round(en.profit*100),Math.round((172*.95-5-150-6)*100));assert.equal(Math.round(es.profit*100),Math.round((110*.95-5-90-6)*100));
  const rr=R.langRows('sv04.5-234',{usd:200},c,'restaurar').find(x=>x.k==='en');assert.equal(Math.round(rr.sellRef*100),12900)});
+t('V114 inglés: misma variante para anuncio y ventas; impresión principal antes que reverse o 1.ª edición',()=>{
+ const tp={'reverse-holofoil':{lowPrice:5,marketPrice:9},'1st-edition-holofoil':{lowPrice:900,marketPrice:1500},holofoil:{lowPrice:120,marketPrice:200}};
+ assert.deepEqual({...R.pickEN(tp,'marketPrice','lowPrice')},{variant:'holofoil',market:200,low:120});
+ const p=R.parseTcgdex({pricing:{cardmarket:{trend:10},tcgplayer:tp}});assert.equal(p.usd,200);assert.equal(p.usdLow,120);assert.equal(p.enVariant,'holofoil');
+ const q=R.parsePtcg({data:{tcgplayer:{updatedAt:'2026/10/23',prices:{normal:{low:3,market:4},holofoil:{low:80,market:150}}}}});assert.equal(q.usd,150);assert.equal(q.usdLow,80);assert.equal(q.enSrc,'pokemontcg.io');
+ assert.equal(R.parsePtcg({data:{tcgplayer:null}}),null)});
+t('V114 inglés automático: compra en EE. UU. puesta en Sevilla frente a ventas en inglés',()=>{
+ R.reloadLang();const cc={...c,usdToEur:.86,usShip:15,usVat:21,usHandling:5};
+ const en=R.langRows('base1-99',{usd:200,usdLow:100},cc,'compra').find(x=>x.k==='en');
+ assert.equal(en.buyAuto,true);assert.equal(Math.round(en.buyRef*100),8600);assert.equal(Math.round(en.cost*100),Math.round(((86+15)*1.21+5)*100));
+ assert.equal(Math.round(en.profit*100),Math.round((172*.95-5-((86+15)*1.21+5))*100));
+ const rs=R.langRows('base1-99',{usd:200,usdLow:100},cc,'restaurar').find(x=>x.k==='en');assert.equal(Math.round(rs.sellRef*100),12900);
+ const none=R.langRows('base1-99',{},cc,'compra');assert.ok(none.every(x=>!Number.isFinite(x.profit)))});
 t('radar: ranking penaliza volatilidad',()=>{const a=R.evaluatePk(row,{trend:300,avg30:300,avg7:300,low:100},c,false),b=R.evaluatePk(row,{trend:300,avg30:300,avg7:500,low:100},c,false);assert.ok(a.score>b.score)});
 t('radar: sin anuncios o sin media no hay señal',()=>{assert.equal(R.evaluatePk(row,{trend:300,avg30:300},c,false).pass,undefined);assert.equal(R.evaluatePk(row,{low:20},c,false).pass,undefined)});
 t('radar: volatilidad señalada como riesgo',()=>{assert.ok(R.evaluatePk(row,{trend:300,avg30:200,avg7:400,low:20},c,false).risks.length>=1)});
-t('radar: lectura del formato TCGdex',()=>{const p=R.parseTcgdex({pricing:{cardmarket:{trend:'12.5',avg30:10,low:2,updated:'2026-10-22'},tcgplayer:{holofoil:{marketPrice:20},normal:{marketPrice:5}}}});assert.equal(p.trend,12.5);assert.equal(p.usd,5);assert.equal(p.cmUpdated,'2026-10-22')});
+t('radar: lectura del formato TCGdex',()=>{const p=R.parseTcgdex({pricing:{cardmarket:{trend:'12.5',avg30:10,low:2,updated:'2026-10-22'},tcgplayer:{holofoil:{marketPrice:20},normal:{marketPrice:5}}}});assert.equal(p.trend,12.5);assert.equal(p.usd,20);assert.equal(p.enVariant,'holofoil');/* V114: misma variante, impresión principal */assert.equal(p.cmUpdated,'2026-10-22')});
 const {mergeImport}=ctx.CVVault.engine;
 t('graduación del anuncio: una PSA 10 no justifica una RAW ni al revés',()=>{assert.equal(economics({...base,listing:L(),sales:[S(200,{grade:'PSA 10'})]},cfg).net,null);assert.equal(economics({...base,listing:L({grade:'PSA 10'}),sales:[S(200)]},cfg).net,null);assert.ok(economics({...base,listing:L({grade:'psa 10'}),sales:[S(200,{grade:'PSA 10'})]},cfg).net)});
 t('estimación del usuario nunca cuenta como venta ni cambia el veredicto',()=>{const it={...base,listing:L(),sales:[{kind:'estimacion',price:900,currency:'EUR',date:'2026-10-20'}]};const e=economics(it,cfg);assert.equal(e.basis,null);assert.equal(evaluate(it,now,cfg).vd.code,'sin-datos')});
