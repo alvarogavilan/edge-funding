@@ -43,13 +43,13 @@ t('12 objetivos de restauración con imagen y enlaces',()=>{const r=ctx.CV_VAULT
 const R=ctx.CVRadar,c={...DEFAULTS},row=['sv03.5-199','Charizard ex','151','199','165','Special illustration rare','sv','sv'];
 t('radar: id TCGdex → pokemontcg',()=>{assert.equal(R.ptcgId('sv03.5-199'),'sv3pt5-199');assert.equal(R.ptcgId('base1-4'),'base1-4');assert.equal(R.ptcgId('swsh7-215'),'swsh7-215');assert.equal(R.ptcgId('me01-005'),'me1-5')});
 t('radar: solo diferencia bruta como indicador, nunca beneficio',()=>{const x=R.evaluatePk(row,{trend:300,avg30:280,avg7:290,low:90},c,false);assert.equal(x.gap,190);assert.equal(x.pass,true);assert.equal(x.restore,undefined);assert.equal(x.good,undefined)});
-t('radar: descarta por diferencia, precio bajo, duplicado, compra > 150 € y anuncio < 5 €',()=>{
+t('radar: descarta por diferencia, precio bajo, duplicado, compra > 200 € y anuncio < 5 €',()=>{
  assert.match(R.evaluatePk(row,{trend:60,avg30:58,low:55},c,false).reasons[0],/Diferencia bruta/);
  assert.match(R.evaluatePk(row,{trend:10,avg30:9,low:2},c,false).reasons[0],/< 20/);
  assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:90},c,true).reasons[0],/Mi colección/);
- assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:300},c,false).reasons[0],/150/);
+ assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:300},c,false).reasons[0],/200/);
  assert.match(R.evaluatePk(row,{trend:200,avg30:200,low:3},c,false).reasons[0],/casi seguro/);
- assert.match(R.evaluatePk(row,{trend:400,avg30:400,low:300-100+80},c,false).reasons[0]||'',/%|150/)});
+ assert.match(R.evaluatePk(row,{trend:400,avg30:400,low:300-100+80},c,false).reasons[0]||'',/%|200/)});
 t('radar: ranking penaliza volatilidad',()=>{const a=R.evaluatePk(row,{trend:300,avg30:300,avg7:300,low:100},c,false),b=R.evaluatePk(row,{trend:300,avg30:300,avg7:500,low:100},c,false);assert.ok(a.score>b.score)});
 t('radar: sin anuncios o sin media no hay señal',()=>{assert.equal(R.evaluatePk(row,{trend:300,avg30:300},c,false).pass,undefined);assert.equal(R.evaluatePk(row,{low:20},c,false).pass,undefined)});
 t('radar: volatilidad señalada como riesgo',()=>{assert.ok(R.evaluatePk(row,{trend:300,avg30:200,avg7:400,low:20},c,false).risks.length>=1)});
@@ -107,3 +107,7 @@ ctx.CVStateBridge={get:()=>({cards:[{name:'Charizard',number:'11/108',universe:'
 ctx.CVVault.renderAll();
 assert.ok(!hosts.v4Restore.innerHTML.includes('thecardfather_'),'Owned card excluded from proposals');
 console.log('OK · Feed real: ambas pestañas, enlace de variante, costes, caducidad, colección e historial');
+
+for(const low of [100,150,199,200])assert.equal(R.evaluatePk(row,{trend:500,avg30:500,avg7:500,low},cfg,false).pass,true);
+assert.equal(R.evaluatePk(row,{trend:500,avg30:500,low:200.01},cfg,false).pass,false);
+console.log('OK · Radar admite hasta 200 EUR inclusive');

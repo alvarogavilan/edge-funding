@@ -9,7 +9,7 @@ window.CV_MARKET_OFFERS = {
    id: 'market-kai-52257250705747', lane: 'compra', game: 'lorcana',
    name: 'The Black Cauldron', set: 'Whispers in the Well', number: '225', rarity: 'Enchanted',
    image: 'https://cdn.shopify.com/s/files/1/0505/9198/9944/files/TheBlackCauldron-10-225.png?v=1761926270',
-   why: 'Anuncio: 1 unidad a 90 €. Tarifa publicada a España: 19,99 €. Total según tarifas: 109,99 €, pendiente de confirmar en el pedido. Idioma y estado no especificados en la ficha consultada. No hay ventas cerradas comparables verificadas. Supera el presupuesto de 100 € al incluir envío.',
+   why: 'Anuncio: 1 unidad a 90 €. Tarifa publicada a España: 19,99 €. Total según tarifas: 109,99 €, pendiente de confirmar en el pedido. Idioma y estado no especificados en la ficha consultada. No hay ventas cerradas comparables verificadas. Dentro del presupuesto de 200 € según las tarifas publicadas.',
    listing: {
     url: 'https://kaiofcards.com/products/10whi-225-e-the-black-cauldron?variant=52257250705747',
     shop: 'Kai of Cards', seller: 'Kai of Cards B.V.', country: 'Países Bajos', zone: 'ue',

@@ -211,7 +211,7 @@ function riskList(it,ec){
  if(ec.basis==="venta"&&ec.sale.high>ec.sale.low*1.5)r.push("dispersión de precios alta");
  if(l.zone==="fuera")r.push("importación: IVA, arancel y gestión según el pedido; posible retraso aduanero");
  if(!l.country)r.push("país del vendedor sin confirmar");
- if(N(l.price)>100)r.push("capital por encima del presupuesto habitual (20–100 €)");
+ if((Number.isFinite(ec.acq.total)?ec.acq.total:N(l.price))>200)r.push("coste por encima del presupuesto habitual (20–200 €)");
  if(/charizard|pikachu|umbreon|lugia|★|star/i.test(it.name)&&GRADE(l.grade||it.grade)==="RAW")r.push("carta muy falsificada: verificar autenticidad con fotos de frente, reverso y luz");
  if(it.lane==="restaurar"&&l.irreversibleRisk==="alto")r.push("riesgo irreversible alto en la intervención");
  if(it.lane==="restaurar")r.push("la carta restaurada se vende declarada y puede no aceptarse en graduación");
@@ -228,7 +228,7 @@ function card(ev,cfg){
  const {it,st,ec,vd}=ev,l=it.listing||{},lg=lang(l.language||it.language),isR=it.lane==="restaurar",prec=listingPrecision(l);
  const scen=ec.net?[["Conservador",ec.sale.low,ec.net.low],["Central",ec.sale.mid,ec.net.mid],["Optimista",ec.sale.high,ec.net.high]]:null;
  const basisTxt=ec.basis==="venta"?ec.n+" venta"+(ec.n>1?"s":"")+" cerrada"+(ec.n>1?"s":""):ec.basis==="agregado"?"media agregada (no venta individual)":"";
- const range=it.lane==="compra"&&N(l.price)>0&&(l.price<20||l.price>100)?'<span class="v4tag">Fuera de 20–100 €</span>':'';
+ const range=N(l.price)>0&&((Number.isFinite(ec.acq.total)?ec.acq.total:N(l.price))<20||(Number.isFinite(ec.acq.total)?ec.acq.total:N(l.price))>200)?'<span class="v4tag">Fuera de 20–200 €</span>':'';
  return '<article class="v4card s-'+st.code+'" id="card-'+E(it.id)+'">'+photoBlock(it)+'<div class="v4body">'+
  '<div class="v4badges"><span class="v4status s-'+st.code+'">'+st.label+'</span><span class="v4tag">'+(it.game==="lorcana"?"Lorcana":"Pokémon")+'</span>'+range+'</div>'+
  '<h3>'+E(it.name)+'</h3><p class="v4id">'+E([it.set,it.number&&"nº "+it.number,it.rarity].filter(Boolean).join(" · "))+'</p>'+
@@ -302,7 +302,7 @@ function renderLane(lane){
  const view=evs.filter(e=>gameFilter==="all"||e.it.game===gameFilter);
  const live=view.filter(e=>e.st.code!=="caducada"),old=view.filter(e=>e.st.code==="caducada");
  const isR=lane==="restaurar",qualified=live.filter(e=>e.vd.code==="rentable"),pending=live.filter(e=>e.vd.code!=="rentable"&&e.st.code!=="objetivo"),targets=live.filter(e=>e.st.code==="objetivo");
- host.innerHTML='<section class="v4head"><span class="v4kicker">'+(isR?"POKÉMON + LORCANA · CARTAS DETERIORADAS · REVENTA COMO RESTAURADA":"POKÉMON + LORCANA · 20–100 € · OBJETIVO ≥ "+EUR(cfg.minProfit)+" · SIN EBAY")+'</span>'+
+ host.innerHTML='<section class="v4head"><span class="v4kicker">'+(isR?"POKÉMON + LORCANA · CARTAS DETERIORADAS · 20–200 € · REVENTA COMO RESTAURADA":"POKÉMON + LORCANA · 20–200 € · OBJETIVO ≥ "+EUR(cfg.minProfit)+" · SIN EBAY")+'</span>'+
   '<h2>'+(isR?"Comprar para restaurar":"Compra YA")+'</h2>'+
   '<p>'+(isR?"Cartas baratas en mal estado cuya versión mejor conservada se vende bien. Las ventas de ejemplares sin alterar son referencias; solo las ventas equivalentes de cartas intervenidas sustentan el beneficio. Se descuentan compra, comisiones y envíos; no tus materiales ni tus horas.":"Cada ficha muestra el anuncio, el precio de compra, la venta estimada a partir de ventas cerradas reales y el beneficio tras comisiones y envíos. Una compra comprobada no implica beneficio seguro.")+'</p>'+
   summary(evs,lane,cfg,hiddenOwned)+

@@ -66,7 +66,7 @@ function evaluatePk(row,p,c,owned){
  if(vol>0.5)out.risks.push("Precio inestable: media 7 días "+EUR(p.avg7)+" frente a 30 días "+EUR(p.avg30));
  if(diverge)out.risks.push("Tendencia y media 30 días muy distintas: probablemente pocas ventas");
  if(!Number.isFinite(p.avg7))out.risks.push("Sin media de 7 días: liquidez desconocida");
- if(p.low>150)out.reasons.push("Anuncio más barato "+EUR(p.low)+" (> 150 €)");
+ if(p.low>200)out.reasons.push("Anuncio más barato "+EUR(p.low)+" (> 200 €)");
  else if(p.low<5)out.reasons.push("Anuncio más barato "+EUR(p.low)+": casi seguro carta muy dañada, otra variante o error");
  else if(out.gap<c.minProfit)out.reasons.push("Diferencia bruta "+EUR(out.gap)+" (< "+EUR(c.minProfit)+") antes de costes");
  else if(out.gapPct<0.35)out.reasons.push("Diferencia del "+Math.round(out.gapPct*100)+" % (< 35 %): los costes la absorben");
@@ -146,7 +146,7 @@ function loCard(x){
 function render(){
  const host=document.getElementById("v4Radar");if(!host)return;
  const U=window.CV_UNIVERSE,c=cfg(),all=results(),pass=all.filter(x=>x.pass).sort((a,b)=>b.score-a.score),disc=all.filter(x=>!x.pass);
- const lo=Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL&&x.eur>=20&&x.eur<=150&&/enchanted|epic|iconic|legendary|promo/i.test(x.rarity)).sort((a,b)=>b.eur-a.eur);
+ const lo=Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL&&x.eur>=20&&/enchanted|epic|iconic|legendary|promo/i.test(x.rarity)).sort((a,b)=>b.eur-a.eur);
  const pkCount=all.length,stale=staleCount(),loCount=Object.keys(cache.lo).length,last=cache.runs[cache.runs.length-1];
  const groups=U?Object.entries(U.meta.groups):[];
  const list=view==="top"?pass.slice(0,3):view==="top10"?pass.slice(0,10):pass;
