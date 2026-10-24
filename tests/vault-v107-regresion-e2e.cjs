@@ -35,7 +35,7 @@ async function newPage(browser,opts={},mode='normal'){
  for(const w of [320,375,390,430,1280]){
   const {ctx,page}=await newPage(browser,w===1280?{viewport:{width:1280,height:900},isMobile:false,hasTouch:false,deviceScaleFactor:1,userAgent:undefined}:{viewport:{width:w,height:800}});
   const t0=Date.now();await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Buy .v4head');const ms=Date.now()-t0;
-  for(const tab of ['radar','investigacion','ventas-reales','collection']){/* V115: sin pestaña de restaurar */
+  for(const tab of ['radar','collection','archive']){/* V116: pestañas visibles */
    await page.click('.mainNav [data-tab="'+tab+'"]');await page.waitForTimeout(250);
    const o=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,iw:innerWidth}));
    ok('Sin desbordamiento horizontal · '+w+' px · '+tab,o.sw<=o.iw+1,JSON.stringify(o));
@@ -62,7 +62,7 @@ async function newPage(browser,opts={},mode='normal'){
   await page.click('#v4Sheet [data-v4-close]');
   // 4. Exportar → importar sin duplicar ni borrar
   await page.evaluate(()=>window.CVVault.addCustom({lane:'restaurar',game:'pokemon',name:'Ficha local',set:'Base Set',number:'1/102',sales:[{kind:'agregado',price:50,currency:'EUR',date:'2026-10-20',platform:'Prueba'}]}));
-  await page.click('.mainNav [data-tab="ventas-reales"]');await page.waitForTimeout(300);
+  await page.evaluate(t=>window.CVSimpleNav.showTab(t),'ventas-reales');/* V116: pestaña oculta, módulo conservado */await page.waitForTimeout(300);
   await page.evaluate(()=>{const d=[...document.querySelectorAll('#v4Sales details')].pop();d.open=true});
   const [dl]=await Promise.all([page.waitForEvent('download'),page.click('[data-v4-export]')]);
   const exported=JSON.parse(fs.readFileSync(await dl.path(),'utf8'));
@@ -93,7 +93,7 @@ async function newPage(browser,opts={},mode='normal'){
   await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Sales',{state:'attached'});await page.waitForTimeout(800);
   const old={app:'Card Vault V104',exportedAt:'2026-10-23T10:00:00Z',user:{cfg:{feePct:5},patches:{'rest-base1-15':{sales:[{id:'uold1',kind:'agregado',price:300,currency:'EUR',date:'2026-10-01',platform:'Antigua'}]}},custom:[{id:'own-v104',custom:true,lane:'restaurar',game:'pokemon',name:'Copia V104',set:'Neo',number:'9/111',listing:null,sales:[]}]},photos:{}};
   const f=path.join(require('node:os').tmpdir(),'cv-old-'+Date.now()+'.json');fs.writeFileSync(f,JSON.stringify(old));
-  await page.click('.mainNav [data-tab="ventas-reales"]');await page.evaluate(()=>{const d=[...document.querySelectorAll('#v4Sales details')].pop();d.open=true});
+  await page.evaluate(t=>window.CVSimpleNav.showTab(t),'ventas-reales');/* V116: pestaña oculta, módulo conservado */await page.evaluate(()=>{const d=[...document.querySelectorAll('#v4Sales details')].pop();d.open=true});
   await page.setInputFiles('[data-v4-import]',f);await page.waitForTimeout(500);
   ok('Copia antigua (formato V104) importada sin perder datos',await page.evaluate(()=>window.CVVault.user().custom.some(c=>c.id==='own-v104')&&(window.CVVault.user().patches['rest-base1-15']?.sales||[]).length===1));
   await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
@@ -122,7 +122,7 @@ async function newPage(browser,opts={},mode='normal'){
   await ctx.close();}
  // 7. API caída y respuesta malformada
  for(const mode of ['down','malformed']){const {ctx,page}=await newPage(browser,{},mode);
-  await page.goto(base+'#investigacion',{waitUntil:'load'});await page.waitForSelector('#v4Radar [data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
+  await page.goto(base,{waitUntil:'load'});await page.evaluate(()=>window.CVSimpleNav.showTab('investigacion'));/* V116: pestaña oculta */await page.waitForSelector('#v4Radar [data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
   await page.selectOption('#v4Radar [data-rd-group]','vintage');await page.click('#v4Radar [data-rd-scan]');
   await page.waitForFunction(()=>/Última consulta/.test(document.getElementById('v4Radar').textContent),null,{timeout:240000});
   const t=await page.textContent('#v4Radar');

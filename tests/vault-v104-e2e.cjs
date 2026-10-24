@@ -107,13 +107,13 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  ok('Declaración de intervención generada',/CARTA RESTAURADA.*Corrección de doblez/s.test(await page.inputValue('#card-'+id+' [data-v4-declare] textarea')));
  if(shots){await c.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(shots,'3-ficha-comprobada.png'),fullPage:false})}
  // 6. Ventas reales
- await page.click('.mainNav [data-tab="ventas-reales"]');await page.waitForTimeout(400);
+ await page.evaluate(t=>window.CVSimpleNav.showTab(t),'ventas-reales');/* V116: pestaña oculta, módulo conservado */await page.waitForTimeout(400);
  const vr=await page.textContent('#v4Sales');
  ok('Pestaña Ventas reales distingue tipos',/VENTA CERRADA/.test(vr)&&/DATO AGREGADO/.test(vr)&&/ANUNCIO ACTIVO/.test(vr));
  if(shots)await page.screenshot({path:path.join(shots,'4-ventas-reales.png')});
  // 6c. Radar «En investigación» (APIs simuladas)
  ok('El universo de cartas no bloquea la carga (no va en el HTML; V112 lo pide tras pintar para las ofertas en directo)',!/vault-universe\.js/.test(fs.readFileSync(path.join(root,'index.html'),'utf8')));
- await page.click('.mainNav [data-tab="investigacion"]');await page.waitForSelector('#v4Radar [data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
+ await page.evaluate(t=>window.CVSimpleNav.showTab(t),'investigacion');/* V116: pestaña oculta, módulo conservado */await page.waitForSelector('#v4Radar [data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
  await page.selectOption('#v4Radar [data-rd-group]','vintage');await page.click('#v4Radar [data-rd-scan]');
  await page.waitForFunction(()=>/Última consulta: Pokémon/.test(document.getElementById('v4Radar').textContent)&&!document.querySelector('#v4Radar .rdprog'),null,{timeout:120000});/* V115: la consulta automática también hace Lorcana */
  const rd=await page.evaluate(()=>({first:document.querySelector('#v4Radar .v4card h3')?.textContent,n:document.querySelectorAll('#v4Radar .v4card').length,txt:document.getElementById('v4Radar').textContent}));
@@ -128,7 +128,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.click('#v4Radar [data-rd-promote="base1-15|restaurar"]');await page.waitForTimeout(500);
  const promo=await page.evaluate(()=>{const c=[...document.querySelectorAll('#v4Restore .v4card')].find(a=>/Radar/.test(a.textContent)||/Detectada (por el radar|en directo)/.test(a.textContent));return c?{status:c.querySelector('.v4status').textContent,profit:c.querySelector('.v4profit').textContent}:null});
  ok('Promover desde el radar crea ficha en Restaurar sin beneficio (solo agregados)',promo&&promo.status==='OBJETIVO · SIN ANUNCIO'&&/—/.test(promo.profit),JSON.stringify(promo));
- if(shots){await page.click('.mainNav [data-tab="investigacion"]');await page.waitForTimeout(300);await page.screenshot({path:path.join(shots,'5-investigacion.png')});const c1=await page.$('#v4Radar .v4card');if(c1)await c1.screenshot({path:path.join(shots,'6-radar-ficha.png')})}
+ if(shots){await page.evaluate(t=>window.CVSimpleNav.showTab(t),'investigacion');/* V116: pestaña oculta, módulo conservado */await page.waitForTimeout(300);await page.screenshot({path:path.join(shots,'5-investigacion.png')});const c1=await page.$('#v4Radar .v4card');if(c1)await c1.screenshot({path:path.join(shots,'6-radar-ficha.png')})}
  // 7. Persistencia y caducidad a las 24 h
  await page.reload({waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});await page.waitForTimeout(700);
  ok('Comprobación persiste tras recargar',(await page.locator('#card-'+id+' .v4status').textContent())==='COMPRA COMPROBADA');
@@ -137,7 +137,8 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.reload({waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});await page.waitForTimeout(500);
  ok('Pasadas 24 h pasa a CADUCADA',(await page.locator('#card-'+id+' .v4status').textContent())==='CADUCADA');
  // 8. Otras pestañas siguen funcionando
- for(const t of ['collection','sealed','pregrade','arbitraje','archive','investigacion','ventas-reales','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
+ ok('V116: barra solo con Compra YA, Mi colección, Sellado, PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.dataset.tab)))===JSON.stringify(['radar','collection','sealed','pregrade','archive']));
+ for(const t of ['collection','sealed','pregrade','archive','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
  ok('Mi colección sigue con cartas',await page.evaluate(()=>window.CVStateBridge.get().cards.length>=15));
  ok('Sin errores de JavaScript',errors.length===0,errors.slice(0,5).join(' | '));
  // 6b. He comprado → Mi colección

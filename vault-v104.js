@@ -317,7 +317,7 @@ function renderLane(lane){
   (old.length?'<details class="v4old"'+(live.length?'':' open')+'><summary>Caducadas · volver a comprobar ('+old.length+')</summary><div class="v4list">'+old.map(e=>card(e,cfg)).join("")+'</div></details>':'')+
   (lane==="compra"?funnelBlock():"")+comparisonBlock(evs,cfg)+researchBlock()+settingsBlock(cfg);
  wireImages(host);
- try{window.CVRadar?.renderLive?.()}catch(err){console.error("Card Vault V112",err)}
+ try{if(window.CVCompra)window.CVCompra.render();else window.CVRadar?.renderLive?.()}catch(err){console.error("Card Vault V116",err)}
 }
 function compareOffers(items,cfg){
  const groups=new Map();

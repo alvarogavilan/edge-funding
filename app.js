@@ -306,12 +306,20 @@ function revOf(str){const m=/^\{"__rev":"([^"]+)"/.exec(str||"");return m?m[1]:"
 var myRev,staleTab=false;try{if(myRev===undefined)myRev=revOf(localStorage.getItem(KEY))}catch{myRev=""}try{delete state.__rev}catch{}
 function storageAlert(msg){try{let d=document.getElementById("cvStorageAlert");if(!d&&document.body){d=document.createElement("div");d.id="cvStorageAlert";d.setAttribute("role","alert");d.style.cssText="position:sticky;top:0;z-index:100002;background:#ffdf8a;color:#2b1d00;font:700 15px/1.4 system-ui;padding:12px 14px;border-bottom:2px solid #8a6a1c";document.body.prepend(d)}if(d)d.textContent=msg}catch{}}
 var STALE_MSG="⚠️ Otra pestaña o ventana ha cambiado tus datos. Para no sobrescribirlos, esta pestaña ya no guarda: recárgala antes de seguir.";
+/* V116: si el almacenamiento está lleno, se liberan antes las cachés regenerables (precios, imágenes, diagnósticos)
+   y se recortan las instantáneas de recuperación a la más reciente; después se reintenta una vez. Tus datos no se tocan. */
+function isQuota(e){return !!e&&(e.name==="QuotaExceededError"||e.name==="NS_ERROR_DOM_QUOTA_REACHED"||e.code===22||e.code===1014)}
+function freeCaches(){let freed=false;
+ for(const k of ["cv_v105_radar","cv_v114_radar","cv_v115_radar","cv_official_img_v1","cv_v107_lorcana_img","cv_prod_diag_v1","cv_ton_arb_log_v1","cv_arb_live_frequency_v2"])try{if(localStorage.getItem(k)!=null){localStorage.removeItem(k);freed=true}}catch{}
+ try{const r=JSON.parse(localStorage.getItem("cardvault.recovery.v1")||"[]");if(Array.isArray(r)&&r.length>1){localStorage.setItem("cardvault.recovery.v1",JSON.stringify(r.slice(0,1)));freed=true}}catch{}
+ return freed}
 function save(){
  try{
   if(myRev===undefined)myRev=revOf(localStorage.getItem(KEY));
   if(staleTab||revOf(localStorage.getItem(KEY))!==myRev){staleTab=true;window.CVStorageFailedAt=Date.now();window.CVLastSaveError="otra-pestana";storageAlert(STALE_MSG||"Otra pestaña ha cambiado tus datos: recarga.");return false}
   delete state.__rev;const rev=Date.now().toString(36)+Math.random().toString(36).slice(2,8),json=JSON.stringify(state);
-  localStorage.setItem(KEY,json==="{}"?'{"__rev":"'+rev+'"}':'{"__rev":"'+rev+'",'+json.slice(1));myRev=rev;
+  const val=json==="{}"?'{"__rev":"'+rev+'"}':'{"__rev":"'+rev+'",'+json.slice(1);
+  try{localStorage.setItem(KEY,val)}catch(e){if(!isQuota(e)||!freeCaches())throw e;localStorage.setItem(KEY,val)}myRev=rev;
   window.CVStorageFailedAt=0;window.CVLastSaveError="";document.getElementById("cvStorageAlert")?.remove();return true;
  }catch(e){window.CVStorageFailedAt=Date.now();window.CVLastSaveError=e&&e.name||"error";storageAlert("⚠️ No se están guardando los cambios: el almacenamiento de Safari está lleno o bloqueado (por ejemplo, navegación privada). Exporta una copia de seguridad en Datos antes de cerrar.");console.warn("Card Vault: no se pudo guardar",e&&e.name);return false}
 }

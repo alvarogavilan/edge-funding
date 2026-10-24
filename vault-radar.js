@@ -6,7 +6,6 @@
    Nunca crea una «compra comprobada» ni una «venta cerrada». */
 (()=>{"use strict";
 const CACHE="cv_v115_radar",TTL=24*3600e3;/* V115: clave nueva (fuentes en bloque y estado de fuentes) */
-try{localStorage.removeItem("cv_v105_radar");localStorage.removeItem("cv_v114_radar")}catch{}
 const N=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:NaN};
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>Number.isFinite(v)?v.toLocaleString("es-ES",{style:"currency",currency:"EUR"}):"—";
@@ -14,9 +13,23 @@ const SIGNED=v=>Number.isFinite(v)?(v>=0?"+":"−")+EUR(Math.abs(v)):"—";
 const DAY=t=>{const d=new Date(t);return Number.isFinite(d.getTime())?d.toLocaleDateString("es-ES"):"sin fecha"};
 const WHEN=t=>{const d=new Date(t);return Number.isFinite(d.getTime())?d.toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"};
 const SRC0=()=>({tcgdex:{ok:0,fail:0},ptcg:{req:0,ok:0,fail:0},lorcast:{ok:0,fail:0}});
-function readCache(){try{const x=JSON.parse(localStorage.getItem(CACHE)||"{}");return {pk:x.pk||{},lo:x.lo||{},en:x.en||{},ptSets:x.ptSets||{},src:{...SRC0(),...(x.src||{})},runs:Array.isArray(x.runs)?x.runs:[],universeCount:x.universeCount||0}}catch{return {pk:{},lo:{},en:{},ptSets:{},src:SRC0(),runs:[]}}}
-let cache=readCache();
-function writeCache(){try{localStorage.setItem(CACHE,JSON.stringify(cache))}catch{try{cache.runs=cache.runs.slice(-5);localStorage.setItem(CACHE,JSON.stringify(cache))}catch{}}}
+const normCache=x=>({pk:x?.pk||{},lo:x?.lo||{},en:x?.en||{},ptSets:x?.ptSets||{},src:{...SRC0(),...(x?.src||{})},runs:Array.isArray(x?.runs)?x.runs:[],universeCount:x?.universeCount||0});
+/* V116: la caché de precios (varios MB tras consultar «Todas») va a IndexedDB. En localStorage competía con tus datos
+   por los ~5 MB que Safari da a alvarogavilan.github.io y hacía fallar el guardado de ventas. Si IndexedDB no está
+   disponible, la caché vive solo en memoria: nunca ocupa el espacio de tus datos. */
+const IDB_NAME="cardvault-cache",IDB_STORE="kv";let idbP=null;
+function idb(){if(idbP)return idbP;idbP=new Promise((ok,ko)=>{try{if(typeof indexedDB==="undefined")return ko(new Error("sin IndexedDB"));const r=indexedDB.open(IDB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(IDB_STORE);r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)}catch(e){ko(e)}});return idbP}
+const idbGet=k=>idb().then(db=>new Promise((ok,ko)=>{const q=db.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(k);q.onsuccess=()=>ok(q.result);q.onerror=()=>ko(q.error)}));
+const idbSet=(k,v)=>idb().then(db=>new Promise((ok,ko)=>{const t=db.transaction(IDB_STORE,"readwrite");t.objectStore(IDB_STORE).put(v,k);t.oncomplete=()=>ok(true);t.onerror=()=>ko(t.error);t.onabort=()=>ko(t.error)}));
+let cache=normCache({});
+const cacheReady=(async()=>{
+ let legacy=null;try{legacy=localStorage.getItem(CACHE)}catch{}
+ for(const k of ["cv_v105_radar","cv_v114_radar",CACHE])try{localStorage.removeItem(k)}catch{}
+ try{const x=await idbGet(CACHE);if(x)cache=normCache(x);else if(legacy){cache=normCache(JSON.parse(legacy));await idbSet(CACHE,cache)}}
+ catch{try{if(legacy)cache=normCache(JSON.parse(legacy))}catch{}}
+})();
+let wTimer=null;
+function writeCache(){clearTimeout(wTimer);wTimer=setTimeout(()=>{idbSet(CACHE,cache).catch(()=>{})},400)}
 const cfg=()=>window.CVVault?.user?.().cfg||{feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,usdToEur:.86,usShip:15,usVat:21,usHandling:5};
 const fx=()=>window.CVVault?.fx?.()||{rate:cfg().usdToEur,date:"",source:"manual"};
 
@@ -376,7 +389,7 @@ function sourcesBox(){
   '</ul><p class="v4note">Últimas 24 h en este iPhone: '+pk.toLocaleString("es-ES")+' cartas con Cardmarket · '+(en+tdEn).toLocaleString("es-ES")+' con venta en inglés ('+en+' de pokemontcg.io, '+tdEn+' de TCGdex) · '+lo+' de Lorcana. TCGdex pierde a menudo el dato en inglés desde el 15/10/2026 (incidencia pública #2479).</p></details>';
 }
 function renderLive(){
- if(typeof document.querySelector!=="function")return;
+ if(typeof document.querySelector!=="function"||window.CVCompra)return;/* V116: Compra YA lo pinta cv-compra.js */
  langData=readLang();
  const slot=document.querySelector('[data-rd-live="compra"]');if(!slot)return;
  const U=window.CV_UNIVERSE,c=cfg(),list=liveList(),groups=U?Object.entries(U.meta.groups):[];
@@ -427,18 +440,19 @@ document.addEventListener("click",e=>{
  else if(d.rdView){view=d.rdView;render()}
  else if(d.rdPromote){const [id,lane]=d.rdPromote.split("|");promote(id,lane)}
 });
-function mount(){const s=document.getElementById("investigacion");if(s&&!document.getElementById("v4Radar")){const d=document.createElement("div");d.id="v4Radar";d.className="v4board";s.prepend(d)}
+function mount(){cacheReady.finally(mount2)}
+function mount2(){const s=document.getElementById("investigacion");if(s&&!document.getElementById("v4Radar")){const d=document.createElement("div");d.id="v4Radar";d.className="v4board";s.prepend(d)}
  if(s&&!s.classList.contains("hidden"))loadUniverse().then(render,()=>render());else if(["","#radar","#comprar-restaurar"].includes(location.hash)){render();setTimeout(autoLive,1500)}/* después de pintar: el catálogo (≈ 430 kB) no retrasa la carga */else render()}
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="investigacion"]'))setTimeout(()=>loadUniverse().then(render,()=>render()),30)});
 let autoDone=false;
-function autoLive(){loadUniverse().then(async()=>{render();if(running||autoDone||navigator.onLine===false)return;autoDone=true;
+function autoLive(){if(window.CVCompra)return;/* V116: la guía oficial sustituye a las consultas carta a carta */loadUniverse().then(async()=>{render();if(running||autoDone||navigator.onLine===false)return;autoDone=true;
  const U=window.CV_UNIVERSE,vin=U.cards.filter(r=>r[7]==="vintage"),setOf=r=>{const id=ptcgId(r[0]);return id.slice(0,id.lastIndexOf("-"))};
  const needPk=!vin.some(r=>fresh(cache.pk[r[0]]))||vin.some(r=>hasPtcg(r[0])&&!(cache.ptSets[setOf(r)]&&Date.now()-cache.ptSets[setOf(r)]<TTL));
  try{if(needPk)await scanPokemon("vintage")}catch{running=null;render()}
  try{if(!running&&!Object.values(cache.lo).some(fresh))await scanLorcana()}catch{running=null;render()}},()=>render())}
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"]'))setTimeout(autoLive,60)});
 window.addEventListener("hashchange",()=>{if(location.hash==="#investigacion")loadUniverse().then(render,()=>render())});
-window.CVRadar={counts:()=>({catalog:window.CV_UNIVERSE?.cards.length||cache.universeCount||NaN,consulted:Object.values(cache.pk).filter(p=>Date.now()-p.t<TTL).length+Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL).length}),evaluatePk,parseTcgdex,evaluateLo,ptcgId,render,results,renderLive,autoLive,pkImages,pkLinks,pickEN,parsePtcg,parsePtcgCard,usLanded,evalPk,evalLo,bestOp,liveList,scanPtcg,
+window.CVRadar={wireImgs,ready:()=>cacheReady,counts:()=>({catalog:window.CV_UNIVERSE?.cards.length||cache.universeCount||NaN,consulted:Object.values(cache.pk).filter(p=>Date.now()-p.t<TTL).length+Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL).length}),evaluatePk,parseTcgdex,evaluateLo,ptcgId,render,results,renderLive,autoLive,pkImages,pkLinks,pickEN,parsePtcg,parsePtcgCard,usLanded,evalPk,evalLo,bestOp,liveList,scanPtcg,
  setView:v=>{lv={...lv,...v};writeView()},reloadLang:()=>{langData=readLang()},cache:()=>cache};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(mount,400));else setTimeout(mount,400);
 })();

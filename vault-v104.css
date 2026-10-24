@@ -187,3 +187,48 @@ body.v104 .mainNav{margin:6px 0 14px}
 .rdops tr.rdbest td{background:var(--v4goodbg)}
 .v4scen{display:block;overflow-x:auto;max-width:100%}
 #v4Restore[hidden]{display:none!important}
+/* V116 · Archivo legible en iPhone: la ficha ya no se encaja en la rejilla 72 px | resto */
+.sealedCard.archiveCard{display:block}
+.archiveCard .sealedMain{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:start}
+.archiveCard .sealedMain>div{min-width:0}
+.archiveCard .thumb{width:72px;height:100px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:30px;background:rgba(255,255,255,.05)}
+.archiveCard .thumb img{width:100%;height:100%;object-fit:contain}
+.archiveCard h4{margin:6px 0 4px;font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.archiveCard .sealedMain small{display:block;font-size:12px;line-height:1.4;color:#aeb7d4;overflow-wrap:anywhere}
+.archiveCard .sealedNumbers{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04)}
+.archiveCard .sealedNumbers b{font-size:18px;white-space:nowrap}
+.archiveCard .sealedNumbers span{font-size:13px;color:#c9d3ea}
+.archiveCard .microNote{font-size:13px;line-height:1.45;margin-top:8px;overflow-wrap:anywhere}
+.archiveCard .microNote button{display:inline-flex;margin:6px 0 0;min-height:40px;padding:0 12px;border-radius:10px}
+.archiveCard .pill{display:inline-block;font-size:11px;padding:3px 8px;border-radius:999px}
+.archiveCard .microNote button{background:#1c2a4a;color:#fff;border:1px solid #33456e;align-items:center}
+/* V116 · Compra YA (Cardmarket desde 41020) */
+.cpSum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0}
+.cpSum>div{padding:10px;border:1px solid var(--v4line);border-radius:12px}
+.cpSum b{display:block;font-size:20px;white-space:nowrap}.cpSum span{font-size:12px;color:var(--v4soft)}
+.cpAlert{padding:10px 12px;border-radius:12px;border:1px solid var(--v4line);font-weight:700}
+.cpAlert.on{background:var(--v4goodbg);border-color:var(--v4good)}
+.cpQ{grid-column:1/-1}.cpQ input{min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 10px}
+.cpMoney{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.cpMoney>div{padding:10px;border-radius:12px;border:1px solid var(--v4line);min-width:0}
+.cpMoney span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--v4soft)}
+.cpMoney b{display:block;font-size:20px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cpMoney small{display:block;font-size:12px;line-height:1.35;color:var(--v4soft)}
+.cpMoney .pos{background:var(--v4goodbg);border-color:var(--v4good)}.cpMoney .pos b{color:var(--v4good)}
+@media(max-width:430px){.cpMoney{grid-template-columns:1fr}.cpMoney>div{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:2px 10px}.cpMoney small{grid-column:1/-1}}
+.cpOps{display:grid;gap:8px;margin:8px 0}
+.cpOp{border:1px solid var(--v4line);border-radius:12px;padding:10px}
+.cpOp.best{border-color:var(--v4good)}
+.cpOp p{margin:0 0 6px;font-size:13px;line-height:1.35}
+.cpOp dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin:0}
+.cpOp dl div{display:flex;flex-direction:column;gap:2px;min-width:0;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.04)}
+.cpOp dt{font-size:11px;color:var(--v4soft);white-space:nowrap}.cpOp dd{margin:0;font-size:17px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cpOp .pos,.cpBox .pos b{color:var(--v4good)}.cpOp .neg,.cpBox .neg{color:#e5484d}
+.cpLang{display:grid;gap:6px}
+.cpLang label{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center}
+.cpLang select{grid-column:2/-1}
+.cpLang input,.cpLang select,.cpWatch input{min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 8px;min-width:0}
+.cpWatch{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;font-size:14px}
+.cpWatch input{width:90px}
+.cpSpark{width:100%;height:70px;color:var(--v4good)}
+.v4tag.v4ok{border-color:var(--v4good)}.v4tag.v4warn{border-color:#f5a524;color:#f5a524}.v4tag.v4bad{border-color:#e5484d;color:#e5484d}
