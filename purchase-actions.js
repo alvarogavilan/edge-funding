@@ -85,7 +85,7 @@ function buy(key){
   const row=strictRow(key),src=sourceFor(key);
   if(!row||!src?.row){alert("La oportunidad ya no está disponible o necesita volver a verificarse.");return}
   if(src.kind!=="sealed"&&src.row.allowScaleOwned!==true){
-    const owned=(state.cards||[]).filter(c=>!c.archivedSold).some(c=>{try{return window.CVIdentity?.sameOwnedCard?.(c,src.row)===true}catch{return false}});
+    const owned=(state.cards||[]).filter(c=>!c.archivedSold).some(c=>{const __bk=window.CVSnapshot?.();try{return window.CVIdentity?.sameOwnedCard?.(c,src.row)===true}catch{return false}});
     if(owned){alert("Compra bloqueada: esta carta ya está en Mi colección. Solo puede repetirse con una autorización explícita de ampliar posición.");return}
   }
   if(row.status!=="buy"){alert("Esta oportunidad ya no cumple COMPRAR AHORA. Refresca el mercado antes de registrar la compra.");return}
@@ -111,7 +111,7 @@ function buy(key){
   const feeRaw=prompt("Comisiones/otros costes de compra (€):","0");if(feeRaw==null)return;
   const costs={shipping:Math.max(0,N(String(shipRaw).replace(",","."))),fees:Math.max(0,N(String(feeRaw).replace(",",".")))};
   const result=src.kind==="sealed"?addSealedPurchase(src,row,qty,costs):addCardPurchase(src,row,qty,costs);
-  save();
+  if(window.CVGuard&&!window.CVGuard(__bk,"compra"))return;
   try{window.CVRenderCollection?.()}catch{}
   try{window.renderInvestmentLedger?.()}catch{}
   try{window.renderOpportunityEngine?.()}catch{}

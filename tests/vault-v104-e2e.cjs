@@ -17,7 +17,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  const ctx=await browser.newContext({...pw.devices['iPhone 13']});
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url();
   if(/images\.pokemontcg\.io\/base1\/15_hires/.test(u))return route.fulfill({status:404,body:''});
-  if(/images\.pokemontcg\.io|assets\.tcgdex\.net|lorcast\.io/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
+  if(/images\.pokemontcg\.io|assets\.tcgdex\.net|lorcast\.io|cdn\.shopify\.com|whatnot/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   // Respuestas SIMULADAS con el formato de las APIs públicas (no son datos de mercado):
   if(/api\.frankfurter\.app/.test(u))return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({amount:1,base:'USD',date:'2026-10-23',rates:{EUR:0.9}})});
   let m=u.match(/api\.tcgdex\.net\/v2\/en\/cards\/([^?]+)/);
@@ -43,12 +43,14 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  if(shots)await page.screenshot({path:path.join(shots,'1-compra-ya.png')});
  // 2. Comprar para restaurar desde la barra de pestañas
  await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(600);
+ await page.evaluate(()=>document.querySelectorAll('#v4Restore details.v4old').forEach(d=>d.open=true));/* V110: objetivos plegados; se abren para comprobar todas las fotos */
  for(const el of await page.$$('#v4Restore .v4card figure')){await el.scrollIntoViewIfNeeded();await page.waitForTimeout(120)}
  await page.waitForTimeout(3500);await page.evaluate(()=>window.scrollTo(0,0));
  ok('Pestaña restaurar visible',await page.isVisible('#v4Restore h2'));
  ok('Compra YA oculta al cambiar de pestaña',!(await page.isVisible('#v4Buy h2')));
  const rest=await page.evaluate(()=>({n:document.querySelectorAll('#v4Restore .v4card').length,imgs:[...document.querySelectorAll('#v4Restore .v4card img')].map(i=>({ok:i.complete&&i.naturalWidth>0,h:i.getBoundingClientRect().height,hidden:i.hidden})),noimg:[...document.querySelectorAll('#v4Restore .v4noimg')].filter(n=>!n.hidden).length}));
- ok('12 objetivos de restauración',rest.n===12,String(rest.n));
+ const restExpected=12+await page.evaluate(()=>(window.CV_MARKET_OFFERS?.offers||[]).filter(x=>x.lane==='restaurar').length);/* V110: 12 objetivos + anuncios concretos registrados */
+ ok('12 objetivos de restauración + anuncios concretos',rest.n===restExpected,rest.n+'/'+restExpected);
  ok('Fotos grandes (≥ 250 px de alto en iPhone)',rest.imgs.filter(i=>!i.hidden).every(i=>i.ok&&i.h>=250),JSON.stringify(rest.imgs.slice(0,3)));
  ok('Foto que falla muestra sustituto legible',rest.noimg===1,String(rest.noimg));
  ok('Hash de URL directo',(await page.evaluate(()=>location.hash))==='#comprar-restaurar');
@@ -79,7 +81,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  ok('Estado COMPRA COMPROBADA tras comprobación completa',(await c.locator('.v4status').textContent())==='COMPRA COMPROBADA');
  ok('Foto del ejemplar anunciado sustituye a la de catálogo',/Foto del ejemplar anunciado/.test(await c.locator('figcaption').textContent()));
  ok('Precio de compra visible',/180,50/.test(await c.locator('.v4money').first().textContent()));
- ok('Envío marcado como confirmado',/confirmado/.test(await c.locator('.v4money').first().textContent()));
+ {const mt=await c.locator('.v4money').first().textContent();ok('Envío conocido mostrado (tarifa publicada desde fd310a6)',/envío 7,00\s€\s\((confirmado|tarifa publicada)\)/.test(mt),mt.slice(0,300))}
  // 4. Ventas reales: 2 ventas en USD y 1 anuncio (que no debe contar)
  for(const [kind,price,cur,date] of [['venta','600','USD','2026-10-01'],['venta','700','USD','2026-10-10'],['anuncio','5000','EUR','2026-10-20']]){
   await page.click('#card-'+id+' [data-v4-sale]');await page.waitForSelector('#v4Sheet form');

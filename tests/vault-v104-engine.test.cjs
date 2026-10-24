@@ -11,7 +11,7 @@ for(const f of ['vault-data.js','vault-v104.js','vault-radar.js'])vm.runInContex
 const {status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,DEFAULTS}=ctx.CVVault.engine;
 const cfg={...DEFAULTS},now=Date.parse('2026-10-23T12:00:00Z');
 const base={id:'t',lane:'compra',game:'pokemon',name:'X',set:'Base',number:'1/102',language:'Inglés',sales:[]};
-const L=o=>({url:'https://www.tcgplayer.com/product/1/x',shop:'TCGplayer',seller:'s',price:50,shipping:5,vat:0,duty:0,handling:0,fxFee:0,country:'España',costSource:'https://shop.example/product/1',costsConfirmed:true,shipsSpain:true,sellFeePct:5,sellShipping:5,sellTax:0,saleCostsConfirmed:true,condition:'NM',language:'Inglés',available:'si',checkedAt:'2026-10-23T08:00:00Z',...o});
+const L=o=>({grade:'RAW',url:'https://www.tcgplayer.com/product/1/x',shop:'TCGplayer',seller:'s',price:50,shipping:5,vat:0,duty:0,handling:0,fxFee:0,country:'España',costSource:'https://shop.example/product/1',costsConfirmed:true,shipsSpain:true,sellFeePct:5,sellShipping:5,sellTax:0,saleCostsConfirmed:true,condition:'NM',language:'Inglés',available:'si',checkedAt:'2026-10-23T08:00:00Z',...o});
 const S=(price,o={})=>({kind:'venta',price,currency:'EUR',date:'2026-10-20',verifiedAt:'2026-10-22',verified:true,transactionId:String(price),platform:'Tienda',url:'https://shop.example/sold/'+price,set:'Base',number:'1/102',sameVariant:true,condition:'NM',language:'Inglés',grade:'RAW',restored:false,...o});
 let n=0;const t=(name,fn)=>{fn();n++;console.log('OK ·',name)};
 t('objetivo sin anuncio',()=>assert.equal(status({...base,listing:null},now,cfg).code,'objetivo'));
@@ -58,6 +58,7 @@ const {mergeImport}=ctx.CVVault.engine;
 t('graduación del anuncio: una PSA 10 no justifica una RAW ni al revés',()=>{assert.equal(economics({...base,listing:L(),sales:[S(200,{grade:'PSA 10'})]},cfg).net,null);assert.equal(economics({...base,listing:L({grade:'PSA 10'}),sales:[S(200)]},cfg).net,null);assert.ok(economics({...base,listing:L({grade:'psa 10'}),sales:[S(200,{grade:'PSA 10'})]},cfg).net)});
 t('estimación del usuario nunca cuenta como venta ni cambia el veredicto',()=>{const it={...base,listing:L(),sales:[{kind:'estimacion',price:900,currency:'EUR',date:'2026-10-20'}]};const e=economics(it,cfg);assert.equal(e.basis,null);assert.equal(evaluate(it,now,cfg).vd.code,'sin-datos')});
 t('beneficio negativo se marca como pérdida',()=>{const it={...base,listing:L({price:300}),sales:[S(120),S(130)]};assert.equal(evaluate(it,now,cfg).vd.code,'negativo')});
+t('graduación vacía no se compara como RAW (V110)',()=>{assert.equal(economics({...base,listing:L({grade:''}),sales:[S(200),S(220)]},cfg).net,null);assert.equal(economics({...base,listing:L(),sales:[S(200,{grade:''})]},cfg).net,null)});
 t('stock agotado = caducada',()=>assert.equal(status({...base,listing:L({available:'no'})},now,cfg).code,'caducada'));
 t('importación fusiona sin borrar ni duplicar',()=>{const cur={cfg:{},patches:{a:{listing:{checkedAt:'2026-10-23T10:00:00Z',price:1},sales:[{id:'s1',price:5}]}},custom:[{id:'c1',sales:[{id:'x',price:1}]}],bought:{c1:'2026-10-20'}};
  const inc={patches:{a:{listing:{checkedAt:'2026-10-20T10:00:00Z',price:9},sales:[{id:'s1',price:5},{id:'s2',price:6}]}},custom:[{id:'c1',sales:[{id:'x',price:1}]},{id:'c2'}],bought:{c2:'2026-10-21'}};

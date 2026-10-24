@@ -25,13 +25,14 @@ const fmt=c=>c==null||!Number.isFinite(c)?"—":(c/100).toLocaleString("es-ES",{
 function allocate(total,n){n=Math.max(1,Math.floor(n));const base=Math.floor(total/n),r=total-base*n;return Array.from({length:n},(_,i)=>base+(i<r?1:0))}
 function extra(x){
  if(x==null)return {cents:null,status:"desconocido"};
- const st=String(x.status||"").toLowerCase();
- if(st==="no-aplica"||st==="incluido")return {cents:0,status:st};
+ const st=String(x.status||"").toLowerCase(),ev={};for(const k of ["ref","date","in","origin","note"])if(x[k])ev[k]=String(x[k]).slice(0,300);
+ if(st==="no-aplica"||st==="incluido")return {cents:0,status:st,...ev};
+ if(st==="desconocido")return {cents:null,status:"desconocido",...ev};
  const c=x.cents!=null?Math.round(Number(x.cents)):cents(x.eur);
- if(!Number.isFinite(c)||c<0)return {cents:null,status:"desconocido"};
- return {cents:c,status:st==="estimado"?"estimado":st==="pagado"?"pagado":"estimado"};
+ if(!Number.isFinite(c)||c<0)return {cents:null,status:"desconocido",...ev};
+ return {cents:c,status:st==="estimado"?"estimado":st==="pagado"?"pagado":"estimado",...ev};
 }
-function newLot({qty=1,unitPrice,unitPriceCents,extras={},source="v109",note="",createdAt}={}){
+function newLot({qty=1,unitPrice,unitPriceCents,extras={},source="v109",note="",createdAt,priceBasis="precio"}={}){
  const q=Math.max(1,Math.floor(Number(qty)||1)),pu=unitPriceCents!=null?Math.round(unitPriceCents):cents(unitPrice);
  const ex={};for(const k of EXTRAS)ex[k]=extra(extras[k]);
  const priceKnown=Number.isFinite(pu)&&pu>=0,unknown=EXTRAS.filter(k=>ex[k].status==="desconocido");
@@ -39,7 +40,7 @@ function newLot({qty=1,unitPrice,unitPriceCents,extras={},source="v109",note="",
  const status=!priceKnown||unknown.length?"desconocido":EXTRAS.some(k=>ex[k].status==="estimado")?"estimado":"pagado";
  const totalCents=status==="desconocido"?null:knownCents;
  return {v:1,qtyOriginal:q,unitPriceCents:priceKnown?pu:null,extras:ex,knownCents,totalCents,status,unknown:unknown.map(k=>LABEL[k]),
-  allocation:allocate(knownCents,q),unitsSold:0,source,note,conflicts:[],createdAt:createdAt||(source==="v109"?new Date().toISOString():"")};
+  allocation:allocate(knownCents,q),unitsSold:0,source,note,priceBasis,conflicts:[],createdAt:createdAt||(source==="v109"?new Date().toISOString():"")};
 }
 /* Convierte datos antiguos a lote. Idempotente: si ya hay lote v1, no cambia nada. No inventa gastos que falten. */
 function migrateCard(c){
@@ -49,7 +50,7 @@ function migrateCard(c){
   // Lotes migrados sin ventas: se recalculan desde los campos antiguos por si se han editado (sigue siendo idempotente).
   if(!(String(lot.source).startsWith("migrado")&&!lot.unitsSold)){
    const pc=c.purchase==null||c.purchase===""?null:cents(Number(c.purchase));
-   if(lot.source==="v109"&&lot.unitPriceCents!=null&&pc!=null&&pc!==lot.unitPriceCents){
+   if(lot.source==="v109"&&lot.priceBasis!=="aterrizado"&&lot.unitPriceCents!=null&&pc!=null&&pc!==lot.unitPriceCents){
     const msg="Precio de compra editado ("+fmt(pc)+") distinto del registrado en la compra ("+fmt(lot.unitPriceCents)+")";
     if(!lot.conflicts.includes(msg))lot.conflicts.push(msg);lot.status="conflicto";
    }
@@ -62,13 +63,15 @@ function migrateCard(c){
  let lot;
  if(c.purchaseCosts&&typeof c.purchaseCosts==="object"){
   const pc=c.purchaseCosts,st=pc.status==="pagados"?"pagado":"estimado",ex={};
-  for(const k of EXTRAS)ex[k]=has(pc[k])?{eur:Number(pc[k]),status:(pc.notApplicable||[]).includes(k)&&Number(pc[k])===0?"no-aplica":st}:null;
+  for(const k of EXTRAS){const inc=pc.included&&pc.included[k];ex[k]=inc?{status:"incluido",in:inc.in||"",ref:inc.ref||"",origin:"registrado"}:has(pc[k])?{eur:Number(pc[k]),status:(pc.notApplicable||[]).includes(k)&&Number(pc[k])===0?"no-aplica":st,origin:"registrado"}:null}
   lot=newLot({qty:q,unitPrice:has(c.purchase)?Number(c.purchase):undefined,extras:ex,source:"migrado-v107",note:"Desglose de «He comprado» (V107–V108)."});
  }else if(has(c.landedCostUnit)&&Number(c.landedCostUnit)>0){
-  lot=newLot({qty:q,unitPriceCents:cents(Number(c.landedCostUnit)),extras:{shipping:{status:"incluido"},vat:{status:"incluido"},duty:{status:"incluido"},handling:{status:"incluido"},fxFee:{status:"incluido"}},source:"migrado-aterrizado",note:"Coste aterrizado por unidad registrado anteriormente."});
+  // El coste aterrizado antiguo era precio + envío + comisiones: no demuestra nada sobre IVA, aranceles ni gestión.
+  lot=newLot({qty:q,unitPriceCents:cents(Number(c.landedCostUnit)),extras:{shipping:{status:"incluido",in:"coste aterrizado",origin:"registrado"},fxFee:{status:"incluido",in:"coste aterrizado",origin:"registrado"},vat:null,duty:null,handling:null},source:"migrado-aterrizado",priceBasis:"aterrizado",note:"Coste aterrizado por unidad registrado anteriormente (sin desglose fiscal)."});
  }else if(has(c.purchase)){
-  const ex={shipping:has(c.purchaseShipping)?{eur:Number(c.purchaseShipping),status:"pagado"}:null,fxFee:has(c.purchaseFees)?{eur:Number(c.purchaseFees),status:"pagado"}:null,vat:{status:"no-aplica"},duty:{status:"no-aplica"},handling:{status:"no-aplica"}};
-  // Datos antiguos: envío y comisiones son totales del lote. Si no se registraron, quedan desconocidos.
+  // Datos antiguos: envío y comisiones son totales del lote. IVA de importación, aranceles y gestión NO se registraban:
+  // su ausencia no demuestra que no apliquen (V110). Quedan desconocidos hasta que el usuario los revise.
+  const ex={shipping:has(c.purchaseShipping)?{eur:Number(c.purchaseShipping),status:"pagado",origin:"registrado"}:null,fxFee:has(c.purchaseFees)?{eur:Number(c.purchaseFees),status:"pagado",origin:"registrado"}:null,vat:null,duty:null,handling:null};
   lot=newLot({qty:q,unitPrice:Number(c.purchase),extras:ex,source:"migrado-legado",note:"Compra registrada antes de V109."});
  }else return null;
  if(has(c.landedCostUnit)&&lot.source!=="migrado-aterrizado"&&lot.totalCents!=null){
@@ -101,8 +104,55 @@ function result(netCents,basis){
  if(basis.status==="estimado"&&basis.cents!=null)return {cents:null,estimateCents:netCents-basis.cents,status:"estimado"};
  return {cents:null,estimateCents:null,status:basis.status||"desconocido"};
 }
-const STATUS_TXT={pagado:"coste pagado",estimado:"coste estimado (no confirmado)",desconocido:"coste desconocido: faltan gastos",conflicto:"datos de coste en conflicto"};
-window.CVMoney={cents,eur,fmt,allocate,newLot,migrateCard,remaining,basisForUnits,consume,saleNet,result,EXTRAS,LABEL,STATUS_TXT};
+const STATUS_TXT={revisar:"coste pendiente de revisión: datos fiscales no registrados",legado:"coste registrado antes de V109, sin desglose: pendiente de revisión",pagado:"coste pagado",estimado:"coste estimado (no confirmado)",desconocido:"coste desconocido: faltan gastos",conflicto:"datos de coste en conflicto"};
+/* V110 · reparación de lotes migrados por V109 que tienen ventas (los no vendidos se recalculan solos).
+   V109 marcó IVA, aranceles y gestión como «no aplica» sin evidencia. Se marcan como desconocidos y el lote como
+   «revisar»; se conservan reparto, unidades vendidas e importes, y las ventas afectadas guardan su cálculo anterior
+   como antecedente. Idempotente: identificador de reparación único. */
+const REPAIR="v110-fiscal-inferido";
+function repairState(st){
+ let changed=false;const touched=new Set();
+ for(const c of (st&&st.cards)||[]){
+  const lot=c&&c.costLot;
+  if(lot&&lot.v===1&&String(lot.source).startsWith("migrado")&&!lot.unitsSold){const before=JSON.stringify(lot);delete c.costLot;migrateCard(c);if(JSON.stringify(c.costLot)!==before)changed=true;continue}
+  if(!lot||lot.v!==1||!(lot.source==="migrado-legado"||lot.source==="migrado-aterrizado")||!lot.unitsSold)continue;
+  if((lot.reviews||[]).some(r=>r.id===REPAIR)){touched.add(c.id);continue}
+  const inferred=["vat","duty","handling"].filter(k=>lot.extras[k]&&(lot.extras[k].status==="no-aplica"||lot.extras[k].status==="incluido")&&lot.extras[k].origin!=="usuario");
+  if(!inferred.length)continue;
+  const prev={status:lot.status,totalCents:lot.totalCents,extras:JSON.parse(JSON.stringify(lot.extras))};
+  for(const k of inferred)lot.extras[k]={cents:null,status:"desconocido",origin:"inferido-v109",note:"V109 lo dio por «"+prev.extras[k].status+"» sin datos"};
+  lot.totalCents=null;lot.status="revisar";lot.unknown=EXTRAS.filter(k=>lot.extras[k].status==="desconocido").map(k=>LABEL[k]);
+  (lot.reviews=lot.reviews||[]).push({id:REPAIR,at:new Date().toISOString(),reason:"IVA, aranceles o gestión inferidos sin evidencia por la migración V109",previous:prev});
+  touched.add(c.id);changed=true;
+ }
+ for(const h of (st&&st.saleHistory)||[]){
+  if(!h||!touched.has(h.cardId)||!(h.basisStatus==="pagado"||h.basisStatus==="estimado"))continue;
+  if((h.basisHistory||[]).some(x=>x.id===REPAIR))continue;
+  (h.basisHistory=h.basisHistory||[]).push({id:REPAIR,at:new Date().toISOString(),basisStatus:h.basisStatus,basisCents:h.basisCents,resultCents:h.resultCents??null,resultEstimateCents:h.resultEstimateCents??null,reason:"Coste calculado con datos fiscales inferidos (V109). Se conserva como antecedente."});
+  h.basisStatus="revisar";h.resultCents=null;h.resultEstimateCents=null;h.resultStatus="revisar";h.basisUnknown=true;changed=true;
+  const r=((st.investmentLedger)||[]).find(x=>x.id===h.id);if(r)r.basisUnknown=true;
+ }
+ return {changed};
+}
+/* Revisión de coste por el usuario (V110). Recalcula el lote con CVMoney, conserva el anterior en el historial y
+   reparte el nuevo total entre las unidades ORIGINALES. Devuelve el ajuste de las unidades ya vendidas para que
+   las ventas afectadas actualicen su coste (con su antecedente). */
+function reviseLot(c,input,meta={}){
+ const old=migrateCard(c);if(!old)throw new Error("Sin datos de compra");
+ const q=old.qtyOriginal,unitsSold=old.unitsSold||0,ex={};
+ for(const k of EXTRAS){const x=input.extras&&input.extras[k];ex[k]=x?{...x,origin:"usuario",date:meta.date||x.date,ref:meta.ref||x.ref}:old.extras[k]&&old.extras[k].status!=="desconocido"?{cents:old.extras[k].cents,status:old.extras[k].status,origin:old.extras[k].origin||"registrado",ref:old.extras[k].ref,in:old.extras[k].in}:null}
+ const lot=newLot({qty:q,unitPriceCents:input.unitPriceCents!=null?input.unitPriceCents:old.unitPriceCents,extras:ex,source:"v109",note:"Coste revisado por el usuario",createdAt:old.createdAt,priceBasis:old.priceBasis||(old.source==="migrado-aterrizado"?"aterrizado":"precio")});
+ lot.unitsSold=unitsSold;lot.reviews=[...(old.reviews||[]),{id:"usuario-"+Date.now().toString(36),at:new Date().toISOString(),by:"usuario",ref:meta.ref||"",date:meta.date||"",shipOrigin:meta.shipOrigin||"",previous:{status:old.status,totalCents:old.totalCents,knownCents:old.knownCents,extras:old.extras,allocation:old.allocation}}];
+ const soldBefore=old.allocation.slice(0,unitsSold),soldAfter=lot.allocation.slice(0,unitsSold);
+ return {lot,unitsSold,soldBefore,soldAfter};
+}
+function applySaleBasis(h,basisCents,status,reason){
+ (h.basisHistory=h.basisHistory||[]).push({id:"rev-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),at:new Date().toISOString(),basisStatus:h.basisStatus||"",basisCents:h.basisCents??null,resultCents:h.resultCents??null,reason});
+ h.basisCents=status==="pagado"||status==="estimado"?basisCents:null;h.basisKnownCents=basisCents;h.basisStatus=status;h.basis=h.basisCents==null?null:h.basisCents/100;
+ h.landedCostUnit=h.basisCents==null?null:h.basisCents/Math.max(1,Number(h.qty)||1)/100;
+ const net=h.net==null?null:cents(Number(h.net)),r=result(net,{cents:h.basisCents,status});h.resultCents=r.cents;h.resultEstimateCents=r.estimateCents;h.resultStatus=r.status;h.basisUnknown=status!=="pagado";
+}
+window.CVMoney={cents,eur,fmt,allocate,newLot,migrateCard,remaining,basisForUnits,consume,saleNet,result,repairState,reviseLot,applySaleBasis,REPAIR,EXTRAS,LABEL,STATUS_TXT};
 
 /* Graduación: empresa y nota separadas del estado físico. Vacío = sin confirmar (no RAW). «NM» es un estado, no una nota. */
 const COMPANIES=["PSA","BGS","CGC","SGC","ACE","TAG","AP"];
@@ -130,7 +180,9 @@ function validate(x){
  for(const c of s.cards)if(!c||typeof c!=="object"||!c.id)throw new Error("hay cartas sin identificador");
  if(x.photos!=null&&(typeof x.photos!=="object"||Array.isArray(x.photos)))throw new Error("fotos con formato no válido");
  if(x.photos)for(const v of Object.values(x.photos))if(typeof v!=="string"||!/^data:image\//.test(v))throw new Error("foto con formato no válido");
- return {state:s,photos:x.photos||{},marketSignals:Array.isArray(x.marketSignals)?x.marketSignals:[],vault:x.vault&&typeof x.vault==="object"?x.vault:null,version:x.version||0};
+ if(x.vault!=null){if(typeof x.vault!=="object"||Array.isArray(x.vault)||(x.vault.user!=null&&typeof x.vault.user!=="object"))throw new Error("bloque de oportunidades no válido");for(const v of Object.values(x.vault.photos||{}))if(typeof v!=="string"||!/^data:image\//.test(v))throw new Error("foto de anuncio con formato no válido")}
+ if(x.marketSignals!=null&&!Array.isArray(x.marketSignals))throw new Error("señales de mercado no válidas");
+ return {state:s,photos:x.photos||{},marketSignals:Array.isArray(x.marketSignals)?x.marketSignals:[],vault:x.vault&&typeof x.vault==="object"?x.vault:null,version:x.version||0,blocks:{estado:true,fotos:Object.keys(x.photos||{}).length,oportunidades:!!x.vault,senales:Array.isArray(x.marketSignals)?x.marketSignals.length:0}};
 }
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function mergeList(local=[],incoming=[],extraKey){

@@ -181,6 +181,84 @@ const MATRIX=[
   const r2=await page.evaluate(i=>({cards:window.CVStateBridge.get().cards.filter(c=>c.buyOpportunityId===i).length,ledger:(window.CVStateBridge.get().investmentLedger||[]).filter(x=>x.buyOpportunityId===i).length}),id);
   check('Al repetir: exactamente 1 carta y 1 movimiento',r2.cards===1&&r2.ledger===1,JSON.stringify(r2));
  }),
+ run('C2','Compra antigua de Japón sin datos fiscales: subtotal 57, total pendiente, resultado no confirmado',async({page})=>{
+  await page.evaluate(()=>{const st=window.CVStateBridge.get();st.cards.push({id:'prueba-jp',universe:'pokemon',name:'Carta Prueba Japón',set:'Set de prueba',number:'7/100',grading:'RAW',condition:'NM',purchase:50,purchaseShipping:5,purchaseFees:2,quantity:1,buyCountry:'Japón',purchaseDate:'2025-06-01'});window.CVStateBridge.save()});
+  const txt=await collectionCostText(page,'Carta Prueba Japón');
+  check('Mi colección: pendiente de confirmar con subtotal 57,00 €',/pendiente de confirmar \(subtotal conocido 57,00/.test(txt),txt.match(/Coste[^·]*/)?.[0]);
+  const lot=await page.evaluate(()=>{const c=window.CVStateBridge.get().cards.find(x=>x.id==='prueba-jp');window.CVMoney.migrateCard(c);return c.costLot});
+  check('Lote: total null, IVA/aranceles/gestión desconocidos, originales intactos',lot.totalCents===null&&lot.knownCents===5700&&['vat','duty','handling'].every(k=>lot.extras[k].status==='desconocido'),JSON.stringify(lot.extras));
+  await sell(page,'prueba-jp',['100','5','0','Cardmarket','PRUEBA-JP','']);
+  const rec=await page.evaluate(()=>window.CVArchive.records().find(r=>r.saleOrder==='PRUEBA-JP'));
+  check('Venta: resultado NO confirmado',rec&&rec.result==null&&rec.resultEstimate==null,rec&&JSON.stringify({r:rec.result,s:rec.basisStatus}));
+  const sum=await page.evaluate(()=>window.CVArchive.records().filter(r=>r.result!=null).some(r=>r.saleOrder==='PRUEBA-JP'));check('No se suma a beneficios confirmados',!sum);
+ }),
+ run('E2','Lote migrado por V109 con «no-aplica» inferido y venta parcial: revisar sin perder datos',async({page})=>{
+  await page.evaluate(()=>{const st=window.CVStateBridge.get();const lot={v:1,qtyOriginal:2,unitPriceCents:5000,extras:{shipping:{cents:1000,status:'pagado'},vat:{cents:0,status:'no-aplica'},duty:{cents:0,status:'no-aplica'},handling:{cents:0,status:'no-aplica'},fxFee:{cents:0,status:'pagado'}},knownCents:11000,totalCents:11000,status:'pagado',unknown:[],allocation:[5500,5500],unitsSold:1,source:'migrado-legado',note:'',conflicts:[],createdAt:''};
+   st.cards.push({id:'prueba-v109',universe:'pokemon',name:'Carta Prueba V109',set:'Set de prueba',number:'8/100',grading:'RAW',condition:'NM',purchase:50,purchaseShipping:10,purchaseFees:0,quantity:1,costLot:lot});
+   st.saleHistory.push({id:'sale-prueba-v109',cardId:'prueba-v109',name:'Carta Prueba V109',qty:1,unitPrice:70,fees:0,shipping:0,net:70,soldAt:'2026-10-23',channel:'Cardmarket',saleOrder:'PRUEBA-V109',basisCents:5500,basisStatus:'pagado',basis:55,resultCents:1500,resultStatus:'confirmado',costUnits:{from:0,to:1},fulfillmentStatus:'paid-confirmed'});
+   delete st.costMigrations;window.CVStateBridge.save()});
+  await page.reload({waitUntil:'load'});await page.waitForTimeout(900);
+  const r=await page.evaluate(()=>{const st=window.CVStateBridge.get(),c=st.cards.find(x=>x.id==='prueba-v109'),h=st.saleHistory.find(x=>x.id==='sale-prueba-v109'),rec=window.CVArchive.records().find(x=>x.id==='sale-prueba-v109');return {lot:c.costLot,h,rec:{result:rec.result,legacy:rec.resultLegacy,status:rec.basisStatus},stored:JSON.parse(localStorage.getItem('cardvault.v2')).cards.find(x=>x.id==='prueba-v109').costLot.status}});
+  check('Lote: revisar, reparto y unidades vendidas conservados',r.lot.status==='revisar'&&JSON.stringify(r.lot.allocation)==='[5500,5500]'&&r.lot.unitsSold===1&&r.lot.knownCents===11000&&r.stored==='revisar',JSON.stringify({s:r.lot.status,a:r.lot.allocation,u:r.lot.unitsSold}));
+  check('Venta: antecedente 15 € conservado, resultado ya no confirmado',r.rec.result==null&&Math.abs(r.rec.legacy-15)<0.005&&r.h.basisHistory[0].resultCents===1500,JSON.stringify(r.rec));
+  await page.reload({waitUntil:'load'});await page.waitForTimeout(900);
+  const r2=await page.evaluate(()=>{const st=window.CVStateBridge.get();return {rev:st.cards.find(x=>x.id==='prueba-v109').costLot.reviews.length,bh:st.saleHistory.find(x=>x.id==='sale-prueba-v109').basisHistory.length}});
+  check('Repetir: mismos avisos, sin duplicados',r2.rev===1&&r2.bh===1,JSON.stringify(r2));
+  // H. Completar costes desde la interfaz: IVA/aranceles/gestión no aplicables con justificante
+  await page.click('.mainNav [data-tab="collection"]');await page.waitForTimeout(300);
+  const id=await page.evaluate(()=>{window.CVCostReview.openCard('prueba-v109');return 1});await page.waitForSelector('#cvCostSheet form');
+  for(const k of ['vat','duty','handling'])await page.selectOption('#cvCostSheet [name=st-'+k+']','no-aplica');
+  await page.fill('#cvCostSheet [name=ref]','Pedido CM 999 (ficticio)');await page.fill('#cvCostSheet [name=origin]','España');
+  const prev=await page.textContent('#cvCostSheet .cvPreview');check('Vista previa: total 110,00 € pagado y unidad vendida 55,00 €',/110,00/.test(prev)&&/55,00/.test(prev),prev);
+  await page.click('#cvCostSheet button[type=submit]');await page.waitForTimeout(500);
+  await page.reload({waitUntil:'load'});await page.waitForTimeout(900);
+  const r3=await page.evaluate(()=>{const st=window.CVStateBridge.get(),c=st.cards.find(x=>x.id==='prueba-v109'),rec=window.CVArchive.records().find(x=>x.id==='sale-prueba-v109');return {status:c.costLot.status,total:c.costLot.totalCents,unitsSold:c.costLot.unitsSold,reviews:c.costLot.reviews.length,ref:c.costLot.reviews.at(-1).ref,result:rec.result,hist:st.saleHistory.find(x=>x.id==='sale-prueba-v109').basisHistory.length,remaining:window.CVMoney.remaining(c).cents}});
+  check('Tras revisar y recargar: 110 € pagado, venta confirmada +15, restante 55, trazado',r3.status==='pagado'&&r3.total===11000&&r3.unitsSold===1&&Math.abs(r3.result-15)<0.005&&r3.remaining===5500&&r3.reviews===2&&/999/.test(r3.ref)&&r3.hist===2,JSON.stringify(r3));
+ }),
+ run('I2','Guardado fallido en otras operaciones críticas: sin falso éxito ni cambios',async({page})=>{
+  const block=()=>page.evaluate(()=>{window.__rs=Storage.prototype.setItem;Storage.prototype.setItem=function(){throw new Error('bloqueado')}});
+  const unblock=()=>page.evaluate(()=>{Storage.prototype.setItem=window.__rs});
+  const snap=()=>page.evaluate(()=>{const s=window.CVStateBridge.get();return JSON.stringify({c:s.cards.length,l:(s.investmentLedger||[]).length,h:(s.saleHistory||[]).length,sp:(s.sealedProducts||[]).length,cap:(s.investmentLedger||[]).filter(r=>r.type==='capital').length})});
+  const s0=await snap();await block();
+  page.prompts=['50'];await page.evaluate(()=>window.CVSalesDesk?.addCapital?.()||document.querySelector('[data-sales-capital]')?.click());await page.waitForTimeout(300);
+  const cardBefore=await page.evaluate(()=>window.CVStateBridge.get().cards[0].id);
+  // eliminar carta desde el formulario de edición
+  await page.evaluate(id=>{window.CVSimpleNav.showTab('collection')},cardBefore);await page.waitForTimeout(200);
+  await page.evaluate(id=>{document.querySelector('[data-edit-card="'+id+'"]')?.click()},cardBefore);await page.waitForTimeout(300);
+  await page.evaluate(()=>document.querySelector('#deleteCard')?.click());await page.waitForTimeout(400);
+  const s1=await snap();await unblock();
+  check('Capital y borrado de carta: nada cambia si no se guarda',s1===s0,JSON.stringify({s0,s1}));
+  check('La carta sigue existiendo',await page.evaluate(id=>window.CVStateBridge.get().cards.some(c=>c.id===id),cardBefore));
+  await page.evaluate(()=>{try{document.querySelector('dialog[open]')?.close()}catch{}});
+ }),
+ run('K2','Importación con fallo de fotos: resultado PARCIAL explícito y reintento seguro',async({page,browser,base})=>{
+  const id=await opportunity(page,{name:'Carta Prueba K2'});await bought(page,id);
+  await page.evaluate(()=>window.CVSimpleNav.showTab('data'));
+  const [dl]=await Promise.all([page.waitForEvent('download'),page.click('#export')]);const file=await dl.path();
+  const pack=JSON.parse(fs.readFileSync(file,'utf8'));pack.photos={'foto-prueba-k2':'data:image/png;base64,'+sample.toString('base64')};const f2=path.join(os.tmpdir(),'cv-k2-'+Date.now()+'.json');fs.writeFileSync(f2,JSON.stringify(pack));
+  const {ctx:ctx2,page:p2}=await newPage(browser,base);const alerts=[];p2.removeAllListeners('dialog');p2.on('dialog',d=>{alerts.push(d.message());d.accept()});
+  await p2.evaluate(()=>{window.__put=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(){throw new Error('IndexedDB no disponible (simulado)')}});
+  await p2.evaluate(()=>window.CVSimpleNav.showTab('data'));await p2.setInputFiles('#import',f2);await p2.waitForTimeout(1500);
+  const msg=alerts.find(a=>/importada|PARCIAL/.test(a))||'';
+  check('Aviso de recuperación PARCIAL con lo que falló',/RECUPERACIÓN PARCIAL/.test(msg)&&/foto/.test(msg)&&/repetir/.test(msg),msg.slice(0,300));
+  check('Estado guardado y registro de importación incompleta',await p2.evaluate(()=>{const s=window.CVStateBridge.get();return s.cards.some(c=>c.name==='Carta Prueba K2')&&s.lastImport&&s.lastImport.complete===false}));
+  await p2.evaluate(()=>{IDBObjectStore.prototype.put=window.__put});alerts.length=0;
+  await p2.setInputFiles('#import',f2);await p2.waitForTimeout(1500);
+  const msg2=alerts.find(a=>/importada|PARCIAL/.test(a))||'';
+  check('Reintento: completa sin duplicar',/por completo/.test(msg2)&&/0 cartas/.test(msg2)&&(await p2.evaluate(()=>window.CVStateBridge.get().cards.filter(c=>c.name==='Carta Prueba K2').length))===1,msg2.slice(0,300));
+  await ctx2.close();
+ }),
+ run('L2','Copia completa: equivalencia semántica (identidad, graduación, costes, cantidades, resultados y oportunidades)',async({page,browser,base})=>{
+  const id=await opportunity(page,{name:'Carta Prueba L2',grade:'BGS 8,5'});const [c]=await bought(page,id);await sell(page,c.id,['100','5','0','Cardmarket','PRUEBA-L2','']);
+  const sig=p=>p.evaluate(id=>{const s=window.CVStateBridge.get();const card=s.cards.find(x=>x.name==='Carta Prueba L2');const rec=window.CVArchive.records().find(r=>r.saleOrder==='PRUEBA-L2');const u=window.CVVault.user().custom.find(x=>x.name==='Carta Prueba L2');
+   return JSON.stringify({card:{id:card.id,grading:card.grading,grade:card.grade,condition:card.condition,qty:card.quantity,lot:card.costLot,archived:!!card.archivedSold},rec:{basis:rec.basis,net:rec.net,result:rec.result,status:rec.basisStatus,payment:rec.payment},ledger:s.investmentLedger.filter(r=>r.buyOpportunityId===id||r.id===rec.id).map(r=>[r.type,r.unitPrice,r.shipping,r.fees,r.fulfillmentStatus]),opp:u&&{listing:u.listing,sales:u.sales}})},id);
+  const a=await sig(page);await page.evaluate(()=>window.CVSimpleNav.showTab('data'));
+  const [dl]=await Promise.all([page.waitForEvent('download'),page.click('#export')]);const file=await dl.path();
+  const {ctx:ctx2,page:p2}=await newPage(browser,base);await p2.evaluate(()=>window.CVSimpleNav.showTab('data'));await p2.setInputFiles('#import',file);await p2.waitForTimeout(1500);
+  const b=await sig(p2);check('Mismo registro tras importar en limpio',a===b,a===b?'':(a.slice(0,200)+' ≠ '+b.slice(0,200)));
+  check('BGS 8,5 conservada',JSON.parse(b).card.grading==='BGS'&&JSON.parse(b).card.grade==='8.5',JSON.parse(b).card.grading+' '+JSON.parse(b).card.grade);
+  await ctx2.close();
+ }),
  run('K','Compra → venta → envío → cobro → caja',async({page})=>{
   const id=await opportunity(page,{name:'Carta Prueba K'});const [c]=await bought(page,id);
   const s0=await page.evaluate(()=>window.investmentLedgerStats());

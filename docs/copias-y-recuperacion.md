@@ -20,6 +20,8 @@ La copia completa NO incluye la caché del radar ni el catálogo de cartas: se r
 
 Copias antiguas (V3 y anteriores, y exportaciones parciales V104–V108) siguen siendo aceptadas.
 
+Si falla algún paso posterior (fotos de cartas, fotos de anuncios, oportunidades), el aviso dice «RECUPERACIÓN PARCIAL» y enumera lo que falta. Repite la importación con el mismo archivo cuando el problema se resuelva: solo añadirá lo pendiente.
+
 ## Si Safari no puede guardar
 
 - Aparece un aviso fijo arriba. Mientras esté visible, **las operaciones nuevas no se registran** (He comprado, ventas, envíos, cobros, importación) y lo dicen expresamente.
@@ -34,4 +36,17 @@ Si abres Card Vault en dos pestañas, la que tenga datos más antiguos deja de g
 
 Cada compra registrada con «He comprado» guarda un lote: precio, envío, IVA de importación, aranceles, gestión y cambio/pago, cada uno como pagado, estimado, desconocido, no aplica o incluido. El coste se reparte una vez entre las unidades (al céntimo) y cada venta consume su parte: el coste de lo que queda no cambia. Si falta algún gasto, el resultado de la venta queda «no confirmado».
 
-Las compras antiguas sin envío registrado aparecen con coste «pendiente» (no se inventa el envío). Limitación conocida: todavía no hay un campo en la ficha de la carta para completar ese envío antiguo; mientras tanto, su resultado de venta queda «no confirmado».
+## Revisar costes pendientes (V110)
+
+Las compras antiguas no registraban IVA de importación, aranceles ni gestión. Desde V110 esos conceptos aparecen como **desconocidos** (no como 0 €): verás «pendiente de confirmar (subtotal conocido …)» y los resultados de venta como «no confirmado» o «antecedente».
+
+Para completarlos:
+1. Mi colección → botón **Revisar coste** en la carta (o, en una venta, **Revisar coste de adquisición** en el historial o el archivo).
+2. Verás los datos originales, el subtotal conocido y los conceptos pendientes.
+3. Para cada concepto elige: pagado (con importe), estimado, desconocido, incluido en otro importe (indica dónde) o no aplicable.
+4. Añade fecha y referencia del justificante y el país real desde el que se envió.
+5. Revisa la vista previa (total y estado) y guarda. Solo se anuncia como guardado si el guardado se confirma.
+
+Si la carta ya tiene unidades vendidas, el nuevo total se reparte entre las unidades originales al céntimo y las ventas afectadas actualizan su coste, conservando el cálculo anterior como antecedente. Nada se borra: cada revisión queda en el historial del lote.
+
+Si V109 llegó a marcar «no aplica» sin datos en una compra con ventas, verás el lote como «revisar»: es la corrección V110.

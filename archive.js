@@ -132,11 +132,13 @@ function records(){
   const purchase=h.purchase??s.purchase??null,landed=h.landedCostUnit??s.landedCostUnit??null;
   const net=h.costsPending?null:(h.net!=null?N(h.net):N(h.unitPrice)*N(h.qty||1)-N(h.shipping)-N(h.fees));
   /* V109: ventas con coste del lote canónico (basisStatus). Resultado confirmado solo con coste pagado. */
-  let basis,result,resultEstimate=null,basisStatus=h.basisStatus||"";
+  let basis,result,resultEstimate=null,resultLegacy=null,basisStatus=h.basisStatus||"";
   if(h.basisStatus){basis=h.basisCents!=null?h.basisCents/100:null;const nc=net==null?null:Math.round(net*100);
    result=h.basisStatus==="pagado"&&h.basisCents!=null&&nc!=null?(nc-h.basisCents)/100:null;resultEstimate=h.basisStatus==="estimado"&&h.basisCents!=null&&nc!=null?(nc-h.basisCents)/100:null}
-  else{basis=landed!=null?N(landed)*N(h.qty||1):(purchase==null?null:N(purchase)*N(h.qty||1));result=basis==null||net==null?null:net-basis;basisStatus=basis==null?"desconocido":"legado"}
-  return {...s,...h,cardSnapshot:s,purchase,basis,net,result,resultEstimate,basisStatus,payment:paymentStatus(h),workflow:workflowLabel(h),
+  else{basis=landed!=null?N(landed)*N(h.qty||1):(purchase==null?null:N(purchase)*N(h.qty||1));resultLegacy=basis==null||net==null?null:net-basis;result=null;basisStatus=basis==null?"desconocido":"legado"}
+  /* V110: un resultado calculado sin desglose fiscal (ventas anteriores a V109 o costes «revisar») es un antecedente, no un beneficio confirmado. */
+  if(h.basisStatus==="revisar"){const prev=(h.basisHistory||[]).slice().reverse().find(x=>x.resultCents!=null);if(prev)resultLegacy=prev.resultCents/100}
+  return {...s,...h,cardSnapshot:s,purchase,basis,net,result,resultEstimate,resultLegacy,basisStatus,payment:paymentStatus(h),workflow:workflowLabel(h),
    audit:h.audit||null,identityKey:h.audit?.identityKey||"",shippedAt:h.shippedAt||(state.investmentLedger||[]).find(r=>r.id===h.id)?.shippedAt||"",paidAt:h.paidAt||(state.investmentLedger||[]).find(r=>r.id===h.id)?.paidAt||"",
    heldDays:holdDays(h),ledgerStatus:(state.investmentLedger||[]).find(r=>r.id===h.id)?.fulfillmentStatus||h.fulfillmentStatus||""};
  }).sort((a,b)=>(b.soldAt||"").localeCompare(a.soldAt||""));
@@ -150,7 +152,7 @@ function summary(rows){
  return {count:rows.reduce((a,x)=>a+N(x.qty||1),0),records:rows.length,gross,net,pendingCosts:rows.filter(x=>x.costsPending).length,pendingGross:rows.filter(x=>x.payment!=="COBRADA"&&x.costsPending).reduce((a,x)=>a+N(x.unitPrice)*N(x.qty||1),0),known:known.length,pnl,pending,psa,raw,pokemon,lorcana,best};
 }
 function csv(rows){
- const cols=["Fecha venta","Nombre","Universo","Set","Número","Año","Idioma","Variante","Condición","Graduación","Nota","Certificado","Cantidad","Precio unidad","Bruto","Comisiones","Envío","Neto","Coste compra","Portes compra","Comisiones compra","Coste aterrizado ud","Coste base","Beneficio","ROI %","Días en cartera","Canal","Pedido","Estado cobro","Workflow","Vendedor compra","Procedencia","Tipo procedencia","Producto origen coste","Coste producto aproximado","Fecha compra","URL compra","URL mercado","Población grado","Población superior","Población total","Fuente población","Descripción venta","Descripción","Notas carta","Notas venta","Snapshot mercado RAW","Histórico posterior","Identity key exacta","Enviada (shippedAt)","Cobrada (paidAt)","Coste aterrizado congelado","Valoración al vender","Tesis de compra","Tesis de venta","Evidencia de salida","Supply / reprint","Evaluación de condición","Audit congelado","Estado del coste","Beneficio estimado (no confirmado)"];
+ const cols=["Fecha venta","Nombre","Universo","Set","Número","Año","Idioma","Variante","Condición","Graduación","Nota","Certificado","Cantidad","Precio unidad","Bruto","Comisiones","Envío","Neto","Coste compra","Portes compra","Comisiones compra","Coste aterrizado ud","Coste base","Beneficio","ROI %","Días en cartera","Canal","Pedido","Estado cobro","Workflow","Vendedor compra","Procedencia","Tipo procedencia","Producto origen coste","Coste producto aproximado","Fecha compra","URL compra","URL mercado","Población grado","Población superior","Población total","Fuente población","Descripción venta","Descripción","Notas carta","Notas venta","Snapshot mercado RAW","Histórico posterior","Identity key exacta","Enviada (shippedAt)","Cobrada (paidAt)","Coste aterrizado congelado","Valoración al vender","Tesis de compra","Tesis de venta","Evidencia de salida","Supply / reprint","Evaluación de condición","Audit congelado","Estado del coste","Beneficio estimado (no confirmado)","Beneficio antecedente (no confirmado)"];
  const quote=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
  const lines=[cols.map(quote).join(",")];
  for(const x of rows){
@@ -164,7 +166,7 @@ function csv(rows){
    x.identityKey,x.shippedAt,x.paidAt,x.audit?.landedCostUnit,x.audit?.valuationAtSale?JSON.stringify(x.audit.valuationAtSale):"",
    (x.audit?.purchaseThesis||x.purchaseThesis)?JSON.stringify(x.audit?.purchaseThesis||x.purchaseThesis):"",x.audit?.saleThesis?JSON.stringify(x.audit.saleThesis):"",
    x.audit?.exitEvidence?JSON.stringify(x.audit.exitEvidence):"",x.audit?.supplyEvidence?JSON.stringify(x.audit.supplyEvidence):"",
-   x.audit?.conditionAssessment?JSON.stringify(x.audit.conditionAssessment):"",x.audit?.frozenAt||"",x.basisStatus||"",x.resultEstimate??""
+   x.audit?.conditionAssessment?JSON.stringify(x.audit.conditionAssessment):"",x.audit?.frozenAt||"",x.basisStatus||"",x.resultEstimate??"",x.resultLegacy??""
   ].map(quote).join(","));
  }
  return "\uFEFF"+lines.join("\n");
@@ -173,11 +175,11 @@ function exportCsv(){
  const rows=records(),blob=new Blob([csv(rows)],{type:"text/csv;charset=utf-8"}),a=document.createElement("a");
  a.href=URL.createObjectURL(blob);a.download="card-vault-archivo-vendidos.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
-function watchAgain(id){
+function watchAgain(id){const __bk=window.CVSnapshot?.();
  const x=records().find(r=>r.id===id);if(!x)return;
  state.watch=Array.isArray(state.watch)?state.watch:[];
  if(!state.watch.some(w=>w.archiveId===id))state.watch.push({name:x.name,target:0,archiveId:id,source:"Archivo de vendidos",set:x.set||"",number:x.number||"",language:x.language||"",grading:x.grading||"",grade:x.grade||"",variant:x.variant||"",condition:x.condition||""});
- save();render();try{window.CVRenderCollection?.()}catch{}
+ if(window.CVGuard&&!window.CVGuard(__bk,"volver a vigilar"))return;render();try{window.CVRenderCollection?.()}catch{}
  alert("Añadida a Seguimiento. Card Vault volverá a vigilar esta carta.");
 }
 /* V84.7 · Learning Engine: solo resultados cerrados con coste conocido.
@@ -280,12 +282,12 @@ function render(){
  box.innerHTML=(rows.length?'<div class="microNote"><b>'+rows.length+'</b> expediente(s) visibles de '+allRows.length+'</div>':"")+ (rows.length?rows.map(x=>{
   const detail=[x.number,x.set,x.language,x.variant,x.condition,x.grading?(x.grading+(x.grade&&x.grading!=="RAW"?" "+x.grade:"")):"graduación sin confirmar",x.cert?("Cert. "+x.cert):""].filter(Boolean).join(" · ");
   const origin=[x.acquisitionSource,x.acquisitionType].filter(Boolean).join(" · ");
-  const result=x.result==null?(x.costsPending?"Neto y ROI pendientes · faltan portes/comisiones reales":x.resultEstimate!=null?"Resultado ESTIMADO "+(x.resultEstimate>=0?"+":"")+EUR(x.resultEstimate)+" · coste "+EUR(x.basis)+" estimado, no confirmado":"Resultado no confirmado · "+(window.CVMoney?.STATUS_TXT?.[x.basisStatus]||"coste individual desconocido")):("Coste "+EUR(x.basis)+" · Resultado "+(x.result>=0?"+":"")+EUR(x.result)+" · ROI "+(x.basis>0?(x.result/x.basis*100).toFixed(1)+"%":"—"));
+  const result=x.result==null?(x.costsPending?"Neto y ROI pendientes · faltan portes/comisiones reales":x.resultLegacy!=null?"Resultado NO confirmado · antecedente calculado sin desglose fiscal: "+(x.resultLegacy>=0?"+":"")+EUR(x.resultLegacy)+" · revisa el coste para confirmarlo":x.resultEstimate!=null?"Resultado ESTIMADO "+(x.resultEstimate>=0?"+":"")+EUR(x.resultEstimate)+" · coste "+EUR(x.basis)+" estimado, no confirmado":"Resultado no confirmado · "+(window.CVMoney?.STATUS_TXT?.[x.basisStatus]||"coste individual desconocido")):("Coste "+EUR(x.basis)+" · Resultado "+(x.result>=0?"+":"")+EUR(x.result)+" · ROI "+(x.basis>0?(x.result/x.basis*100).toFixed(1)+"%":"—"));
   return '<article class="sealedCard archiveCard"><div class="sealedMain"><div class="thumb">'+(x.referenceImage?'<img src="'+E(x.referenceImage)+'" alt="">':"🗃️")+'</div><div><span class="pill">'+E(x.payment)+'</span><h4>'+E(x.name)+'</h4><small>'+E(detail)+'</small></div><div class="sealedNumbers"><b>'+EUR(x.unitPrice)+' / ud</b><span>'+N(x.qty||1)+' ud · neto '+(x.net==null?'pendiente':EUR(x.net))+'</span></div></div>'+
    '<div class="microNote"><b>Venta:</b> '+E(x.soldAt)+" · "+E(x.channel)+(x.saleOrder?" · Pedido #"+E(x.saleOrder):"")+' · '+E(x.workflow)+'</div>'+
    '<div class="microNote"><b>Marketplace:</b> '+E(x.channel||"—")+' · <b>Precio de venta real:</b> '+EUR(x.unitPrice)+' · <b>Comisión:</b> '+(N(x.fees)>0?EUR(x.fees):'no registrada')+' · <b>Neto:</b> '+(x.net==null?'pendiente':EUR(x.net))+' · <button type="button" data-archive-fee="'+E(x.id)+'">Corregir comisión</button></div>'+
    '<div class="microNote"><b>Procedencia:</b> '+E(origin||"Sin documentar")+(x.parentProductCostEUR?" · producto origen ~"+EUR(x.parentProductCostEUR):"")+'</div>'+
-   '<div class="microNote"><b>Contabilidad:</b> '+result+(x.heldDays!=null?" · "+x.heldDays+" días en cartera":"")+'</div>'+
+   '<div class="microNote"><b>Contabilidad:</b> '+result+(x.basisStatus&&x.basisStatus!=="pagado"?' · <button type="button" data-cv-cost-sale="'+E(x.id)+'">Revisar coste de adquisición</button>':'')+(x.heldDays!=null?" · "+x.heldDays+" días en cartera":"")+'</div>'+
    (x.acquisitionNotes?'<div class="microNote">'+E(x.acquisitionNotes)+'</div>':"")+
    (x.rawMarketSnapshot?'<div class="microNote"><b>Snapshot RAW '+x.rawMarketSnapshot.checkedAt+':</b> tendencia '+EUR(x.rawMarketSnapshot.trend)+' · 30d '+EUR(x.rawMarketSnapshot.avg30)+' · 7d '+EUR(x.rawMarketSnapshot.avg7)+' · 1d '+EUR(x.rawMarketSnapshot.avg1)+' · no comparar directamente con el slab PSA 9.</div>':"")+
    (x.purchaseThesis?'<div class="microNote"><b>Tesis de compra congelada:</b> entrada '+EUR(x.purchaseThesis.entryEUR)+' · salida conservadora '+(x.purchaseThesis.conservativeExitEUR==null?'sin dato':EUR(x.purchaseThesis.conservativeExitEUR))+' · edge '+(x.purchaseThesis.edgeEUR==null?'sin dato':EUR(x.purchaseThesis.edgeEUR))+' · ROI '+(x.purchaseThesis.roiPct==null?'sin dato':Number(x.purchaseThesis.roiPct).toFixed(1)+'%')+' · confianza '+String(x.purchaseThesis.evidenceConfidence?.label||'sin dato')+' · ventas 7/30/90d '+[x.purchaseThesis.sales7??'—',x.purchaseThesis.sales30??'—',x.purchaseThesis.sales90??'—'].join('/')+'</div>':"")+
@@ -296,13 +298,13 @@ function render(){
     '<div class="sealedActions">'+(x.marketUrl?'<a href="'+x.marketUrl+'" target="_blank" rel="noopener">Ficha mercado</a>':"")+'<button data-archive-watch="'+x.id+'">Volver a vigilar</button><button data-post-sale="'+x.id+'">Registrar control postventa</button></div></details></article>';
  }).join(""):'<div class="emptyState"><b>Sin resultados para estos filtros.</b><span>El Archivo completo sigue conservado.</span></div>');
  document.querySelectorAll("[data-archive-watch]").forEach(b=>b.onclick=()=>watchAgain(b.dataset.archiveWatch));
- document.querySelectorAll("[data-archive-fee]").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll("[data-archive-fee]").forEach(b=>b.onclick=()=>{const __bk=window.CVSnapshot?.();
   const id=b.dataset.archiveFee,sale=(state.saleHistory||[]).find(r=>r.id===id);if(!sale)return;
   const v=prompt("Comisión real cobrada por "+(sale.channel||"el marketplace")+" en este pedido (€):",String(N(sale.fees)));if(v==null)return;
   const fee=N(String(v).replace(",","."));if(!(fee>=0)){alert("Importe no válido.");return}
   sale.fees=fee;sale.costsPending=sale.shipping==null;sale.net=sale.costsPending?null:N(sale.unitPrice)*N(sale.qty||1)-fee-N(sale.shipping);
   const l=(state.investmentLedger||[]).find(r=>r.id===id);if(l){l.fees=fee;l.costsPending=sale.costsPending;l.net=sale.net;}
-  save();render();
+  if(window.CVGuard&&!window.CVGuard(__bk,"corrección de comisión"))return;render();
  });
  const ex=Q("#archiveExport");if(ex)ex.onclick=exportCsv;
 }

@@ -41,7 +41,7 @@ function writeUser(){try{localStorage.setItem(STORE,JSON.stringify(user));return
 /* ---------- fotos del anuncio (IndexedDB) ---------- */
 const photoCache={};
 function idb(){return new Promise((ok,ko)=>{try{const r=indexedDB.open(IDB,1);r.onupgradeneeded=()=>r.result.createObjectStore("photos");r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)}catch(e){ko(e)}})}
-async function photoPut(id,data){photoCache[id]=data;try{const db=await idb();await new Promise((ok,ko)=>{const t=db.transaction("photos","readwrite");t.objectStore("photos").put(data,id);t.oncomplete=ok;t.onerror=()=>ko(t.error)});return true}catch{return false}}
+async function photoPut(id,data){photoCache[id]=data;try{const db=await idb();await new Promise((ok,ko)=>{const t=db.transaction("photos","readwrite");t.objectStore("photos").put(data,id);t.oncomplete=ok;t.onerror=()=>ko(t.error)});return true}catch{delete photoCache[id];return false}}
 async function photoLoadAll(){try{const db=await idb();await new Promise(ok=>{const t=db.transaction("photos","readonly"),s=t.objectStore("photos"),c=s.openCursor();c.onsuccess=()=>{const k=c.result;if(k){photoCache[k.key]=k.value;k.continue()}else ok()};c.onerror=()=>ok()})}catch{}}
 function compress(file){return new Promise((ok,ko)=>{const fr=new FileReader();fr.onerror=()=>ko(fr.error);fr.onload=()=>{const im=new Image();im.onerror=()=>ko(new Error("imagen"));im.onload=()=>{const s=Math.min(1,1100/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext("2d").drawImage(im,0,0,c.width,c.height);ok(c.toDataURL("image/jpeg",0.82))};im.src=fr.result};fr.readAsDataURL(file)})}
 
@@ -143,7 +143,7 @@ function acquisition(l,cfg){
  const confirmed=!missing.length&&l.priceEstimated!==true&&l.costsConfirmed===true&&l.shipsSpain===true&&!!l.country&&!!safeUrl(l.costSource);
  return {missing,confirmed,total:N(l.price)>0&&!missing.length?N(l.price)+keys.reduce((v,k)=>v+N(l[k]),0):NaN};
 }
-const GRADE=v=>{const x=String(v||"RAW").trim().toUpperCase().replace(/\s+/g," ");return x===""?"RAW":x};
+const GRADE=v=>String(v??"").trim().toUpperCase().replace(/\s+/g," ").replace(",",".");/* V110: vacío = sin confirmar, nunca RAW */
 function comparable(s,it){
  const l=it.listing||{}, norm=v=>String(v||"").trim().toLowerCase();
  const d=Date.parse(s.date||""), verified=Date.parse(s.verifiedAt||"");
@@ -153,7 +153,7 @@ function comparable(s,it){
   norm(s.set)===norm(it.set)&&norm(s.number)===norm(it.number)&&
   lang(s.language).known&&lang(s.language).name===lang(l.language||it.language).name&&
   !!s.condition&&s.condition===(it.lane==="restaurar"?l.resaleCondition:l.condition)&&
-  GRADE(s.grade)===GRADE(l.grade||it.grade)&&
+  GRADE(s.grade)!==""&&GRADE(s.grade)===GRADE(l.grade||it.grade)&&
   (it.lane==="restaurar"?s.restored===true&&s.sameIntervention===true:s.restored===false);
 }
 function economics(it,cfg){
@@ -212,7 +212,7 @@ function riskList(it,ec){
  if(l.zone==="fuera")r.push("importación: IVA, arancel y gestión según el pedido; posible retraso aduanero");
  if(!l.country)r.push("país del vendedor sin confirmar");
  if((Number.isFinite(ec.acq.total)?ec.acq.total:N(l.price))>200)r.push("coste por encima del presupuesto habitual (20–200 €)");
- if(/charizard|pikachu|umbreon|lugia|★|star/i.test(it.name)&&GRADE(l.grade||it.grade)==="RAW")r.push("carta muy falsificada: verificar autenticidad con fotos de frente, reverso y luz");
+ if(/charizard|pikachu|umbreon|lugia|★|star/i.test(it.name)&&!/^(PSA|BGS|CGC|SGC)\b/.test(GRADE(l.grade||it.grade)))r.push("carta muy falsificada: verificar autenticidad con fotos de frente, reverso y luz");
  if(it.lane==="restaurar"&&l.irreversibleRisk==="alto")r.push("riesgo irreversible alto en la intervención");
  if(it.lane==="restaurar")r.push("la carta restaurada se vende declarada y puede no aceptarse en graduación");
  return r;
@@ -554,7 +554,7 @@ async function submitInner(form){
   if(listing.zone!=="fuera")for(const k of ["vat","duty","handling"])if(listing[k]==null){listing[k]=0;listing.notApplicable.push(k)}
   Object.assign(listing,{grade:GRADE(g("grade")),defectsUnknown:g("defectsUnknown"),plannedIntervention:g("plannedIntervention"),irreversibleRisk:g("irreversibleRisk"),exitScenario:g("exitScenario"),country:g("country"),shipsSpain:g("shipsSpain")==="true",costSource:safeUrl(g("costSource")),costsConfirmed:g("costsConfirmed")==="true",saleCostsConfirmed:g("saleCostsConfirmed")==="true",resaleCondition:g("resaleCondition")});
   const file=form.elements.namedItem("photo")?.files?.[0];
-  if(file){try{const d=await compress(file);if(!(await photoPut(id,d)))toast("La foto se verá en esta sesión, pero el navegador no permite guardarla.")}catch{return err("No se ha podido leer la foto.")}}
+  if(file){try{const d=await compress(file);if(!(await photoPut(id,d)))toast("No se ha podido guardar la foto del anuncio (almacenamiento de fotos no disponible). El resto de la comprobación sí se guarda.")}catch{return err("No se ha podido leer la foto.")}}
   const c=customRef(id);if(c)c.listing=listing;else patch(id).listing=listing;
  }else if(kind==="sale"){
   const price=N(g("price"));if(!(price>0))return err("Indica el precio realizado.");
@@ -648,8 +648,8 @@ async function importData(v){
  if(!v||typeof v!=="object"||!v.user||typeof v.user!=="object")return {ok:true,added:0};
  const r=mergeImport(user,v.user);let saved=false;try{localStorage.setItem(STORE,JSON.stringify(r.user));saved=true}catch{}
  if(!saved)return {ok:false,added:0};
- user=r.user;for(const [k,d] of Object.entries(v.photos||{}))if(!photoCache[k]&&/^data:image\//.test(d))await photoPut(k,d);
- renderAll();return {ok:true,added:r.added};
+ user=r.user;let photosFailed=0;for(const [k,d] of Object.entries(v.photos||{}))if(!photoCache[k]&&/^data:image\//.test(d)){if(!(await photoPut(k,d)))photosFailed++}
+ renderAll();return {ok:true,added:r.added,photosFailed};
 }
 window.CVVault={addCustom,fx:fxNow,funnel,exportData,importData,engine:{mergeImport,addToCollection,status,economics,acquisition,comparable,compareOffers,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,lang,DEFAULTS},renderAll,allItems,user:()=>user};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(start,300));else setTimeout(start,300);

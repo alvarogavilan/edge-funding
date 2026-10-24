@@ -3,6 +3,8 @@
 // Sin Internet: todas las respuestas externas son SIMULADAS con el formato de las APIs públicas; no son datos de mercado.
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+/* V110: los objetivos sin anuncio van plegados; se abre el bloque antes de pulsar */
+const openClick=async(page,sel)=>{await page.evaluate(q=>{let d=document.querySelector(q)?.closest('details');while(d){d.open=true;d=d.parentElement?.closest('details')}},sel);await page.click(sel)};
 let pw;for(const m of ['playwright',process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES&&process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/playwright','/opt/node22/lib/node_modules/playwright'].filter(Boolean)){try{pw=require(m);break}catch{}}
 if(!pw){console.log('PENDIENTE: Playwright no disponible; prueba no ejecutada.');process.exit(2)}
 const root=path.resolve(__dirname,'..');
@@ -52,7 +54,7 @@ async function newPage(browser,opts={},mode='normal'){
   ok('Variante sin foto exacta: aviso honesto, sin foto de otra variante',/Sin foto verificada de esta variante exacta/.test(pp),pp);
   // 3. Venta futura rechazada
   await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
-  await page.click('[data-v4-sale="rest-base1-2"]');await page.waitForSelector('#v4Sheet form');
+  await openClick(page,'[data-v4-sale="rest-base1-2"]');await page.waitForSelector('#v4Sheet form');
   await page.fill('#v4Sheet [name=price]','100');await page.fill('#v4Sheet [name=date]','2030-01-01');await page.click('#v4Sheet button[type=submit]');
   ok('Venta con fecha futura rechazada',/futura/.test(await page.textContent('#v4Sheet .v4err')));
   await page.fill('#v4Sheet [name=date]','2026-10-01');await page.selectOption('#v4Sheet [name=verified]','true');await page.click('#v4Sheet button[type=submit]');
@@ -95,7 +97,7 @@ async function newPage(browser,opts={},mode='normal'){
   await page.setInputFiles('[data-v4-import]',f);await page.waitForTimeout(500);
   ok('Copia antigua (formato V104) importada sin perder datos',await page.evaluate(()=>window.CVVault.user().custom.some(c=>c.id==='own-v104')&&(window.CVVault.user().patches['rest-base1-15']?.sales||[]).length===1));
   await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.waitForTimeout(300);
-  await page.click('[data-v4-verify="rest-base1-15"]');await page.waitForSelector('#v4Sheet form');
+  await openClick(page,'[data-v4-verify="rest-base1-15"]');await page.waitForSelector('#v4Sheet form');
   for(const k of ['defectsUnknown','plannedIntervention','exitScenario'])ok('Formulario restauración incluye '+k,await page.locator('#v4Sheet [name='+k+']').count()===1);
   await page.fill('#v4Sheet [name=url]','https://shop.example.co.uk/p/venusaur');await page.fill('#v4Sheet [name=seller]','Tienda UK');await page.fill('#v4Sheet [name=price]','60');
   await page.selectOption('#v4Sheet [name=language]','Inglés');await page.selectOption('#v4Sheet [name=condition]','PO');await page.fill('#v4Sheet [name=country]','Reino Unido');await page.selectOption('#v4Sheet [name=zone]','fuera');
@@ -115,7 +117,7 @@ async function newPage(browser,opts={},mode='normal'){
  {const {ctx,page}=await newPage(browser);page.on('dialog',d=>d.accept());
   await page.goto(base,{waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});
   await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new Error('QuotaExceededError')}});
-  await page.click('.mainNav [data-tab="comprar-restaurar"]');await page.click('[data-v4-new="restaurar"]');await page.fill('#v4Sheet [name=name]','Sin almacenamiento');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(300);
+  await page.click('.mainNav [data-tab="comprar-restaurar"]');await openClick(page,'[data-v4-new="restaurar"]');await page.fill('#v4Sheet [name=name]','Sin almacenamiento');await page.click('#v4Sheet button[type=submit]');await page.waitForTimeout(300);
   ok('Almacenamiento lleno/bloqueado: aviso claro y sin bloqueo',/No se ha podido guardar/.test(await page.textContent('#v4Toast'))&&page.errors.length===0,page.errors.join('|'));
   await ctx.close();}
  // 7. API caída y respuesta malformada

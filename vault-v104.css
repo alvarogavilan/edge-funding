@@ -160,3 +160,12 @@ body.v104 .mainNav{margin:6px 0 14px}
 .v4estimate{background:#18233a;border:1px dashed #6f86a8;border-radius:12px;padding:10px 12px;margin:8px 0}
 .v4estimate p{margin:6px 0 0;font-size:15px}
 .v4assess{background:#101b2d;border:1px solid var(--v4line);border-radius:12px;padding:10px}
+/* V110 · revisión de costes */
+.cvCostRow{border:1px solid var(--v4line);border-radius:12px;padding:8px 10px;margin:0;display:grid;gap:8px;grid-column:1/-1}
+.cvCostRow legend{font-weight:800;font-size:15px;padding:0 4px}
+.cvCostRow label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700}
+.cvCostRow input,.cvCostRow select{min-height:48px;font-size:16px;background:#0b1626;color:#fff;border:1px solid #6b809c;border-radius:10px;padding:8px 10px}
+.cvWarn{color:#ffc857;font-weight:800}
+.cvPreview{grid-column:1/-1}
+.collectionPrimeActions button[data-cv-cost],[data-cv-cost-sale]{min-height:44px}
+@media(min-width:520px){.cvCostRow{grid-template-columns:repeat(3,minmax(0,1fr))}.cvCostRow legend{grid-column:1/-1}}

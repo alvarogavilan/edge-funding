@@ -38,6 +38,8 @@ function bucket(c){
  let unit=raw,adjusted=false;
  if(condRef&&matched&&ask>0&&ask<raw){unit=ask;adjusted=true}
  const out=(b,reason)=>({bucket:b,unit,amount:unit*units,units,reason,adjusted,rawValue:raw,t,graded,comps});
+ /* V110: graduación sin confirmar (vacía) no se valora como RAW confirmada. */
+ if(!String(c.grading||"").trim()&&t.tier!=="REF"&&t.tier!=="NONE")return out("PROVISIONAL","Graduación sin confirmar: no se sabe si es RAW o graduada");
  if(t.tier==="REF")return out("UNSUPPORTED","Solo referencia de mercado · no es valor del ejemplar");
  if(t.tier==="C")return t.sourceOk||t.ev?.source?out("STALE",t.ev.age===Infinity?"Evidencia sin fecha":"Evidencia de "+Math.floor(t.ev.age)+" días"):out("UNSUPPORTED","Sin fuente trazable (URL + fuente)");
  if(condRef)return out("PROVISIONAL",adjusted?"Ajustado a oferta observada en su condición ("+EUR(ask)+") · no es venta cerrada":"Referencia de condición sin cierre");

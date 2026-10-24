@@ -155,16 +155,16 @@ function openSealed(id){
   if(p)for(const [k,v] of Object.entries(p)){const el=form.elements.namedItem(k);if(el&&v!=null){if(el.type==="checkbox")el.checked=!!v;else el.value=v}}
   del.classList.toggle("hidden",!p);dlg.showModal();
 }
-function saveSealed(e){
+function saveSealed(e){const __bk=window.CVSnapshot?.();
   e.preventDefault();const f=new FormData($("#sealedForm")),id=sealedEditId||crypto.randomUUID(),old=state.sealedProducts.find(x=>x.id===id)||{};
   const p={...old,id,universe:f.get("universe")==="lorcana"?"lorcana":"pokemon",name:String(f.get("name")||"").trim(),set:String(f.get("set")||"").trim(),productType:String(f.get("productType")||"Otro"),language:String(f.get("language")||"").trim(),languageVerified:f.get("languageVerified")==="on",releaseDate:String(f.get("releaseDate")||""),msrp:num(f.get("msrp")),currentPrice:num(f.get("currentPrice")),shipping:num(f.get("shipping")),recentLow:num(f.get("recentLow")),averagePrice:num(f.get("averagePrice")),targetLow:num(f.get("targetLow")),targetBase:num(f.get("targetBase")),targetHigh:num(f.get("targetHigh")),availability:String(f.get("availability")||"unknown"),printStatus:String(f.get("printStatus")||"unknown"),liquidity:String(f.get("liquidity")||""),reprintRisk:String(f.get("reprintRisk")||""),trend30:f.get("trend30")===""?"":num(f.get("trend30")),trend90:f.get("trend90")===""?"":num(f.get("trend90")),packsPerProduct:num(f.get("packsPerProduct")),pullThresholdEUR:num(f.get("pullThresholdEUR"))||num(state.sealedPolicy.chaseThresholdEUR)||50,pullSamplePacks:num(f.get("pullSamplePacks")),pullHitsAboveThreshold:num(f.get("pullHitsAboveThreshold")),pullAvgHitValueEUR:num(f.get("pullAvgHitValueEUR")),pullRateSourceUrl:String(f.get("pullRateSourceUrl")||"").trim(),photoUrl:String(f.get("photoUrl")||"").trim(),sourceUrl:String(f.get("sourceUrl")||"").trim(),buyUrl:String(f.get("buyUrl")||"").trim(),seller:String(f.get("seller")||"").trim(),notes:String(f.get("notes")||"").trim(),updatedAt:new Date().toISOString()};
   if(!p.name||!p.currentPrice||!p.sourceUrl||!p.buyUrl){alert("Nombre, precio actual, fuente y enlace de compra son obligatorios.");return}if(!window.CVMarket?.admittedShop?.(p.buyUrl)?.ok){alert("El enlace de compra debe pertenecer a una tienda admitida: Cardmarket, CardTrader o Metropolis Center.");return}
   if(sealedEditId)state.sealedProducts=state.sealedProducts.map(x=>x.id===id?p:x);else state.sealedProducts.push(p);
-  recordSealedSnapshot(p);save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
+  recordSealedSnapshot(p);if(window.CVGuard&&!window.CVGuard(__bk,"producto sellado"))return;$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
 }
-function deleteSealed(){
+function deleteSealed(){const __bk=window.CVSnapshot?.();
   if(!sealedEditId||!confirm("¿Eliminar este producto sellado?"))return;
-  state.sealedProducts=state.sealedProducts.filter(x=>x.id!==sealedEditId);delete state.sealedSnapshots[sealedEditId];save();$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
+  state.sealedProducts=state.sealedProducts.filter(x=>x.id!==sealedEditId);delete state.sealedSnapshots[sealedEditId];if(window.CVGuard&&!window.CVGuard(__bk,"borrar producto sellado"))return;$("#sealedDialog").close();sealedEditId=null;renderSealed();renderRebalance();try{window.renderOpportunityEngine?.()}catch{}
 }
 function renderRebalance(){
   const cards=(state.cards||[]).filter(c=>!c.archivedSold),totalVal=cards.reduce((s,c)=>s+num(c.value)*Math.max(1,num(c.quantity)||1),0);
