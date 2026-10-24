@@ -71,8 +71,8 @@ function render(){
    '<div class="collectionPrimeBody"><div class="collectionPrimeTop"><span>'+E(u)+'</span><span>'+E(labelGrade(c))+'</span>'+(q>1?'<span>×'+q+'</span>':'')+'</div>'+
    '<h3>'+E(c.name||"Carta")+'</h3><p>'+E([c.number?"nº "+c.number:"",c.set].filter(Boolean).join(" · "))+'</p><p>'+E(flag(c))+'</p>'+
    '<div class="collectionPrimeValue"><b>'+(v?EUR(v.unit):'VALOR PENDIENTE')+'</b><small>'+(v?E(v.label+" · "+v.reason):'Sin comparable fiable de la misma condición'+(Number(c.value)>0?' · referencia de otra condición '+EUR(c.value)+' (no aplicable)':''))+'</small></div>'+
-   '<small>Coste '+(b!=null?EUR(b):'pendiente')+(pl!=null?' · <b class="'+(pl>=0?'plPos':'plNeg')+'">'+(pl>=0?'+':'')+EUR(pl)+'</b> '+(v&&v.prudent?'':'(sobre referencia)'):'')+'</small>'+
-   '<div class="collectionPrimeActions"><button type="button" data-edit-card="'+E(c.id)+'">Editar</button><button type="button" data-cv-sell="'+E(c.id)+'">Vendido</button></div>'+
+   '<small>Coste '+(b!=null?EUR(b):(()=>{try{const r=window.CVMoney?.remaining?.(c);return r&&r.knownCents!=null?'pendiente de confirmar (subtotal conocido '+EUR(r.knownCents/100/Math.max(1,r.units))+'/ud)':'pendiente'}catch{return 'pendiente'}})())+(pl!=null?' · <b class="'+(pl>=0?'plPos':'plNeg')+'">'+(pl>=0?'+':'')+EUR(pl)+'</b> '+(v&&v.prudent?'':'(sobre referencia)'):'')+'</small>'+
+   '<div class="collectionPrimeActions"><button type="button" data-edit-card="'+E(c.id)+'">Editar</button><button type="button" data-cv-sell="'+E(c.id)+'">Vendido</button><button type="button" data-cv-cost="'+E(c.id)+'">Revisar coste</button></div>'+
    '</div></article>';
  }).join("");
  try{window.CVCatalogImages?.hydrate?.()}catch{}

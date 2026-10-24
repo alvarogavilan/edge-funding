@@ -58,21 +58,22 @@ function saleReconciled(r){
   String(r.fulfillmentStatus||"")===String(h.fulfillmentStatus||"")&&
   same(h.net,num(h.unitPrice)*num(h.qty||1)-num(h.shipping)-num(h.fees))&&!!h.cardSnapshot;
 }
-function confirmShipment(id){
+function guardedSave(bk){if(save()!==false)return true;if(bk)window.CVStateBridge.restore(bk);alert("NO se ha guardado: el almacenamiento del navegador ha fallado. El estado de la venta no ha cambiado; vuelve a intentarlo.");try{render()}catch{}return false}
+function confirmShipment(id){const bk=window.CVStateBridge?.snapshot?.();
  const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
  if(String(r.fulfillmentStatus||"")!=="sold-awaiting-shipment")return;
  if(!confirm("¿Confirmar que esta venta ya ha sido enviada? Pasará a COBRO PENDIENTE."))return;
  r.fulfillmentStatus="sold-awaiting-payment";r.shippedAt=new Date().toISOString();r.updatedAt=new Date().toISOString();
  const h=(state.saleHistory||[]).find(x=>x.id===id);if(h){h.fulfillmentStatus="sold-awaiting-payment";h.shippedAt=r.shippedAt}
- save();render();try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
+ if(!guardedSave(bk))return;render();try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
 }
-function confirmSaleCash(id){
+function confirmSaleCash(id){const bk=window.CVStateBridge?.snapshot?.();
  const r=state.investmentLedger.find(x=>x.id===id&&x.type==="sell");if(!r)return;
  if(String(r.fulfillmentStatus||"")==="sold-awaiting-shipment"){alert("Primero confirma el envío. La venta aún está en ENVÍO PENDIENTE.");return}
  if(!confirm("¿Confirmar que esta venta ya está cobrada y puede entrar en caja disponible?"))return;
  r.fulfillmentStatus="paid-confirmed";r.paidAt=new Date().toISOString();r.updatedAt=new Date().toISOString();
  const h=(state.saleHistory||[]).find(x=>x.id===id);if(h){h.fulfillmentStatus="paid-confirmed";h.paidAt=r.paidAt}
- save();render();try{renderRebalance()}catch{}try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
+ if(!guardedSave(bk))return;render();try{renderRebalance()}catch{}try{window.CVSalesHistory?.render?.()}catch{}try{window.CVArchive?.render?.()}catch{}
 }
 function stats(){
  const rows=state.investmentLedger, buys=rows.filter(r=>r.type==="buy").reduce((a,r)=>a+total(r),0),
@@ -97,8 +98,8 @@ function open(id){
  $("#ledgerDialogTitle").textContent=id?"Editar operación":"Registrar operación";$("#ledgerAssetKey").innerHTML=assetOptions();$("#ledgerAssetKey").value=r.assetKey||"";$("#ledgerType").value=r.type||"buy";$("#ledgerAssetType").value=r.assetType||"card";$("#ledgerName").value=r.name||"";$("#ledgerDate").value=r.date||new Date().toISOString().slice(0,10);$("#ledgerQty").value=r.qty||1;$("#ledgerUnitPrice").value=r.unitPrice??"";$("#ledgerShipping").value=r.costsPending&&r.shipping==null?"":r.shipping||0;$("#ledgerFees").value=r.costsPending&&r.fees==null?"":r.fees||0;$("#ledgerSource").value=r.sourceUrl||"";$("#ledgerNotes").value=r.notes||"";$("#ledgerDelete").classList.toggle("hidden",!id);$("#ledgerDialog").showModal();
 }
 $("#ledgerAdd")?.addEventListener("click",()=>open());$("#ledgerCancel")?.addEventListener("click",()=>$("#ledgerDialog").close());
-$("#ledgerForm")?.addEventListener("submit",e=>{e.preventDefault();if(!$("#ledgerShipping").value.trim()||!$("#ledgerFees").value.trim()){alert("Indica portes y comisiones reales; usa 0 si fueron gratuitos.");return}const r={id:editId||crypto.randomUUID(),type:$("#ledgerType").value,assetType:$("#ledgerAssetType").value,assetKey:$("#ledgerAssetKey").value,name:$("#ledgerName").value.trim(),date:$("#ledgerDate").value,qty:num($("#ledgerQty").value),unitPrice:num($("#ledgerUnitPrice").value),shipping:num($("#ledgerShipping").value),fees:num($("#ledgerFees").value),sourceUrl:$("#ledgerSource").value.trim(),notes:$("#ledgerNotes").value.trim(),updatedAt:new Date().toISOString()};if(!r.name||!r.date||r.qty<=0||r.unitPrice<0)return;if(editId){const prev=state.investmentLedger.find(x=>x.id===editId)||{};const merged={...prev,...r,id:prev.id||r.id,updatedAt:new Date().toISOString()};state.investmentLedger=state.investmentLedger.map(x=>x.id===editId?merged:x);syncSaleHistoryFromLedger(merged)}else state.investmentLedger.push(r);save();$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
-$("#ledgerDelete")?.addEventListener("click",()=>{if(!editId)return;const row=state.investmentLedger.find(x=>x.id===editId);if(row?.type==="sell"){alert("Las ventas históricas no se eliminan desde el Libro. Corrige sus campos si hubo un error; el expediente permanente debe conservarse.");return}state.investmentLedger=state.investmentLedger.filter(x=>x.id!==editId);save();$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
+$("#ledgerForm")?.addEventListener("submit",e=>{const __bk=window.CVSnapshot?.();e.preventDefault();if(!$("#ledgerShipping").value.trim()||!$("#ledgerFees").value.trim()){alert("Indica portes y comisiones reales; usa 0 si fueron gratuitos.");return}const r={id:editId||crypto.randomUUID(),type:$("#ledgerType").value,assetType:$("#ledgerAssetType").value,assetKey:$("#ledgerAssetKey").value,name:$("#ledgerName").value.trim(),date:$("#ledgerDate").value,qty:num($("#ledgerQty").value),unitPrice:num($("#ledgerUnitPrice").value),shipping:num($("#ledgerShipping").value),fees:num($("#ledgerFees").value),sourceUrl:$("#ledgerSource").value.trim(),notes:$("#ledgerNotes").value.trim(),updatedAt:new Date().toISOString()};if(!r.name||!r.date||r.qty<=0||r.unitPrice<0)return;if(editId){const prev=state.investmentLedger.find(x=>x.id===editId)||{};const merged={...prev,...r,id:prev.id||r.id,updatedAt:new Date().toISOString()};state.investmentLedger=state.investmentLedger.map(x=>x.id===editId?merged:x);syncSaleHistoryFromLedger(merged)}else state.investmentLedger.push(r);if(window.CVGuard&&!window.CVGuard(__bk,"operación del libro"))return;$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
+$("#ledgerDelete")?.addEventListener("click",()=>{const __bk=window.CVSnapshot?.();if(!editId)return;const row=state.investmentLedger.find(x=>x.id===editId);if(row?.type==="sell"){alert("Las ventas históricas no se eliminan desde el Libro. Corrige sus campos si hubo un error; el expediente permanente debe conservarse.");return}state.investmentLedger=state.investmentLedger.filter(x=>x.id!==editId);if(window.CVGuard&&!window.CVGuard(__bk,"borrar operación"))return;$("#ledgerDialog").close();render();try{renderRebalance()}catch{}});
 render();
 window.renderInvestmentLedger=render;window.investmentLedgerStats=stats;window.assetAccounting=assetAccounting;window.investmentLedgerIntegrity=integrity;window.CVLedgerWorkflow={confirmShipment,confirmSaleCash,saleSettled,saleReconciled};
 })();

@@ -54,7 +54,7 @@ function card(id){return (state.cards||[]).find(c=>c.id===id)}
 function active(){return state.saleListings.filter(x=>x.status==="active"&&card(x.cardId)&&!card(x.cardId).archivedSold)}
 function pol(){return window.CVPrimeExitPricing?.policy?.()||{feePct:5,sellShipping:0}}
 function expectedNet(x){const p=pol();return N(x.price)*(1-p.feePct/100)-N(p.sellShipping)}
-function markSold(id){
+function markSold(id){const __bk=window.CVSnapshot?.();
  const x=state.saleListings.find(z=>z.id===id),c=x&&card(x.cardId);if(!x||!c)return;
  const raw=prompt("Precio real vendido (€):",String(x.price));if(raw==null)return;const price=N(String(raw).replace(",","."));
  if(!(price>0))return;
@@ -71,7 +71,7 @@ function markSold(id){
  state.saleHistory=Array.isArray(state.saleHistory)?state.saleHistory:[];
  const snap={
   universe:c.universe||"pokemon",name:c.name||"",set:c.set||"",number:c.number||"",year:c.year||"",language:c.language||"",
-  variant:c.buyVariant||c.variant||"",condition:c.buyCondition||c.condition||c.grade||"",grading:c.grading||"RAW",grade:c.grade||"",cert:c.cert||"",
+  variant:c.buyVariant||c.variant||"",condition:c.buyCondition||c.condition||c.grade||"",grading:c.grading||"",grade:c.grade||"",cert:c.cert||"",
   referenceImage:c.referenceImage||"",photoKey:c.photoKey||"",quantity:1,purchase:c.purchase??null,purchaseDate:c.purchaseDate||"",
   purchaseShipping:c.purchaseShipping??0,purchaseFees:c.purchaseFees??0,landedCostUnit:c.landedCostUnit??null,
   seller:c.buySeller||c.seller||"",purchaseUrl:c.buySourceUrl||c.marketPricing?.url||"",marketUrl:c.marketPricing?.url||c.buySourceUrl||"",
@@ -90,21 +90,21 @@ function markSold(id){
  });
  x.status="sold";x.soldPrice=price;x.soldFees=fees;x.soldAt=date;x.updatedAt=new Date().toISOString();
  c.archivedSold=true;c.soldAt=date;c.soldPrice=price;c.soldFees=fees;c.soldShipping=shipping;
- save();render();try{window.renderInvestmentLedger?.();window.CVSalesHistory?.render?.();window.CVArchive?.render?.();window.CVReinvestmentCommittee?.render?.();window.CVFinalOps?.render?.()}catch{}
+ if(window.CVGuard&&!window.CVGuard(__bk,"venta"))return;render();try{window.renderInvestmentLedger?.();window.CVSalesHistory?.render?.();window.CVArchive?.render?.();window.CVReinvestmentCommittee?.render?.();window.CVFinalOps?.render?.()}catch{}
  alert("Venta registrada · ENVÍO PENDIENTE. No entra en caja hasta confirmar envío y después cobro.");
 }
-function editPrice(id){
+function editPrice(id){const __bk=window.CVSnapshot?.();
  const x=state.saleListings.find(z=>z.id===id);if(!x)return;
  const p=prompt("Nuevo precio publicado (€):",String(x.price));if(p==null)return;const v=N(String(p).replace(",","."));
- if(!(v>0))return;x.price=v;x.updatedAt=new Date().toISOString();save();render()
+ if(!(v>0))return;x.price=v;x.updatedAt=new Date().toISOString();if(window.CVGuard&&!window.CVGuard(__bk,"precio del anuncio"))return;render()
 }
-function remove(id){const x=state.saleListings.find(z=>z.id===id);if(!x)return;x.status="paused";x.updatedAt=new Date().toISOString();save();render()}
-function addCapital(){
+function remove(id){const __bk=window.CVSnapshot?.();const x=state.saleListings.find(z=>z.id===id);if(!x)return;x.status="paused";x.updatedAt=new Date().toISOString();if(window.CVGuard&&!window.CVGuard(__bk,"pausar anuncio"))return;render()}
+function addCapital(){const __bk=window.CVSnapshot?.();
  const raw=prompt("¿Cuánto capital quieres añadir a Card Vault (€)?","50");if(raw==null)return;
  const amount=N(String(raw).replace(",","."));if(!(amount>0))return;
  if(!Array.isArray(state.investmentLedger))state.investmentLedger=[];
  state.investmentLedger.push({id:"capital-"+Date.now(),type:"capital",assetType:"other",assetKey:"",name:"Aportación de capital",date:new Date().toISOString().slice(0,10),qty:1,unitPrice:amount,shipping:0,fees:0,sourceUrl:"",notes:"Capital añadido por el propietario para nuevas oportunidades",updatedAt:new Date().toISOString()});
- save();render();try{window.renderInvestmentLedger?.();window.CVReinvestmentCommittee?.render?.();window.CVFinalOps?.render?.();window.CVTodaySimple?.render?.();window.CVManualOpportunities?.render?.()}catch{}
+ if(window.CVGuard&&!window.CVGuard(__bk,"capital"))return;render();try{window.renderInvestmentLedger?.();window.CVReinvestmentCommittee?.render?.();window.CVFinalOps?.render?.();window.CVTodaySimple?.render?.();window.CVManualOpportunities?.render?.()}catch{}
 }
 function render(){
  const b=Q("#salesDeskPanel");if(!b)return;const rows=active(),gross=rows.reduce((a,x)=>a+N(x.price),0),net=rows.reduce((a,x)=>a+expectedNet(x),0),P=pol();

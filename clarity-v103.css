@@ -1,0 +1,35 @@
+/* V103: legibilidad y navegación móvil sin modificar datos ni valoraciones */
+:root{color-scheme:dark}
+html{font-size:16px;-webkit-text-size-adjust:100%;scroll-padding-top:115px}
+body{line-height:1.5;color:#f5f8ff;background:#0b1220}
+main{max-width:1180px;margin:auto;padding-left:clamp(12px,3vw,22px);padding-right:clamp(12px,3vw,22px)}
+header{gap:12px;flex-wrap:wrap}
+header button,header a{font-size:13px}
+.mainNav{display:flex!important;grid-template-columns:none!important;gap:8px!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;align-items:stretch;position:sticky;top:0;z-index:25;background:#0b1220;padding:10px 2px 12px;border-bottom:1px solid #31435c;margin:14px 0 18px}
+.mainNav button{flex:0 0 auto;min-height:48px;padding:10px 14px;font-size:14px;white-space:nowrap;line-height:1.2;border:1px solid #3b506b;border-radius:12px;background:#19283e;color:#e9f1ff}
+.mainNav button.active{background:#f4f8ff;color:#071525;border-color:#f4f8ff;font-weight:850;box-shadow:0 0 0 2px #8ec8ff44}
+.tab{min-width:0;overflow-wrap:anywhere}
+.tab.hidden{display:none!important}
+.tab h2{font-size:clamp(22px,4.5vw,29px);line-height:1.25}
+.tab p,.tab li,.tab summary{font-size:15px;line-height:1.55}
+.tab small,.tab .muted{color:#c0ccdf}
+.tab a{color:#9fcdff;text-underline-offset:3px;overflow-wrap:anywhere}
+.tab button,.tab a.cyBtn{min-height:44px}
+.tab .arbIntro{background:#15243a;border:1px solid #435a76;border-radius:16px;padding:17px;margin:12px 0;color:#f5f8ff}
+.tab .arbIntro p{color:#d3e0f3}
+#comprar-restaurar #brCount{margin:14px 0;padding:13px;border-radius:12px;border:1px solid #42617e;background:#14283b;color:#e2f0ff;font-size:14px;font-weight:700}
+#comprar-restaurar #brResults article{background:#142337!important;border-color:#48617b!important;line-height:1.5}
+#comprar-restaurar #brResults article strong{font-size:18px}
+#comprar-restaurar #brResults article small{font-size:13px;color:#c3d5ea}
+#comprar-restaurar details{background:#142238;border:1px solid #476079;padding:14px;border-radius:14px;margin-top:16px}
+#comprar-restaurar details summary{cursor:pointer;font-size:16px;font-weight:800}
+#brForm.formGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#brForm label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:650;min-width:0}
+#brForm label:has(input[type=checkbox]){flex-direction:row;align-items:center}
+#brForm input[type=checkbox]{width:auto;min-width:18px;height:18px;accent-color:#79c5ff}
+#brForm input,#brForm select{width:100%;min-width:0;background:#0c1829;border:1px solid #6b809c;color:#fff;font-size:16px;padding:12px;border-radius:10px}
+#brForm input::placeholder{color:#98a9c2}
+#brForm button[type=submit]{background:#dbeaff;color:#071525;font-size:16px;font-weight:850;grid-column:1/-1}
+#brFeedback{color:#ffdb9e;font-weight:650}
+@media(max-width:620px){#brForm.formGrid{grid-template-columns:1fr}#brForm label[style*="grid-column"]{grid-column:1!important}.hero h2{font-size:34px}.hero{padding:17px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}

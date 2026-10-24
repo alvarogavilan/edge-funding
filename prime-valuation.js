@@ -38,6 +38,8 @@ function bucket(c){
  let unit=raw,adjusted=false;
  if(condRef&&matched&&ask>0&&ask<raw){unit=ask;adjusted=true}
  const out=(b,reason)=>({bucket:b,unit,amount:unit*units,units,reason,adjusted,rawValue:raw,t,graded,comps});
+ /* V110: graduación sin confirmar (vacía) no se valora como RAW confirmada. */
+ if(!String(c.grading||"").trim()&&t.tier!=="REF"&&t.tier!=="NONE")return out("PROVISIONAL","Graduación sin confirmar: no se sabe si es RAW o graduada");
  if(t.tier==="REF")return out("UNSUPPORTED","Solo referencia de mercado · no es valor del ejemplar");
  if(t.tier==="C")return t.sourceOk||t.ev?.source?out("STALE",t.ev.age===Infinity?"Evidencia sin fecha":"Evidencia de "+Math.floor(t.ev.age)+" días"):out("UNSUPPORTED","Sin fuente trazable (URL + fuente)");
  if(condRef)return out("PROVISIONAL",adjusted?"Ajustado a oferta observada en su condición ("+EUR(ask)+") · no es venta cerrada":"Referencia de condición sin cierre");
@@ -45,7 +47,9 @@ function bucket(c){
  if(t.tier==="A")return out("CONFIRMED","Identidad + condición/grado + fuente ≤7 días");
  return out("PROVISIONAL",!t.condition?"Condición pendiente":"Evidencia ≤30 días sin cierre completo");
 }
+/* Coste unitario restante desde el cálculo canónico (cv-money.js). null = coste desconocido o en conflicto. */
 function basisUnit(c){
+ if(window.CVMoney){const r=window.CVMoney.remaining(c);return r.unitAvg}
  if(c.landedCostUnit!=null&&N(c.landedCostUnit)>0)return N(c.landedCostUnit);
  if(c.purchase!=null&&c.purchase!==""&&N(c.purchase)>=0)return N(c.purchase)+(N(c.purchaseShipping)+N(c.purchaseFees))/Math.max(1,N(c.quantity)||1);
  return null;

@@ -15,7 +15,7 @@ function evaluate({rawValue=0,landedCost=0,gradeCost=0,sellFeePct=0,psa9=0,psa10
  return {rawValue,landedCost,gradeCost,cost,psa9,psa10,sellFeePct,profit9,profit10,roi9,roi10,prob10,expected,verdict};
 }
 function fromCard(c){
- const g=state.gradingEconomics||{},raw=N(window.CVPSARawValue?.(c)),landed=N(c.landedCostUnit)||N(c.purchase)||raw;
+ const g=state.gradingEconomics||{},raw=N(window.CVPSARawValue?.(c)),landed=N(window.CVPrimeValuation?.basisUnit?.(c))||N(c.landedCostUnit)||N(c.purchase)||raw;
  const v=c.gradedValuation||{};
  return evaluate({rawValue:raw,landedCost:landed,gradeCost:N(g.gradeCost),sellFeePct:N(g.sellFeePct),psa9:N(v.psa9||g.psa9),psa10:N(v.psa10||g.psa10),p10:c.pregrade?.p10??c.pregradeProbability10??null});
 }

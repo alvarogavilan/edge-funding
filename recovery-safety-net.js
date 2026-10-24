@@ -45,7 +45,7 @@ function restore(){
  if(d.operationPolicy)state.operationPolicy=d.operationPolicy;
  if(d.investmentProfile)state.investmentProfile=d.investmentProfile;
  if("prismaticSPCParentProduct" in d)state.prismaticSPCParentProduct=d.prismaticSPCParentProduct;
- save();location.reload();
+ if(save()===false){alert("NO se ha restaurado: el guardado ha fallado. Tus datos actuales no se han tocado en el almacenamiento; recarga la página.");return}location.reload();
 }
 function render(){
  const host=document.querySelector("#storageBox");if(!host)return;
