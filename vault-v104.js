@@ -309,6 +309,7 @@ function renderLane(lane){
   '<div class="v4filters" role="group" aria-label="Juego">'+[["all","Todas"],["pokemon","Pokémon"],["lorcana","Lorcana"]].map(([k,t])=>'<button type="button" data-v4-filter="'+k+'" class="'+(gameFilter===k?"on":"")+'">'+t+'</button>').join("")+
   '<button type="button" class="v4btn primary" data-v4-new="'+lane+'">+ Nueva oportunidad</button></div>'+
   '<p class="v4honest">Anuncios investigados: '+E(window.CV_MARKET_OFFERS?.checkedAt?WHEN(window.CV_MARKET_OFFERS.checkedAt):'sin actualización')+'. Son comprobaciones fechadas, no stock en tiempo real. Caducan a las '+cfg.freshHours+' h. Los costes desconocidos quedan pendientes; un anuncio no demuestra una venta ni un beneficio.</p></section>'+
+  '<div data-rd-live="'+lane+'"></div>'+
   (qualified.length?'<h3>Mejores operaciones verificadas</h3><div class="v4list">'+qualified.slice(0,3).map(e=>card(e,cfg)).join('')+'</div>'+(qualified.length>3?'<details><summary>Ampliar ranking ('+qualified.length+')</summary>'+qualified.slice(3).map(e=>card(e,cfg)).join('')+'</details>':''):'<p class="v4empty big">No hay operaciones con margen y costes completos suficientemente verificados.</p>')+
   (pending.length?'<h3>Anuncios localizados · margen pendiente de verificar</h3><div class="v4list">'+pending.map(e=>card(e,cfg)).join('')+'</div>':'')+
   (targets.length?'<details class="v4old"><summary>Objetivos sin anuncio ('+targets.length+')</summary><div class="v4list">'+targets.map(e=>card(e,cfg)).join('')+'</div></details>':'')+
@@ -316,6 +317,7 @@ function renderLane(lane){
   (old.length?'<details class="v4old"'+(live.length?'':' open')+'><summary>Caducadas · volver a comprobar ('+old.length+')</summary><div class="v4list">'+old.map(e=>card(e,cfg)).join("")+'</div></details>':'')+
   (lane==="compra"?funnelBlock():"")+comparisonBlock(evs,cfg)+researchBlock()+settingsBlock(cfg);
  wireImages(host);
+ try{window.CVRadar?.renderLive?.()}catch(err){console.error("Card Vault V112",err)}
 }
 function compareOffers(items,cfg){
  const groups=new Map();

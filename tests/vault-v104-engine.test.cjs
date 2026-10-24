@@ -50,6 +50,12 @@ t('radar: descarta por diferencia, precio bajo, duplicado, compra > 200 € y an
  assert.match(R.evaluatePk(row,{trend:900,avg30:900,low:300},c,false).reasons[0],/200/);
  assert.match(R.evaluatePk(row,{trend:200,avg30:200,low:3},c,false).reasons[0],/casi seguro/);
  assert.match(R.evaluatePk(row,{trend:400,avg30:400,low:300-100+80},c,false).reasons[0]||'',/%|200/)});
+t('V112 en directo: dañada a 50 € con ventas de 200 € → Restaurar con beneficio estimado, no Compra YA',()=>{const p={trend:210,avg30:200,low:50},d=R.liveDeal(row,p,c,'restaurar');
+ assert.equal(d.ref,200);assert.equal(Math.round(d.sale[1]),150);assert.equal(Math.round(d.pr[1]*100),8150);assert.equal(Math.round(d.pr[0]*100),5300);assert.equal(R.liveDeal(row,p,c,'compra'),null)});
+t('V112 en directo: anuncio cercano a la media → Compra YA si deja ≥ 40 € tras costes',()=>{const p={trend:170,avg30:175,low:100},d=R.liveDeal(row,p,c,'compra');
+ assert.equal(Math.round(d.pr[1]*100),5050);assert.equal(R.liveDeal(row,p,c,'restaurar'),null)});
+t('V112 en directo: fuera de 20–200 €, sin ventas o margen corto → no se muestra',()=>{
+ for(const p of [{trend:900,avg30:900,low:201},{trend:300,avg30:300,low:15},{low:100},{trend:120,avg30:120,low:80},{avg30:200,trend:200}])for(const l of ['compra','restaurar'])assert.equal(R.liveDeal(row,p,c,l),null,JSON.stringify(p)+l)});
 t('radar: ranking penaliza volatilidad',()=>{const a=R.evaluatePk(row,{trend:300,avg30:300,avg7:300,low:100},c,false),b=R.evaluatePk(row,{trend:300,avg30:300,avg7:500,low:100},c,false);assert.ok(a.score>b.score)});
 t('radar: sin anuncios o sin media no hay señal',()=>{assert.equal(R.evaluatePk(row,{trend:300,avg30:300},c,false).pass,undefined);assert.equal(R.evaluatePk(row,{low:20},c,false).pass,undefined)});
 t('radar: volatilidad señalada como riesgo',()=>{assert.ok(R.evaluatePk(row,{trend:300,avg30:200,avg7:400,low:20},c,false).risks.length>=1)});

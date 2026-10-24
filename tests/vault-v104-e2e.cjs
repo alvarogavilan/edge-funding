@@ -48,7 +48,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.waitForTimeout(3500);await page.evaluate(()=>window.scrollTo(0,0));
  ok('Pestaña restaurar visible',await page.isVisible('#v4Restore h2'));
  ok('Compra YA oculta al cambiar de pestaña',!(await page.isVisible('#v4Buy h2')));
- const rest=await page.evaluate(()=>({n:document.querySelectorAll('#v4Restore .v4card').length,imgs:[...document.querySelectorAll('#v4Restore .v4card img')].map(i=>({ok:i.complete&&i.naturalWidth>0,h:i.getBoundingClientRect().height,hidden:i.hidden})),noimg:[...document.querySelectorAll('#v4Restore .v4noimg')].filter(n=>!n.hidden).length}));
+ const rest=await page.evaluate(()=>({n:document.querySelectorAll('#v4Restore .v4card:not(.rdlive)').length,imgs:[...document.querySelectorAll('#v4Restore .v4card img')].map(i=>({ok:i.complete&&i.naturalWidth>0,h:i.getBoundingClientRect().height,hidden:i.hidden})),noimg:[...document.querySelectorAll('#v4Restore .v4noimg')].filter(n=>!n.hidden).length}));
  const restExpected=12+await page.evaluate(()=>(window.CV_MARKET_OFFERS?.offers||[]).filter(x=>x.lane==='restaurar').length);/* V110: 12 objetivos + anuncios concretos registrados */
  ok('12 objetivos de restauración + anuncios concretos',rest.n===restExpected,rest.n+'/'+restExpected);
  ok('Fotos grandes (≥ 250 px de alto en iPhone)',rest.imgs.filter(i=>!i.hidden).every(i=>i.ok&&i.h>=250),JSON.stringify(rest.imgs.slice(0,3)));
@@ -112,9 +112,9 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  ok('Pestaña Ventas reales distingue tipos',/VENTA CERRADA/.test(vr)&&/DATO AGREGADO/.test(vr)&&/ANUNCIO ACTIVO/.test(vr));
  if(shots)await page.screenshot({path:path.join(shots,'4-ventas-reales.png')});
  // 6c. Radar «En investigación» (APIs simuladas)
- ok('El universo de cartas no se descarga al abrir la app',!(await page.evaluate(()=>!!window.CV_UNIVERSE)));
- await page.click('.mainNav [data-tab="investigacion"]');await page.waitForSelector('[data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
- await page.selectOption('[data-rd-group]','vintage');await page.click('[data-rd-scan]');
+ ok('El universo de cartas no bloquea la carga (no va en el HTML; V112 lo pide tras pintar para las ofertas en directo)',!/vault-universe\.js/.test(fs.readFileSync(path.join(root,'index.html'),'utf8')));
+ await page.click('.mainNav [data-tab="investigacion"]');await page.waitForSelector('#v4Radar [data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
+ await page.selectOption('#v4Radar [data-rd-group]','vintage');await page.click('#v4Radar [data-rd-scan]');
  await page.waitForFunction(()=>/Última consulta/.test(document.getElementById('v4Radar').textContent),null,{timeout:120000});
  const rd=await page.evaluate(()=>({first:document.querySelector('#v4Radar .v4card h3')?.textContent,n:document.querySelectorAll('#v4Radar .v4card').length,txt:document.getElementById('v4Radar').textContent}));
  ok('Radar consulta el grupo vintage y registra fallos',/1 fallidas|1 fallida/.test(rd.txt),rd.txt.match(/Última consulta[^.]*\./)?.[0]);

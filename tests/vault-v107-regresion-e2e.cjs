@@ -122,8 +122,8 @@ async function newPage(browser,opts={},mode='normal'){
   await ctx.close();}
  // 7. API caída y respuesta malformada
  for(const mode of ['down','malformed']){const {ctx,page}=await newPage(browser,{},mode);
-  await page.goto(base+'#investigacion',{waitUntil:'load'});await page.waitForSelector('[data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
-  await page.selectOption('[data-rd-group]','vintage');await page.click('[data-rd-scan]');
+  await page.goto(base+'#investigacion',{waitUntil:'load'});await page.waitForSelector('#v4Radar [data-rd-scan]');await page.waitForFunction(()=>!!window.CV_UNIVERSE);
+  await page.selectOption('#v4Radar [data-rd-group]','vintage');await page.click('#v4Radar [data-rd-scan]');
   await page.waitForFunction(()=>/Última consulta/.test(document.getElementById('v4Radar').textContent),null,{timeout:240000});
   const t=await page.textContent('#v4Radar');
   ok('Radar con API '+(mode==='down'?'caída (503)':'malformada')+': fallos contados, sin tarjetas inventadas',/0 correctas/.test(t)&&/fallidas/.test(t)&&(await page.locator('#v4Radar .v4card').count())===0,(t.match(/Última consulta[^.]*\./)||[''])[0]);

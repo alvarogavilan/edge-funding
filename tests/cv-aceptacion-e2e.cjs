@@ -300,9 +300,9 @@ const MATRIX=[
   check('Migrar dos veces da el mismo resultado; arancel desconocido no es 0',r.once===r.twice&&r.total==null&&/desconocid/.test(r.status),JSON.stringify(r).slice(0,300));
  }),
  run('Q','API caída: estado coherente',async({browser,base})=>{
-  const {ctx,page}=await newPage(browser,base,{mode:'down'});await page.evaluate(()=>window.CVSimpleNav.showTab('investigacion'));await page.waitForFunction(()=>!!document.querySelector('[data-rd-scan]'));
+  const {ctx,page}=await newPage(browser,base,{mode:'down'});await page.evaluate(()=>window.CVSimpleNav.showTab('investigacion'));await page.waitForFunction(()=>!!document.querySelector('#v4Radar [data-rd-scan]'),null,{timeout:60000});/* V112: la consulta automática al abrir se detiene sola sin conexión */
   await page.waitForFunction(()=>!!window.CV_UNIVERSE,null,{timeout:20000}).catch(()=>{});
-  await page.selectOption('[data-rd-group]','vintage');await page.click('[data-rd-scan]');await page.waitForTimeout(1500);await page.click('[data-rd-stop]').catch(()=>{});
+  await page.selectOption('#v4Radar [data-rd-group]','vintage');await page.click('#v4Radar [data-rd-scan]');await page.waitForTimeout(1500);await page.click('#v4Radar [data-rd-stop]').catch(()=>{});
   await page.waitForFunction(()=>/Última consulta/.test(document.getElementById('v4Radar').textContent),null,{timeout:60000});
   const t=await page.textContent('#v4Radar');check('Cancelado: sin tarjetas y consulta registrada',(await page.locator('#v4Radar .v4card').count())===0&&/Última consulta/.test(t),(t.match(/Última consulta[^.]*\./)||[''])[0]);
   check('Sin errores JS',page.errors.length===0,page.errors.join('|'));await ctx.close();

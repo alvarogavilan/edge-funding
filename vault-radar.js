@@ -93,7 +93,8 @@ async function scanPokemon(group){
  render();let i=0,lastSave=Date.now();
  const worker=async()=>{while(i<todo.length&&!ctrl.signal.aborted){const r=todo[i++];
   try{const j=await getJSON("https://api.tcgdex.net/v2/en/cards/"+encodeURIComponent(r[0]),ctrl.signal);if(!j||typeof j!=="object"||Array.isArray(j))throw new Error("Respuesta vacía o malformada");cache.pk[r[0]]=parseTcgdex(j);if(!j.pricing)running.noPrice=(running.noPrice||0)+1;running.ok++}
-  catch(e){if(ctrl.signal.aborted)break;running.fail++;const k=String(e.message||e).slice(0,60);running.errors[k]=(running.errors[k]||0)+1}
+  catch(e){if(ctrl.signal.aborted)break;running.fail++;const k=String(e.message||e).slice(0,60);running.errors[k]=(running.errors[k]||0)+1;
+   if(running.ok===rows.length-todo.length&&running.fail>=8)/* 8 fallos sin ningún acierto: sin conexión */{running.errors["Sin conexión con TCGdex: consulta detenida"]=1;ctrl.abort();break}}
   running.done++;if(Date.now()-lastSave>4000){writeCache();lastSave=Date.now();render()}}};
  await Promise.all(Array.from({length:4},worker));
  finish();
@@ -144,6 +145,7 @@ function loCard(x){
  (x.tcgplayer?'<a class="v4btn" href="'+E(x.tcgplayer)+'" target="_blank" rel="noopener noreferrer">Ventas TCGplayer ↗</a>':'')+'</div></article>';
 }
 function render(){
+ try{renderLive()}catch(e){console.error("Card Vault radar",e)}
  const host=document.getElementById("v4Radar");if(!host)return;
  const U=window.CV_UNIVERSE,c=cfg(),all=results(),pass=all.filter(x=>x.pass).sort((a,b)=>b.score-a.score),disc=all.filter(x=>!x.pass);
  const lo=Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL&&x.eur>=20&&/enchanted|epic|iconic|legendary|promo/i.test(x.rarity)).sort((a,b)=>b.eur-a.eur);
@@ -163,6 +165,61 @@ function render(){
  (lo.length?'<details class="v4old"><summary>Lorcana · referencia de precios EE. UU. ('+lo.length+')</summary><p class="v4note">Lorcast solo publica el precio de mercado de TCGplayer (agregado, en dólares). No hay en abierto anuncios ni ventas de Cardmarket para Lorcana, así que aquí no se calcula beneficio: sirve para comparar con lo que veas en Cardmarket.</p><div class="v4list">'+lo.slice(0,60).map(loCard).join("")+'</div></details>':'');
  host.querySelectorAll("img[data-v4img]").forEach(im=>im.addEventListener("error",()=>{im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false},{once:true}));
 }
+/* ---------- V112 · ofertas en directo para Compra YA y Comprar para restaurar ----------
+   Fuente: precios de Cardmarket que publica TCGdex, consultados desde este iPhone (máx. 24 h).
+   - Oferta: el anuncio más barato de la ficha de Cardmarket (precio real pedido; estado, idioma y vendedor se ven al abrirlo).
+   - Venta demostrada: la media de 30 días y la tendencia de Cardmarket se calculan con ventas reales de la plataforma
+     (agregado de todos los estados; no es una venta individual). Se toma la menor de las dos.
+   - Compra YA: el anuncio barato no está muy por debajo de la media (≥ 50 %): si su estado es el normal de la media, se revende a ese precio.
+   - Restaurar: el anuncio está muy por debajo (< 60 %), casi siempre un ejemplar dañado; se vende mejorado a una fracción de la media
+     (supuestos editables restLow/restMid/restHigh).
+   Beneficio = venta × (1 − comisión) − envío de venta − compra − envío de compra. Estimación, nunca beneficio seguro. */
+function liveDeal(r,p,c,lane){
+ const ref=Math.min(...[p.trend,p.avg30].filter(Number.isFinite));
+ if(!Number.isFinite(ref)||!Number.isFinite(p.low)||p.low<20||p.low>200)return null;
+ const ratio=p.low/ref,net=v=>v*(1-c.feePct/100)-c.sellShip,cost=p.low+c.buyShip;
+ if(lane==="compra"){if(ratio<0.5)return null;const sale=[ref*.9,ref,ref];const pr=sale.map(v=>net(v)-cost);
+  if(pr[1]<c.minProfit)return null;return {r,p,ref,ratio,sale,pr,cost,lane}}
+ if(ratio>=0.6)return null;const sale=[ref*c.restLow,ref*c.restMid,ref*c.restHigh];const pr=sale.map(v=>net(v)-cost);
+ if(pr[1]<c.minProfit)return null;return {r,p,ref,ratio,sale,pr,cost,lane};
+}
+function liveDeals(lane){
+ const c=cfg(),U=window.CV_UNIVERSE,isOwned=ownedKeys(),out=[];if(!U)return out;
+ for(const r of U.cards){const p=cache.pk[r[0]];if(!p||Date.now()-p.t>=TTL||isOwned(rowKey(r)))continue;const d=liveDeal(r,p,c,lane);if(d)out.push(d)}
+ return out.sort((a,b)=>b.pr[0]-a.pr[0]);
+}
+function liveCard(d,rank){
+ const c=cfg(),{r,p}=d,links=pkLinks(r,p),img=p.image||pkImage(r),isR=d.lane==="restaurar";
+ const sc=isR?[["Conservador",d.sale[0],d.pr[0]],["Central",d.sale[1],d.pr[1]],["Optimista",d.sale[2],d.pr[2]]]:[["Si vende un 10 % por debajo",d.sale[0],d.pr[0]],["A la media de ventas",d.sale[1],d.pr[1]]];
+ return '<article class="v4card s-observacion rdlive" id="live-'+E(r[0])+'">'+
+ '<figure class="v4photo"><img src="'+E(img)+'" alt="'+E(r[1])+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" data-v4img><div class="v4noimg" hidden><b>'+E(r[1])+'</b><span>Foto no disponible</span></div><figcaption>Imagen de catálogo · el ejemplar anunciado se ve en Cardmarket</figcaption></figure>'+
+ '<div class="v4body"><div class="v4badges"><span class="v4tag rank">#'+rank+'</span><span class="v4status s-observacion">EN DIRECTO · CARDMARKET</span><span class="v4tag">Pokémon</span></div>'+
+ '<h3>'+E(r[1])+'</h3><p class="v4id">'+E(r[2])+' · nº '+E(r[3]+(r[4]?"/"+r[4]:""))+' · '+E(r[5]||"—")+'</p>'+
+ '<div class="v4money">'+
+  '<div><span>OFERTA MÁS BARATA</span><b>'+EUR(p.low)+'</b><small>+ envío estimado '+EUR(c.buyShip)+' = '+EUR(d.cost)+' · '+(isR?'a '+Math.round(d.ratio*100)+' % de la media: casi seguro en mal estado':'a '+Math.round(d.ratio*100)+' % de la media')+'</small></div>'+
+  '<div><span>VENTA DEMOSTRADA · CARDMARKET</span><b>'+EUR(d.ref)+'</b><small>media de ventas reales (30 días '+EUR(p.avg30)+' · tendencia '+EUR(p.trend)+') · agregado de todos los estados</small></div>'+
+  '<div class="v4profit '+(d.pr[0]>=c.minProfit?'t-good':'t-muted')+'"><span>BENEFICIO ESTIMADO</span><b>'+SIGNED(d.pr[1])+'</b><small>tras '+String(c.feePct).replace(".",",")+' % de comisión y '+EUR(c.sellShip)+' de envío de venta · conservador '+SIGNED(d.pr[0])+'</small></div>'+
+ '</div>'+
+ '<table class="v4scen"><tr><th>Escenario</th><th>Venta</th><th>Beneficio</th></tr>'+sc.map(([k,v,x])=>'<tr><td>'+k+'</td><td>'+EUR(v)+'</td><td>'+SIGNED(x)+'</td></tr>').join("")+'</table>'+
+ '<p class="v4basis">'+(isR?'Venta como carta mejorada a '+Math.round(c.restLow*100)+'–'+Math.round(c.restHigh*100)+' % de la media (supuestos editables). Se vende declarada como restaurada. No incluye tus materiales ni tus horas.':'Supone que el ejemplar está en el estado habitual de las ventas. Si en las fotos está dañado, no es Compra YA.')+' Datos de Cardmarket publicados por TCGdex el '+E(p.cmUpdated?DAY(p.cmUpdated):"(sin fecha)")+' · consultados '+WHEN(p.t)+'.</p>'+
+ '<p class="v4why"><b>Antes de comprar:</b> abre la ficha, mira el anuncio más barato (fotos, estado, idioma, país del vendedor y envío a España). '+(isR?'Que el daño sea reparable (suciedad, esquinas, curvatura), no roturas ni falta de material.':'Que el estado coincida con lo que se vende a la media.')+' El precio puede haber cambiado desde la consulta.</p>'+
+ '<div class="v4actions"><a class="v4btn primary" href="'+E(links.cardmarket)+'" target="_blank" rel="noopener noreferrer">Comprar en Cardmarket ↗</a>'+
+ '<button type="button" class="v4btn" data-rd-promote="'+E(r[0])+'|'+d.lane+'">Registrar este anuncio</button></div></div></article>';
+}
+function renderLive(){
+ if(typeof document.querySelector!=="function")return;
+ for(const lane of ["compra","restaurar"]){
+  const slot=document.querySelector('[data-rd-live="'+lane+'"]');if(!slot)continue;
+  const U=window.CV_UNIVERSE,deals=liveDeals(lane),c=cfg(),fresh=Object.values(cache.pk).filter(p=>Date.now()-p.t<TTL).length,groups=U?Object.entries(U.meta.groups):[];
+  const ctl=running?'<div class="rdprog"><b>'+E(running.label)+'</b><progress max="'+running.total+'" value="'+running.done+'"></progress><span>'+running.done+' / '+running.total+' · '+running.fail+' fallos</span><button type="button" class="v4btn" data-rd-stop>Detener</button></div>':
+   '<div class="rdscan"><label>Familia de cartas<select data-rd-group>'+groups.map(([k,g])=>'<option value="'+k+'">'+E(g.label)+' ('+g.count+')</option>').join("")+'<option value="all">Todas ('+(U?U.cards.length:"…")+')</option></select></label><button type="button" class="v4btn primary" data-rd-scan>Buscar ofertas en Cardmarket</button></div>';
+  slot.innerHTML='<section class="rdlivebox"><h3>'+(lane==="compra"?'Ofertas en directo · comprar y revender':'Ofertas en directo · comprar dañada y vender mejorada')+'</h3>'+
+   '<p class="v4note">'+fresh.toLocaleString("es-ES")+' cartas con precio de Cardmarket de las últimas 24 h en este iPhone. Se muestran las que dejan un beneficio estimado ≥ '+EUR(c.minProfit)+' con compra entre 20 y 200 €.</p>'+ctl+
+   (deals.length?'<div class="v4list">'+deals.slice(0,10).map((d,i)=>liveCard(d,i+1)).join("")+'</div>'+(deals.length>10?'<details class="v4old"><summary>Ver todas ('+deals.length+')</summary><div class="v4list">'+deals.slice(10,60).map((d,i)=>liveCard(d,i+11)).join("")+'</div></details>':''):
+    '<p class="v4empty">'+(fresh?'Ninguna carta consultada cumple hoy el filtro. Prueba otra familia.':'Pulsa «Buscar ofertas en Cardmarket» con conexión: consulta los precios en directo (1–3 min por familia).')+'</p>')+'</section>';
+  slot.querySelectorAll("img[data-v4img]").forEach(im=>im.addEventListener("error",()=>{im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false},{once:true}));
+ }
+}
 function promote(id,lane){
  const U=window.CV_UNIVERSE,row=U?.cards.find(r=>r[0]===id),p=cache.pk[id];if(!row||!p)return;
  const links=pkLinks(row,p),d=p.cmUpdated||new Date(p.t).toISOString();
@@ -175,16 +232,20 @@ function promote(id,lane){
 }
 document.addEventListener("click",e=>{
  const t=e.target.closest("[data-rd-scan],[data-rd-lorcana],[data-rd-stop],[data-rd-view],[data-rd-promote]");if(!t)return;const d=t.dataset;
- if("rdScan" in d){if(running)return;const g=document.querySelector("[data-rd-group]")?.value||"vintage";scanPokemon(g).catch(err=>{running=null;render();alert("No se pudo consultar: "+err.message)})}
+ if("rdScan" in d){if(running)return;const g=t.parentElement?.querySelector("[data-rd-group]")?.value||document.querySelector("[data-rd-group]")?.value||"vintage";scanPokemon(g).catch(err=>{running=null;render();alert("No se pudo consultar: "+err.message)})}
  else if("rdLorcana" in d){if(!running)scanLorcana()}
  else if("rdStop" in d){running?.ctrl.abort()}
  else if(d.rdView){view=d.rdView;render()}
  else if(d.rdPromote){const [id,lane]=d.rdPromote.split("|");promote(id,lane)}
 });
 function mount(){const s=document.getElementById("investigacion");if(s&&!document.getElementById("v4Radar")){const d=document.createElement("div");d.id="v4Radar";d.className="v4board";s.prepend(d)}
- if(s&&!s.classList.contains("hidden"))loadUniverse().then(render,()=>render());else render()}
+ if(s&&!s.classList.contains("hidden"))loadUniverse().then(render,()=>render());else if(["","#radar","#comprar-restaurar"].includes(location.hash)){render();setTimeout(autoLive,1500)}/* después de pintar: el catálogo (≈ 430 kB) no retrasa la carga */else render()}
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="investigacion"]'))setTimeout(()=>loadUniverse().then(render,()=>render()),30)});
+let autoDone=false;
+function autoLive(){loadUniverse().then(()=>{render();const fresh=Object.values(cache.pk).some(p=>Date.now()-p.t<TTL);
+ if(!fresh&&!running&&!autoDone&&navigator.onLine!==false){autoDone=true;scanPokemon("vintage").catch(()=>{running=null;render()})}},()=>render())}
+document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"],.mainNav [data-tab="comprar-restaurar"]'))setTimeout(autoLive,60)});
 window.addEventListener("hashchange",()=>{if(location.hash==="#investigacion")loadUniverse().then(render,()=>render())});
-window.CVRadar={counts:()=>({catalog:window.CV_UNIVERSE?.cards.length||cache.universeCount||NaN,consulted:Object.values(cache.pk).filter(p=>Date.now()-p.t<TTL).length+Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL).length}),evaluatePk,parseTcgdex,evaluateLo,ptcgId,render,results,cache:()=>cache};
+window.CVRadar={counts:()=>({catalog:window.CV_UNIVERSE?.cards.length||cache.universeCount||NaN,consulted:Object.values(cache.pk).filter(p=>Date.now()-p.t<TTL).length+Object.values(cache.lo).filter(x=>Date.now()-x.t<TTL).length}),evaluatePk,parseTcgdex,evaluateLo,ptcgId,render,results,liveDeal,liveDeals,renderLive,autoLive,cache:()=>cache};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(mount,400));else setTimeout(mount,400);
 })();

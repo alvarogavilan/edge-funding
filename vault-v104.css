@@ -169,3 +169,6 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cvPreview{grid-column:1/-1}
 .collectionPrimeActions button[data-cv-cost],[data-cv-cost-sale]{min-height:44px}
 @media(min-width:520px){.cvCostRow{grid-template-columns:repeat(3,minmax(0,1fr))}.cvCostRow legend{grid-column:1/-1}}
+/* V112 · ofertas en directo en Compra YA y Restaurar */
+.rdlivebox{margin:14px 0;padding:14px;border:1px solid var(--v4line);border-radius:14px}
+.rdlivebox>h3{margin:0 0 6px}
