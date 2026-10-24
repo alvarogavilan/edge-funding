@@ -273,3 +273,21 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpPaste textarea{width:100%;box-sizing:border-box;min-height:110px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:8px;margin:6px 0}
 .cpPasteRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cpPasteRow select{width:100%;min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 8px}
+/* V120 · confianza, plan y vender */
+.cpConf{margin:8px 0;padding:8px 10px;border:1px solid var(--v4line);border-radius:12px}
+.cpConf p{margin:4px 0 2px}.cpConf small{opacity:.8;display:block;line-height:1.35}
+.cpConfBar{height:8px;border-radius:6px;background:var(--v4line);overflow:hidden}
+.cpConfBar i{display:block;height:100%;background:var(--v4bad)}
+.cpConf.mid .cpConfBar i{background:var(--v4warn)}.cpConf.ok .cpConfBar i{background:var(--v4good)}
+.cpPlan,.cpSell{border:1px solid var(--v4line);border-radius:14px;padding:10px;margin:10px 0}
+.cpPlanIn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.cpPlanIn label{display:grid;gap:4px;font-size:.9rem}
+.cpPlanIn input{min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 8px;min-width:0}
+.cpPlanList{list-style:none;padding:0;margin:8px 0;display:grid;gap:6px}
+.cpPlanList li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:8px;border:1px solid var(--v4line);border-radius:10px}
+.cpPlanList li small{grid-column:1/-1;opacity:.8}
+.cpPlanList a{white-space:nowrap}
+.cpTot{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.cpTot div{border:1px solid var(--v4line);border-radius:10px;padding:6px 8px}.cpTot b{display:block;font-size:1.05rem}.cpTot span{font-size:.8rem;opacity:.8}
+.cpSig{display:inline-block;font-weight:700;font-size:.78rem;border-radius:8px;padding:2px 6px;border:1px solid currentColor}
+.cpSig.go{color:var(--v4good)}.cpSig.wait{color:var(--v4warn)}.cpSig.flat{opacity:.75}
