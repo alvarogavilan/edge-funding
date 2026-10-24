@@ -6,7 +6,7 @@ const store={};
 const win={};
 const ctx={window:win,document:{readyState:'complete',addEventListener(){},getElementById:()=>null,body:{classList:{add(){}}}},localStorage:{getItem:k=>store[k]??null,setItem:(k,v)=>{store[k]=String(v)}},
  setTimeout(){},setInterval(){},URL,Date,Number,String,Array,Object,Math,JSON,Intl,console};
-ctx.window=ctx;ctx.addEventListener=()=>{};vm.createContext(ctx);
+ctx.window=ctx;ctx.CV_LEGACY_LANES=true;/* V117: tablero anterior de Compra YA (motor que se prueba aquí) */ctx.addEventListener=()=>{};vm.createContext(ctx);
 for(const f of ['vault-data.js','vault-v104.js','vault-ptcg-map.js','vault-radar.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
 const {status,economics,verdict,evaluate,listingPrecision,isSearchUrl,safeUrl,DEFAULTS}=ctx.CVVault.engine;
 const cfg={...DEFAULTS},now=Date.parse('2026-10-23T12:00:00Z');

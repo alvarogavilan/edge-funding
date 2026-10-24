@@ -83,7 +83,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.selectOption('[data-cp-fav="type"]','all');await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
  await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 details.v4more').open=true});await page.click('#v4Buy #cp-base4-10 [data-cp-histload="273933"]');await page.waitForSelector('#v4Buy #cp-base4-10 svg.cpSpark');
  ok('Historial de precio (guía diaria acumulada)',/150,00\s€ → 160,00\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpHist')));
- await page.evaluate(()=>{document.querySelectorAll('#v4Buy #cp-base4-10 details.v4more')[1].open=true});
+ await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 [data-cp-lbuy]').closest('details').open=true});/* V118: antes va «Pegar datos de Cardmarket» */
  await page.fill('#v4Buy [data-cp-lbuy="base4-10|es"]','70');await page.fill('#v4Buy [data-cp-lsell="base4-10|es"]','180');await page.click('#v4Buy [data-cp-lsave="base4-10"]');await page.waitForTimeout(300);
  ok('Español anotado: compra 70 → venta 180 → +90,00 €',/\+90,00\s€/.test(await T('base4-10')));
  await page.reload();await page.waitForSelector('#v4Buy #cp-base4-10',{timeout:60000});

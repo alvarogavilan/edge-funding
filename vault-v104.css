@@ -258,3 +258,18 @@ body.v104 .mainNav{margin:6px 0 14px}
 .pgRes.bad{border-color:#e5484d;background:rgba(229,72,77,.12)}
 .pgQ label{justify-content:flex-start;text-align:left;width:100%;padding:4px 0}
 .pgQ input[type=radio]{appearance:auto;-webkit-appearance:radio;width:22px!important;height:22px!important;min-height:0!important;flex:0 0 22px;margin:0;padding:0;border:0}
+/* V118 · mismo idioma */
+.cpLTbox{overflow-x:auto;margin:8px 0;-webkit-overflow-scrolling:touch}
+.cpLTtab{width:100%;border-collapse:collapse;font-size:.86rem;min-width:0}
+.cpLTtab caption{text-align:left;font-weight:700;padding:4px 0}.cpLTtab caption small{display:block;font-weight:400;opacity:.75}
+.cpLTtab th,.cpLTtab td{padding:6px 4px;border-top:1px solid var(--v4line);text-align:left;vertical-align:top;white-space:nowrap}
+.cpLTtab td:last-child{white-space:normal;min-width:120px}
+.cpLTtab td small{display:block;opacity:.75}
+.cpLTtab td.pos{color:var(--v4good);font-weight:700}.cpLTtab td.neg{color:var(--v4bad)}
+.cpLT{display:inline-block;font-size:.75rem;font-weight:700;border-radius:8px;padding:2px 6px;border:1px solid currentColor}
+.cpLT.ok{color:var(--v4good)}.cpLT.warn{color:var(--v4warn)}.cpLT.mix{opacity:.75}
+.cpLTempty td,.cpLTempty th{opacity:.9}
+.cpLTempty .v4btn{min-height:36px;padding:4px 10px}
+.cpPaste textarea{width:100%;box-sizing:border-box;min-height:110px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:8px;margin:6px 0}
+.cpPasteRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cpPasteRow select{width:100%;min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 8px}
