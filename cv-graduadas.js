@@ -16,6 +16,27 @@ const KEY="cv_v122_graded";
    PSA Europa Standard 49,99 € (lanzamiento oct. 2026). Para el resto se usa la misma cifra si no escribes otra. */
 const GRADE_FEE=49.99,SHIP_TO=15,SHIP_BACK=25;
 let pick=null,list=readLS(KEY,[]);if(!Array.isArray(list))list=[];
+/* Dónde comprar graduadas desde 41020 (tiendas españolas con catálogo de graduadas y subastas/mercados de la UE).
+   Las tiendas no permiten leer sus precios desde otra web: la app abre su búsqueda con la carta elegida y lee el anuncio
+   que pegues. Comprueba siempre el número de certificado antes de pagar. */
+const STORES=[
+ ["Pokémillon","Tienda · España","PSA, Beckett y otras",q=>"https://www.pokemillon.com/search?type=product&q="+q],
+ ["Iberian Collect","Tienda · España","PSA, BGS y CGC con certificado",q=>"https://iberiancollect.com/search?type=product&q="+q],
+ ["Cardzone","Tienda · España","PSA, CGC…",q=>"https://cardzone.es/search?type=product&q="+q],
+ ["MaickJP","Tienda · España","PSA 10 japonesas",q=>"https://maickjp.com/search?type=product&q="+q],
+ ["Catawiki","Subastas · UE","con verificación de expertos",q=>"https://www.catawiki.com/es/s?q="+q],
+ ["Wallapop","Particulares · España","verifica certificado y vendedor",q=>"https://es.wallapop.com/app/search?keywords="+q],
+ ["Vinted","Particulares · UE","verifica certificado y vendedor",q=>"https://www.vinted.es/catalog?search_text="+q]];
+/* Lee el título y el precio de un anuncio copiado: empresa, nota y precio en euros. */
+const CO=[["PSA",/\bpsa\b/i],["Beckett (BGS)",/\b(bgs|beckett)\b/i],["CGC",/\bcgc\b/i],["SGC",/\bsgc\b/i],["Ace",/\bace\b/i],["Otra",/\b(tag|pca|ags|gma)\b/i]];
+function parseListing(txt){
+ const t=String(txt||""),o={};for(const [n,re] of CO)if(re.test(t)){o.company=n;break}
+ const g=t.match(/\b(?:psa|bgs|beckett|cgc|sgc|ace|tag|pca|ags|gma)\s*(?:gem\s*mint|mint|pristine|black\s*label)?\s*(10|[1-9](?:[.,]5)?)\b/i);if(g)o.grade=Number(g[1].replace(",","."));
+ const m=t.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*€|€\s*(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/);
+ if(m){const v=(m[1]||m[2]).replace(/[\s]/g,""),c=v.lastIndexOf(","),d=v.lastIndexOf("."),dec=Math.max(c,d);o.price=dec>=0&&v.length-dec-1<=2?Number(v.slice(0,dec).replace(/[.,]/g,"")+"."+v.slice(dec+1)):Number(v.replace(/[.,]/g,""))}
+ const ce=t.match(/(?:cert(?:ificado|ification)?|n[ºo°]\s*de\s*certificado)\s*(?:n[ºo°.]*|#|:)?\s*(\d{6,10})/i);if(ce)o.cert=ce[1];
+ return o;
+}
 
 function search(q){
  const C=window.CVCompra;if(!C||!q||q.trim().length<3)return [];const k=nq(q).trim();
@@ -35,9 +56,9 @@ function analyse(a){
  return {x,raw,rawKind,fee,repo,cost,vs,net,profit,verdict};
 }
 function rowHtml(a,i){
- const r=analyse(a);if(!r)return '<li><span><b>'+E(a.name)+'</b></span><small>Sin precio en la guía todavía.</small></li>';
+ const r=analyse(a);if(!r)return '<li><span><b>'+E(a.company)+' '+E(a.grade)+' · '+E(a.name)+'</b></span><button type="button" class="v4btn" data-gr-del="'+i+'">Quitar</button><small>'+E(a.store||"")+' · anuncio '+EUR(a.price+(a.ship||0))+' · cargando el precio de Cardmarket…</small></li>';
  return '<li><span><b>'+E(a.company)+' '+E(a.grade)+' · '+E(r.x.name)+'</b> · '+E(r.x.set)+' nº '+E(r.x.number)+'</span><button type="button" class="v4btn" data-gr-del="'+i+'">Quitar</button>'+
-  '<small><span class="cpSig '+r.verdict.k+'">'+r.verdict.t+'</span> Anuncio '+EUR(r.cost)+' (con envío) · crearla tú: '+EUR(r.repo)+' = carta '+EUR(r.raw)+' ('+r.rawKind+') + graduación '+EUR(r.fee)+' + envíos '+EUR(SHIP_TO+SHIP_BACK)+' · '+Math.round(r.vs*100)+' % de su reposición'+
+  '<small>'+E(a.store||"")+(a.cert?' · certificado '+E(a.cert)+(certUrl(a.company,a.cert)?' <a href="'+E(certUrl(a.company,a.cert))+'" target="_blank" rel="noopener noreferrer">verificar ↗</a>':''):'')+'</small><small><span class="cpSig '+r.verdict.k+'">'+r.verdict.t+'</span> Anuncio '+EUR(r.cost)+' (con envío) · crearla tú: '+EUR(r.repo)+' = carta '+EUR(r.raw)+' ('+r.rawKind+') + graduación '+EUR(r.fee)+' + envíos '+EUR(SHIP_TO+SHIP_BACK)+' · '+Math.round(r.vs*100)+' % de su reposición'+
   (Number.isFinite(r.net)?' · si la vendes a '+EUR(a.sale)+': te quedan '+EUR(r.net)+' → <b>'+SIGNED(r.profit)+'</b>':' · añade una venta conocida de esta graduada para ver tu beneficio')+'.</small></li>';
 }
 function render(){
@@ -49,9 +70,17 @@ function render(){
    '<div class="cpPlanIn"><label>Empresa<select data-gr="company">'+["PSA","Beckett (BGS)","CGC","SGC","Ace","Otra"].map(c=>'<option>'+c+'</option>').join("")+'</select></label><label>Nota<input inputmode="decimal" data-gr="grade" placeholder="10"></label>'+
    '<label>Precio del anuncio €<input inputmode="decimal" data-gr="price" placeholder="120"></label><label>Envío €<input inputmode="decimal" data-gr="ship" placeholder="8"></label>'+
    '<label>Venta conocida de esa graduada € (opcional)<input inputmode="decimal" data-gr="sale" placeholder="vacío = no la sé"></label><label>Tarifa de graduación €<input inputmode="decimal" data-gr="fee" placeholder="'+String(GRADE_FEE).replace(".",",")+'"></label></div>'+
-   '<button type="button" class="v4btn primary" data-gr-add>Analizar anuncio</button>':'<p class="v4note">⏳ Cargando la guía de Cardmarket… (abre Compra YA una vez si no aparece)</p>')+
+   '<details class="v4more"><summary>Pegar el anuncio de la tienda (rellena empresa, nota, precio y certificado)</summary><textarea data-gr-paste rows="3" placeholder="Ej.: Charizard ex 199/165 PSA 10 · 249,90 € · Certificado 12345678"></textarea><button type="button" class="v4btn" data-gr-parse>Leer anuncio</button></details>'+
+   '<div class="cpPlanIn"><label>Dónde está<select data-gr="store">'+STORES.map(s=>'<option>'+s[0]+'</option>').join("")+'<option>Cardmarket</option><option>Otra</option></select></label><label>N.º de certificado (opcional)<input inputmode="numeric" data-gr="cert" placeholder="12345678"></label></div>'+
+   '<button type="button" class="v4btn primary" data-gr-add>Analizar anuncio</button>'+storesHtml():'<p class="v4note">⏳ Cargando la guía de Cardmarket… (abre Compra YA una vez si no aparece)</p>')+
   (list.length?'<h4>Anuncios analizados</h4><ol class="cpPlanList">'+list.map(rowHtml).join("")+'</ol>':'')+'</section>';
 }
+function storesHtml(){
+ const q=pick?encodeURIComponent(pick.name+" "+String(pick.number).split("/")[0]):"";
+ return '<h4>Dónde comprar graduadas'+(pick?' · buscar «'+E(pick.name)+'»':'')+'</h4><ul class="cpPlanList">'+STORES.map(([n,type,what,url])=>'<li><span><b>'+E(n)+'</b> · '+E(type)+'</span>'+(pick?'<a class="v4btn" href="'+E(url(q))+'" target="_blank" rel="noopener noreferrer">Buscar ↗</a>':'')+'<small>'+E(what)+'</small></li>').join("")+'</ul>'+
+  '<p class="v4note">'+(pick?'':'Elige una carta para buscarla directamente en cada sitio. ')+'Las tiendas no dejan leer sus precios desde otra web: copia el título y el precio del anuncio y pégalo arriba. Antes de pagar, comprueba el certificado en la web de la empresa (PSA: psacard.com/cert, CGC: cgccards.com/certlookup).</p>';
+}
+const certUrl=(co,n)=>!n?"":/^PSA/.test(co)?"https://www.psacard.com/cert/"+encodeURIComponent(n):/^CGC/.test(co)?"https://www.cgccards.com/certlookup/"+encodeURIComponent(n)+"/":"";
 function ensureHost(){
  const sec=document.getElementById("pregrade");if(!sec)return null;let h=document.getElementById("cpGraded");
  if(!h){h=document.createElement("div");h.id="cpGraded";h.className="v4board";sec.prepend(h)}return h;
@@ -59,18 +88,20 @@ function ensureHost(){
 document.addEventListener("input",e=>{const t=e.target.closest("[data-gr-q]");if(!t)return;pick=null;const r=search(t.value),box=document.querySelector("[data-gr-res]");if(!box)return;
  box.innerHTML=r.length?'<ul class="cpPlanList">'+r.map(x=>'<li><span>'+E(x.name)+' · '+E(x.set)+' nº '+E(x.number)+'</span><button type="button" class="v4btn" data-gr-pick="'+E(x.id)+'">Elegir</button></li>').join("")+'</ul>':(t.value.trim().length>=3?'<p class="v4note">Ninguna carta coincide.</p>':'')});
 document.addEventListener("click",e=>{
- const p=e.target.closest("[data-gr-pick]");if(p){const C=window.CVCompra;pick=C.cardsPk().concat(C.cardsJp()).find(x=>x.id===p.dataset.grPick)||null;const q=document.querySelector("[data-gr-q]");if(q&&pick)q.value=pick.name+" · "+pick.set+" nº "+pick.number;const box=document.querySelector("[data-gr-res]");if(box)box.innerHTML="";return}
+ const p=e.target.closest("[data-gr-pick]");if(p){const C=window.CVCompra;pick=C.cardsPk().concat(C.cardsJp()).find(x=>x.id===p.dataset.grPick)||null;render();return}
+ if(e.target.closest("[data-gr-parse]")){const o=parseListing(document.querySelector("[data-gr-paste]")?.value);const set=(k,v)=>{const i=document.querySelector('[data-gr="'+k+'"]');if(i&&v!=null)i.value=typeof v==="number"?String(v).replace(".",","):v};
+  if(o.company==null&&o.grade==null&&o.price==null){alert("No encuentro empresa, nota ni precio en el texto pegado.");return}set("company",o.company);set("grade",o.grade);set("price",o.price);set("cert",o.cert);return}
  const d=e.target.closest("[data-gr-del]");if(d){list.splice(+d.dataset.grDel,1);writeLS(KEY,list);render();return}
  if(e.target.closest("[data-gr-add]")){
   const g=k=>document.querySelector('[data-gr="'+k+'"]')?.value,price=NUM(g("price")),grade=NUM(g("grade")),ship=NUM(g("ship")),sale=NUM(g("sale")),fee=NUM(g("fee"));
   if(!pick){alert("Elige la carta de la lista.");return}
   if(!Number.isFinite(price)||price<=0){alert("Escribe el precio del anuncio.");return}
   if(!Number.isFinite(grade)||grade<1||grade>10){alert("La nota va de 1 a 10.");return}
-  list.unshift({id:pick.id,name:pick.name,company:g("company")||"PSA",grade,price,ship:Number.isFinite(ship)?ship:0,sale:Number.isFinite(sale)&&sale>0?sale:undefined,fee:Number.isFinite(fee)?fee:undefined,at:new Date().toISOString()});
+  list.unshift({id:pick.id,name:pick.name,company:g("company")||"PSA",store:g("store")||"",cert:String(g("cert")||"").replace(/\D/g,"")||undefined,grade,price,ship:Number.isFinite(ship)?ship:0,sale:Number.isFinite(sale)&&sale>0?sale:undefined,fee:Number.isFinite(fee)?fee:undefined,at:new Date().toISOString()});
   if(!writeLS(KEY,list.slice(0,50))){alert("NO se ha guardado: el almacenamiento del navegador no lo permite.");return}
   pick=null;render()}
 });
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="pregrade"]'))setTimeout(async()=>{render();const C=window.CVCompra;if(C){try{await C.ready_();await C.loadCatalog();if(!C.state().guide)await C.loadGuide(false)}catch{}render()}},60)});
 if(location.hash==="#pregrade")setTimeout(async()=>{const C=window.CVCompra;if(C){try{await C.ready_();await C.loadCatalog()}catch{}}render()},1400);
-window.CVGraduadas={render,analyse};
+window.CVGraduadas={render,analyse,parseListing};
 })();

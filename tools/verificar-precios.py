@@ -1,0 +1,58 @@
+# Auditoría de PRECIOS, paso 2: recalcula de forma independiente lo que la app enseña y lo compara con la guía real.
+# Uso: python3 tools/verificar-precios.py volcado.json latest.json products.json   (sale con código 1 si hay errores)
+# Comprueba: 1) cada precio = guía oficial; 2) el producto de Cardmarket tiene el nombre de la carta; 3) compra, venta,
+# coste y beneficio con la fórmula; 4) lo pintado en pantalla = lo calculado y el enlace va al producto; 5) punto de mira.
+import json,re,unicodedata,sys
+t=open(sys.argv[1]).read();j=json.loads(t[:t.rindex('}')+1]);d=j['d'];cfg=d['cfg']
+L=json.load(open(sys.argv[2]));f=L['fields'];T={r[0]:dict(zip(f,r)) for r in L['rows']}
+P={r[0]:r for r in json.load(open(sys.argv[3]))['rows']}
+def norm(s):
+  s=s.split(' [')[0];s=re.sub(r'\(.*?\)',' ',s);s=unicodedata.normalize('NFD',s);s=''.join(c for c in s if not unicodedata.combining(c));return re.sub(r'[^a-z0-9]','',s.lower())
+def eur(v):
+  s=f"{abs(v):,.2f}".replace(',','X').replace('.',',').replace('X','.');return s
+errs=[];warn=[]
+def S_of(t):
+  xs=[t[k] for k in ('trend','avg30','avg7') if t.get(k)];return min(xs) if xs else None
+for grp in ('sure','pending'):
+ for x in d[grp]:
+  pid=x['pid'];g=T.get(pid)
+  if not g: errs.append(('sin fila guía',x['id']));continue
+  # 1. precios = guía
+  for k in ('low','trend','avg1','avg7','avg30'):
+    a=x['p'].get(k);b=g.get(k)
+    if (a or None)!=(b or None) and not (a is None and not b): errs.append(('precio distinto',x['id'],k,a,b))
+  # 2. nombre del producto
+  pn=P.get(pid);
+  if pn:
+    if norm(x['name']) not in norm(pn[1]) and norm(pn[1]) not in norm(x['name']): (errs if grp=='sure' else warn).append(('nombre',grp,x['id'],x['name'],pn[1]))
+  b=x['best']
+  if not b: continue
+  S=S_of(g)
+  if b['k']=='low':
+    exp_buy=g['low'];exp_sale=S
+  elif b['k']=='po':
+    exp_buy=g['low'];exp_sale=S*cfg['restLow']
+  else: continue
+  cost=exp_buy+cfg['buyShip'];prof=exp_sale*(1-cfg['feePct']/100)-cfg['sellShip']-cost
+  for nm,a,e in (('buy',b['buy'],exp_buy),('sale',b['sale'],exp_sale),('cost',b['cost'],cost),('profit',b['profit'],prof)):
+    if abs(a-e)>0.005: errs.append(('cálculo',x['id'],nm,a,e))
+  if b['k']=='low' and not exp_buy>=0.5*S: errs.append(('regla buen estado',x['id']))
+# 3. lo pintado = lo calculado
+byid={x['id']:x for x in d['sure']}
+for c in d['dom']:
+  x=byid.get(c['id'])
+  if not x: errs.append(('tarjeta pintada fuera de la lista',c['id']));continue
+  b=x['best']
+  for v in (b['buy'],b['sale'],b['profit']):
+    if eur(v) not in c['money']: errs.append(('pintado',c['id'],v,c['money'][:120]))
+  if x['pid'] and f"idProduct={x['pid']}" not in c['href']: errs.append(('enlace',c['id'],c['href']))
+# 4. punto de mira
+for s in d['sn']:
+  g=T[s['pid']];S=S_of(g)
+  if abs(s['low']-g['low'])>1e-9 or abs(s['S']-S)>1e-9: errs.append(('mira precio',s['id']))
+  if abs(s['profit']-(S*(1-cfg['feePct']/100)-cfg['sellShip']-(g['low']+cfg['buyShip'])))>0.005: errs.append(('mira cálculo',s['id']))
+  if not g['low']<=0.6*S: errs.append(('mira regla',s['id']))
+print('Comprobadas:',len(d['sure']),'recomendadas ·',len(d['pending']),'pendientes ·',len(d['dom']),'pintadas ·',len(d['sn']),'en punto de mira')
+print('ERRORES',len(errs));[print(' ',e) for e in errs[:40]]
+print('AVISOS',len(warn));[print(' ',w) for w in warn[:20]]
+sys.exit(1 if errs else 0)

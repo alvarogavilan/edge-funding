@@ -40,7 +40,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- ok('Barra: Compra YA, Favoritos, Vender YA, Mi colección, Sellado, PSA, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.textContent)))===JSON.stringify(['Compra YA','Favoritos','Vender YA','Mi colección','Sellado','PSA','Valorar PSA','Archivo']));
+ ok('Barra: Compra YA, Favoritos, Vender YA, Mi colección, Sellado, Cartas graduadas, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.textContent)))===JSON.stringify(['Compra YA','Favoritos','Vender YA','Mi colección','Sellado','Cartas graduadas','Valorar PSA','Archivo']));
  await page.waitForFunction(()=>document.querySelector('#v4Buy #cp-base4-10 .v4badges')&&/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10 .v4badges').textContent)&&document.querySelector('#v4Buy #cp-lo-tfc-207'),null,{timeout:120000});
  ok('Una sola descarga de la guía oficial; ni precios de EE. UU. ni consultas carta a carta',hits.guide===1&&hits.us===0&&hits.bx>=2,JSON.stringify({guide:hits.guide,us:hits.us,pt:hits.pt.length,bx:hits.bx}));
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
