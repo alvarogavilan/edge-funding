@@ -94,7 +94,11 @@ const hasPtcg=t=>!PTM().none?.includes(t);
 const ptSetOf=t=>{const id=ptcgId(t);return id.slice(0,id.lastIndexOf("-"))};
 function budget(){const d=new Date().toISOString().slice(0,10);let b=readLS(BUDGET_KEY,{});if(b.day!==d)b={day:d,n:0};return b}
 function spend(){const b=budget();b.n++;writeLS(BUDGET_KEY,b)}
-function parsePtCard(c){const cm=c?.cardmarket?.prices||{};return {t:Date.now(),trend:N(cm.trendPrice),avg30:N(cm.avg30),low:N(cm.lowPrice),exPlus:N(cm.lowPriceExPlus),avg7:N(cm.avg7),avg1:N(cm.avg1),updated:c?.cardmarket?.updatedAt||""}}
+/* TCGplayer (EE. UU.) vía pokemontcg.io: precio de mercado (media de ventas recientes) y más barato, en dólares, y el enlace
+   directo a la carta en TCGplayer. Variante: la holo si existe, si no la normal, si no la primera con precio. */
+function parseTcg(tp){const pr=tp?.prices||{},k=["holofoil","normal","1stEditionHolofoil","unlimitedHolofoil","reverseHolofoil","1stEditionNormal","unlimited"].find(v=>pr[v]&&(N(pr[v].market)||N(pr[v].low)))||Object.keys(pr).find(v=>N(pr[v]?.market));
+ if(!k||!tp?.url)return null;return {url:tp.url,variant:k,market:N(pr[k].market),low:N(pr[k].low),updated:tp.updatedAt||""}}
+function parsePtCard(c){const cm=c?.cardmarket?.prices||{};return {t:Date.now(),tcg:parseTcg(c?.tcgplayer),trend:N(cm.trendPrice),avg30:N(cm.avg30),low:N(cm.lowPrice),exPlus:N(cm.lowPriceExPlus),avg7:N(cm.avg7),avg1:N(cm.avg1),updated:c?.cardmarket?.updatedAt||""}}
 let ptRunning=null;/* progreso de la verificación en bloque */
 async function verifySets(sets,ctrl){
  const rev={};for(const r of window.CV_UNIVERSE.cards)if(hasPtcg(r[0]))rev[ptcgId(r[0])]=r[0];
@@ -104,7 +108,7 @@ async function verifySets(sets,ctrl){
   let page=1,got=0,total=Infinity,ok=true;
   while(got<total){
    try{spend();M.src.ptcg.req++;
-    const j=await getJSON(PT+"/cards?q=set.id:"+encodeURIComponent(s)+"&pageSize=250&page="+page+"&select=id,cardmarket",ctrl.signal,45000);
+    const j=await getJSON(PT+"/cards?q=set.id:"+encodeURIComponent(s)+"&pageSize=250&page="+page+"&select=id,cardmarket,tcgplayer",ctrl.signal,45000);
     const list=Array.isArray(j?.data)?j.data:[];for(const c of list){const t=rev[c.id];if(t)M.pt.cards[t]=parsePtCard(c)}
     got+=list.length;total=Number.isFinite(j?.totalCount)?j.totalCount:got;M.src.ptcg.ok++;M.src.ptcg.last=Date.now();if(!list.length)break;page++;
    }catch(e){if(ctrl.signal.aborted)break;M.src.ptcg.fail++;M.src.ptcg.lastErr=String(e.message||e).slice(0,80);ok=false;break}
@@ -171,12 +175,17 @@ function momentum(p){return N(p.avg7)&&N(p.avg30)?p.avg7/p.avg30-1:NaN}
 function saleRef(p){const xs=[p.trend,p.avg30,p.avg7].filter(Number.isFinite);return xs.length?Math.min(...xs):NaN}
 function ops(card,c){
  const {p,res}=card,S=saleRef(p),out=[],saved=langData[card.id]||{},jp=card.kind==="jp",idi=jp?"japonés":"idioma sin indicar";
- const add=o=>{o.cost=o.buy+c.buyShip;o.profit=Number.isFinite(o.sale)?netSale(o.sale,c)-o.cost:NaN;o.margin=o.profit/o.cost;o.maxBuy=Number.isFinite(o.sale)?netSale(o.sale,c)-c.minProfit-c.buyShip:NaN;out.push(o)};
+ const add=o=>{o.cost=Number.isFinite(o.costFull)?o.costFull:o.buy+c.buyShip;o.profit=Number.isFinite(o.sale)?netSale(o.sale,c)-o.cost:NaN;o.margin=o.profit/o.cost;o.maxBuy=Number.isFinite(o.sale)?netSale(o.sale,c)-c.minProfit-c.buyShip:NaN;out.push(o)};
  if(Number.isFinite(S)){
   if(Number.isFinite(p.exPlus))add({k:"ex",cond:"buen",label:"Cardmarket · EX o mejor ("+idi+") → venta en Cardmarket"+(jp?" (ventas de cartas japonesas)":""),buy:p.exPlus,sale:S});
   else if(Number.isFinite(p.low)&&p.low>=S*.5)add({k:"low",cond:"buen",label:jp?"Cardmarket · «desde» japonés (estado sin indicar) → venta de cartas japonesas en Cardmarket":"Cardmarket · «desde» (estado e idioma sin indicar) → venta en Cardmarket",buy:p.low,sale:S});
   if(Number.isFinite(p.low)&&p.low<S*.5)add({k:"po",cond:"mal",label:"Restaurar · «desde» en mal estado → venta mejorada al "+Math.round(c.restLow*100)+" % (supuesto conservador)",buy:p.low,sale:S*c.restLow});
  }
+ /* EE. UU.: compra en TCGplayer al precio de mercado (en inglés), importada a 41020: (precio + envío) × (1 + IVA) + gestión */
+ const tg=card.kind==="pk"?M.pt.cards[card.id]?.tcg:null,I=impCfg();/* ojo: aquí «jp» es local (carta japonesa) */
+ if(tg&&N(tg.market)&&N(fx.usd)&&Number.isFinite(S)){const buy=tg.market*fx.usd,full=(buy+I.shipUS)*(1+I.vat/100)+I.handling;
+  add({k:"us",cond:"buen",us:true,url:tg.url,label:"TCGplayer (EE. UU.) · mercado $"+tg.market.toFixed(2).replace(".",",")+" ≈ "+EUR(buy)+" · importada a 41020 (envío "+EUR(I.shipUS)+", IVA "+I.vat+" %, gestión "+EUR(I.handling)+") → venta en Cardmarket. Comprueba que el vendedor envía a España.",buy,costFull:full,sale:S});
+  const o=out[out.length-1];o.maxBuy=(netSale(S,c)-c.minProfit-I.handling)/(1+I.vat/100)-I.shipUS}
  const chk=langCheck(card);
  for(const [k,name] of LANGS){const v=saved[k];if(!v||!N(v.buy))continue;const cond=v.cond==="mal"?"mal":"buen";const ls=N(v.sell),sep=chk[k]==="separada";
   /* venta del mismo idioma: la media pegada solo cuenta si se ha comprobado que es distinta de la media general */
@@ -227,7 +236,7 @@ function confidence(x,o){
  parts.estabilidad=!Number.isFinite(disp)?0:disp<=.1?20:disp<=.25?14:disp<=.5?7:0;
  const m=x.mom;parts.tendencia=!Number.isFinite(m)?5:m>=-.05?10:m>=-.15?5:0;
  const mg=o?.margin;parts.colchon=!Number.isFinite(mg)?0:mg>=.5?10:mg>=.25?7:mg>=.1?3:0;
- parts.estado=!o?0:o.k==="ex"?15:o.own||o.k==="po"?8:0;/* en restaurar el mal estado es lo esperado; queda por ver cuánto */
+ parts.estado=!o?0:o.k==="ex"?15:o.own||o.k==="po"||o.k==="us"?8:0;/* TCGplayer: precio de mercado (ventas), no un anuncio concreto *//* en restaurar el mal estado es lo esperado; queda por ver cuánto */
  const score=Object.values(parts).reduce((a,b)=>a+b,0);
  return {score,parts,disp,prudent:Number.isFinite(o?.profit)?o.profit*score/100:NaN};
 }
@@ -362,7 +371,7 @@ function cardHtml(x,rank,c,pre="cp-"){
  '<div class="v4body"><div class="v4badges">'+(rank?'<span class="v4tag rank">#'+rank+'</span>':'')+(x.hit?'<span class="v4status s-comprobada">¡BAJO TU PRECIO!</span>':'')+(x.hot?'<span class="v4status s-comprobada">🔥 BAJÓ '+Math.round(x.dl.drop*100)+' % DESDE AYER</span>':'')+'<span class="v4tag '+sc+'">'+st+'</span><span class="v4tag">'+(x.kind==="lo"?"Lorcana":"Pokémon")+'</span><span class="v4tag">'+E(x.liq.t)+'</span>'+(Number.isFinite(x.mom)&&Math.abs(x.mom)>=.1?'<span class="v4tag">'+(x.mom>0?"▲ ":"▼ ")+PCT(x.mom)+' semana</span>':'')+'</div>'+
  '<h3>'+E(x.name)+'</h3><p class="v4id">'+E(x.set)+' · nº '+E(x.number)+' · '+E(x.rarity||"—")+'</p>'+
  (x.dl&&Math.abs(x.dl.drop)>=.1?'<p class="v4note cpDelta">«Desde» en Cardmarket: '+EUR(x.dl.lo0)+' ayer → <b>'+EUR(x.dl.lo)+'</b> hoy ('+PCT(-x.dl.drop)+'). '+(x.dl.drop>0?'Un anuncio barato acaba de aparecer: puede venderse en horas.':'')+'</p>':'')+
- '<div class="cpMoney"><div><span>Compra en Cardmarket</span><b>'+EUR(b?b.buy:p.exPlus||p.low)+'</b><small>'+(b?(b.k==="ex"?"EX o mejor":b.k==="po"?"cualquier estado (casi siempre mal estado)":b.own?b.lang+(b.sameLang?" · mismo idioma":" (anotado)"):x.kind==="jp"?"japonés · "+(b.k==="ex"?"EX o mejor":"estado sin indicar"):"estado sin indicar")+" · con envío a 41020 "+EUR(b.cost)+(out?" · fuera de tu presupuesto 20–200 €":""):"—")+'</small></div>'+
+ '<div class="cpMoney"><div><span>'+(b&&b.us?'Compra en TCGplayer':'Compra en Cardmarket')+'</span><b>'+EUR(b?b.buy:p.exPlus||p.low)+'</b><small>'+(b?(b.k==="ex"?"EX o mejor":b.k==="po"?"cualquier estado (casi siempre mal estado)":b.own?b.lang+(b.sameLang?" · mismo idioma":" (anotado)"):b.us?"TCGplayer (EE. UU.) · importada con IVA y gestión":x.kind==="jp"?"japonés · "+(b.k==="ex"?"EX o mejor":"estado sin indicar"):"estado sin indicar")+" · con envío a 41020 "+EUR(b.cost)+(out?" · fuera de tu presupuesto 20–200 €":""):"—")+'</small></div>'+
   '<div><span>Venta en Cardmarket</span><b>'+EUR(b?b.sale:S)+'</b><small>'+(b&&b.k==="po"?"mejorada · ":"")+(x.kind==="jp"?"ventas reales de cartas japonesas":b&&b.own&&b.sameLang?"ventas en "+E(b.lang.toLowerCase())+" (comprobadas)":"ventas reales de todos los idiomas")+'</small></div>'+
   '<div class="'+(b&&!out&&b.profit>=c.minProfit?'pos':'neg')+'"><span>'+(out?'Beneficio (fuera de presupuesto)':'Beneficio')+'</span><b>'+(b?SIGNED(b.profit):"—")+'</b><small>'+(b?"margen "+PCT(b.margin)+" · tras "+String(c.feePct).replace(".",",")+" % y envíos":"")+'</small></div></div>'+
  confHtml(x,b)+
@@ -375,7 +384,7 @@ function cardHtml(x,rank,c,pre="cp-"){
  pasteBox(x)+langBox(x)+
  '<div class="cpWatch">'+(w?'Vigilando: avisa si baja de <b>'+EUR(w.target)+'</b> <button type="button" class="v4btn" data-cp-unwatch="'+E(x.id)+'">Dejar de vigilar</button>':'<label>Avisar si la compra baja de <input inputmode="decimal" data-cp-target="'+E(x.id)+'" value="'+(b&&Number.isFinite(b.maxBuy)&&b.maxBuy>0?String(Math.floor(b.maxBuy)):"")+'" aria-label="Precio objetivo"> €</label><button type="button" class="v4btn" data-cp-watch="'+E(x.id)+'">Vigilar</button>')+'</div>'+
  '<details class="v4more cpCheck"><summary>Antes de pagar (30 segundos)</summary><ol class="v4help"><li>El anuncio es de esta carta: mismo número <b>'+E(x.number)+'</b>, edición e idioma'+(x.kind==="jp"?' (japonés)':'')+'.</li><li>Estado y fotos: si cuesta más de 50 €, pide fotos reales del anverso y reverso (bordes, esquinas, rayas).</li><li>Vendedor: muchas ventas, buena valoración y país de envío (el envío a 41020 cambia el coste).</li><li>Precio total con envío ≤ <b>'+EUR(b&&Number.isFinite(b.maxBuy)?b.maxBuy+c.buyShip:NaN)+'</b> (tu compra máxima para ganar '+EUR(c.minProfit)+').</li><li>Paga siempre dentro de Cardmarket, con envío certificado si supera 25 €. Nunca fuera de la plataforma.</li></ol></details>'+
- '<div class="v4actions"><a class="v4btn primary" href="'+E(l.cm)+'" target="_blank" rel="noopener noreferrer">Abrir en Cardmarket ↗</a>'+(x.kind!=="lo"?'<button type="button" class="v4btn" data-cp-promote="'+E(x.id)+'">Registrar este anuncio</button>':'')+'</div></div></article>';
+ '<div class="v4actions"><a class="v4btn primary" href="'+E(l.cm)+'" target="_blank" rel="noopener noreferrer">Abrir en Cardmarket ↗</a>'+(x.ops.find(o=>o.us)?'<a class="v4btn" href="'+E(x.ops.find(o=>o.us).url)+'" target="_blank" rel="noopener noreferrer">Comprar en TCGplayer ↗</a>':'')+(x.kind!=="lo"?'<button type="button" class="v4btn" data-cp-promote="'+E(x.id)+'">Registrar este anuncio</button>':'')+'</div></div></article>';
 }
 function confHtml(x,b){
  const k=confidence(x,b),P=k.parts,lvl=k.score>=75?"ok":k.score>=50?"mid":"low";
@@ -401,10 +410,11 @@ function sniper(){
    venta neta en Cardmarket − beneficio mínimo = coste máximo puesto en Sevilla = (precio + envío) × (1 + IVA) + gestión.
    Envío y gestión por defecto prudentes (guías 2026: envío 15–30 €, gestión del transportista 15–25 €; Correos menos).
    Cambio: tipo de referencia del BCE (frankfurter.app), guardado del día. */
-const JKEY="cv_v124_jp",FXKEY="cv_v124_fx";let jp={ship:20,vat:21,handling:15,...readLS(JKEY,{})},fx=readLS(FXKEY,{});
+const JKEY="cv_v124_jp",FXKEY="cv_v124_fx";let jp={ship:20,shipUS:15,vat:21,handling:15,...readLS(JKEY,{})},fx=readLS(FXKEY,{});
+function impCfg(){return jp}/* supuestos de importación (Japón y EE. UU.) */
 async function loadFx(){
- const today=new Date().toISOString().slice(0,10);if(fx.date===today&&N(fx.rate))return;
- try{const j=await getJSON("https://api.frankfurter.app/latest?from=JPY&to=EUR",null,15000,1),r=N(j?.rates?.EUR);if(r){fx={rate:r,date:today,ecb:j.date||""};writeLS(FXKEY,fx)}}catch{}
+ const today=new Date().toISOString().slice(0,10);if(fx.date===today&&N(fx.rate)&&(N(fx.usd)||fx.usdTried===today))return;/* un intento al día aunque falle el dólar */
+ try{const [j,u]=await Promise.all([getJSON("https://api.frankfurter.app/latest?from=JPY&to=EUR",null,15000,1),getJSON("https://api.frankfurter.app/latest?from=USD&to=EUR",null,15000,1).catch(()=>null)]),r=N(j?.rates?.EUR);if(r){fx={rate:r,usd:N(u?.rates?.EUR)||fx.usd,usdTried:today,date:today,ecb:j.date||""};writeLS(FXKEY,fx)}}catch{}
 }
 function jpMax(x,c){
  const S=saleRef(x.p);if(!Number.isFinite(S))return null;const net=netSale(S,c),maxCost=net-c.minProfit,eur=(maxCost-jp.handling)/(1+jp.vat/100)-jp.ship;
@@ -419,8 +429,8 @@ function jpLine(x,c){
 }
 function importHtml(c){
  if(!M.guide||view.game==="lorcana")return '';const L=cardsJp().filter(x=>(x.liq?.k||0)>=2&&TRUST[x.res.status]>=2).map(x=>({x,m:jpMax(x,c)})).filter(o=>o.m&&o.m.eur>=20).sort((a,b)=>b.m.eur-a.m.eur);
- return '<details class="cpPlan" data-cp-jpbox'+(jp.open?' open':'')+'><summary><b>🇯🇵 Importar de Japón</b> · '+L.length+(L.length===1?' carta japonesa que se vende':' cartas japonesas que se venden')+' cada semana aquí, con el máximo a pagar allí</summary>'+
- '<div class="cpPlanIn"><label>Envío desde Japón por carta (€)<input inputmode="decimal" data-cp-jp="ship" value="'+E(String(jp.ship).replace(".",","))+'"></label><label>IVA de importación %<input inputmode="decimal" data-cp-jp="vat" value="'+E(String(jp.vat).replace(".",","))+'"></label><label>Gestión aduanera (€)<input inputmode="decimal" data-cp-jp="handling" value="'+E(String(jp.handling).replace(".",","))+'"></label><label>Cambio 1 ¥ = € '+(fx.date?'<small>(BCE '+E(fx.ecb||fx.date)+')</small>':'')+'<input inputmode="decimal" data-cp-jp="rate" value="'+E(N(fx.rate)?String(fx.rate).replace(".",","):"")+'" placeholder="cargando…"></label></div>'+
+ return '<details class="cpPlan" data-cp-jpbox'+(jp.open?' open':'')+'><summary><b>🌍 Importar (Japón y EE. UU.)</b> · '+L.length+(L.length===1?' carta japonesa que se vende':' cartas japonesas que se venden')+' cada semana aquí, con el máximo a pagar allí</summary>'+
+ '<div class="cpPlanIn"><label>Envío desde Japón por carta (€)<input inputmode="decimal" data-cp-jp="ship" value="'+E(String(jp.ship).replace(".",","))+'"></label><label>Envío desde EE. UU. por carta (€)<input inputmode="decimal" data-cp-jp="shipUS" value="'+E(String(jp.shipUS).replace(".",","))+'"></label><label>IVA de importación %<input inputmode="decimal" data-cp-jp="vat" value="'+E(String(jp.vat).replace(".",","))+'"></label><label>Gestión aduanera (€)<input inputmode="decimal" data-cp-jp="handling" value="'+E(String(jp.handling).replace(".",","))+'"></label><label>Cambio 1 ¥ = € '+(fx.date?'<small>(BCE '+E(fx.ecb||fx.date)+')</small>':'')+'<input inputmode="decimal" data-cp-jp="rate" value="'+E(N(fx.rate)?String(fx.rate).replace(".",","):"")+'" placeholder="cargando…"></label></div>'+
  '<button type="button" class="v4btn" data-cp-jpsave>Recalcular</button>'+
  (L.length?'<ol class="cpPlanList">'+L.slice(0,25).map(({x,m})=>'<li><span><b>'+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+'</span><a class="v4btn" href="'+E(jpLinks(x)[0][1])+'" target="_blank" rel="noopener noreferrer">Buscar en Japón ↗</a><small>Se vende aquí a '+EUR(m.S)+' (producto japonés en Cardmarket) · paga allí como máximo <b>'+(Number.isFinite(m.yen)?YEN(m.yen)+' ≈ '+EUR(m.yen*fx.rate):EUR(m.eur))+'</b> para ganar '+EUR(c.minProfit)+'.</small></li>').join("")+'</ol>':'<p class="v4empty">Ninguna carta japonesa deja margen con estos gastos.</p>')+
  '<p class="v4note">Mercari y Yahoo! Subastas no envían fuera de Japón: se compra a través de un intermediario como Buyee (cobra su comisión y el envío). Al llegar pagas IVA y gestión. Si juntas varias cartas en un envío, el coste por carta baja. Compra solo si el precio, con todo, queda por debajo del máximo.</p></details>';
@@ -655,9 +665,9 @@ async function verifyVisible(){
 function onShow(){ready.then(()=>{render();if(!started&&navigator.onLine!==false){started=true;setTimeout(()=>refresh(false),900)}})}
 document.addEventListener("click",e=>{
  const t=e.target.closest("[data-cp-jpsave],[data-cp-plancalc],[data-cp-refresh],[data-cp-lsave],[data-cp-pastesave],[data-cp-pasteopen],[data-cp-watch],[data-cp-unwatch],[data-cp-promote],[data-cp-histload],[data-cp-ctload],[data-cp-ctsave],[data-cp-ctdel]");if(!t)return;const d=t.dataset;
- if("cpJpsave" in d){const box=t.closest("[data-cp-jpbox]"),v=k=>{const r=String(box.querySelector('[data-cp-jp="'+k+'"]')?.value||"").trim();return r==="0"?0:NUM(r)};/* 0 € de gestión es válido */const sh=v("ship"),va=v("vat"),ha=v("handling"),ra=Number(String(box.querySelector('[data-cp-jp="rate"]')?.value||"").replace(",","."));
-  if(!Number.isFinite(sh)||!Number.isFinite(va)||!Number.isFinite(ha)){alert("Revisa envío, IVA y gestión: números como 20, 21 o 15.");return}
-  jp={ship:sh,vat:va,handling:ha,open:true};writeLS(JKEY,jp);if(ra>0&&ra<1){fx={...fx,rate:ra,date:fx.date||new Date().toISOString().slice(0,10),manual:true};writeLS(FXKEY,fx)}renderNow();return}
+ if("cpJpsave" in d){const box=t.closest("[data-cp-jpbox]"),v=k=>{const r=String(box.querySelector('[data-cp-jp="'+k+'"]')?.value||"").trim();return r==="0"?0:NUM(r)};/* 0 € de gestión es válido */const sh=v("ship"),su=v("shipUS"),va=v("vat"),ha=v("handling"),ra=Number(String(box.querySelector('[data-cp-jp="rate"]')?.value||"").replace(",","."));
+  if(!Number.isFinite(sh)||!Number.isFinite(su)||!Number.isFinite(va)||!Number.isFinite(ha)){alert("Revisa envío, IVA y gestión: números como 20, 21 o 15.");return}
+  jp={ship:sh,shipUS:su,vat:va,handling:ha,open:true};writeLS(JKEY,jp);if(ra>0&&ra<1){fx={...fx,rate:ra,date:fx.date||new Date().toISOString().slice(0,10),manual:true};writeLS(FXKEY,fx)}renderNow();return}
  if("cpPlancalc" in d){const box=t.closest("[data-cp-planbox]"),v=k=>NUM(box.querySelector('[data-cp-plan="'+k+'"]')?.value);const b=v("budget"),m=v("max"),q=Number(String(box.querySelector('[data-cp-plan="minConf"]')?.value||"").trim());
   if(!Number.isFinite(b)||!Number.isFinite(m)||!(q>=0&&q<=100)){alert("Revisa los importes: presupuesto y máximo en euros, confianza entre 0 y 100.");return}
   plan={budget:b,max:m,minConf:q,open:true};writeLS(PKEY,plan);renderNow();return}
@@ -679,5 +689,5 @@ let qT=null;document.addEventListener("input",e=>{const t=e.target.closest("[dat
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"]'))setTimeout(onShow,60);if(e.target.closest('.mainNav [data-tab="favoritos"]'))setTimeout(onFavs,60)});
 if(location.hash==="#favoritos")setTimeout(onFavs,1300);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(onShow,1200));else setTimeout(onShow,1200);
-window.CVCompra={bgRender:render,jpMax,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
+window.CVCompra={ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpMax,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
 })();

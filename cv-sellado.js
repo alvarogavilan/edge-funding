@@ -71,7 +71,7 @@ function ensureHost(){
 }
 document.addEventListener("change",e=>{const t=e.target.closest("[data-sl]");if(!t)return;const k=t.dataset.sl;
  if(k==="max"||k==="ship"){const v=NUM(t.value);if(!Number.isFinite(v)){alert("Escribe un importe en euros, por ejemplo 600 o 9,50.");return}sv[k]=v}else sv[k]=t.value;
- writeLS(KEY,sv);paint()});
+ writeLS(KEY,sv);setTimeout(paint,0)});
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="sealed"]'))setTimeout(render,40)});
 if(location.hash==="#sealed")setTimeout(render,1300);
 window.CVSellado={render,rows:()=>rows(window.CVCompra)};

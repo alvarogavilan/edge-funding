@@ -72,8 +72,28 @@ function render(){
    '<label>Venta conocida de esa graduada € (opcional)<input inputmode="decimal" data-gr="sale" placeholder="vacío = no la sé"></label><label>Tarifa de graduación €<input inputmode="decimal" data-gr="fee" placeholder="'+String(GRADE_FEE).replace(".",",")+'"></label></div>'+
    '<details class="v4more"><summary>Pegar el anuncio de la tienda (rellena empresa, nota, precio y certificado)</summary><textarea data-gr-paste rows="3" placeholder="Ej.: Charizard ex 199/165 PSA 10 · 249,90 € · Certificado 12345678"></textarea><button type="button" class="v4btn" data-gr-parse>Leer anuncio</button></details>'+
    '<div class="cpPlanIn"><label>Dónde está<select data-gr="store">'+STORES.map(s=>'<option>'+s[0]+'</option>').join("")+'<option>Cardmarket</option><option>Otra</option></select></label><label>N.º de certificado (opcional)<input inputmode="numeric" data-gr="cert" placeholder="12345678"></label></div>'+
-   '<button type="button" class="v4btn primary" data-gr-add>Analizar anuncio</button>'+storesHtml():'<p class="v4note">⏳ Cargando la guía de Cardmarket… (abre Compra YA una vez si no aparece)</p>')+
+   '<button type="button" class="v4btn primary" data-gr-add>Analizar anuncio</button>'+ctGHtml()+storesHtml():'<p class="v4note">⏳ Cargando la guía de Cardmarket… (abre Compra YA una vez si no aparece)</p>')+
   (list.length?'<h4>Anuncios analizados</h4><ol class="cpPlanList">'+list.map(rowHtml).join("")+'</ol>':'')+'</section>';
+}
+/* CardTrader (con tu token): anuncios reales de esa carta GRADUADA ahora, con precio, país del vendedor y enlace. */
+let ctG=null;
+async function loadCtGraded(){
+ const C=window.CVCompra;if(!pick)return;if(!C.ctToken()){ctG={error:"Sin token de CardTrader: pégalo en Compra YA → Estado de las fuentes."};render();return}
+ ctG={loading:true};render();
+ try{const {bp}=await C.ctBlueprint(pick),j=await C.ctGet("/marketplace/products?blueprint_id="+encodeURIComponent(bp.id)),list=Array.isArray(j)?j:(j?.[bp.id]||Object.values(j||{}).flat());
+  const g=list.filter(p=>p.graded||Object.keys(p.properties_hash||{}).some(k=>/grad/i.test(k)&&p.properties_hash[k])).map(p=>{const h=p.properties_hash||{},info=Object.entries(h).filter(([k,v])=>/grad|grade|psa|bgs|cgc|beckett|language|condition/i.test(k)&&v!==false&&v!=null).map(([k,v])=>String(k).replace(/_/g," ")+": "+v).join(" · ");
+   return {eur:Number(p.price_cents??p.price?.cents)/100,info,country:p.user?.country_code||"",bp:bp.id}}).filter(o=>o.eur>0).sort((a,b)=>a.eur-b.eur);
+  ctG={rows:g,bp:bp.id}}
+ catch(e){ctG={error:String(e.message||e)}}
+ render();
+}
+function ctGHtml(){
+ if(!pick)return '';const head='<h4>Graduadas en CardTrader ahora</h4>';
+ if(!ctG)return head+'<button type="button" class="v4btn" data-gr-ct>Buscar anuncios graduados en CardTrader</button>';
+ if(ctG.loading)return head+'<p class="v4note">Consultando CardTrader…</p>';
+ if(ctG.error)return head+'<p class="v4note neg">'+E(ctG.error)+'</p><button type="button" class="v4btn" data-gr-ct>Reintentar</button>';
+ const url="https://www.cardtrader.com/cards/"+encodeURIComponent(ctG.bp);
+ return head+(ctG.rows.length?'<ol class="cpPlanList">'+ctG.rows.slice(0,10).map(o=>'<li><span><b>'+EUR(o.eur)+'</b>'+(o.country?' · vendedor '+E(o.country):'')+'</span><button type="button" class="v4btn" data-gr-use="'+o.eur+'">Analizar</button><small>'+E(o.info||"graduada")+' · <a href="'+E(url)+'" target="_blank" rel="noopener noreferrer">ver en CardTrader ↗</a></small></li>').join("")+'</ol>':'<p class="v4note">Ninguna graduada a la venta ahora en CardTrader para esta carta.</p>')+'<p class="v4note">Precio pedido, sin envío. «Analizar» lo pasa al comparador: pon la empresa y la nota del anuncio.</p>';
 }
 function storesHtml(){
  const q=pick?encodeURIComponent(pick.name+" "+String(pick.number).split("/")[0]):"";
@@ -88,7 +108,9 @@ function ensureHost(){
 document.addEventListener("input",e=>{const t=e.target.closest("[data-gr-q]");if(!t)return;pick=null;const r=search(t.value),box=document.querySelector("[data-gr-res]");if(!box)return;
  box.innerHTML=r.length?'<ul class="cpPlanList">'+r.map(x=>'<li><span>'+E(x.name)+' · '+E(x.set)+' nº '+E(x.number)+'</span><button type="button" class="v4btn" data-gr-pick="'+E(x.id)+'">Elegir</button></li>').join("")+'</ul>':(t.value.trim().length>=3?'<p class="v4note">Ninguna carta coincide.</p>':'')});
 document.addEventListener("click",e=>{
- const p=e.target.closest("[data-gr-pick]");if(p){const C=window.CVCompra;pick=C.cardsPk().concat(C.cardsJp()).find(x=>x.id===p.dataset.grPick)||null;render();return}
+ const p=e.target.closest("[data-gr-pick]");if(p){const C=window.CVCompra;ctG=null;pick=C.cardsPk().concat(C.cardsJp()).find(x=>x.id===p.dataset.grPick)||null;render();return}
+ if(e.target.closest("[data-gr-ct]")){loadCtGraded();return}
+ const u=e.target.closest("[data-gr-use]");if(u){const i=document.querySelector('[data-gr="price"]');if(i)i.value=String(u.dataset.grUse).replace(".",",");const st=document.querySelector('[data-gr="store"]');if(st){if(![...st.options].some(o=>o.value==="CardTrader"))st.add(new Option("CardTrader","CardTrader"));st.value="CardTrader"}i?.focus();return}
  if(e.target.closest("[data-gr-parse]")){const o=parseListing(document.querySelector("[data-gr-paste]")?.value);const set=(k,v)=>{const i=document.querySelector('[data-gr="'+k+'"]');if(i&&v!=null)i.value=typeof v==="number"?String(v).replace(".",","):v};
   if(o.company==null&&o.grade==null&&o.price==null){alert("No encuentro empresa, nota ni precio en el texto pegado.");return}set("company",o.company);set("grade",o.grade);set("price",o.price);set("cert",o.cert);return}
  const d=e.target.closest("[data-gr-del]");if(d){list.splice(+d.dataset.grDel,1);writeLS(KEY,list);render();return}

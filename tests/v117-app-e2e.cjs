@@ -23,7 +23,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});const hits={guide:0,pt:[],bx:0,us:0,ct:[]};let bxDown=false;
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
-  if(/tcgplayer|api\.tcgdex\.net\/v2\/[a-z-]+\/cards\/./.test(u)){hits.us++;if(process.env.DBG)console.log('precio EE. UU./carta a carta:',u);return route.abort()}/* el índice de nombres de TCGdex (identificar cartas) no cuenta */
+  if(/tcgplayer\.com|api\.tcgdex\.net\/v2\/[a-z-]+\/cards\/./.test(u)){hits.us++;/* V125: TCGplayer vuelve, pero llega en la misma consulta por colección a pokemontcg.io (select=…,tcgplayer) */if(process.env.DBG)console.log('precio EE. UU./carta a carta:',u);return route.abort()}/* el índice de nombres de TCGdex (identificar cartas) no cuenta */
   if(/images\.|assets\.tcgdex|cards\.lorcast|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.endsWith('/prices/latest.json')){hits.guide++;return J(GUIDE)}
   if(u.endsWith('/history/933.json'))return J({'273933':[['2026-10-01',95,150,null,null,null,null,null,null],['2026-10-12',92,155,null,null,null,null,null,null],['2026-10-24',90,160,null,null,null,null,null,null]]});
@@ -42,7 +42,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.goto(base);
  ok('Barra: Compra YA, Favoritos, Vender YA, Mi colección, Sellado, Cartas graduadas, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.textContent)))===JSON.stringify(['Compra YA','Favoritos','Vender YA','Mi colección','Sellado','Cartas graduadas','Valorar PSA','Archivo']));
  await page.waitForFunction(()=>document.querySelector('#v4Buy #cp-base4-10 .v4badges')&&/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10 .v4badges').textContent)&&document.querySelector('#v4Buy #cp-lo-tfc-207'),null,{timeout:120000});
- ok('Una sola descarga de la guía oficial; ni precios de EE. UU. ni consultas carta a carta',hits.guide===1&&hits.us===0&&hits.bx>=2,JSON.stringify({guide:hits.guide,us:hits.us,pt:hits.pt.length,bx:hits.bx}));
+ ok('Una sola descarga de la guía oficial; sin consultas carta a carta (TCGplayer va en la consulta por colección)',hits.guide===1&&hits.us===0&&hits.bx>=2,JSON.stringify({guide:hits.guide,us:hits.us,pt:hits.pt.length,bx:hits.bx}));
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  let t=await T('base4-10');
  ok('Mewtwo: versión verificada con 2 fuentes, compra EX o mejor 95 € (101 € en 41020), venta 160 € → +46,00 €',/VERSIÓN VERIFICADA/.test(t)&&/95,00\s€/.test(t)&&/101,00\s€/.test(t)&&/160,00\s€/.test(t)&&/\+46,00\s€/.test(t),t.slice(0,400));
