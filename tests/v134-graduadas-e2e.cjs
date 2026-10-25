@@ -52,7 +52,7 @@ async function setup(withToken){
  const ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  ok('«Todos los idiomas»: salen internacionales y japonesas en Compra YA',(await ids()).includes('base4-10')&&(await ids()).includes('jp-861477'),JSON.stringify(await ids()));
  let t=await page.textContent('#v4Buy .cpLangNote');
- ok('Aviso de idiomas: cuántas de cada y por qué faltan internacionales (anuncio barato sin idioma = coreano o chino)',/1 japonesa\(s\) y 1 internacional\(es\) con el idioma comprobado · 1 internacional\(es\) con IDIOMA POR CONFIRMAR/.test(t),t);
+ ok('Aviso de idiomas: cuántas de cada y por qué faltan internacionales (anuncio barato sin idioma = coreano o chino)',/✅ 1 compra\(s\) en japonés y 1 internacional\(es\) confirmada\(s\) · 🔎 1 internacional\(es\) con precio objetivo en inglés/.test(t),t);
  await page.selectOption('[data-cp-view="lang"]','ja');await page.waitForTimeout(400);
  ok('Idioma «Japonés»: las japonesas salen en Compra YA (y solo ellas)',JSON.stringify(await ids())==='["jp-861477"]',JSON.stringify(await ids()));
  t=await page.textContent('#v4Buy #cp-jp-861477');

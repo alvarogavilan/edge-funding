@@ -55,12 +55,11 @@ const shops=async page=>{await page.evaluate(()=>{document.querySelectorAll('#v4
  const L=await ids();
  ok('…lista con las tres: Mewtwo, Alakazam y Pikachu ex japonés',['base4-10','base4-1','jp-861477'].every(i=>L.includes(i)),JSON.stringify(L));
  t=await page.textContent('#v4Buy #cp-base4-1');
- ok('Alakazam marcada «🌐 IDIOMA POR CONFIRMAR» con su compra EX o mejor (100 €, pagas 106 €)',/🌐 IDIOMA POR CONFIRMAR/.test(t)&&/106,00\s€/.test(t),t.slice(0,400));
+ ok('V138 · Alakazam marcada «🔎 BUSCA EN INGLÉS» con su precio máximo (≤ 194 € para ganar 40 €)',/🔎 BUSCA EN INGLÉS/.test(t)&&/≤ 194,00\s€/.test(t),t.slice(0,600));
  ok('Su enlace abre solo los anuncios en INGLÉS (EX o mejor) para ver el precio real',await page.getAttribute('#v4Buy #cp-base4-1 .v4actions a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273924&language=1&minCondition=3');
- ok('Confianza como mucho 40/100 (idioma sin comprobar)',/Confianza ([0-9]|[1-3][0-9]|40)\/100/.test(await page.textContent('#v4Buy #cp-base4-1 .cpConf')));
- ok('No entra en el Top 5',!/Alakazam/.test(await page.textContent('#v4Buy .cpTop')));
+  ok('No entra en el Top 5',!/Alakazam/.test(await page.textContent('#v4Buy .cpTop')));
  t=await page.textContent('#v4Buy .cpLangNote');
- ok('Aviso de idiomas: 1 japonesa, 1 internacional comprobada y 1 por confirmar',/1 japonesa\(s\) y 1 internacional\(es\) con el idioma comprobado · 1 internacional\(es\) con IDIOMA POR CONFIRMAR/.test(t),t);
+ ok('Aviso de idiomas: 1 compra en japonés, 1 internacional confirmada y 1 con precio objetivo',/✅ 1 compra\(s\) en japonés y 1 internacional\(es\) confirmada\(s\) · 🔎 1 internacional\(es\) con precio objetivo en inglés/.test(t),t);
  await page.selectOption('[data-cp-view="lang"]','en');await page.waitForTimeout(400);
  ok('Idioma «Inglés»: salen las internacionales (no solo japonesas)',(await ids()).includes('base4-10')&&(await ids()).includes('base4-1')&&!(await ids()).includes('jp-861477'),JSON.stringify(await ids()));
  ok('Sin errores de JavaScript (1)',!errors.length,errors.join(' | '));

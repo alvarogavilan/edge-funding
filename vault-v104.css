@@ -313,3 +313,8 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpJpCalc .cpChk input{width:auto}
 /* V137 · diagnóstico copiable */
 .cpDiag{white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:240px;overflow:auto;padding:8px;border:1px solid var(--v4line);border-radius:8px}
+/* V138 · La línea que manda: qué comprar, idioma, dónde, pagas, vendes, ganas */
+.cpDecide{margin:10px 0;padding:12px 14px;border-radius:12px;font-size:16px;line-height:1.45;border:2px solid}
+.cpDecide.buy{border-color:var(--v4good);background:rgba(46,204,113,.10)}
+.cpDecide.check{border-color:var(--v4warn);background:rgba(241,196,15,.10)}
+.cpDecide small{display:block;margin-top:6px;font-size:13px;opacity:.9}

@@ -47,7 +47,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  let t=await T('base4-10');
  ok('Mewtwo: versión verificada con 2 fuentes, compra EX o mejor 194 € (200 € en 41020), venta 258 € → +40,10 €',/VERSIÓN VERIFICADA/.test(t)&&/194,00\s€/.test(t)&&/200,00\s€/.test(t)&&/258,00\s€/.test(t)&&/\+40,10\s€/.test(t),t.slice(0,400));
  ok('Compra YA sin «+ Nueva oportunidad» ni fichas de restauración aparte',!(await page.$('[data-v4-new]'))&&!(await page.isVisible('#v4Restore h2').catch(()=>false)));
- ok('En «Buen estado» no aparece la operación de restaurar',!(await ids()).includes('base4-1')&&!/Restaurar/.test(await T('base4-10')));
+ ok('En «Buen estado» no aparece la operación de restaurar',!/Restaurar/.test(await page.textContent('#v4Buy .cpBox > .v4list')));
  const main0=await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href');
  await page.selectOption('[data-cp-view="lang"]','es');await page.waitForTimeout(300);/* V122: un selector de idioma en lugar de un botón por idioma */
  const lk={main:main0,es:await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href')};await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
@@ -65,11 +65,11 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  ok('Umbreon Aquapolis H29: la 2.ª fuente corrige la versión (748,52 €, no 98 €) y avisa del presupuesto',/748,52\s€/.test(t)&&!/24,99\s€ cualquier/.test(t)&&/fuera de tu presupuesto/.test(t)&&/310,00\s€/.test(t),t.slice(0,400));
  await page.fill('[data-cp-q]','');await page.waitForTimeout(600);
  await page.selectOption('[data-cp-view="sort"]','buy');await page.waitForTimeout(300);
- ok('Ordenar por menor precio de compra (Elsa 193 €, Mewtwo 194 €)',(await ids()).join()==='lo-tfc-207,base4-10',JSON.stringify(await ids()));
+ ok('Ordenar por menor precio de compra (Elsa 193 €, Mewtwo 194 €)',(await ids()).slice(0,2).join()==='lo-tfc-207,base4-10'/* V138: detrás, las de precio objetivo */,JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
  ok('Estado «Mal estado · restaurar»: sin anuncios internacionales de idioma desconocido',!(await ids()).includes('base4-1'),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
- ok('Estado «Buen estado»',[...(await ids())].sort().join()==='base4-10,lo-tfc-207',JSON.stringify(await ids()));
+ const ids0=await ids();ok('Estado «Buen estado»',['base4-10','lo-tfc-207'].every(i=>ids0.includes(i)),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.selectOption('[data-cp-view="game"]','lorcana');await page.waitForTimeout(300);
  ok('Juego «Lorcana»',(await ids()).join()==='lo-tfc-207');
  await page.selectOption('[data-cp-view="game"]','all');await page.selectOption('[data-cp-view="sort"]','profit');await page.waitForTimeout(300);

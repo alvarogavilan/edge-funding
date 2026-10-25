@@ -37,7 +37,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  // V131 · mismo idioma: el «desde EX o mejor» de 149,90 € es el 32 % de su valor (470,42 €) y Cardmarket no dice de qué
  // idioma es (coreano y chino valen mucho menos) → no se calcula beneficio con él ni se recomienda.
  const ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
- ok('V136 · Mew ex 232 sale en Compra YA marcada «🌐 IDIOMA POR CONFIRMAR» (su EX o mejor a 149,90 € puede ser coreano o chino) y con el enlace solo en inglés',(await ids()).includes('sv04.5-232')&&/IDIOMA POR CONFIRMAR/.test(await page.textContent('#v4Buy #cp-sv04\\.5-232'))&&await page.getAttribute('#v4Buy #cp-sv04\\.5-232 .v4actions a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&language=1&minCondition=3',JSON.stringify(await ids()));
+ ok('V138 · Mew ex 232 (vale 470 €) no sale: con 200 € tendrías que encontrar una inglesa al 41 % de su valor (objetivo irreal; su EX o mejor de 149,90 € puede ser coreano)',!(await ids()).includes('sv04.5-232'),JSON.stringify(await ids()));
  let t=await page.textContent('#v4Buy .cpTop');
  ok('🏆 Top 5: sin Mew ex y lo explica (solo mismo idioma)',!/Mew ex/.test(t)&&/Solo con compra y venta del mismo idioma/.test(t),t.slice(0,400));
  t=await page.textContent('[data-cp-snipe]');
