@@ -17,7 +17,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  [273924,30,200,200,205,210,null,null,null],   // base4-1 Alakazam · vale ~200 € y hay un anuncio a 30 € → punto de mira
  [574435,560,900,null,null,null,null,null,null],// Evolving Skies Booster Box · «desde» 62 % de su tendencia
  [583510,150,290,null,null,null,null,null,null],// Brilliant Stars ETB
- [271439,250,270,null,null,null,null,null,null]]};// Phantom Forces Booster (sube en 2 semanas)
+ [271439,180,270,null,null,null,null,null,null]]};// Phantom Forces Booster (sube en 2 semanas)
 const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,90,160,160,165,170,null,null,null],[273924,120,200,200,205,210,null,null,null],[574435,560,880,null,null,null,null,null,null],[583510,150,290,null,null,null,null,null,null],[271439,250,262,null,null,null,null,null,null]]};
 const OLD={...GUIDE,sourceCreatedAt:'2026-10-11T02:45:00+0200',rows:[[574435,600,850,null,null,null,null,null,null],[583510,150,280,null,null,null,null,null,null],[271439,240,220,null,null,null,null,null,null]]};
 const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-1',name:'Mickey Mouse - Brave Little Tailor',number:'1',rarity:'Legendary',imageSmall:'https://images.example/m.png',cardmarketId:681001,variants:[{name:'normal',eur:{trend:60,low:55,avg30:62,avg7:61,avg1:60}}]}]};
@@ -63,10 +63,11 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.selectOption('[data-cp-view="game"]','all');await page.waitForTimeout(300);
  // Sellado
  await page.click('.mainNav [data-tab="sealed"]');await page.waitForFunction(()=>/para revender con beneficio/.test(document.querySelector('#cpSealed')?.textContent||'')&&/subiendo/.test(document.querySelector('#cpSealed')?.textContent||''),null,{timeout:60000});
- await page.waitForFunction(()=>/Evolving Skies/.test(document.querySelector('#cpSealed ol')?.textContent||''),null,{timeout:30000});
+ await page.waitForFunction(()=>/Brilliant Stars/.test(document.querySelector('#cpSealed ol')?.textContent||''),null,{timeout:30000});
  t=await page.textContent('#cpSealed');
  // 900·0,95 − 10 − (560 + 10) = +275 · Brilliant Stars ETB: tendencia sin moverse ayer pero sí en 2 semanas → 290·0,95−10−160 = +105,50
- ok('Sellado · revender: Evolving Skies Booster Box 560 € (62 %) → +275 € y Brilliant Stars ETB → +105,50 €',/Evolving Skies Booster Box/.test(t)&&/\+275,00\s€/.test(t)&&/Brilliant Stars Elite Trainer Box/.test(t)&&/\+105,50\s€/.test(t),t.slice(0,700));
+ // V127: compra máxima 200 € → la caja de Evolving Skies (560 €) no sale; Brilliant Stars ETB 290·0,95−10−160 = +105,50; Phantom Forces 270·0,95−10−190 = +56,50
+ ok('Sellado · revender dentro del presupuesto: Brilliant Stars ETB +105,50 € y Phantom Forces Booster +56,50 €; la caja de 560 € no sale',!/Evolving Skies/.test(t.split('Ver')[1]||t)&&/Brilliant Stars Elite Trainer Box/.test(t)&&/\+105,50\s€/.test(t)&&/\+56,50\s€/.test(t),t.slice(0,700));
  ok('Sellado: se avisa de comprobar idioma y precinto',/Comprueba idioma/.test(t)&&/precinto/.test(t));
  await page.selectOption('[data-sl="show"]','inv');await page.waitForTimeout(300);
  t=await page.textContent('#cpSealed ol');

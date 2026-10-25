@@ -12,7 +12,7 @@ const N=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?n:NaN};
 const NUM=v=>{const t=String(v??"").trim().replace(/\s|€/g,"");if(!t)return NaN;const x=Number(t.includes(",")?t.replace(/\./g,"").replace(",","."):t);return Number.isFinite(x)&&x>=0?x:NaN};
 const readLS=(k,d)=>{try{const x=JSON.parse(localStorage.getItem(k)||"null");return x&&typeof x==="object"?x:d}catch{return d}};
 const writeLS=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}};
-const KEY="cv_v122_sealed";let sv={cat:"all",show:"arb",max:600,ship:10,...readLS(KEY,{})};
+const KEY="cv_v122_sealed";let sv={cat:"all",show:"arb",ship:10,...readLS(KEY,{})};delete sv.max;/* V127: la compra máxima es la de Supuestos (presupuesto único) */
 let busy="";
 
 function rows(C){
@@ -25,8 +25,8 @@ function rows(C){
   const ratio=g.low/g.trend,cost=g.low+sv.ship,net=g.trend*(1-cfg.feePct/100)-sv.ship,profit=net-cost;
   const ch14=Number.isFinite(t14)?g.trend/t14-1:NaN;
   out.push({pid,name,cat,type:S.cats[cat]||"",exp,low:g.low,trend:g.trend,t14,ch14,moving,ratio,cost,net,profit,
-   arb:moving&&ratio>=.5&&ratio<=.9&&profit>=cfg.minProfit&&g.low<=sv.max,
-   inv:moving&&Number.isFinite(ch14)&&ch14>=.1&&g.trend>=30&&g.low<=sv.max&&ratio>=.5&&ratio<=1.1,/* ≥ 30 € y «desde» cerca de la tendencia: lo barato y lo de «desde» disparado es ruido */
+   arb:moving&&ratio>=.5&&ratio<=.9&&profit>=cfg.minProfit&&g.low<=cfg.maxBuy,
+   inv:moving&&Number.isFinite(ch14)&&ch14>=.1&&g.trend>=30&&g.low<=cfg.maxBuy&&ratio>=.5&&ratio<=1.1,/* ≥ 30 € y «desde» cerca de la tendencia: lo barato y lo de «desde» disparado es ruido */
    odd:ratio<.5});
  }
  return out;
@@ -60,7 +60,7 @@ function paint(){
   (busy?'<p class="v4note">⏳ '+E(busy)+'</p>':'')+
   '<div class="rdctl"><label>Ver<select data-sl="show"><option value="arb"'+(sv.show!=="inv"?" selected":"")+'>Comprar y revender (arbitraje)</option><option value="inv"'+(sv.show==="inv"?" selected":"")+'>Para invertir (sube y se vende)</option></select></label>'+
   '<label>Tipo<select data-sl="cat"><option value="all">Todos</option>'+cats.map(([k,n])=>'<option value="'+k+'"'+(sv.cat===k?" selected":"")+'>'+E(n)+'</option>').join("")+'</select></label>'+
-  '<label>Compra máxima (€)<input inputmode="decimal" data-sl="max" value="'+E(String(sv.max).replace(".",","))+'"></label><label>Envío de un sellado (€)<input inputmode="decimal" data-sl="ship" value="'+E(String(sv.ship).replace(".",","))+'"></label></div>'+
+  '<label>Compra máxima<span class="v4note">'+EUR(cfg.maxBuy)+' (Supuestos)</span></label><label>Envío de un sellado (€)<input inputmode="decimal" data-sl="ship" value="'+E(String(sv.ship).replace(".",","))+'"></label></div>'+
   (list.length?'<ol class="cpPlanList">'+list.slice(0,40).map(x=>itemHtml(x,sv.show)).join("")+'</ol>':'<p class="v4empty">'+(sv.show==="inv"?(st.old?.days?'Ningún producto con ventas sube ≥ 10 % en 2 semanas con estos filtros.':'Aún no hay foto de hace 2 semanas para comparar.'):'Ningún producto cumple hoy estos filtros.')+'</p>')+
   '<p class="v4note">'+(sv.show==="inv"?'«Para invertir» es una suposición, no una garantía: un sellado que sube y se sigue vendiendo suele seguir subiendo hasta que se reimprime. Compara con la foto del '+E(st.old?.date?new Date(st.old.date).toLocaleDateString("es-ES"):"—")+'.':'Arbitraje: comprar al «desde» y revender a su tendencia en Cardmarket (comisión '+E(String(cfg.feePct).replace(".",","))+' % y envío del sellado en cada sentido). Solo productos con ventas recientes y «desde» entre el 50 % y el 90 % de su tendencia: por debajo suele ser otro idioma o caja abierta.')+' En sellado Cardmarket no publica medias de venta, solo tendencia.</p>');
 }
@@ -70,7 +70,7 @@ function ensureHost(){
  return h;
 }
 document.addEventListener("change",e=>{const t=e.target.closest("[data-sl]");if(!t)return;const k=t.dataset.sl;
- if(k==="max"||k==="ship"){const v=NUM(t.value);if(!Number.isFinite(v)){alert("Escribe un importe en euros, por ejemplo 600 o 9,50.");return}sv[k]=v}else sv[k]=t.value;
+ if(k==="ship"){const v=NUM(t.value);if(!Number.isFinite(v)){alert("Escribe un importe en euros, por ejemplo 600 o 9,50.");return}sv[k]=v}else sv[k]=t.value;
  writeLS(KEY,sv);setTimeout(paint,0)});
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="sealed"]'))setTimeout(render,40)});
 if(location.hash==="#sealed")setTimeout(render,1300);

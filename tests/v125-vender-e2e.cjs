@@ -46,7 +46,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
     {price_cents:15000,properties_hash:{condition:'Near Mint',pokemon_language:'en'},user:{country_code:'IT'}},
     {price_cents:17000,properties_hash:{condition:'Near Mint',pokemon_language:'en'},user:{country_code:'DE'}},
     {price_cents:12000,properties_hash:{condition:'Near Mint',pokemon_language:'it'},user:{country_code:'IT'}},
-    {price_cents:24000,graded:true,properties_hash:{condition:'Near Mint',pokemon_language:'en',grading_company:'PSA',grade:'9'},user:{country_code:'FR'}},
+    {price_cents:16000,graded:true,properties_hash:{condition:'Near Mint',pokemon_language:'en',grading_company:'PSA',grade:'9'},user:{country_code:'FR'}},
     {price_cents:41000,graded:true,properties_hash:{pokemon_language:'en',grading_company:'BGS',grade:'9.5'},user:{country_code:'ES'}}]});
    return route.fulfill({status:404,body:''})}
   return route.abort()});
@@ -82,9 +82,9 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.fill('#cpGraded [data-gr-q]','mewtwo base');await page.waitForSelector('[data-gr-pick="base4-10"]');await page.click('[data-gr-pick="base4-10"]');
  await page.click('[data-gr-ct]');await page.waitForFunction(()=>/Graduadas en CardTrader ahora/.test(document.querySelector('#cpGraded')?.textContent||'')&&document.querySelector('[data-gr-use]'),null,{timeout:20000});
  t=await page.textContent('#cpGraded');
- ok('Graduadas en CardTrader: PSA 9 a 240 € (FR) y BGS 9,5 a 410 € (ES), ordenadas, sin las no graduadas',/240,00\s€ · vendedor FR/.test(t)&&/grading company: PSA · grade: 9/.test(t)&&/410,00\s€ · vendedor ES/.test(t)&&!/150,00\s€ · vendedor IT/.test(t)&&t.indexOf('240,00')<t.indexOf('410,00'),t.slice(t.indexOf('Graduadas en CardTrader'),t.indexOf('Graduadas en CardTrader')+400));
- await page.click('[data-gr-use="240"]');
- ok('«Analizar» pasa el precio y la tienda CardTrader al comparador',await page.inputValue('[data-gr="price"]')==='240'&&await page.inputValue('[data-gr="store"]')==='CardTrader');
+ ok('Graduadas en CardTrader: PSA 9 a 160 € (FR); la BGS 9,5 de 410 € no sale (más que tu compra máxima de 200 €); sin las no graduadas',/160,00\s€ · vendedor FR/.test(t)&&/grading company: PSA · grade: 9/.test(t)&&!/410,00\s€ · vendedor ES/.test(t)&&/1 anuncio\(s\) más caros que tu compra máxima \(200,00\s€\)/.test(t)&&!/150,00\s€ · vendedor IT/.test(t),t.slice(t.indexOf('Graduadas en CardTrader'),t.indexOf('Graduadas en CardTrader')+400));
+ await page.click('[data-gr-use="160"]');
+ ok('«Analizar» pasa el precio y la tienda CardTrader al comparador',await page.inputValue('[data-gr="price"]')==='160'&&await page.inputValue('[data-gr="store"]')==='CardTrader');
  ok('El token no se ha guardado en el código: solo en este navegador',!(await (await page.request.get(base+'cv-compra.js')).text()).includes('token-de-prueba'));
  for(const tab of ['vender','pregrade','radar']){await page.click('.mainNav [data-tab="'+tab+'"]');await page.setViewportSize({width:320,height:800});await page.waitForTimeout(300);
   const o=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,iw:innerWidth}));ok('Sin desbordamiento horizontal a 320 px · '+tab,o.sw<=o.iw,JSON.stringify(o))}

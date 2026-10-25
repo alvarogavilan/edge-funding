@@ -6,7 +6,7 @@
    - Ninguna cifra es beneficio seguro. Sin eBay. */
 (()=>{"use strict";
 const STORE="cv_v104_user",IDB="cardvault-v104";
-const DEFAULTS={feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
+const DEFAULTS={maxBuy:200,feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
 const N=v=>{if(v==null||v==="")return NaN;const n=Number(String(v).replace(/\s/g,"").replace(",","."));return Number.isFinite(n)?n:NaN};
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>Number.isFinite(v)?v.toLocaleString("es-ES",{style:"currency",currency:"EUR"}):"—";
@@ -354,6 +354,7 @@ function settingsBlock(cfg){
 
   f("buyShip","Envío de compra por defecto €","Solo se usa si el anuncio no indica envío (aparece como «estimado»).")+
 
+  f("maxBuy","Compra máxima por carta €","Tu presupuesto: no se recomienda ninguna compra por encima (en las importadas, coste total con IVA y gestión).")+
   f("minProfit","Beneficio mínimo €","Umbral para considerar la operación interesante.")+
   f("usShip","Envío desde EE. UU. €","Inglés automático (TCGplayer): envío internacional estimado hasta Sevilla.")+
   f("usVat","IVA de importación %","Se aplica a carta + envío al importar desde fuera de la UE.")+

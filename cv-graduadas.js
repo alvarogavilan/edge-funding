@@ -83,7 +83,8 @@ async function loadCtGraded(){
  try{const {bp}=await C.ctBlueprint(pick),j=await C.ctGet("/marketplace/products?blueprint_id="+encodeURIComponent(bp.id)),list=Array.isArray(j)?j:(j?.[bp.id]||Object.values(j||{}).flat());
   const g=list.filter(p=>p.graded||Object.keys(p.properties_hash||{}).some(k=>/grad/i.test(k)&&p.properties_hash[k])).map(p=>{const h=p.properties_hash||{},info=Object.entries(h).filter(([k,v])=>/grad|grade|psa|bgs|cgc|beckett|language|condition/i.test(k)&&v!==false&&v!=null).map(([k,v])=>String(k).replace(/_/g," ")+": "+v).join(" · ");
    return {eur:Number(p.price_cents??p.price?.cents)/100,info,country:p.user?.country_code||"",bp:bp.id}}).filter(o=>o.eur>0).sort((a,b)=>a.eur-b.eur);
-  ctG={rows:g,bp:bp.id}}
+  const max=C.cfg().maxBuy,inB=g.filter(o=>o.eur<=max);/* solo lo que cabe en tu compra máxima por carta */
+  ctG={rows:inB,over:g.length-inB.length,max,bp:bp.id}}
  catch(e){ctG={error:String(e.message||e)}}
  render();
 }
@@ -93,7 +94,7 @@ function ctGHtml(){
  if(ctG.loading)return head+'<p class="v4note">Consultando CardTrader…</p>';
  if(ctG.error)return head+'<p class="v4note neg">'+E(ctG.error)+'</p><button type="button" class="v4btn" data-gr-ct>Reintentar</button>';
  const url="https://www.cardtrader.com/cards/"+encodeURIComponent(ctG.bp);
- return head+(ctG.rows.length?'<ol class="cpPlanList">'+ctG.rows.slice(0,10).map(o=>'<li><span><b>'+EUR(o.eur)+'</b>'+(o.country?' · vendedor '+E(o.country):'')+'</span><button type="button" class="v4btn" data-gr-use="'+o.eur+'">Analizar</button><small>'+E(o.info||"graduada")+' · <a href="'+E(url)+'" target="_blank" rel="noopener noreferrer">ver en CardTrader ↗</a></small></li>').join("")+'</ol>':'<p class="v4note">Ninguna graduada a la venta ahora en CardTrader para esta carta.</p>')+'<p class="v4note">Precio pedido, sin envío. «Analizar» lo pasa al comparador: pon la empresa y la nota del anuncio.</p>';
+ return head+(ctG.rows.length?'<ol class="cpPlanList">'+ctG.rows.slice(0,10).map(o=>'<li><span><b>'+EUR(o.eur)+'</b>'+(o.country?' · vendedor '+E(o.country):'')+'</span><button type="button" class="v4btn" data-gr-use="'+o.eur+'">Analizar</button><small>'+E(o.info||"graduada")+' · <a href="'+E(url)+'" target="_blank" rel="noopener noreferrer">ver en CardTrader ↗</a></small></li>').join("")+'</ol>':'<p class="v4note">Ninguna graduada a la venta ahora en CardTrader para esta carta dentro de tu presupuesto.</p>')+(ctG.over?'<p class="v4note">'+ctG.over+' anuncio(s) más caros que tu compra máxima ('+EUR(ctG.max)+') no se muestran.</p>':'')+'<p class="v4note">Precio pedido, sin envío. «Analizar» lo pasa al comparador: pon la empresa y la nota del anuncio.</p>';
 }
 function storesHtml(){
  const q=pick?encodeURIComponent(pick.name+" "+String(pick.number).split("/")[0]):"";
