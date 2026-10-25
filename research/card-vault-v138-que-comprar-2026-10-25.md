@@ -44,3 +44,8 @@ Umbreon. Para comprar y vender en otro idioma sigue estando «Pegar datos» de c
 ## Pruebas
 tests/v138-que-comprar-e2e.cjs (12 comprobaciones), con pokemontcg.io sin responder y con CardTrader encontrando la
 inglesa más barata que el objetivo. También la batería completa.
+
+## Verificación con la guía real del 25/10/2026
+tools/verificar-precios.py comprueba también los precios objetivo: la fórmula, que estén al 60 % o más de su valor, que
+lo pintado coincida y que el enlace vaya a la ficha correcta en inglés. Resultado: 66 recomendadas, 74 pendientes y 25
+pintadas, con **0 errores**.

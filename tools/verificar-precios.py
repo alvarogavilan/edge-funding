@@ -44,6 +44,16 @@ for c in d['dom']:
   x=byid.get(c['id'])
   if not x: errs.append(('tarjeta pintada fuera de la lista',c['id']));continue
   b=x['best']
+  if x.get('tgt'):
+    # V138 · precio objetivo en inglés: máximo = min(venta·(1−comisión) − envío venta − mínimo, compra máxima) − envío compra
+    t=x['tgt'];g=T.get(x['pid']);S=S_of(g) if g else None
+    if S is None or abs(t['S']-S)>1e-9: errs.append(('objetivo venta',c['id']));continue
+    mp=min(S*(1-cfg['feePct']/100)-cfg['sellShip']-cfg['minProfit'],cfg['maxBuy']);mb=int((mp-cfg['buyShip'])*100)/100
+    if abs(t['maxBuy']-mb)>0.011: errs.append(('objetivo cálculo',c['id'],t['maxBuy'],mb))
+    if not t['maxBuy']>=0.6*S: errs.append(('objetivo irreal (< 60 %)',c['id']))
+    if eur(t['maxBuy']) not in c['decide'] or eur(S) not in c['decide']: errs.append(('objetivo pintado',c['id'],c['decide'][:120]))
+    if f"idProduct={x['pid']}" not in c['tgtHref'] or 'language=1' not in c['tgtHref']: errs.append(('objetivo enlace',c['id'],c['tgtHref']))
+    continue
   for v in (b['buy'],b['sale'],b['profit']):
     if eur(v) not in c['money']: errs.append(('pintado',c['id'],v,c['money'][:120]))
   if x['pid'] and f"idProduct={x['pid']}" not in c['href']: errs.append(('enlace',c['id'],c['href']))
