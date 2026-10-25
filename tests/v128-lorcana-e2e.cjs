@@ -34,8 +34,8 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.waitForFunction(()=>window.CVCompra?.state()?.lo?.cards?.length===3,null,{timeout:120000});
  await page.selectOption('[data-cp-view="game"]','lorcana');await page.waitForTimeout(400);
  let t=await page.textContent('#v4Buy .cpBox');
- // (40 + 5 + 6) / (0,95 − 0,75) = 255 · 200 / 0,75 = 266,67
- ok('Diagnóstico: 3 cartas, ventana de valor 255–266,67 €, 0 en la ventana, 2 dentro del presupuesto, 1 por encima',/Lorcana: 3 cartas con precio de Cardmarket hoy; ninguna deja 40,00\s€/.test(t)&&/al menos 255,00\s€/.test(t)&&/como mucho 266,67\s€/.test(t)&&/Hoy: 0 carta\(s\) en esa ventana de valor · 2 con «desde» dentro de tu presupuesto · 1 valen más de 266,67\s€/.test(t),t.slice(0,1200));
+ // (40 + 5 + 6) / (0,95 − 0,75) = 255 · (200 − 6) / 0,75 = 258,67
+ ok('Diagnóstico: 3 cartas, ventana de valor 255–258,67 €, 0 en la ventana, 2 dentro del presupuesto, 1 por encima',/Lorcana: 3 cartas con precio de Cardmarket hoy; ninguna deja 40,00\s€/.test(t)&&/al menos 255,00\s€/.test(t)&&/como mucho 258,67\s€/.test(t)&&/Hoy: 0 carta\(s\) en esa ventana de valor · 2 con «desde» dentro de tu presupuesto · 1 valen más de 258,67\s€/.test(t),t.slice(0,1200));
  // Elsa 120·0,95 − 5 − (92 + 6) = +11 · Mickey 80·0,95 − 5 − 68 = +3 · Stitch fuera de presupuesto
  ok('Mejor margen dentro del presupuesto: Elsa +11 € y Mickey +3 €; Stitch (250 €) no',/Elsa - Snow Queen/.test(t)&&/\+11,00\s€/.test(t)&&/Mickey Mouse/.test(t)&&/\+3,00\s€/.test(t)&&!/Stitch/.test(t.split('mejor margen')[1]||''),t.slice(0,1500));
  // Beneficio mínimo en Lorcana: 10 €

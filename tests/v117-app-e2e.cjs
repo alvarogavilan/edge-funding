@@ -18,7 +18,7 @@ const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','
  [273934,30,400,null,null,null,null,null,null],// base4-11 Nidoking · sin ventas recientes
  [275113,24.99,98.29,90,59.11,165.15,26,232.88,173.55],[275070,298,748.52,1650,1194.3,1008.71,null,null,null], // Umbreon Aquapolis
  [273862,20,300,300,300,300,null,null,null]]}; // base3-1 Aerodactyl · colisión TCGdex
-const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-207',name:'Elsa - Spirit of Winter',number:'207',rarity:'Enchanted',imageSmall:'https://images.example/elsa.png',cardmarketId:681234,variants:[{name:'normal',eur:null},{name:'foil',eur:{trend:260,low:195,avg30:265,avg7:262,avg1:261}}]}]};
+const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-207',name:'Elsa - Spirit of Winter',number:'207',rarity:'Enchanted',imageSmall:'https://images.example/elsa.png',cardmarketId:681234,variants:[{name:'normal',eur:null},{name:'foil',eur:{trend:257,low:193,avg30:262,avg7:259,avg1:258}}]}]};
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});const hits={guide:0,pt:[],bx:0,us:0,ct:[]};let bxDown=false;
@@ -57,7 +57,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  ok('«Mal estado · restaurar»: Alakazam «desde» 30 € → venta mejorada al 60 % 120 € → +73,00 €',/Restaurar/.test(t)&&/120,00\s€/.test(t)&&/\+73,00\s€/.test(t),t.slice(0,300));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
  t=await T('lo-tfc-207');
- ok('Lorcana (Bindex): Elsa foil · compra 195 € (75 % de la venta) → venta 260 € → +41,00 €',/LORCANA · BINDEX/.test(t)&&/\+41,00\s€/.test(t),t.slice(0,300));/* 260·0,95 − 5 − 201 */
+ ok('Lorcana (Bindex): Elsa foil · pagas 199 € (193 + envío) → venta 257 € → +40,15 €',/LORCANA · BINDEX/.test(t)&&/\+40,15\s€/.test(t),t.slice(0,300));/* 257·0,95 − 5 − 199 */
  ok('Los números de las operaciones no se parten en vertical',await page.evaluate(()=>[...document.querySelectorAll('.cpOp dd')].every(d=>d.getBoundingClientRect().height<30)));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
  const pend=await page.textContent('.cpBox > details.v4old');await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);

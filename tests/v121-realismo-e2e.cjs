@@ -14,7 +14,7 @@ let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
  [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
  [273924,60,200,240,235,190,null,null,null],   // base4-1 Alakazam · semana +24 % sobre su media → buen momento de venta
- [861477,195,260,260,260,265,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
+ [861477,193,257,257,257,262,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};
 const pasteES=`Disponible
 128
@@ -55,7 +55,8 @@ Seller2 Near Mint English 129,99 € 2`;
  ok('Mewtwo recalculado con Correos: +44,11 €',/\+44,11\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')),await page.textContent('#v4Buy #cp-base4-10 .cpMoney'));
  await page.reload();await page.waitForSelector('#v4Buy #cp-base4-10',{timeout:60000});
  ok('Tras recargar se conservan las tarifas',/\+44,11\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')));
- await page.selectOption('[data-cp-view="show"]','all');await page.waitForTimeout(300);/* con Correos deja 39,11 € (< 40 €): se ve en «Todas con precio» */
+ await page.evaluate(()=>{document.querySelector('#v4Buy [data-v4-cfg="maxBuy"]').closest('details').open=true});await page.fill('#v4Buy [data-v4-cfg="maxBuy"]','300');await page.click('#v4Buy [data-v4-cfgsave]');await page.waitForTimeout(600);/* con Correos pagas 193 + 7,15 = 200,15 € > 200 */
+ await page.selectOption('[data-cp-view="show"]','all');await page.waitForTimeout(300);/* y deja 39,11 € (< 40 €): se ve en «Todas con precio» */
  const cj=await page.textContent('#v4Buy #cp-jp-861477 .cpConf');
  ok('Confianza: el «desde» sin estado resta y lo explica',/estado 0\/15 \(el «desde» no dice el estado: abre la ficha con «EX o mejor»\)/.test(cj),cj);
  ok('Confianza: compra EX o mejor suma 15/15',/estado 15\/15/.test(await page.textContent('#v4Buy #cp-base4-10 .cpConf')));

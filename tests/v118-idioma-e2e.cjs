@@ -13,7 +13,7 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
  [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
- [861477,195,260,260,260,265,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
+ [861477,193,257,257,257,262,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};// Pikachu ex M2A 44 · japonés barato (sin beneficio)
 const pasteES=`Disponible
 128
@@ -45,7 +45,7 @@ Seller2 Near Mint English 129,99 € 2`;
  const openPaste=async k=>{await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 .cpPaste').open=true});await page.selectOption('#v4Buy #cp-base4-10 [data-cp-pastelang]',k)};/* V122: el cuadro tiene su propio selector de idioma */
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  let t=await T('jp-861477');
- ok('Japonés: Pikachu ex (M2A 234) con su producto japonés propio · compra 195 € (201 € en 41020) → venta 260 € → +41,00 €',/JAPONÉS · PRECIO Y VENTAS DEL MISMO IDIOMA/.test(t)&&/201,00\s€/.test(t)&&/260,00\s€/.test(t)&&/\+41,00\s€/.test(t)&&/ventas reales de cartas japonesas/.test(t),t.slice(0,500));
+ ok('Japonés: Pikachu ex (M2A 234) con su producto japonés propio · compra 193 € (199 € en 41020) → venta 257 € → +40,15 €',/JAPONÉS · PRECIO Y VENTAS DEL MISMO IDIOMA/.test(t)&&/199,00\s€/.test(t)&&/257,00\s€/.test(t)&&/\+40,15\s€/.test(t)&&/ventas reales de cartas japonesas/.test(t),t.slice(0,500));
  ok('Japonés: la tabla «mismo idioma» marca la venta como comprobada en japonés',/Japonés.*✔ venta comprobada · japonés/.test(await page.textContent('#v4Buy #cp-jp-861477 .cpLTbox .cpLTtab')));
  const jl=await page.evaluate(()=>({main:document.querySelector('#v4Buy #cp-jp-861477 .v4actions a').href,img:document.querySelector('#v4Buy #cp-jp-861477 img')?.src||''}));
  await page.selectOption('[data-cp-view="lang"]','ja');await page.waitForTimeout(300);jl.ja=await page.getAttribute('#v4Buy #cp-jp-861477 .v4actions a','href');jl.ids=await ids();await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);

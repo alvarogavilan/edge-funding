@@ -59,7 +59,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.selectOption('[data-cp-view="game"]','lorcana');await page.waitForFunction(()=>/con precio de Cardmarket hoy/.test(document.querySelector('#v4Buy .cpBox')?.textContent||''),null,{timeout:30000});
  t=await page.textContent('#v4Buy .cpBox');
  // 60·0,95 − 5 − (55 + 6) = −9
- ok('Lorcana sin oportunidades: cuántas tiene, por qué (ventana de valor 255–266,67 €) y las de mejor margen (Mickey −9 €)',/Lorcana: 1 carta con precio de Cardmarket hoy/.test(t)&&/Mickey Mouse/.test(t)&&/−9,00\s€/.test(t)&&/al menos 255,00\s€/.test(t)&&/como mucho 266,67\s€/.test(t),t.slice(0,900));
+ ok('Lorcana sin oportunidades: cuántas tiene, por qué (ventana de valor 255–258,67 €) y las de mejor margen (Mickey −9 €)',/Lorcana: 1 carta con precio de Cardmarket hoy/.test(t)&&/Mickey Mouse/.test(t)&&/−9,00\s€/.test(t)&&/al menos 255,00\s€/.test(t)&&/como mucho 258,67\s€/.test(t),t.slice(0,900));
  await page.selectOption('[data-cp-view="game"]','all');await page.waitForTimeout(300);
  // Sellado
  await page.click('.mainNav [data-tab="sealed"]');await page.waitForFunction(()=>/para revender con beneficio/.test(document.querySelector('#cpSealed')?.textContent||'')&&/subiendo/.test(document.querySelector('#cpSealed')?.textContent||''),null,{timeout:60000});

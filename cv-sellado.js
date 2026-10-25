@@ -25,8 +25,8 @@ function rows(C){
   const ratio=g.low/g.trend,cost=g.low+sv.ship,net=g.trend*(1-cfg.feePct/100)-sv.ship,profit=net-cost;
   const ch14=Number.isFinite(t14)?g.trend/t14-1:NaN;
   out.push({pid,name,cat,type:S.cats[cat]||"",exp,low:g.low,trend:g.trend,t14,ch14,moving,ratio,cost,net,profit,
-   arb:moving&&ratio>=.5&&ratio<=.9&&profit>=cfg.minProfit&&g.low<=cfg.maxBuy,
-   inv:moving&&Number.isFinite(ch14)&&ch14>=.1&&g.trend>=30&&g.low<=cfg.maxBuy&&ratio>=.5&&ratio<=1.1,/* ≥ 30 € y «desde» cerca de la tendencia: lo barato y lo de «desde» disparado es ruido */
+   arb:moving&&ratio>=.5&&ratio<=.9&&profit>=cfg.minProfit&&cost<=cfg.maxBuy,
+   inv:moving&&Number.isFinite(ch14)&&ch14>=.1&&g.trend>=30&&cost<=cfg.maxBuy&&ratio>=.5&&ratio<=1.1,/* ≥ 30 € y «desde» cerca de la tendencia: lo barato y lo de «desde» disparado es ruido */
    odd:ratio<.5});
  }
  return out;

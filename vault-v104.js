@@ -354,7 +354,7 @@ function settingsBlock(cfg){
 
   f("buyShip","Envío de compra por defecto €","Solo se usa si el anuncio no indica envío (aparece como «estimado»).")+
 
-  f("maxBuy","Compra máxima por carta €","Tu presupuesto: no se recomienda ninguna compra por encima (en las importadas, coste total con IVA y gestión).")+
+  f("maxBuy","Compra máxima por carta €","Tu presupuesto: lo que pagas en total por carta, con envío (y en las importadas con IVA y gestión). Nada por encima se recomienda.")+
   f("minProfit","Beneficio mínimo €","Umbral para considerar la operación interesante.")+
   f("minProfitLo","Beneficio mínimo en Lorcana €","Sus cartas valen menos: con 40 € casi ninguna cabe. Bájalo si aceptas márgenes menores.")+
   f("usShip","Envío desde EE. UU. €","Inglés automático (TCGplayer): envío internacional estimado hasta Sevilla.")+

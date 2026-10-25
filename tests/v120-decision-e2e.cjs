@@ -14,7 +14,7 @@ let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
  [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
  [273924,60,200,240,235,190,null,null,null],   // base4-1 Alakazam · semana +24 % sobre su media → buen momento de venta
- [861477,195,260,260,260,265,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
+ [861477,193,257,257,257,262,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};
 const pasteES=`Disponible
 128
@@ -49,14 +49,14 @@ Seller2 Near Mint English 129,99 € 2`;
  ok('Confianza Mewtwo 97/100 con su desglose y beneficio prudente (+44,62 €)',/Confianza 97\/100/.test(t)&&/beneficio prudente \+44,62\s€/.test(t)&&/Versión 25\/25 · ventas 20\/20 · estabilidad 20\/20/.test(t)&&/colchón 7\/10 · estado 15\/15/.test(t),t);
  t=await page.textContent('#v4Buy #cp-jp-861477 .cpConf');
  // Pikachu ex JP («desde» 195 € = 75 % de 260 €): versión 25 · ventas 20 · medias 260–265 sobre 260 → ±1 % → 20 · tendencia 260/265 −2 % → 10 · margen 41/201 = 20 % → 3 · «desde» sin estado → 0 → 78
- ok('Confianza japonesa 78/100: estabilidad 20, colchón 3 y estado 0 con aviso (el «desde» no dice el estado)',/Confianza 78\/100/.test(t)&&/estabilidad 20\/20/.test(t)&&/colchón 3\/10 · estado 0\/15/.test(t)&&/beneficio prudente \+31,98\s€/.test(t),t);
+ ok('Confianza japonesa 78/100: estabilidad 20, colchón 3 y estado 0 con aviso (el «desde» no dice el estado)',/Confianza 78\/100/.test(t)&&/estabilidad 20\/20/.test(t)&&/colchón 3\/10 · estado 0\/15/.test(t)&&/beneficio prudente \+31,32\s€/.test(t),t);
  await page.selectOption('[data-cp-view="sort"]','risk');await page.waitForTimeout(300);
- ok('Orden «Mejor beneficio prudente»: Mewtwo (44,62 €) antes que Pikachu (31,98 €)',(await ids()).slice(0,2).join()==='base4-10,jp-861477',JSON.stringify(await ids()));
+ ok('Orden «Mejor beneficio prudente»: Mewtwo (44,62 €) antes que Pikachu (31,32 €)',(await ids()).slice(0,2).join()==='base4-10,jp-861477',JSON.stringify(await ids()));
  ok('Ya no hay plan de compra con presupuesto',!(await page.$('[data-cp-planbox]')));
  t=await page.textContent('#v4Buy .cpTop');
- ok('🏆 Top 5 de hoy: 1. Mewtwo (Cardmarket EX o mejor, +44,62 € prudente) y 2. Pikachu ex japonés (+31,98 €)',/1\. Mewtwo/.test(t)&&/Cardmarket, EX o mejor: 101,00\s€ puesta en 41020 → venta 160,00\s€ → \+46,00\s€ · confianza 97\/100 · prudente \+44,62\s€/.test(t)&&/2\. Pikachu ex/.test(t)&&/prudente \+31,98\s€/.test(t)&&!/3\./.test(t.split('Une todas')[0]),t);
- {const h=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpTop li a')].map(a=>a.href));ok('Top 5: «Comprar» abre la ficha con el mismo filtro que el precio (Mewtwo EX o mejor; Pikachu «desde» sin filtro)',h[0]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&minCondition=3'&&h[1]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=861477',JSON.stringify(h))}
- ok('Top 5 con imagen de cada carta',await page.evaluate(()=>document.querySelectorAll('#v4Buy .cpTop .cpThumb img').length)===2);
+ ok('🏆 Top 5 de hoy: 1. Mewtwo (EX o mejor, +44,62 € prudente), 2. Alakazam 🎲 chollo por verificar (60 € de cualquier estado, vale 190 €; confianza a la mitad) y 3. Pikachu ex japonés (+31,32 €)',/1\. Mewtwo/.test(t)&&/Pagas 101,00\s€ \(Cardmarket, EX o mejor, puesta en 41020\) → venta 160,00\s€ → \+46,00\s€ · confianza 97\/100 · prudente \+44,62\s€/.test(t)&&/2\. Alakazam[^]*🎲 por verificar[^]*Pagas 66,00\s€ \(anuncio de cualquier estado a 60,00\s€ \+ envío\) → vale ~190,00\s€ → si está bien \+109,50\s€ · confianza 33\/100/.test(t)&&/3\. Pikachu ex/.test(t)&&/prudente \+31,32\s€/.test(t)&&!/4\./.test(t.split('Une todas')[0]),t);
+ {const h=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpTop li a')].map(a=>a.href));ok('Top 5: «Comprar» abre la ficha con el mismo filtro que el precio (Mewtwo EX o mejor; Alakazam y Pikachu «desde» sin filtro)',h[0]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&minCondition=3'&&h[1]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273924'&&h[2]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=861477',JSON.stringify(h))}
+ ok('Top 5 con imagen de cada carta',await page.evaluate(()=>document.querySelectorAll('#v4Buy .cpTop .cpThumb img').length)===3);
  // Vender YA: dos cartas RAW (una en buen momento de venta) y las graduadas de ejemplo
  const sv=await page.evaluate(()=>{const s=window.CVStateBridge.get();s.cards.push({id:'t-ala',universe:'pokemon',name:'Alakazam',set:'Base Set 2',number:'1',grading:'RAW',purchase:120,quantity:1,catalogId:'base4-1'},{id:'t-mew',universe:'pokemon',name:'Mewtwo',set:'Base Set 2',number:'10/130',grading:'RAW',purchase:200,quantity:1},{id:'t-x',universe:'pokemon',name:'Carta Inventada',number:'999',grading:'RAW'});return window.CVStateBridge.save()});
  ok('Cartas de prueba guardadas en Mi colección',sv===true);

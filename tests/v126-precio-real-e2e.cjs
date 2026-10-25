@@ -17,7 +17,7 @@ const F=['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','
 const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
  [751779,50,470.42,570,610.05,726.29,null,0,null],
  [751763,8.99,19.11,20.77,19.66,20.07,null,0,null],
- [861477,195,260,260,260,265,null,null,null]]};
+ [861477,193,257,257,257,262,null,null,null]]};
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});
@@ -49,7 +49,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  ok('Punto de mira: Mew ex no entra (precio inestable: medias 470–726 €) y nunca con el «desde» de 50 €',!/Mew ex/.test(t)&&!/a 50,00/.test(t),t.slice(0,300));
  ok('Su confianza lo refleja: estabilidad 0/20',/estabilidad 0\/20/.test(await T('.cpConf')));
  t=await page.textContent('#v4Buy .cpTop');
- ok('🏆 Top 5: Mew ex primero con su compra EX o mejor y enlace filtrado',/1\. Mew ex/.test(t)&&/Cardmarket, EX o mejor: 155,90\s€ puesta en 41020/.test(t)&&await page.getAttribute('#v4Buy .cpTop li a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3',t.slice(0,300));
+ ok('🏆 Top 5: Mew ex primero con su compra EX o mejor y enlace filtrado',/1\. Mew ex/.test(t)&&/Pagas 155,90\s€ \(Cardmarket, EX o mejor, puesta en 41020\)/.test(t)&&await page.getAttribute('#v4Buy .cpTop li a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3',t.slice(0,300));
  ok('Top 5 con imagen',await page.evaluate(()=>document.querySelectorAll('#v4Buy .cpTop .cpThumb img').length>=1));
  await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});
  ok('Importar (Japón y EE. UU.) con imagen de cada carta',await page.evaluate(()=>document.querySelectorAll('[data-cp-jpbox] li .cpThumb img').length)>=1);

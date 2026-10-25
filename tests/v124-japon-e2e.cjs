@@ -18,7 +18,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  [574435,560,900,null,null,null,null,null,null],// Evolving Skies Booster Box · «desde» 62 % de su tendencia
  [583510,150,290,null,null,null,null,null,null],// Brilliant Stars ETB
  [271439,250,270,null,null,null,null,null,null],// Phantom Forces Booster
- [861477,195,260,260,260,265,null,null,null],   // Pikachu ex M2A 234 · producto japonés (venta de referencia 190 €)
+ [861477,193,257,257,257,262,null,null,null],   // Pikachu ex M2A 234 · producto japonés (venta de referencia 190 €)
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};// Pikachu ex M2A 44 · japonés barato
 const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,90,160,160,165,170,null,null,null],[273924,120,200,200,205,210,null,null,null],[574435,560,880,null,null,null,null,null,null],[583510,150,290,null,null,null,null,null,null],[271439,250,262,null,null,null,null,null,null]]};
 const OLD={...GUIDE,sourceCreatedAt:'2026-10-11T02:45:00+0200',rows:[[574435,600,850,null,null,null,null,null,null],[583510,150,280,null,null,null,null,null,null],[271439,240,220,null,null,null,null,null,null]]};
@@ -37,22 +37,22 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- await page.waitForFunction(()=>/¥23\.100/.test(document.querySelector('#v4Buy #cp-jp-861477')?.textContent||''),null,{timeout:120000});
- // venta 300 € → neta 300·0,95 − 5 = 280 → coste máximo 240 → (240 − 15) / 1,21 − 20 = 165,95 € → / 0,0058 = 28.612 ¥ → 23.100 ¥ ≈ 133,98 €
+ await page.waitForFunction(()=>/¥22\.700/.test(document.querySelector('#v4Buy #cp-jp-861477')?.textContent||''),null,{timeout:120000});
+ // venta 300 € → neta 300·0,95 − 5 = 280 → coste máximo 240 → (240 − 15) / 1,21 − 20 = 165,95 € → / 0,0058 = 28.612 ¥ → 22.700 ¥ ≈ 131,66 €
  let t=await page.textContent('#v4Buy #cp-jp-861477 .cpLangSel');
- ok('Pikachu ex japonés: paga en Japón como máximo ¥23.100 (≈ 133,98 €) con envío 20 €, IVA 21 % y gestión 15 €',/paga como máximo ¥23\.100 \(≈ 133,98\s€\)/.test(t)&&/revendiéndola aquí a 260,00\s€/.test(t)&&/IVA 21 %/.test(t),t);
+ ok('Pikachu ex japonés: paga en Japón como máximo ¥22.700 (≈ 131,66 €) con envío 20 €, IVA 21 % y gestión 15 €',/paga como máximo ¥22\.700 \(≈ 131,66\s€\)/.test(t)&&/revendiéndola aquí a 257,00\s€/.test(t)&&/IVA 21 %/.test(t),t);
  const links=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-jp-861477 .cpLangSel a')].map(a=>a.href));
  ok('Búsquedas en Japón con código de colección, número y nombre',links[0]==='https://buyee.jp/mercari/search?keyword=M2A%20234%20Pikachu%20ex'&&links[1]==='https://buyee.jp/item/search/query/M2A%20234%20Pikachu%20ex'&&links.length===3,JSON.stringify(links));
  ok('Cambio del BCE descargado una vez',fxHits===1,String(fxHits));
  await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});t=await page.textContent('[data-cp-jpbox]');
- ok('Panel «Importar de Japón»: la carta con su máximo y el aviso de intermediario e IVA',/Pikachu ex/.test(t)&&/¥23\.100/.test(t)&&/Buyee/.test(t)&&/pagas IVA y gestión/.test(t),t.slice(0,300));
+ ok('Panel «Importar de Japón»: la carta con su máximo y el aviso de intermediario e IVA',/Pikachu ex/.test(t)&&/¥22\.700/.test(t)&&/Buyee/.test(t)&&/pagas IVA y gestión/.test(t),t.slice(0,300));
  ok('No entra la japonesa barata (M2A 44, 0,75 €)',!/Mercari \(vía Buyee\)/.test(await page.textContent('#v4Buy .cpBox').then(s=>s.split('Pikachu ex · MEGA Dream ex (japonés) nº 44')[1]||'')));
  await page.fill('[data-cp-jp="handling"]','0');await page.fill('[data-cp-jp="ship"]','10');await page.click('[data-cp-jpsave]');await page.waitForTimeout(300);
- // (240 − 0) / 1,21 − 10 = 188,35 € → 32.474 ¥ → 27.000 ¥
+ // (240 − 0) / 1,21 − 10 = 188,35 € → 32.474 ¥ → 26.600 ¥
  t=await page.textContent('#v4Buy #cp-jp-861477 .cpLangSel');
- ok('Con envío 10 € y gestión 0 € (Correos): máximo ¥27.000',/¥27\.000/.test(t),t);
+ ok('Con envío 10 € y gestión 0 € (Correos): máximo ¥26.600',/¥26\.600/.test(t),t);
  await page.reload();await page.waitForSelector('#v4Buy #cp-jp-861477',{timeout:60000});await page.waitForTimeout(800);
- ok('Tras recargar se conservan los gastos y no se vuelve a pedir el cambio',/¥27\.000/.test(await page.textContent('#v4Buy #cp-jp-861477 .cpLangSel'))&&fxHits===1,String(fxHits));
+ ok('Tras recargar se conservan los gastos y no se vuelve a pedir el cambio',/¥26\.600/.test(await page.textContent('#v4Buy #cp-jp-861477 .cpLangSel'))&&fxHits===1,String(fxHits));
  ok('Las cartas no japonesas no llevan la línea de Japón',!(await page.textContent('#v4Buy #cp-base4-10')).includes('Comprar en Japón'));
  // Repintado en segundo plano mientras escribes en «Pegar datos»: no se cierra ni se borra
  await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 .cpPaste').open=true});
