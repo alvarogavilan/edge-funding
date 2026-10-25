@@ -27,7 +27,7 @@ const nrmS=v=>nq(v).replace(/[^a-z0-9]+/g," ").trim();
 function gradeOf(p){const h=p.properties_hash||{};let co="",gr=NaN;
  for(const [k,v] of Object.entries(h)){if(v==null||v===false)continue;if(/company|grader/i.test(k))co=String(v);else if(/grade/i.test(k)){const n=Number(String(v).replace(",","."));if(Number.isFinite(n))gr=n}}
  if(!co){const m=JSON.stringify(h).match(/\b(PSA|BGS|Beckett|CGC|SGC|ACE|TAG)\b/i);if(m)co=m[1]}
- return {co:co.toUpperCase().replace("BECKETT","BGS"),gr,lang:String(h.pokemon_language||h.language||"").toLowerCase()}}
+ const lk=Object.keys(h).find(k=>/language/i.test(k));return {co:co.toUpperCase().replace("BECKETT","BGS"),gr,lang:String(lk?h[lk]:"").toLowerCase()}}
 const isGraded=p=>p.graded===true||Object.entries(p.properties_hash||{}).some(([k,v])=>/grad/i.test(k)&&v&&v!=="false");
 async function scanGraded(){
  const C=window.CVCompra;if(!C?.ctToken()){opp={error:"Sin token de CardTrader: pégalo en Compra YA → Estado de las fuentes (es gratis, en tu cuenta de CardTrader → Ajustes → API)."};renderOpp();return}
@@ -42,10 +42,10 @@ async function scanGraded(){
   for(const {e,xs} of pairs){
    const bps=await C.ctGet("/blueprints/export?expansion_id="+encodeURIComponent(e.id)),bpA=Array.isArray(bps)?bps:(bps?.array||[]),bpM=new Map(bpA.map(b=>[b.id,b]));
    const j=await C.ctGet("/marketplace/products?expansion_id="+encodeURIComponent(e.id)),prods=Array.isArray(j)?j:Object.entries(j||{}).flatMap(([k,v])=>(Array.isArray(v)?v:[]).map(p=>({blueprint_id:Number(k),...p})));/* la API agrupa por id de carta */
-   const grp={};for(const p of prods){if(!isGraded(p))continue;const eur=Number(p.price_cents??p.price?.cents)/100;if(!(eur>0))continue;const G=gradeOf(p);if(!G.co||!Number.isFinite(G.gr))continue;
+   const grp={};for(const p of prods){if(!isGraded(p))continue;const cur=String(p.price?.currency||"EUR").toUpperCase(),eur=cur==="EUR"?Number(p.price?.cents??p.price_cents)/100:NaN;if(!(eur>0))continue;const G=gradeOf(p);if(!G.co||!Number.isFinite(G.gr))continue;
     const k=p.blueprint_id+"|"+G.co+"|"+G.gr+"|"+G.lang;(grp[k]=grp[k]||[]).push({eur,country:p.user?.country_code||"",G,bp:p.blueprint_id})}
    for(const G0 of Object.values(grp)){const bp=bpM.get(G0[0].bp)||{},num=String(bp.fixed_properties?.collector_number||bp.collector_number||"").split("/")[0].replace(/^0+/,"");
-    const x=xs.find(y=>String(y.number||"").split("/")[0].replace(/^0+/,"")===num&&nrmS(bp.name||"").split(" ")[0]===nrmS(y.name).split(" ")[0]);
+    const cm=(bp.card_market_ids||[]).map(Number),x=xs.find(y=>cm.includes(Number(y.res?.pid)))||xs.find(y=>String(y.number||"").split("/")[0].replace(/^0+/,"")===num&&nrmS(bp.name||"").split(" ")[0]===nrmS(y.name).split(" ")[0]);/* V135: por id de Cardmarket */
     const raw=x?C.saleRef_(x.p):NaN;/* lo que vale sin graduar (venta de referencia de Cardmarket) */
     /* fuera los sospechosos (< 30 % de la carta sin graduar: cápsula falsa o proxy) antes de elegir el más barato */
     const L=G0.filter(o=>!(Number.isFinite(raw)&&o.eur<raw*(C.FAKE_RATIO||.3))).sort((a,b)=>a.eur-b.eur);if(L.length<2)continue;
@@ -63,7 +63,7 @@ const LN={en:"inglés",jp:"japonés",ja:"japonés",es:"español",fr:"francés",d
 function oppHtml(){
  const C=window.CVCompra,head='<h4>💎 Graduadas con oportunidad de compra ahora</h4>';
  if(oppBusy)return head+'<p class="v4note">⏳ Buscando graduadas en CardTrader… '+oppBusy.done+'/'+(oppBusy.total||"?")+' colecciones</p>';
- if(!C?.ctToken())return head+'<p class="v4note">Para que salgan solas hace falta tu token de CardTrader (gratis): CardTrader → Ajustes → API, y pégalo en Compra YA → «Estado de las fuentes». CardTrader es la única fuente que deja leer anuncios de graduadas con su empresa y nota; las tiendas españolas no lo permiten (abajo tienes sus enlaces y el analizador de anuncios).</p>';
+ if(!C?.ctToken())return head+'<p class="v4note">Para que salgan solas hace falta tu token de CardTrader (gratis): CardTrader → Ajustes → API, y pégalo en Compra YA → «Estado de las fuentes». CardTrader es la única fuente que deja leer anuncios de graduadas con su empresa y nota; las tiendas españolas no dejan leer sus precios.</p>';
  const btn='<button type="button" class="v4btn" data-gr-scan>'+(opp?.rows?'Volver a buscar':'Buscar oportunidades')+'</button>';
  if(!opp)return head+btn;
  if(opp.error)return head+'<p class="v4note neg">'+E(opp.error)+'</p>'+btn;
@@ -125,14 +125,14 @@ function render(){
  const op=[...host.querySelectorAll("details")].map(d=>d.open);
  host.innerHTML='<section class="rdlivebox cpBox"><h3>Cartas graduadas · comprar para revender (PSA, Beckett, CGC…)</h3>'+
   (ready?'<div data-gr-opp>'+oppHtml()+'</div>':'')+
-  '<details class="v4more"'+(pick||list.length||!C?.ctToken()?' open':'')+'><summary><b>Analizar un anuncio de otra tienda</b> (Pokémillon, Iberian Collect, Catawiki, Wallapop…)</summary><p class="v4note">Las tiendas españolas no dejan leer sus precios desde otra web. Elige la carta, pega el anuncio y la app lo compara con lo que te costaría <b>crear esa graduada tú</b>: la carta sin graduar en Cardmarket + graduación + envíos.</p>'+
+  '<details class="v4more"'+(pick||list.length||!C?.ctToken()?' open':'')+'><summary><b>Analizar un anuncio que hayas visto</b> (tienda, Catawiki, Wallapop…)</summary><p class="v4note">Elige la carta, pega el anuncio y la app lo compara con lo que te costaría <b>crear esa graduada tú</b>: la carta sin graduar en Cardmarket + graduación + envíos.</p>'+
   (ready?'<div class="cpPlanIn"><label class="wide">Carta<input type="search" data-gr-q placeholder="Nombre, colección o número (mín. 3 letras)" value="'+E(pick?pick.name+" · "+pick.set+" nº "+pick.number:"")+'"></label></div><div data-gr-res></div>'+
    '<div class="cpPlanIn"><label>Empresa<select data-gr="company">'+["PSA","Beckett (BGS)","CGC","SGC","Ace","Otra"].map(c=>'<option>'+c+'</option>').join("")+'</select></label><label>Nota<input inputmode="decimal" data-gr="grade" placeholder="10"></label>'+
    '<label>Precio del anuncio €<input inputmode="decimal" data-gr="price" placeholder="120"></label><label>Envío €<input inputmode="decimal" data-gr="ship" placeholder="8"></label>'+
    '<label>Venta conocida de esa graduada € (opcional)<input inputmode="decimal" data-gr="sale" placeholder="vacío = no la sé"></label><label>Tarifa de graduación €<input inputmode="decimal" data-gr="fee" placeholder="'+String(GRADE_FEE).replace(".",",")+'"></label></div>'+
    '<details class="v4more"><summary>Pegar el anuncio de la tienda (rellena empresa, nota, precio y certificado)</summary><textarea data-gr-paste rows="3" placeholder="Ej.: Charizard ex 199/165 PSA 10 · 249,90 € · Certificado 12345678"></textarea><button type="button" class="v4btn" data-gr-parse>Leer anuncio</button></details>'+
    '<div class="cpPlanIn"><label>Dónde está<select data-gr="store">'+STORES.map(s=>'<option>'+s[0]+'</option>').join("")+'<option>Cardmarket</option><option>Otra</option></select></label><label>N.º de certificado (opcional)<input inputmode="numeric" data-gr="cert" placeholder="12345678"></label></div>'+
-   '<button type="button" class="v4btn primary" data-gr-add>Analizar anuncio</button>'+ctGHtml()+storesHtml():'<p class="v4note">⏳ Cargando la guía de Cardmarket… (abre Compra YA una vez si no aparece)</p>')+
+   '<button type="button" class="v4btn primary" data-gr-add>Analizar anuncio</button>'+ctGHtml():'<p class="v4note">⏳ Cargando la guía de Cardmarket… (abre Compra YA una vez si no aparece)</p>')+
   (list.length?'<h4>Anuncios analizados</h4><ol class="cpPlanList">'+list.map(rowHtml).join("")+'</ol>':'')+'</details></section>';
  if(op.length)host.querySelectorAll("details").forEach((d,i)=>{if(op[i]!=null)d.open=op[i]});/* repintar no cierra lo abierto */
 }
@@ -143,7 +143,7 @@ async function loadCtGraded(){
  ctG={loading:true};render();
  try{const {bp}=await C.ctBlueprint(pick),j=await C.ctGet("/marketplace/products?blueprint_id="+encodeURIComponent(bp.id)),list=Array.isArray(j)?j:(j?.[bp.id]||Object.values(j||{}).flat());
   const g=list.filter(p=>p.graded||Object.keys(p.properties_hash||{}).some(k=>/grad/i.test(k)&&p.properties_hash[k])).map(p=>{const h=p.properties_hash||{},info=Object.entries(h).filter(([k,v])=>/grad|grade|psa|bgs|cgc|beckett|language|condition/i.test(k)&&v!==false&&v!=null).map(([k,v])=>String(k).replace(/_/g," ")+": "+v).join(" · ");
-   return {eur:Number(p.price_cents??p.price?.cents)/100,info,country:p.user?.country_code||"",bp:bp.id}}).filter(o=>o.eur>0).sort((a,b)=>a.eur-b.eur);
+   return {eur:Number(p.price?.cents??p.price_cents)/100,info,country:p.user?.country_code||"",bp:bp.id}}).filter(o=>o.eur>0).sort((a,b)=>a.eur-b.eur);
   const max=C.cfg().maxBuy,inB=g.filter(o=>o.eur<=max);/* solo lo que cabe en tu compra máxima por carta */
   ctG={rows:inB,over:g.length-inB.length,max,bp:bp.id}}
  catch(e){ctG={error:String(e.message||e)}}

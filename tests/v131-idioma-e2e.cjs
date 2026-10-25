@@ -29,6 +29,7 @@ let ctHits=[];
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
   if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:449,avg30:459,lowPrice:120,lowPriceExPlus:135}}}]:[];return J({data,totalCount:data.length})}
   if(u.startsWith('https://api.cardtrader.com/api/v2/')){const p=u.slice('https://api.cardtrader.com/api/v2'.length);ctHits.push(p);
+   if(p==='/info')return J({id:1,name:'Card Vault'});
    if(p==='/games')return J([{id:5,name:'Pokemon'}]);
    if(p==='/expansions')return J([{id:11,game_id:5,name:'Base Set 2'}]);
    if(p.startsWith('/blueprints/export?expansion_id=11'))return J([{id:900,name:'Mewtwo',fixed_properties:{collector_number:'10'}},{id:901,name:'Alakazam',fixed_properties:{collector_number:'1'}}]);

@@ -41,7 +41,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  ok('Directorio de dónde comprar: tiendas españolas y mercados de la UE',['Pokémillon','Iberian Collect','Cardzone','MaickJP','Catawiki','Wallapop','Vinted'].every(n=>t.includes(n)),t.slice(0,300));
  await page.fill('#cpGraded [data-gr-q]','mewtwo base');await page.waitForSelector('[data-gr-pick="base4-10"]');await page.click('[data-gr-pick="base4-10"]');await page.waitForTimeout(200);
  const links=await page.evaluate(()=>[...document.querySelectorAll('#cpGraded .cpPlanList a')].map(a=>a.href));
- ok('Con la carta elegida, «Buscar» abre cada sitio con «Mewtwo 10»',links.length===7&&links.includes('https://www.pokemillon.com/search?type=product&q=Mewtwo%2010')&&links.includes('https://www.catawiki.com/es/s?q=Mewtwo%2010')&&links.includes('https://www.vinted.es/catalog?search_text=Mewtwo%2010'),JSON.stringify(links));
+ ok('V135: sin enlaces a tiendas sin precio en Cartas graduadas',links.length===0,JSON.stringify(links));
  await page.evaluate(()=>{document.querySelector('[data-gr-paste]').closest('details').open=true});
  await page.fill('[data-gr-paste]','Mewtwo Base Set 2 PSA 9 Mint · 215,90 € · Certificado 87654321');await page.click('[data-gr-parse]');
  const f=await page.evaluate(()=>({co:document.querySelector('[data-gr="company"]').value,g:document.querySelector('[data-gr="grade"]').value,p:document.querySelector('[data-gr="price"]').value,c:document.querySelector('[data-gr="cert"]').value}));

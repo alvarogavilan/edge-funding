@@ -56,14 +56,12 @@ async function setup(withToken){
  await page.selectOption('[data-cp-view="lang"]','ja');await page.waitForTimeout(400);
  ok('Idioma «Japonés»: las japonesas salen en Compra YA (y solo ellas)',JSON.stringify(await ids())==='["jp-861477"]',JSON.stringify(await ids()));
  t=await page.textContent('#v4Buy #cp-jp-861477');
- ok('La ficha japonesa lleva el precio real de Cardmarket y «Dónde comprarla» con tiendas',/Cardmarket, solo japonesas:/.test(t)&&/Dónde comprarla más barata/.test(t)&&/Zenpan EU/.test(t),t.slice(0,300));
- await page.click('#v4Buy #cp-jp-861477 [data-cp-jpcalc]');await page.fill('#v4Buy #cp-jp-861477 [data-cp-jpc="yen"]','20000');await page.click('#v4Buy #cp-jp-861477 [data-cp-jpcalcgo]');
- t=await page.textContent('#v4Buy #cp-jp-861477 [data-cp-jpcalcout]');
- ok('«¿Y si la compro en Japón?» dentro de la ficha: ¥20.000 → 186,71 € en 41020 → +52,44 €',/Pagas en 41020 186,71\s€/.test(t)&&/\+52,44\s€ ✅ compensa/.test(t),t);
+ ok('La ficha japonesa lleva el precio real de Cardmarket y «Dónde comprarla» (solo sitios con precio)',/Cardmarket, solo japonesas:/.test(t)&&/Dónde comprarla más barata/.test(t)&&!/Zenpan EU/.test(t),t.slice(0,300));
+ ok('V135: la ficha japonesa ya no lleva calculadora sin precio',!(await page.$('#v4Buy #cp-jp-861477 [data-cp-jpcalcbox]')));
  // Graduadas sin token
  await page.click('.mainNav [data-tab="pregrade"]');await page.waitForSelector('#cpGraded h4',{timeout:30000});
  t=await page.textContent('#cpGraded');
- ok('Cartas graduadas sin token: explica que CardTrader es la fuente y dónde ponerlo; el analizador manual sigue (plegado)',/Graduadas con oportunidad de compra/.test(t)&&/token de CardTrader/.test(t)&&/Analizar un anuncio de otra tienda/.test(t),t.slice(0,600));
+ ok('Cartas graduadas sin token: explica que CardTrader es la fuente y dónde ponerlo; el analizador manual sigue (plegado)',/Graduadas con oportunidad de compra/.test(t)&&/token de CardTrader/.test(t)&&/Analizar un anuncio que hayas visto/.test(t),t.slice(0,600));
  ok('Sin errores de JavaScript (1)',!errors.length,errors.join(' | '));
  await browser.close();
  // Con token: lista automática
