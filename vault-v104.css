@@ -311,3 +311,5 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpJpCalc{margin-top:12px;padding:10px;border:1px solid var(--v4line);border-radius:8px}
 .cpJpCalc .cpChk{display:flex;align-items:center;gap:6px}
 .cpJpCalc .cpChk input{width:auto}
+/* V137 · diagnóstico copiable */
+.cpDiag{white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:240px;overflow:auto;padding:8px;border:1px solid var(--v4line);border-radius:8px}

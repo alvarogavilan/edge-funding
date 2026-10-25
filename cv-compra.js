@@ -21,6 +21,12 @@ const DATE=t=>{const d=new Date(String(t||"").replace(/\//g,"-"));return Number.
 const WHEN=t=>{const d=new Date(t);return Number.isFinite(d.getTime())?d.toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"};
 const NUM=v=>{const t=String(v??"").trim().replace(/\s|€/g,"");if(!t)return NaN;const x=Number(t.includes(",")?t.replace(/\./g,"").replace(",","."):t);return Number.isFinite(x)&&x>0?x:NaN};
 const sleep=ms=>new Promise(ok=>setTimeout(ok,ms));
+/* V137 · Registro de errores en ESTE iPhone (los 20 últimos): si algo falla en tu móvil queda apuntado y «Copiar
+   diagnóstico» lo copia (versión, estado de las fuentes y errores; nunca el token) para enviárselo a quien lo arregle. */
+const ERRKEY="cv_v137_errors";
+function logErr(msg,where){try{const L=JSON.parse(localStorage.getItem(ERRKEY)||"[]");L.unshift({at:new Date().toISOString(),v:document.body?.dataset?.release||"",msg:String(msg||"").slice(0,200),where:String(where||"").slice(0,120)});localStorage.setItem(ERRKEY,JSON.stringify(L.slice(0,20)))}catch{}}
+addEventListener("error",e=>logErr(e.message,(e.filename||"").split("/").pop()+":"+(e.lineno||"")));
+addEventListener("unhandledrejection",e=>logErr(e.reason?.message||e.reason,"promesa"));
 const cfg=()=>({maxBuy:200,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,...(window.CVVault?.user?.().cfg||{})});
 /* V130 · Escudo anti-proxy (caso real: Mewtwo & Mew GX japonés a 50 € frente a ~638 € → el anuncio decía «proxy», carta
    falsa). 1) Un anuncio por debajo del 30 % de lo que la carta vale y se vende casi nunca es una ganga: es proxy,
@@ -113,6 +119,24 @@ function parseTcg(tp){const pr=tp?.prices||{},k=["holofoil","normal","1stEdition
  if(!k||!tp?.url)return null;return {url:tp.url,variant:k,market:N(pr[k].market),low:N(pr[k].low),updated:tp.updatedAt||""}}
 function parsePtCard(c){const cm=c?.cardmarket?.prices||{};return {t:Date.now(),tcg:parseTcg(c?.tcgplayer),trend:N(cm.trendPrice),avg30:N(cm.avg30),low:N(cm.lowPrice),exPlus:N(cm.lowPriceExPlus),avg7:N(cm.avg7),avg1:N(cm.avg1),updated:c?.cardmarket?.updatedAt||""}}
 let ptRunning=null;/* progreso de la verificación en bloque */
+/* V137 · Primero las cartas que importan. Antes se comprobaba colección a colección (cientos, con 2 s de pausa obligada
+   entre llamadas): las internacionales tardaban minutos en tener su «EX o mejor» y Compra YA salía casi solo japonesa.
+   pokemontcg.io admite pedir cartas concretas (id:"a" OR id:"b"…): se piden antes, de 60 en 60, las 300 que pueden ser
+   oportunidad (valen ≥ 40 €, se venden y su compra puede caber en tu presupuesto). */
+async function verifyPriority(ctrl){
+ const c=cfg(),rev={},fresh=t=>M.pt.cards[t]&&Date.now()-M.pt.cards[t].t<PT_TTL;
+ const cand=cardsPk().filter(x=>hasPtcg(x.id)&&!fresh(x.id)&&(x.liq?.k||0)>=1).map(x=>({x,S:saleRef(x.p)})).filter(o=>Number.isFinite(o.S)&&o.S>=40&&o.S<=c.maxBuy/FAKE_RATIO).sort((a,b)=>(b.x.liq.k-a.x.liq.k)||(a.S-b.S)).slice(0,300);
+ const prog={total:Math.ceil(cand.length/60),done:0,first:true};if(cand.length)ptRunning=prog;
+ for(let i=0;i<cand.length;i+=60){if(ctrl.signal.aborted||budget().n>=PT_DAILY)break;
+  const grp=cand.slice(i,i+60);for(const o of grp)rev[ptcgId(o.x.id)]=o.x.id;
+  try{spend();M.src.ptcg.req++;
+   const j=await getJSON(PT+"/cards?q="+encodeURIComponent(grp.map(o=>'id:"'+ptcgId(o.x.id)+'"').join(" OR "))+"&pageSize=250&select=id,cardmarket,tcgplayer",ctrl.signal,45000);
+   for(const cd of (Array.isArray(j?.data)?j.data:[])){const t=rev[cd.id];if(t)M.pt.cards[t]=parsePtCard(cd)}
+   M.src.ptcg.ok++;M.src.ptcg.last=Date.now();prog.done++;persist();render()}
+  catch(e){if(ctrl.signal.aborted)break;M.src.ptcg.fail++;M.src.ptcg.lastErr=String(e.message||e).slice(0,80);break}
+  await sleep(2100)}
+ if(ptRunning===prog)ptRunning=null;
+}
 async function verifySets(sets,ctrl){
  const rev={};for(const r of window.CV_UNIVERSE.cards)if(hasPtcg(r[0]))rev[ptcgId(r[0])]=r[0];
  const todo=sets.filter(s=>!(M.pt.sets[s]&&Date.now()-M.pt.sets[s]<PT_TTL));
@@ -623,9 +647,20 @@ function summaryHtml(L,c){
  langNote(L,c)+
  (hits?'<p class="cpAlert'+(hitN?' on':'')+'">'+(hitN?'🔔 '+hitN+' carta(s) vigilada(s) por debajo de tu precio':'Vigilando '+hits+' carta(s): te avisaré aquí cuando bajen de tu precio')+'</p>':'');
 }
+function diagText(){
+ let errs=[];try{errs=JSON.parse(localStorage.getItem(ERRKEY)||"[]")}catch{}const s=M.src,t=ctToken(),ti=t?tokInfo(t):null;
+ return ["Card Vault · diagnóstico "+new Date().toLocaleString("es-ES"),"Versión: "+(document.body?.dataset?.release||"?"),"Navegador: "+navigator.userAgent,
+  "Guía Cardmarket: "+(M.guide?M.guide.count+" productos del "+DATE(M.guide.sourceCreatedAt):"no cargada")+" · "+(s.guide?.ok||0)+" ok / "+(s.guide?.fail||0)+" fallos"+(s.guide?.lastErr?" · "+s.guide.lastErr:""),
+  "pokemontcg.io: "+Object.keys(M.pt.cards).length+" cartas con «EX o mejor» · "+(s.ptcg?.ok||0)+" ok / "+(s.ptcg?.fail||0)+" fallos · hoy "+budget().n+"/"+PT_DAILY+(s.ptcg?.lastErr?" · "+s.ptcg.lastErr:""),
+  "CardTrader: "+(!t?"sin token":"token "+t.length+" caracteres, "+(ti.ok?"forma correcta"+(ti.exp?", válido hasta "+ti.exp:""):ti.why)+" · prueba: "+(s.ct?.test?(s.ct.test.ok?"✓ "+s.ct.test.name:"✗ "+s.ct.test.err):"sin hacer")+" · "+(s.ct?.ok||0)+" ok / "+(s.ct?.fail||0)+" fallos"),
+  "Tiendas: "+SHOPS.map(sh=>sh.name+" "+(shopSt[sh.id]?(shopSt[sh.id].ok?"✓":"✗ "+shopSt[sh.id].err):"sin probar")).join(" · "),
+  "Cambio: 1 ¥ = "+(fx.rate||"?")+" € · 1 $ = "+(fx.usd||"?")+" € ("+(fx.date||"?")+")",
+  "Errores ("+errs.length+"):"].concat(errs.map(e=>"· "+e.at+" "+e.msg+" ["+e.where+"]")).join("\n");
+}
 function sourcesHtml(){
  const s=M.src,b=budget(),line=(n,o)=>'<li><b>'+n+'</b> · '+(o.ok||0)+' correctas, '+(o.fail||0)+' fallidas'+(o.last?' · última '+WHEN(o.last):'')+(o.lastErr?' · <span class="neg">'+E(o.lastErr)+'</span>':'')+'</li>';
  return '<details class="v4settings"><summary>Estado de las fuentes</summary><ul class="v4help">'+line("Guía oficial de Cardmarket (espejo diario en GitHub)",s.guide)+line("pokemontcg.io · verificación y «desde» EX+ · "+b.n+"/"+PT_DAILY+" hoy"+(ptRunning?" · comprobando "+ptRunning.done+"/"+ptRunning.total+" colecciones":""),s.ptcg)+line("Bindex · Lorcana en Cardmarket",s.bindex)+ctPanel()+'</ul>'+
+  (()=>{let n=0;try{n=JSON.parse(localStorage.getItem(ERRKEY)||"[]").length}catch{}return '<p class="v4note"><b>Errores registrados en este iPhone:</b> '+(n?'<span class="neg">'+n+'</span>':'ninguno')+' <button type="button" class="v4btn" data-cp-diag>Copiar diagnóstico</button>'+(n?' <button type="button" class="v4btn" data-cp-diagclear>Borrar errores</button>':'')+'</p><pre class="cpDiag" data-cp-diagout hidden></pre>'})()+
   '<div class="cpShops"><p><b>CardTrader</b>: '+(!ctToken()?'sin token':!s.ct?.test?'token guardado, sin probar':s.ct.test.ok?'<span class="pos">✓ conectado ('+E(s.ct.test.name)+')</span>':'<span class="neg">✗ '+E(s.ct.test.err)+'</span>')+(ctToken()?' <button type="button" class="v4btn" data-cp-cttest>Probar CardTrader</button>':'')+'</p>'+
   '<details class="v4more" data-cp-impbox><summary>Gastos de importación (TCGplayer y tiendas fuera de la UE)</summary><div class="cpPlanIn"><label>Envío desde EE. UU. (€)<input inputmode="decimal" data-cp-jp="shipUS" value="'+E(String(jp.shipUS).replace(".",","))+'"></label><label>EMS desde Japón (¥)<input inputmode="numeric" data-cp-jp="ems" value="'+E(String(jp.ems))+'"></label><label>Comisión Buyee (¥)<input inputmode="numeric" data-cp-jp="buyee" value="'+E(String(jp.buyee))+'"></label><label>Arancel UE por paquete (€)<input inputmode="decimal" data-cp-jp="duty" value="'+E(String(jp.duty).replace(".",","))+'"></label><label>IVA de importación %<input inputmode="decimal" data-cp-jp="vat" value="'+E(String(jp.vat).replace(".",","))+'"></label><label>Gestión del transportista (€)<input inputmode="decimal" data-cp-jp="handling" value="'+E(String(jp.handling).replace(".",","))+'"></label><label>Cambio 1 ¥ = €<input inputmode="decimal" data-cp-jp="rate" value="'+(N(fx.rate)?E(String(fx.rate).replace(".",",")):"")+'"></label></div><button type="button" class="v4btn" data-cp-jpsave>Guardar gastos</button></details>'+
   '<p><b>Otras tiendas</b> ('+SHOPS.map(sh=>E(sh.name)).join(", ")+'): '+(SHOPS.some(sh=>shopSt[sh.id]?.ok)?'<span class="pos">✓ '+SHOPS.filter(sh=>shopSt[sh.id]?.ok).map(sh=>E(sh.name)).join(", ")+' se pueden leer: su precio sale en «Dónde comprarla»</span>':SHOPS.some(sh=>shopSt[sh.id])?'no dejan leer sus precios → no se enseñan':'se prueban al cargar con CardTrader')+'.</p></div>'+
@@ -851,6 +886,8 @@ async function refresh(force){
   const first=[...new Set(L.sure.concat(L.pending).slice(0,80).filter(x=>x.kind==="pk"&&hasPtcg(x.id)).concat(pot).map(x=>ptSetOf(x.id)))];
   const rest=[...new Set(window.CV_UNIVERSE.cards.filter(r=>hasPtcg(r[0])).map(r=>ptSetOf(r[0])))].filter(s=>!first.includes(s));
   const lor=view.game==="all"||view.game==="lorcana"?loadLorcana(ctrl).then(render):Promise.resolve();
+  if(ctToken()&&!M.src.ct?.test)ctTest().then(render);/* el estado de CardTrader, al momento */
+  await verifyPriority(ctrl);ctAuto();/* CardTrader en paralelo, sin esperar a todas las colecciones */
   await verifySets(first.concat(rest),ctrl);await lor;
  }finally{busy="";ctrl=null;render()}
  ctAuto();
@@ -893,7 +930,7 @@ async function verifyVisible(){
 }
 function onShow(){ready.then(()=>{render();if(!started&&navigator.onLine!==false){started=true;setTimeout(()=>refresh(false),900)}})}
 document.addEventListener("click",e=>{
- const t=e.target.closest("[data-cp-cttest],[data-cp-shopload],[data-cp-shopprobe],[data-cp-fakecheck],[data-cp-jpsave],[data-cp-refresh],[data-cp-lsave],[data-cp-pastesave],[data-cp-pasteopen],[data-cp-watch],[data-cp-unwatch],[data-cp-promote],[data-cp-histload],[data-cp-ctload],[data-cp-ctsave],[data-cp-ctdel]");if(!t)return;const d=t.dataset;
+ const t=e.target.closest("[data-cp-diag],[data-cp-diagclear],[data-cp-cttest],[data-cp-shopload],[data-cp-shopprobe],[data-cp-fakecheck],[data-cp-jpsave],[data-cp-refresh],[data-cp-lsave],[data-cp-pastesave],[data-cp-pasteopen],[data-cp-watch],[data-cp-unwatch],[data-cp-promote],[data-cp-histload],[data-cp-ctload],[data-cp-ctsave],[data-cp-ctdel]");if(!t)return;const d=t.dataset;
  if("cpJpsave" in d){const box=t.closest("[data-cp-impbox]"),v=k=>{const r=String(box.querySelector('[data-cp-jp="'+k+'"]')?.value||"").trim();return r==="0"?0:NUM(r)};/* 0 es válido */
   const f={ems:v("ems"),buyee:v("buyee"),duty:v("duty"),vat:v("vat"),handling:v("handling"),shipUS:v("shipUS")},ra=Number(String(box.querySelector('[data-cp-jp="rate"]')?.value||"").replace(",","."));
   if(Object.values(f).some(x=>!Number.isFinite(x))){alert("Revisa los gastos: números como 3450, 500, 3, 21 o 15.");return}
@@ -901,6 +938,9 @@ document.addEventListener("click",e=>{
   renderNow();toastCp("Gastos de importación guardados");return}
  if(d.cpShopload){shopLoad(d.cpShopload);if(ctToken()&&!ctRes[d.cpShopload])ctLoad(d.cpShopload);return}
  if("cpShopprobe" in d){t.disabled=true;t.textContent="Probando…";shopProbe().then(renderNow);return}
+ if("cpDiag" in d){const txt=diagText(),o=document.querySelector("[data-cp-diagout]");if(o){o.hidden=false;o.textContent=txt}
+  (navigator.clipboard?.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toastCp("Diagnóstico copiado: pégalo en el chat"),()=>toastCp("Selecciona el texto de abajo y cópialo"));return}
+ if("cpDiagclear" in d){try{localStorage.removeItem(ERRKEY)}catch{}renderNow();return}
  if("cpCttest" in d){t.disabled=true;t.textContent="Probando…";ctTest().then(r=>{renderNow();toastCp(r.ok?"CardTrader conectado ✓":"CardTrader: "+r.err)});return}
  if("cpFakecheck" in d){const b=t.closest("[data-cp-fakebox]"),o=b?.querySelector("[data-cp-fakeout]");if(o)o.textContent=fakeVerdict(b.querySelector("[data-cp-faketxt]")?.value);return}
  if(d.cpCtload){ctLoad(d.cpCtload);return}
@@ -921,5 +961,5 @@ let qT=null;document.addEventListener("input",e=>{const t=e.target.closest("[dat
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"]'))setTimeout(onShow,60);if(e.target.closest('.mainNav [data-tab="favoritos"]'))setTimeout(onFavs,60)});
 if(location.hash==="#favoritos")setTimeout(onFavs,1300);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(onShow,1200));else setTimeout(onShow,1200);
-window.CVCompra={ctTest,ctShip,SHOPS,shopProbe,shopLoad,shopState:()=>shopSt,fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpRoute,jpCalc,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
+window.CVCompra={diagText,logErr,verifyPriority,ctTest,ctShip,SHOPS,shopProbe,shopLoad,shopState:()=>shopSt,fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpRoute,jpCalc,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
 })();
