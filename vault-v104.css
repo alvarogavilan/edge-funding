@@ -233,7 +233,7 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpSpark{width:100%;height:70px;color:var(--v4good)}
 .v4tag.v4ok{border-color:var(--v4good)}.v4tag.v4warn{border-color:#f5a524;color:#f5a524}.v4tag.v4bad{border-color:#e5484d;color:#e5484d}
 /* V117 · Favoritos, idiomas, CardTrader, PSA y Valorar PSA */
-#pregrade.cpPsaOn>:not(#cpPsa){display:none!important}
+#pregrade.cpPsaOn>:not(#cpPsa):not(#cpGraded){display:none!important}
 .cpLangLinks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;font-size:13px}
 .cpLangLinks span{width:100%;color:var(--v4soft)}
 .cpLangLinks a{display:inline-flex;align-items:center;min-height:40px;padding:0 12px;border:1px solid var(--v4line);border-radius:999px;text-decoration:none;color:inherit;font-weight:700}
@@ -291,3 +291,10 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpTot div{border:1px solid var(--v4line);border-radius:10px;padding:6px 8px}.cpTot b{display:block;font-size:1.05rem}.cpTot span{font-size:.8rem;opacity:.8}
 .cpSig{display:inline-block;font-weight:700;font-size:.78rem;border-radius:8px;padding:2px 6px;border:1px solid currentColor}
 .cpSig.go{color:var(--v4good)}.cpSig.wait{color:var(--v4warn)}.cpSig.flat{opacity:.75}
+/* V122 · punto de mira, idioma, sellado y graduadas */
+.cpSnipe{border:2px solid var(--v4good);border-radius:14px;padding:10px;margin:10px 0}
+.cpSnipe summary{font-size:1.02rem}
+.cpLangSel{margin:6px 0;padding:6px 8px;border-left:3px solid var(--v4blue);font-size:.9rem}
+.cpMine{margin:14px 0 6px}
+.cpPlanIn label.wide{grid-column:1/-1}
+.cpPlanIn select{min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 8px;min-width:0}

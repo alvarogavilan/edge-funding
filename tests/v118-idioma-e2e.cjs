@@ -42,12 +42,14 @@ Seller2 Near Mint English 129,99 € 2`;
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
  await page.waitForFunction(()=>document.querySelector('#v4Buy #cp-jp-861477')&&/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||''),null,{timeout:120000}).catch(async e=>{console.log('DBG',errors.join('|'),JSON.stringify(await page.evaluate(()=>({ids:[...document.querySelectorAll('.cpCard')].map(a=>a.dataset.cpid),jp:!!window.CV_JP_MAP,g:window.CVCompra.state().guide&&Object.keys(window.CVCompra.state().guide.rows)}))));throw e});
+ const openPaste=async k=>{await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 .cpPaste').open=true});await page.selectOption('#v4Buy #cp-base4-10 [data-cp-pastelang]',k)};/* V122: el cuadro tiene su propio selector de idioma */
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  let t=await T('jp-861477');
  ok('Japonés: Pikachu ex (M2A 234) con su producto japonés propio · compra 100 € (106 € en 41020) → venta 190 € → +69,50 €',/JAPONÉS · PRECIO Y VENTAS DEL MISMO IDIOMA/.test(t)&&/106,00\s€/.test(t)&&/190,00\s€/.test(t)&&/\+69,50\s€/.test(t)&&/ventas reales de cartas japonesas/.test(t),t.slice(0,500));
  ok('Japonés: la tabla «mismo idioma» marca la venta como comprobada en japonés',/Japonés.*✔ venta comprobada · japonés/.test(await page.textContent('#v4Buy #cp-jp-861477 .cpLTtab')));
- const jl=await page.evaluate(()=>({main:document.querySelector('#v4Buy #cp-jp-861477 .v4actions a').href,langs:[...document.querySelectorAll('#v4Buy #cp-jp-861477 .cpLangLinks a')].map(a=>a.textContent+'='+a.href),img:document.querySelector('#v4Buy #cp-jp-861477 img')?.src||''}));
- ok('Japonés: enlace exacto al producto y filtro de idioma japonés (language=7); foto del catálogo japonés',jl.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=861477'&&jl.langs.length===1&&/^Japonés=.*idProduct=861477&language=7&minCondition=3$/.test(jl.langs[0])&&/den-cards\.pokellector\.com\/.*Pikachu-ex\.M2A\.234/.test(jl.img),JSON.stringify(jl));
+ const jl=await page.evaluate(()=>({main:document.querySelector('#v4Buy #cp-jp-861477 .v4actions a').href,img:document.querySelector('#v4Buy #cp-jp-861477 img')?.src||''}));
+ await page.selectOption('[data-cp-view="lang"]','ja');await page.waitForTimeout(300);jl.ja=await page.getAttribute('#v4Buy #cp-jp-861477 .v4actions a','href');jl.ids=await ids();await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
+ ok('Japonés: enlace exacto al producto; con idioma «Japonés» solo japonesas y filtro language=7; foto del catálogo japonés',jl.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=861477'&&/idProduct=861477&language=7&minCondition=3$/.test(jl.ja)&&jl.ids.join()==='jp-861477'&&/den-cards\.pokellector\.com\/.*Pikachu-ex\.M2A\.234/.test(jl.img),JSON.stringify(jl));
  ok('Japonés sin beneficio (M2A 44 a 0,75 €) no se recomienda',!(await ids()).includes('jp-861287'));
  await page.selectOption('[data-cp-view="game"]','jp');await page.waitForTimeout(300);
  ok('Filtro «Pokémon japonés (idioma seguro)»',(await ids()).join()==='jp-861477',JSON.stringify(await ids()));
@@ -56,19 +58,20 @@ Seller2 Near Mint English 129,99 € 2`;
  await page.selectOption('[data-cp-view="game"]','all');await page.waitForTimeout(300);
  // Carta internacional: tabla por idioma con «Abrir ficha» y «Pegar datos»
  const lt=await page.textContent('#v4Buy #cp-base4-10 .cpLTtab');
- ok('Mewtwo: tabla por idioma con la guía (mezcla idiomas) y un acceso por idioma',/Todos \(guía\).*mezcla idiomas/.test(lt)&&/Inglés.*Abrir ficha en inglés/.test(lt)&&/Español.*Abrir ficha en español/.test(lt),lt.slice(0,300));
- const ifl=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-base4-10 .cpLTtab a')].map(a=>a.href).find(h=>/language=1&/.test(h)));
- ok('«Abrir ficha en inglés» abre el producto exacto filtrado por inglés y EX o mejor',ifl==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=1&minCondition=3',String(ifl));
+ ok('Mewtwo: tabla por idioma con la guía (mezcla idiomas); sin filas vacías por idioma',/Todos \(guía\).*mezcla idiomas/.test(lt)&&!/Ver en inglés en Cardmarket/.test(lt),lt.slice(0,300));
+ await page.selectOption('[data-cp-view="lang"]','en');await page.waitForTimeout(300);/* V122: con el idioma elegido aparece su fila */
+ const ifl=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-base4-10 .cpLTtab a')].map(a=>a.href).find(h=>/language=1&/.test(h)));await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
+ ok('Con idioma «Inglés», su fila abre el producto exacto filtrado por inglés y EX o mejor',ifl==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=1&minCondition=3',String(ifl));
  // Pegar español: la media coincide con la general → aviso, no se usa como venta del idioma
- await page.click('#v4Buy #cp-base4-10 [data-cp-pasteopen="base4-10|es"]');
- ok('«Pegar datos» abre el cuadro con el idioma elegido',await page.inputValue('#v4Buy #cp-base4-10 [data-cp-pastelang]')==='es');
+ await openPaste('es');
+ ok('«Pegar datos»: cuadro con el idioma elegido',await page.inputValue('#v4Buy #cp-base4-10 [data-cp-pastelang]')==='es');
  await page.fill('#v4Buy #cp-base4-10 [data-cp-paste]',pasteES);await page.click('#v4Buy #cp-base4-10 [data-cp-pastesave]');await page.waitForTimeout(400);
  let toast=await page.textContent('#cpToast');
  ok('Español pegado con media 30 días = media general (170 €): avisa de que Cardmarket no separó el idioma',/Español: compra 85,00\s€/.test(toast)&&/no la del idioma/.test(toast),toast);
  t=await page.textContent('#v4Buy #cp-base4-10 .cpLTtab');
  ok('Tabla: español 85 € «⚠ Cardmarket no separó el idioma» y venta = guía general (160 €) → +56,00 €',/Español85,00\s€160,00\s€\+56,00\s€⚠ Cardmarket no separó el idioma/.test(t),t.slice(0,400));
  // Pegar inglés: medias distintas → venta del idioma comprobada; compra = anuncio más barato copiado (120 €)
- await page.click('#v4Buy #cp-base4-10 [data-cp-pasteopen="base4-10|en"]');
+ await openPaste('en');
  await page.fill('#v4Buy #cp-base4-10 [data-cp-paste]',pasteEN);await page.click('#v4Buy #cp-base4-10 [data-cp-pastesave]');await page.waitForTimeout(400);
  toast=await page.textContent('#cpToast');
  ok('Inglés pegado (web en inglés): compra 120 € (anuncio copiado), venta 250 € del idioma comprobada',/Inglés: compra 120,00\s€ · venta 250,00\s€ · venta del idioma comprobada/.test(toast),toast);
@@ -78,7 +81,7 @@ Seller2 Near Mint English 129,99 € 2`;
  const mon=await page.textContent('#v4Buy #cp-base4-10 .cpMoney');
  ok('La mejor operación pasa a ser la del mismo idioma (inglés) y lo dice',/Inglés · mismo idioma/.test(mon)&&/ventas en inglés \(comprobadas\)/.test(mon)&&/\+106,50\s€/.test(mon),mon);
  // Pegado sin precios: no inventa nada
- await page.click('#v4Buy #cp-base4-10 [data-cp-pasteopen="base4-10|fr"]');await page.fill('#v4Buy #cp-base4-10 [data-cp-paste]','texto sin precios');
+ await openPaste('fr');await page.fill('#v4Buy #cp-base4-10 [data-cp-paste]','texto sin precios');
  let alerted='';page.once('dialog',d=>{alerted=d.message();d.dismiss()});await page.click('#v4Buy #cp-base4-10 [data-cp-pastesave]');await page.waitForTimeout(300);
  ok('Texto sin precios: lo avisa y no guarda nada',/No encuentro precios/.test(alerted)&&!(await page.evaluate(()=>JSON.parse(localStorage.getItem('cv_v113_lang')||'{}')['base4-10']?.fr)),alerted);
  // Guardar a mano no borra la comprobación del idioma pegado

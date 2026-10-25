@@ -48,8 +48,10 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  ok('Mewtwo: versión verificada con 2 fuentes, compra EX o mejor 95 € (101 € en 41020), venta 160 € → +46,00 €',/VERSIÓN VERIFICADA/.test(t)&&/95,00\s€/.test(t)&&/101,00\s€/.test(t)&&/160,00\s€/.test(t)&&/\+46,00\s€/.test(t),t.slice(0,400));
  ok('Compra YA sin «+ Nueva oportunidad» ni fichas de restauración aparte',!(await page.$('[data-v4-new]'))&&!(await page.isVisible('#v4Restore h2').catch(()=>false)));
  ok('En «Buen estado» no aparece la operación de restaurar',!(await ids()).includes('base4-1')&&!/Restaurar/.test(await T('base4-10')));
- const lk=await page.evaluate(()=>({main:document.querySelector('#v4Buy #cp-base4-10 .v4actions a').href,langs:[...document.querySelectorAll('#v4Buy #cp-base4-10 .cpLangLinks a')].map(a=>a.textContent+'='+a.href)}));
- ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y un botón por idioma (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933'&&lk.langs.some(x=>x==='Español=https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3')&&lk.langs.some(x=>/^Inglés=.*language=1/.test(x)),JSON.stringify(lk));
+ const main0=await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href');
+ await page.selectOption('[data-cp-view="lang"]','es');await page.waitForTimeout(300);/* V122: un selector de idioma en lugar de un botón por idioma */
+ const lk={main:main0,es:await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href')};await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
+ ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y, con el idioma elegido, filtrado (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933'&&lk.es==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3',JSON.stringify(lk));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
  t=await T('base4-1');
  ok('«Mal estado · restaurar»: Alakazam «desde» 30 € → venta mejorada al 60 % 120 € → +73,00 €',/Restaurar/.test(t)&&/120,00\s€/.test(t)&&/\+73,00\s€/.test(t),t.slice(0,300));
