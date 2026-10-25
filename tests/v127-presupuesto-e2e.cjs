@@ -40,9 +40,8 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  ok('Aviso visible: compra máxima por carta 200 €',/Compra máxima por carta: 200,00\s€/.test(t));
  ok('Compra YA: Alakazam (EX+ 250 €, pagas 256 €) no sale; Mewtwo (194 €, pagas 200 €) sí',(await ids()).includes('base4-10')&&!(await ids()).includes('base4-1'),JSON.stringify(await ids()));
  ok('Punto de mira y Top 5 sin nada por encima de 200 €',!/Alakazam/.test(await page.textContent('[data-cp-snipe]'))&&!/Alakazam/.test(await page.textContent('#v4Buy .cpTop')));
- await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});t=await page.textContent('[data-cp-jpbox]');
- // V132 · Comprar japonesas: precio real de Cardmarket. M2A 44 a 290 € (pagarías 296 €) y M2A 234 a 700 € pasan de 200 € → fuera
- ok('Comprar japonesas: nada por encima de tu compra máxima (M2A 44 pagarías 296 €, M2A 234 706 €)',!/nº 44/.test(t)&&!/nº 234/.test(t)&&/ninguna hoy con beneficio dentro de tu presupuesto/.test(t),t.slice(0,500));
+ // V134 · japonesas en Compra YA: M2A 44 a 290 € (pagarías 296 €) y M2A 234 a 700 € pasan de 200 € → no salen
+ ok('Japonesas: nada por encima de tu compra máxima en Compra YA (M2A 44 pagarías 296 €, M2A 234 706 €)',!(await ids()).includes('jp-861287')&&!(await ids()).includes('jp-861477'),JSON.stringify(await ids()));
  // Subir la compra máxima a 300 € en Supuestos
  await page.evaluate(()=>{document.querySelector('#v4Buy [data-v4-cfg="maxBuy"]').closest('details').open=true});
  await page.fill('#v4Buy [data-v4-cfg="maxBuy"]','300');await page.click('#v4Buy [data-v4-cfgsave]');await page.waitForTimeout(800);

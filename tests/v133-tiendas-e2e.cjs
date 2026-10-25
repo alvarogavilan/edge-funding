@@ -47,13 +47,12 @@ const hits={shop:[],ct:[]};
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- await page.waitForFunction(()=>document.querySelector('#v4Buy [data-cp-jpbox] [data-cp-shopload]'),null,{timeout:120000});
- await page.evaluate(()=>{document.querySelector('#v4Buy [data-cp-jpbox]').open=true});
- await page.click('#v4Buy [data-cp-jpbox] [data-cp-shopload="jp-861477"]');
- await page.waitForFunction(()=>/Más barata fuera de Cardmarket/.test(document.querySelector('#v4Buy [data-cp-jpbox]')?.textContent||''),null,{timeout:30000});
- let t=await page.textContent('#v4Buy [data-cp-jpbox]');
+ await page.waitForSelector('#v4Buy #cp-jp-861477 [data-cp-shopload]',{state:'attached',timeout:120000});
+ await page.click('#v4Buy #cp-jp-861477 [data-cp-shopload]');
+ await page.waitForFunction(()=>/Zenpan EU \(Lisboa, UE\) ↗156,00/.test(document.querySelector('#v4Buy #cp-jp-861477 .cpBuy')?.textContent||''),null,{timeout:30000});
+ let t=await page.textContent('#v4Buy #cp-jp-861477 .cpBuy');
  // Zenpan EU: 150 € + envío 6 € = 156 € (en la UE: sin aduana)
- ok('Comprar japonesas → «Comparar en tiendas y CardTrader»: la más barata fuera de Cardmarket es Zenpan EU 156 € puesta en 41020',/Más barata fuera de Cardmarket: Zenpan EU 156,00\s€ puesta en 41020/.test(t),t.slice(0,800));
+ ok('Ficha japonesa en Compra YA → «Buscar en tiendas ahora»: la más barata es Zenpan EU 156 € puesta en 41020',/Dónde comprarla más barata · Zenpan EU \(Lisboa, UE\) 156,00\s€ puesta en 41020/.test(t),t.slice(0,600));
  await page.evaluate(()=>{document.querySelectorAll('#v4Buy details.v4settings').forEach(d=>d.open=true)});
  t=await page.textContent('#v4Buy .cpShops');
  ok('Estado de las fuentes: Zenpan EU ✓ (EUR), Zenpan Japan ✓ (JPY), Hareruya2 ✗ → enlace',/Zenpan EU[^]*✓ se pueden leer sus precios \(EUR\)/.test(t)&&/Zenpan Japan[^]*✓ se pueden leer sus precios \(JPY\)/.test(t)&&/Hareruya2[^]*✗/.test(t),t);

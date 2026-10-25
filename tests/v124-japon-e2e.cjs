@@ -44,24 +44,24 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  const links=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-jp-861477 .cpLangSel a')].map(a=>a.href));
  ok('«Ver anuncios» abre la ficha japonesa exacta de Cardmarket (sin búsquedas a ciegas en Mercari)',links.length===1&&links[0]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=861477',JSON.stringify(links));
  ok('Cambio del BCE descargado una vez',fxHits===1,String(fxHits));
- await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});t=await page.textContent('[data-cp-jpbox]');
- ok('Panel «🇯🇵 Comprar japonesas»: la carta con su precio real, lo que pagas y el aviso de IVA/arancel de vendedores en Japón',/Comprar japonesas/.test(t)&&/Pikachu ex/.test(t)&&/pagas 199,00\s€ con envío desde la UE/.test(t)&&/IVA antes de pagar/.test(t)&&/3 € de arancel/.test(t),t.slice(0,600));
- ok('Panel: guía de autenticidad (Cardmarket protege, descripción, vendedor, fotos, certificado)',/¿Es auténtica\?/.test(t)&&/abres una reclamación/.test(t)&&/certificado/.test(t));
- ok('No entra la japonesa barata (M2A 44, 0,75 €)',!/nº 44/.test(t));
+ ok('V134: sin apartado aparte; la japonesa sale en Compra YA',!(await page.$('#v4Buy [data-cp-jpbox]'))&&await page.evaluate(()=>!!document.querySelector('#v4Buy .cpBox > .v4list > #cp-jp-861477')));
+ t=await page.textContent('#v4Buy #cp-jp-861477 .cpCheck');
+ ok('«Antes de pagar»: cómo comprobar que es auténtica (fotos, código, tipografía japonesa, holo, reverso, certificado)',/¿Es auténtica\?/.test(t)&&/tipografía japonesa/.test(t)&&/certificado/.test(t),t);
+ ok('No entra la japonesa barata (M2A 44, 0,75 €)',!(await page.$('#v4Buy #cp-jp-861287')));
  // Calculadora «¿Y si la compro en Japón?»: ¥20.000 vía Buyee → (20.000 + 500)·0,0058 = 118,90 + EMS 3.450·0,0058 = 20,01 + arancel 3
  // + IVA 21 % de 141,91 = 29,80 + gestión 15 = 186,71 € → vendiéndola a 257 €: 239,15 − 186,71 = +52,44 €
  await page.click('#v4Buy #cp-jp-861477 [data-cp-jpcalc]');await page.waitForTimeout(300);
- ok('«¿Y si la compro en Japón?» abre la calculadora con su precio de venta aquí',await page.inputValue('[data-cp-jpc="sale"]')==='257'&&/Pikachu ex/.test(await page.textContent('[data-cp-jpcalcbox]')));
- await page.fill('[data-cp-jpc="yen"]','20000');await page.click('[data-cp-jpcalcgo]');
- t=await page.textContent('[data-cp-jpcalcout]');
+ ok('«¿Y si la compro en Japón?» abre la calculadora de esa ficha con su precio de venta aquí',await page.evaluate(()=>document.querySelector('#v4Buy #cp-jp-861477 [data-cp-jpcalcbox]').open)&&await page.inputValue('#v4Buy #cp-jp-861477 [data-cp-jpc="sale"]')==='257');
+ await page.fill('#v4Buy #cp-jp-861477 [data-cp-jpc="yen"]','20000');await page.click('#v4Buy #cp-jp-861477 [data-cp-jpcalcgo]');
+ t=await page.textContent('#v4Buy #cp-jp-861477 [data-cp-jpcalcout]');
  ok('Calculadora: ¥20.000 → pagas 186,71 € en 41020 (Buyee, EMS, arancel, IVA y gestión) → +52,44 € ✅',/Pagas en 41020 186,71\s€/.test(t)&&/EMS 20,01\s€/.test(t)&&/arancel 3,00\s€/.test(t)&&/IVA 29,80\s€/.test(t)&&/\+52,44\s€ ✅ compensa/.test(t),t);
- await page.evaluate(()=>{document.querySelector('[data-cp-jpcalcbox] details').open=true});
- await page.fill('[data-cp-jp="handling"]','0');await page.click('[data-cp-jpsave]');await page.waitForTimeout(300);
- t=await page.textContent('[data-cp-jpcalcout]');
+ await page.evaluate(()=>{document.querySelector('#v4Buy #cp-jp-861477 [data-cp-jpcalcbox] details').open=true});
+ await page.fill('#v4Buy #cp-jp-861477 [data-cp-jp="handling"]','0');await page.click('#v4Buy #cp-jp-861477 [data-cp-jpsave]');await page.waitForTimeout(300);
+ t=await page.textContent('#v4Buy #cp-jp-861477 [data-cp-jpcalcout]');
  ok('Con gestión 0 € se recalcula: 171,71 € → +67,44 €',/Pagas en 41020 171,71\s€/.test(t)&&/\+67,44\s€/.test(t),t);
- await page.reload();await page.waitForSelector('#v4Buy [data-cp-jpcalcbox]',{state:'attached',timeout:60000});await page.waitForTimeout(800);
- await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});await page.click('[data-cp-jpcalcgo]');
- ok('Tras recargar se conservan precio, gastos y carta, y no se vuelve a pedir el cambio',/171,71\s€/.test(await page.textContent('[data-cp-jpcalcout]'))&&fxHits===1,String(fxHits));
+ await page.reload();await page.waitForSelector('#v4Buy #cp-jp-861477 [data-cp-jpcalcbox]',{state:'attached',timeout:60000});await page.waitForTimeout(800);
+ await page.click('#v4Buy #cp-jp-861477 [data-cp-jpcalc]');await page.fill('#v4Buy #cp-jp-861477 [data-cp-jpc="yen"]','20000');await page.click('#v4Buy #cp-jp-861477 [data-cp-jpcalcgo]');
+ ok('Tras recargar se conservan los gastos (gestión 0 €) y no se vuelve a pedir el cambio',/171,71\s€/.test(await page.textContent('#v4Buy #cp-jp-861477 [data-cp-jpcalcout]'))&&fxHits===1,String(fxHits));
  ok('Las cartas no japonesas no llevan la línea de Japón',!(await page.textContent('#v4Buy #cp-base4-10')).includes('solo japonesas'));
  // Repintado en segundo plano mientras escribes en «Pegar datos»: no se cierra ni se borra
  await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 .cpPaste').open=true});

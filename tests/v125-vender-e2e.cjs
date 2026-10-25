@@ -78,7 +78,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.evaluate(()=>{document.querySelector('#cpSell [data-sell="t-mew"] .cpWhere').open=true});
  ok('Comisión de Wallapop editable: 10 % → 160·0,90−5 = 139 €',/Wallapop ↗160,00\s€139,00\s€/.test(await page.textContent('#cpSell [data-sell="t-mew"] .cpWhere')));
  // Graduadas reales en CardTrader
- await page.click('.mainNav [data-tab="pregrade"]');await page.waitForSelector('#cpGraded [data-gr-q]',{timeout:30000});
+ await page.click('.mainNav [data-tab="pregrade"]');await page.waitForSelector('#cpGraded [data-gr-q]',{state:'attached',timeout:30000});await page.click('#cpGraded details.v4more > summary');/* V134: con token, el analizador va plegado bajo la lista automática */
  await page.fill('#cpGraded [data-gr-q]','mewtwo base');await page.waitForSelector('[data-gr-pick="base4-10"]');await page.click('[data-gr-pick="base4-10"]');
  await page.click('[data-gr-ct]');await page.waitForFunction(()=>/Graduadas en CardTrader ahora/.test(document.querySelector('#cpGraded')?.textContent||'')&&document.querySelector('[data-gr-use]'),null,{timeout:20000});
  t=await page.textContent('#cpGraded');

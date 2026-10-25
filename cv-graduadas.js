@@ -16,6 +16,63 @@ const KEY="cv_v122_graded";
    PSA Europa Standard 49,99 € (lanzamiento oct. 2026). Para el resto se usa la misma cifra si no escribes otra. */
 const GRADE_FEE=49.99,SHIP_TO=15,SHIP_BACK=25;
 let pick=null,list=readLS(KEY,[]);if(!Array.isArray(list))list=[];
+/* V134 · Oportunidades de graduadas, como Compra YA: la única fuente que se puede leer sola con precio, empresa y nota es
+   CardTrader (con tu token). Para cada colección con cartas de valor dentro de tu presupuesto se piden sus anuncios y se
+   agrupan las graduadas por carta + empresa + nota + idioma. Oportunidad = el anuncio más barato del grupo cuesta (con
+   envío) bastante menos que el SIGUIENTE anuncio igual: lo compras y lo revendes justo a ese precio. Es precio PEDIDO,
+   no venta cerrada: se dice. Anti-falsas: nunca por debajo del 30 % de la carta sin graduar; pide y comprueba el
+   certificado antes de pagar. */
+const OKEY="cv_v134_gr_opp",SCAN_SETS=15;let opp=readLS(OKEY,null),oppBusy=null;
+const nrmS=v=>nq(v).replace(/[^a-z0-9]+/g," ").trim();
+function gradeOf(p){const h=p.properties_hash||{};let co="",gr=NaN;
+ for(const [k,v] of Object.entries(h)){if(v==null||v===false)continue;if(/company|grader/i.test(k))co=String(v);else if(/grade/i.test(k)){const n=Number(String(v).replace(",","."));if(Number.isFinite(n))gr=n}}
+ if(!co){const m=JSON.stringify(h).match(/\b(PSA|BGS|Beckett|CGC|SGC|ACE|TAG)\b/i);if(m)co=m[1]}
+ return {co:co.toUpperCase().replace("BECKETT","BGS"),gr,lang:String(h.pokemon_language||h.language||"").toLowerCase()}}
+const isGraded=p=>p.graded===true||Object.entries(p.properties_hash||{}).some(([k,v])=>/grad/i.test(k)&&v&&v!=="false");
+async function scanGraded(){
+ const C=window.CVCompra;if(!C?.ctToken()){opp={error:"Sin token de CardTrader: pégalo en Compra YA → Estado de las fuentes (es gratis, en tu cuenta de CardTrader → Ajustes → API)."};renderOpp();return}
+ const c=C.cfg(),cards=C.cardsPk().concat(C.cardsJp()).filter(x=>{const S=C.saleRef_(x.p);return Number.isFinite(S)&&S>=15&&S<=2*c.maxBuy&&(x.liq?.k||0)>=1});/* graduada ≤ tu compra máxima: la carta sin graduar no suele valer más del doble */
+ if(!cards.length){opp={error:"Aún se están cargando los precios de Cardmarket: vuelve a pulsar «Buscar oportunidades» en unos segundos."};renderOpp();return}
+ const bySet={};for(const x of cards){const k=x.kind==="jp"?"jp|"+String(x.code||"").toLowerCase():"n|"+nrmS(x.set);(bySet[k]=bySet[k]||[]).push(x)}
+ try{oppBusy={done:0,total:0};renderOpp();
+  const games=await C.ctGet("/games"),g=(Array.isArray(games)?games:games?.array||[]).find(o=>/pok[eé]mon/i.test(String(o.name||o.display_name||"")));if(!g)throw new Error("CardTrader: juego Pokémon no encontrado");
+  const exps=(await C.ctGet("/expansions")).filter(e=>e.game_id===g.id);
+  const pairs=Object.entries(bySet).map(([k,xs])=>{const [t,v]=k.split("|");const e=t==="jp"?exps.find(e=>String(e.code||"").toLowerCase()===v):exps.find(e=>nrmS(e.name)===v);return e?{e,xs}:null}).filter(Boolean).sort((a,b)=>b.xs.length-a.xs.length).slice(0,SCAN_SETS);
+  oppBusy.total=pairs.length;renderOpp();const rows=[];
+  for(const {e,xs} of pairs){
+   const bps=await C.ctGet("/blueprints/export?expansion_id="+encodeURIComponent(e.id)),bpA=Array.isArray(bps)?bps:(bps?.array||[]),bpM=new Map(bpA.map(b=>[b.id,b]));
+   const j=await C.ctGet("/marketplace/products?expansion_id="+encodeURIComponent(e.id)),prods=Array.isArray(j)?j:Object.entries(j||{}).flatMap(([k,v])=>(Array.isArray(v)?v:[]).map(p=>({blueprint_id:Number(k),...p})));/* la API agrupa por id de carta */
+   const grp={};for(const p of prods){if(!isGraded(p))continue;const eur=Number(p.price_cents??p.price?.cents)/100;if(!(eur>0))continue;const G=gradeOf(p);if(!G.co||!Number.isFinite(G.gr))continue;
+    const k=p.blueprint_id+"|"+G.co+"|"+G.gr+"|"+G.lang;(grp[k]=grp[k]||[]).push({eur,country:p.user?.country_code||"",G,bp:p.blueprint_id})}
+   for(const G0 of Object.values(grp)){const bp=bpM.get(G0[0].bp)||{},num=String(bp.fixed_properties?.collector_number||bp.collector_number||"").split("/")[0].replace(/^0+/,"");
+    const x=xs.find(y=>String(y.number||"").split("/")[0].replace(/^0+/,"")===num&&nrmS(bp.name||"").split(" ")[0]===nrmS(y.name).split(" ")[0]);
+    const raw=x?C.saleRef_(x.p):NaN;/* lo que vale sin graduar (venta de referencia de Cardmarket) */
+    /* fuera los sospechosos (< 30 % de la carta sin graduar: cápsula falsa o proxy) antes de elegir el más barato */
+    const L=G0.filter(o=>!(Number.isFinite(raw)&&o.eur<raw*(C.FAKE_RATIO||.3))).sort((a,b)=>a.eur-b.eur);if(L.length<2)continue;
+    const a=L[0],b=L[1],cost=a.eur+c.buyShip,profit=C.netSale(b.eur,c)-cost;
+    if(cost>c.maxBuy||profit<c.minProfit)continue;
+    rows.push({id:x?.id||"",name:x?.name||bp.name||"",set:x?.set||e.name,number:x?.number||num,image:x?.image||"",co:a.G.co,gr:a.G.gr,lang:a.G.lang,price:a.eur,country:a.country,cost,resale:b.eur,n:L.length,profit,raw,url:"https://www.cardtrader.com/cards/"+encodeURIComponent(a.bp)})}
+   oppBusy.done++;renderOpp();await new Promise(r=>setTimeout(r,300))}
+  opp={rows:rows.sort((p,q)=>q.profit-p.profit).slice(0,40),at:Date.now(),sets:pairs.length};if(pairs.length)writeLS(OKEY,opp)}
+ catch(e){opp={error:String(e.message||e)}}
+ oppBusy=null;renderOpp();
+}
+/* solo repinta la lista de oportunidades: no toca lo que estés escribiendo en el analizador */
+function renderOpp(){const b=document.querySelector("#cpGraded [data-gr-opp]");if(b)b.innerHTML=oppHtml();else render()}
+const LN={en:"inglés",jp:"japonés",ja:"japonés",es:"español",fr:"francés",de:"alemán",it:"italiano",pt:"portugués",kr:"coreano",ko:"coreano",zh:"chino"};
+function oppHtml(){
+ const C=window.CVCompra,head='<h4>💎 Graduadas con oportunidad de compra ahora</h4>';
+ if(oppBusy)return head+'<p class="v4note">⏳ Buscando graduadas en CardTrader… '+oppBusy.done+'/'+(oppBusy.total||"?")+' colecciones</p>';
+ if(!C?.ctToken())return head+'<p class="v4note">Para que salgan solas hace falta tu token de CardTrader (gratis): CardTrader → Ajustes → API, y pégalo en Compra YA → «Estado de las fuentes». CardTrader es la única fuente que deja leer anuncios de graduadas con su empresa y nota; las tiendas españolas no lo permiten (abajo tienes sus enlaces y el analizador de anuncios).</p>';
+ const btn='<button type="button" class="v4btn" data-gr-scan>'+(opp?.rows?'Volver a buscar':'Buscar oportunidades')+'</button>';
+ if(!opp)return head+btn;
+ if(opp.error)return head+'<p class="v4note neg">'+E(opp.error)+'</p>'+btn;
+ const c=C.cfg();
+ return head+'<p class="v4note">'+opp.rows.length+' oportunidad(es) en '+opp.sets+' colecciones · consultado '+new Date(opp.at).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+'. Compra ≤ '+EUR(c.maxBuy)+' con envío y beneficio ≥ '+EUR(c.minProfit)+'.</p>'+btn+
+  (opp.rows.length?'<ol class="cpPlanList">'+opp.rows.map((o,i)=>'<li>'+(o.image?'<span class="cpThumb"><img src="'+E(o.image)+'" alt="" loading="lazy"></span>':'<span class="cpThumb">💎</span>')+'<span><b>'+(i+1)+'. '+E(o.co)+' '+E(String(o.gr).replace(".",","))+' · '+E(o.name)+'</b> · '+E(o.set)+' nº '+E(o.number)+(o.lang?' ('+E(LN[o.lang]||o.lang)+')':'')+'</span><a class="v4btn primary" href="'+E(o.url)+'" target="_blank" rel="noopener noreferrer">Comprar en CardTrader ↗</a>'+
+   '<small><b>Pagas '+EUR(o.cost)+'</b> (CardTrader, anuncio '+EUR(o.price)+(o.country?' de un vendedor de '+E(o.country):'')+' + envío) → revéndela al precio del siguiente '+E(o.co)+' '+E(String(o.gr).replace(".",","))+' igual ('+EUR(o.resale)+') → <b>'+SIGNED(o.profit)+'</b> · '+o.n+' anuncios iguales'+(Number.isFinite(o.raw)?' · sin graduar vale ~'+EUR(o.raw):'')+'. Antes de pagar: pide el número de certificado y compruébalo'+(o.co==="PSA"?' en psacard.com/cert':o.co==="CGC"?' en cgccards.com':'')+'.</small></li>').join("")+'</ol>':'<p class="v4note">Ninguna graduada deja tu beneficio mínimo dentro de tu presupuesto en las colecciones consultadas.</p>')+
+  '<p class="v4note">Reventa = el siguiente anuncio de la misma carta, empresa, nota e idioma en CardTrader (precio pedido, no venta cerrada): si lo pones un poco por debajo, sueles vender primero. Envío de compra estimado '+EUR(c.buyShip)+'.</p>';
+}
 /* Dónde comprar graduadas desde 41020 (tiendas españolas con catálogo de graduadas y subastas/mercados de la UE).
    Las tiendas no permiten leer sus precios desde otra web: la app abre su búsqueda con la carta elegida y lee el anuncio
    que pegues. Comprueba siempre el número de certificado antes de pagar. */
@@ -65,8 +122,10 @@ function rowHtml(a,i){
 function render(){
  const host=ensureHost();if(!host)return;const C=window.CVCompra;
  const ready=C&&C.state().guide;
- host.innerHTML='<section class="rdlivebox cpBox"><h3>Comprar graduadas a buen precio (PSA, Beckett, CGC, SGC…)</h3>'+
-  '<p class="v4note">No hay datos públicos y gratuitos de ventas de graduadas en Europa sin eBay. La app compara cada anuncio que veas (Cardmarket, Catawiki, Wallapop, Vinted, tiendas) con lo que te costaría <b>crear esa graduada tú</b>: la carta sin graduar en Cardmarket + graduación + envíos. Por debajo de eso, nadie la fabrica más barata.</p>'+
+ const op=[...host.querySelectorAll("details")].map(d=>d.open);
+ host.innerHTML='<section class="rdlivebox cpBox"><h3>Cartas graduadas · comprar para revender (PSA, Beckett, CGC…)</h3>'+
+  (ready?'<div data-gr-opp>'+oppHtml()+'</div>':'')+
+  '<details class="v4more"'+(pick||list.length||!C?.ctToken()?' open':'')+'><summary><b>Analizar un anuncio de otra tienda</b> (Pokémillon, Iberian Collect, Catawiki, Wallapop…)</summary><p class="v4note">Las tiendas españolas no dejan leer sus precios desde otra web. Elige la carta, pega el anuncio y la app lo compara con lo que te costaría <b>crear esa graduada tú</b>: la carta sin graduar en Cardmarket + graduación + envíos.</p>'+
   (ready?'<div class="cpPlanIn"><label class="wide">Carta<input type="search" data-gr-q placeholder="Nombre, colección o número (mín. 3 letras)" value="'+E(pick?pick.name+" · "+pick.set+" nº "+pick.number:"")+'"></label></div><div data-gr-res></div>'+
    '<div class="cpPlanIn"><label>Empresa<select data-gr="company">'+["PSA","Beckett (BGS)","CGC","SGC","Ace","Otra"].map(c=>'<option>'+c+'</option>').join("")+'</select></label><label>Nota<input inputmode="decimal" data-gr="grade" placeholder="10"></label>'+
    '<label>Precio del anuncio €<input inputmode="decimal" data-gr="price" placeholder="120"></label><label>Envío €<input inputmode="decimal" data-gr="ship" placeholder="8"></label>'+
@@ -74,7 +133,8 @@ function render(){
    '<details class="v4more"><summary>Pegar el anuncio de la tienda (rellena empresa, nota, precio y certificado)</summary><textarea data-gr-paste rows="3" placeholder="Ej.: Charizard ex 199/165 PSA 10 · 249,90 € · Certificado 12345678"></textarea><button type="button" class="v4btn" data-gr-parse>Leer anuncio</button></details>'+
    '<div class="cpPlanIn"><label>Dónde está<select data-gr="store">'+STORES.map(s=>'<option>'+s[0]+'</option>').join("")+'<option>Cardmarket</option><option>Otra</option></select></label><label>N.º de certificado (opcional)<input inputmode="numeric" data-gr="cert" placeholder="12345678"></label></div>'+
    '<button type="button" class="v4btn primary" data-gr-add>Analizar anuncio</button>'+ctGHtml()+storesHtml():'<p class="v4note">⏳ Cargando la guía de Cardmarket… (abre Compra YA una vez si no aparece)</p>')+
-  (list.length?'<h4>Anuncios analizados</h4><ol class="cpPlanList">'+list.map(rowHtml).join("")+'</ol>':'')+'</section>';
+  (list.length?'<h4>Anuncios analizados</h4><ol class="cpPlanList">'+list.map(rowHtml).join("")+'</ol>':'')+'</details></section>';
+ if(op.length)host.querySelectorAll("details").forEach((d,i)=>{if(op[i]!=null)d.open=op[i]});/* repintar no cierra lo abierto */
 }
 /* CardTrader (con tu token): anuncios reales de esa carta GRADUADA ahora, con precio, país del vendedor y enlace. */
 let ctG=null;
@@ -112,6 +172,7 @@ document.addEventListener("input",e=>{const t=e.target.closest("[data-gr-q]");if
 document.addEventListener("click",e=>{
  const p=e.target.closest("[data-gr-pick]");if(p){const C=window.CVCompra;ctG=null;pick=C.cardsPk().concat(C.cardsJp()).find(x=>x.id===p.dataset.grPick)||null;render();return}
  if(e.target.closest("[data-gr-ct]")){loadCtGraded();return}
+ if(e.target.closest("[data-gr-scan]")){scanGraded();return}
  const u=e.target.closest("[data-gr-use]");if(u){const i=document.querySelector('[data-gr="price"]');if(i)i.value=String(u.dataset.grUse).replace(".",",");const st=document.querySelector('[data-gr="store"]');if(st){if(![...st.options].some(o=>o.value==="CardTrader"))st.add(new Option("CardTrader","CardTrader"));st.value="CardTrader"}i?.focus();return}
  if(e.target.closest("[data-gr-parse]")){const raw=document.querySelector("[data-gr-paste]")?.value,fw=window.CVCompra?.fakeWords?.(raw)||[];/* V130: cápsulas y cartas falsas */if(fw.length){alert("⛔ El anuncio dice «"+fw.join("», «")+"»: es una carta o cápsula proxy, réplica o falsa. No la compres.");return}const o=parseListing(raw);const set=(k,v)=>{const i=document.querySelector('[data-gr="'+k+'"]');if(i&&v!=null)i.value=typeof v==="number"?String(v).replace(".",","):v};
   if(o.company==null&&o.grade==null&&o.price==null){alert("No encuentro empresa, nota ni precio en el texto pegado.");return}set("company",o.company);set("grade",o.grade);set("price",o.price);set("cert",o.cert);return}
@@ -125,7 +186,10 @@ document.addEventListener("click",e=>{
   if(!writeLS(KEY,list.slice(0,50))){alert("NO se ha guardado: el almacenamiento del navegador no lo permite.");return}
   pick=null;render()}
 });
-document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="pregrade"]'))setTimeout(async()=>{render();const C=window.CVCompra;if(C){try{await C.ready_();await C.loadCatalog();if(!C.state().guide)await C.loadGuide(false)}catch{}render()}},60)});
-if(location.hash==="#pregrade")setTimeout(async()=>{const C=window.CVCompra;if(C){try{await C.ready_();await C.loadCatalog()}catch{}}render()},1400);
-window.CVGraduadas={render,analyse,parseListing};
+async function openTab(){render();const C=window.CVCompra;if(!C)return;try{await C.ready_();await C.loadCatalog();if(!C.state().guide)await C.loadGuide(false)}catch{}render();
+ for(let i=0;i<40&&!C.cardsPk().length;i++)await new Promise(r=>setTimeout(r,500));
+ if(C.ctToken()&&!oppBusy&&(!opp?.at||Date.now()-opp.at>6*3600e3))scanGraded()}/* al abrir: busca solo si hay token y lo último tiene más de 6 h */
+document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="pregrade"]'))setTimeout(openTab,60)});
+if(location.hash==="#pregrade")setTimeout(openTab,1400);
+window.CVGraduadas={render,analyse,parseListing,scanGraded,gradeOf};
 })();

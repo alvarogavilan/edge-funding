@@ -50,8 +50,6 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  const bl=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-sv04\\.5-232 .cpBuy a')].map(a=>a.href));
  ok('Cada vía con su enlace directo (EX o mejor filtrado, cualquier estado sin filtro, TCGplayer)',['https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3','https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779','https://prices.pokemontcg.io/tcgplayer/sv4pt5-232'].every(u=>bl.includes(u))/* V133: filas ordenadas por lo que pagas */,JSON.stringify(bl));
  await page.fill('[data-cp-q]','');await page.waitForTimeout(600);
- await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});
- ok('Importar (Japón y EE. UU.) con imagen de cada carta',await page.evaluate(()=>document.querySelectorAll('[data-cp-jpbox] li .cpThumb img').length)>=1);
  ok('Ya no hay plan de compra con presupuesto',!(await page.$('[data-cp-planbox]')));
  ok('Sin errores de JavaScript',errors.length===0,errors.join(' | '));
  await browser.close();server.close();console.log('\n'+n+' comprobaciones V126 superadas');
