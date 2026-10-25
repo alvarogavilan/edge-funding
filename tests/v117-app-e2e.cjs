@@ -14,10 +14,10 @@ let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+
 // [idProduct, low, trend, avg1, avg7, avg30, lowHolo, trendHolo, avg30Holo]
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
  [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo · versión única → verificada con pokemontcg.io
- [273924,30,200,null,205,210,null,null,null],  // base4-1 Alakazam · restaurar
- [273934,30,400,null,null,null,null,null,null],// base4-11 Nidoking · sin ventas recientes
+ [273924,60,200,null,205,210,null,null,null],  // base4-1 Alakazam · restaurar (60 € = 30 %: por debajo, V130 lo trata como proxy)
+ [273934,130,400,null,null,null,null,null,null],// base4-11 Nidoking · sin ventas recientes (130 € ≥ 30 %, V130)
  [275113,24.99,98.29,90,59.11,165.15,26,232.88,173.55],[275070,298,748.52,1650,1194.3,1008.71,null,null,null], // Umbreon Aquapolis
- [273862,20,300,300,300,300,null,null,null]]}; // base3-1 Aerodactyl · colisión TCGdex
+ [273862,100,300,300,300,300,null,null,null]]}; // base3-1 Aerodactyl · colisión TCGdex (100 € ≥ 30 %, V130)
 const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-207',name:'Elsa - Spirit of Winter',number:'207',rarity:'Enchanted',imageSmall:'https://images.example/elsa.png',cardmarketId:681234,variants:[{name:'normal',eur:null},{name:'foil',eur:{trend:257,low:193,avg30:262,avg7:259,avg1:258}}]}]};
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
@@ -54,7 +54,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y, con el idioma elegido, filtrado (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&minCondition=3'&&/* V126: mismo filtro que el precio mostrado (EX o mejor) */lk.es==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3',JSON.stringify(lk));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
  t=await T('base4-1');
- ok('«Mal estado · restaurar»: Alakazam «desde» 30 € → venta mejorada al 60 % 120 € → +73,00 €',/Restaurar/.test(t)&&/120,00\s€/.test(t)&&/\+73,00\s€/.test(t),t.slice(0,300));
+ ok('«Mal estado · restaurar»: Alakazam «desde» 60 € → venta mejorada al 60 % 120 € → +43,00 €',/Restaurar/.test(t)&&/120,00\s€/.test(t)&&/\+43,00\s€/.test(t),t.slice(0,300));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
  t=await T('lo-tfc-207');
  ok('Lorcana (Bindex): Elsa foil · pagas 199 € (193 + envío) → venta 257 € → +40,15 €',/LORCANA · BINDEX/.test(t)&&/\+40,15\s€/.test(t),t.slice(0,300));/* 257·0,95 − 5 − 199 */

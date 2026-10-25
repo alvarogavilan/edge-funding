@@ -1,5 +1,8 @@
 # Card Vault V129 · Top 5 dentro del presupuesto y «🎲 Chollos por verificar» (25/10/2026)
 
+> **Corrección (V130):** el anuncio de 50 € del Mewtwo & Mew GX era una carta **PROXY** (falsa); el pedido se canceló.
+> Desde V130 nada por debajo del 30 % de su valor se propone. Ver card-vault-v130-antiproxy-2026-10-25.md.
+
 ## Fallo: el Top 5 enseñaba compras de más de 200 €
 La compra máxima se comparaba con el precio del anuncio, sin el envío. Además, una versión antigua cacheada del Top 5 no
 aplicaba el presupuesto. Ahora toda la app usa **lo que pagas en total, con envío** (o con envío, IVA y gestión si es

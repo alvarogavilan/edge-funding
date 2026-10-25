@@ -49,6 +49,7 @@ function analyse(a){
  const cfg=C.cfg(),net=Number.isFinite(a.sale)?a.sale*(1-cfg.feePct/100)-cfg.sellShip:NaN,profit=net-cost;
  const vs=cost/repo,high=a.grade>=9;
  const verdict=!Number.isFinite(raw)?{k:"flat",t:"Sin precio de la carta sin graduar"}:
+  cost<raw*(C.FAKE_RATIO||.3)?{k:"wait",t:"⛔ Sospechosa: cuesta menos del 30 % de la carta sin graduar → casi seguro cápsula falsa o proxy. Comprueba el certificado y no la compres si no cuadra"}:
   cost<=raw&&high?{k:"go",t:"🟢 Muy por debajo: cuesta menos que la carta sin graduar"}:
   cost<repo&&high?{k:"go",t:"🟢 Oferta: más barata que graduarla tú"}:
   cost<repo?{k:"flat",t:"⚪ Por debajo de reposición, pero nota "+a.grade+" (las notas bajas valen poco más que sin graduar)"}:
@@ -112,7 +113,7 @@ document.addEventListener("click",e=>{
  const p=e.target.closest("[data-gr-pick]");if(p){const C=window.CVCompra;ctG=null;pick=C.cardsPk().concat(C.cardsJp()).find(x=>x.id===p.dataset.grPick)||null;render();return}
  if(e.target.closest("[data-gr-ct]")){loadCtGraded();return}
  const u=e.target.closest("[data-gr-use]");if(u){const i=document.querySelector('[data-gr="price"]');if(i)i.value=String(u.dataset.grUse).replace(".",",");const st=document.querySelector('[data-gr="store"]');if(st){if(![...st.options].some(o=>o.value==="CardTrader"))st.add(new Option("CardTrader","CardTrader"));st.value="CardTrader"}i?.focus();return}
- if(e.target.closest("[data-gr-parse]")){const o=parseListing(document.querySelector("[data-gr-paste]")?.value);const set=(k,v)=>{const i=document.querySelector('[data-gr="'+k+'"]');if(i&&v!=null)i.value=typeof v==="number"?String(v).replace(".",","):v};
+ if(e.target.closest("[data-gr-parse]")){const raw=document.querySelector("[data-gr-paste]")?.value,fw=window.CVCompra?.fakeWords?.(raw)||[];/* V130: cápsulas y cartas falsas */if(fw.length){alert("⛔ El anuncio dice «"+fw.join("», «")+"»: es una carta o cápsula proxy, réplica o falsa. No la compres.");return}const o=parseListing(raw);const set=(k,v)=>{const i=document.querySelector('[data-gr="'+k+'"]');if(i&&v!=null)i.value=typeof v==="number"?String(v).replace(".",","):v};
   if(o.company==null&&o.grade==null&&o.price==null){alert("No encuentro empresa, nota ni precio en el texto pegado.");return}set("company",o.company);set("grade",o.grade);set("price",o.price);set("cert",o.cert);return}
  const d=e.target.closest("[data-gr-del]");if(d){list.splice(+d.dataset.grDel,1);writeLS(KEY,list);render();return}
  if(e.target.closest("[data-gr-add]")){

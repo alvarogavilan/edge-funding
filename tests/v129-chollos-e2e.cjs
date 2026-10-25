@@ -16,7 +16,7 @@ const F=['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','
 const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
  [273933,90,160,160,165,170,null,null,null],   // Mewtwo · EX+ 95 € → compra fiable
  [273924,60,200,200,200,200,null,null,null],   // Alakazam · EX+ 100 € y un anuncio de cualquier estado a 60 € → fiable Y chollo: sale una vez
- [861287,50,300,300,300,300,null,null,null],   // Pikachu ex M2A 44 japonés · «desde» 50 € y vale ~300 € → chollo (como el Mewtwo & Mew GX)
+ [861287,100,300,300,300,300,null,null,null],   // Pikachu ex M2A 44 japonés · «desde» 100 € (33 %) y vale ~300 € → chollo
  [861477,240,1000,1000,1000,1000,null,null,null]]};// Pikachu ex M2A 234 japonés · 240 € (pagas 246 € > 200 €) → fuera
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
@@ -39,7 +39,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  const pays=[...top.matchAll(/Pagas ([\d.]+,\d\d)\s€/g)].map(m=>Number(m[1].replace(/\./g,'').replace(',','.')));
  ok('Top 5: todo lo que pagas (con envío) es ≤ 200 €',pays.length>=3&&pays.every(v=>v<=200),JSON.stringify(pays));
  ok('Top 5: la japonesa de 1.000 € con anuncio a 240 € no aparece (pagarías 246 €)',!/246,00\s€/.test(top)&&!/MEGA Dream ex \(japonés\) nº 234/.test(top),top);
- ok('Top 5: el chollo japonés (50 € de cualquier estado, vale ~300 €) aparece como «🎲 por verificar»',/Pikachu ex[^]*🎲 por verificar[^]*Pagas 56,00\s€ \(anuncio de cualquier estado a 50,00\s€ \+ envío\) → vale ~300,00\s€/.test(top),top);
+ ok('Top 5: el chollo japonés (100 € de cualquier estado, vale ~300 €) aparece como «🎲 por verificar»',/Pikachu ex[^]*🎲 por verificar[^]*Pagas 106,00\s€ \(anuncio de cualquier estado a 100,00\s€ \+ envío\) → vale ~300,00\s€/.test(top),top);
  ok('Top 5: cada carta una sola vez (Alakazam fiable no se repite como chollo)',(top.match(/Alakazam/g)||[]).length===1,top);
  const ch=await page.textContent('#v4Buy [data-cp-chollo]');
  ok('Panel «🎲 Chollos por verificar» con Pikachu ex y Alakazam, sin la de 246 €',/Chollos por verificar/.test(ch)&&/Pikachu ex/.test(ch)&&/Alakazam/.test(ch)&&!/246,00\s€/.test(ch),ch.slice(0,900));

@@ -2,7 +2,7 @@
 # Uso: python3 tools/verificar-precios.py volcado.json latest.json products.json   (sale con código 1 si hay errores)
 # Comprueba: 1) cada precio = guía oficial; 2) el producto de Cardmarket tiene el nombre de la carta; 3) compra, venta,
 # coste y beneficio con la fórmula; 4) lo pintado en pantalla = lo calculado y el enlace va al producto; 5) punto de mira;
-# 6) chollos por verificar (precio = guía, regla del 50 %, fórmula y presupuesto); 7) Top 5 dentro del presupuesto.
+# 6) chollos por verificar (precio = guía, regla del 30–50 % (V130: por debajo, proxy), fórmula y presupuesto); 7) Top 5 dentro del presupuesto.
 import json,re,unicodedata,sys
 t=open(sys.argv[1]).read();j=json.loads(t[:t.rindex('}')+1]);d=j['d'];cfg=d['cfg']
 L=json.load(open(sys.argv[2]));f=L['fields'];T={r[0]:dict(zip(f,r)) for r in L['rows']}
@@ -54,6 +54,7 @@ for s in d['sn']:
   if abs(s['S']-S)>1e-9: errs.append(('mira precio de venta',s['id']))
   if abs(s['profit']-(S*(1-cfg['feePct']/100)-cfg['sellShip']-(s['low']+cfg['buyShip'])))>0.005: errs.append(('mira cálculo',s['id']))
   if not s['low']<=0.6*S: errs.append(('mira regla',s['id']))
+  if not s['low']>=0.3*S: errs.append(('mira por debajo del 30 % (proxy/falsa)',s['id']))
 # 5. chollos por verificar: «desde» de la guía, ≤ 50 % del valor, fórmula y lo que pagas ≤ compra máxima
 for s in d.get('ch',[]):
   g=T.get(s['pid'])
@@ -63,6 +64,7 @@ for s in d.get('ch',[]):
   if abs(s['S']-S)>1e-9: errs.append(('chollo venta',s['id']))
   if abs(s['cost']-(s['low']+cfg['buyShip']))>0.005 or abs(s['profit']-(S*(1-cfg['feePct']/100)-cfg['sellShip']-s['cost']))>0.005: errs.append(('chollo cálculo',s['id']))
   if not s['low']<=0.5*S: errs.append(('chollo regla',s['id']))
+  if not s['low']>=0.3*S: errs.append(('chollo por debajo del 30 % (proxy/falsa)',s['id']))
   if s['cost']>cfg['maxBuy']+1e-9: errs.append(('chollo fuera de presupuesto',s['id'],s['cost']))
 # 6. Top 5: lo que pagas en total ≤ compra máxima
 for t in d.get('top',[]):
