@@ -55,6 +55,7 @@ for s in d['sn']:
   if abs(s['profit']-(S*(1-cfg['feePct']/100)-cfg['sellShip']-(s['low']+cfg['buyShip'])))>0.005: errs.append(('mira cálculo',s['id']))
   if not s['low']<=0.6*S: errs.append(('mira regla',s['id']))
   if not s['low']>=0.3*S: errs.append(('mira por debajo del 30 % (proxy/falsa)',s['id']))
+  if not str(s['id']).startswith('jp-'): errs.append(('mira sin idioma comprobado (V131)',s['id']))
 # 5. chollos por verificar: «desde» de la guía, ≤ 50 % del valor, fórmula y lo que pagas ≤ compra máxima
 for s in d.get('ch',[]):
   g=T.get(s['pid'])
@@ -65,6 +66,7 @@ for s in d.get('ch',[]):
   if abs(s['cost']-(s['low']+cfg['buyShip']))>0.005 or abs(s['profit']-(S*(1-cfg['feePct']/100)-cfg['sellShip']-s['cost']))>0.005: errs.append(('chollo cálculo',s['id']))
   if not s['low']<=0.5*S: errs.append(('chollo regla',s['id']))
   if not s['low']>=0.3*S: errs.append(('chollo por debajo del 30 % (proxy/falsa)',s['id']))
+  if not str(s['id']).startswith('jp-'): errs.append(('chollo sin idioma comprobado (solo japonesas, V131)',s['id']))
   if s['cost']>cfg['maxBuy']+1e-9: errs.append(('chollo fuera de presupuesto',s['id'],s['cost']))
 # 6. Top 5: lo que pagas en total ≤ compra máxima
 for t in d.get('top',[]):

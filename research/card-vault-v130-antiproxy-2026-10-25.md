@@ -1,5 +1,8 @@
 # Card Vault V130 · Escudo anti-proxy (25/10/2026)
 
+> **V131:** el botón «🚫 Es proxy o falsa» se ha quitado a petición del usuario (revisará cada anuncio él mismo). El suelo
+> del 30 % y el comprobador de descripción siguen.
+
 ## Qué pasó
 El chollo del Mewtwo & Mew GX japonés (sm11, nº 98, Cardmarket 557060) a **50 €** frente a un valor de ~638 € (8 %)
 era un anuncio de **carta proxy**: así lo decía la descripción. El pedido se canceló a tiempo. La guía diaria de

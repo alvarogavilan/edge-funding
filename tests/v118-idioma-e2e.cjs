@@ -12,7 +12,7 @@ const server=http.createServer((q,r)=>{const f=path.join(root,decodeURIComponent
 const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'));
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
+ [273933,150,258,258,263,268,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
  [861477,193,257,257,257,262,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};// Pikachu ex M2A 44 · japonés barato (sin beneficio)
 const pasteES=`Disponible
@@ -20,11 +20,11 @@ const pasteES=`Disponible
 Desde
 85,00 €
 Tendencia de precio
-160,00 €
+258,00 €
 Precio medio 30 días
-170,00 €
+268,00 €
 Precio medio 7 días
-165,00 €`;
+263,00 €`;
 const pasteEN=`Available items 31 From 115,00 € Price Trend 250,00 € 30-days average price 260,00 € 7-days average price 255,00 € 1-day average price 249,00 €
 Seller  Near Mint  English  120,00 €  1
 Seller2 Near Mint English 129,99 € 2`;
@@ -36,7 +36,7 @@ Seller2 Near Mint English 129,99 € 2`;
   if(/images\.|assets\.tcgdex|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.endsWith('/prices/latest.json')){hits.guide++;return J(GUIDE)}
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}}]:[];return J({data,totalCount:data.length})}
   if(/bindex-prices/.test(u))return route.fulfill({status:404,body:''});
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -67,9 +67,9 @@ Seller2 Near Mint English 129,99 € 2`;
  ok('«Pegar datos»: cuadro con el idioma elegido',await page.inputValue('#v4Buy #cp-base4-10 [data-cp-pastelang]')==='es');
  await page.fill('#v4Buy #cp-base4-10 [data-cp-paste]',pasteES);await page.click('#v4Buy #cp-base4-10 [data-cp-pastesave]');await page.waitForTimeout(400);
  let toast=await page.textContent('#cpToast');
- ok('Español pegado con media 30 días = media general (170 €): avisa de que Cardmarket no separó el idioma',/Español: compra 85,00\s€/.test(toast)&&/no la del idioma/.test(toast),toast);
+ ok('Español pegado con media 30 días = media general (268 €): avisa de que Cardmarket no separó el idioma',/Español: compra 85,00\s€/.test(toast)&&/no la del idioma/.test(toast),toast);
  t=await page.textContent('#v4Buy #cp-base4-10 .cpLTbox .cpLTtab');
- ok('Tabla: español 85 € «⚠ Cardmarket no separó el idioma» y venta = guía general (160 €) → +56,00 €',/Español85,00\s€160,00\s€\+56,00\s€⚠ Cardmarket no separó el idioma/.test(t),t.slice(0,400));
+ ok('Tabla: español 85 € «⚠ Cardmarket no separó el idioma» y venta = guía general (258 €) → +149,10 €',/Español85,00\s€258,00\s€\+149,10\s€⚠ Cardmarket no separó el idioma/.test(t),t.slice(0,400));
  // Pegar inglés: medias distintas → venta del idioma comprobada; compra = anuncio más barato copiado (120 €)
  await openPaste('en');
  await page.fill('#v4Buy #cp-base4-10 [data-cp-paste]',pasteEN);await page.click('#v4Buy #cp-base4-10 [data-cp-pastesave]');await page.waitForTimeout(400);

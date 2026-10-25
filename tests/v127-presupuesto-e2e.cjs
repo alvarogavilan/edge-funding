@@ -13,8 +13,8 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const F=['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'];
 const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // Mewtwo · EX+ 95 €
- [273924,230,500,500,500,505,null,null,null],  // Alakazam · EX+ 230 € (vale ~500 €): punto de mira solo si el presupuesto llega
+ [273933,150,258,258,263,268,null,null,null],   // Mewtwo · EX+ 95 €
+ [273924,250,330,330,330,335,null,null,null],  // Alakazam · EX+ 250 € (vale ~330 €, 76 %: mismo idioma probable) → solo si el presupuesto llega
  [861287,290,380,380,380,385,null,null,null],  // Pikachu ex M2A 44 japonés · vale ~380 € → importar con tope de presupuesto
  [861477,700,900,900,900,905,null,null,null],// Pikachu ex M2A 234 japonés · vale ~900 € (> 2 × presupuesto) → fuera
  [583510,150,290,null,null,null,null,null,null]]};// Brilliant Stars ETB (sellado)
@@ -28,7 +28,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
   if(u.endsWith('/prices/latest.json'))return J(GUIDE);
   if(/\/prices\/\d{4}\/\d{2}\/\d{2}\.json$/.test(u))return route.fulfill({status:404,headers:H,body:'404'});
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:501,avg30:505,lowPrice:230,lowPriceExPlus:230}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:331,avg30:335,lowPrice:250,lowPriceExPlus:250}}}]:[];return J({data,totalCount:data.length})}
   if(/bindex-prices/.test(u))return route.fulfill({status:404,body:''});
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -38,7 +38,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  const box=()=>page.textContent('#v4Buy .cpBox'),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  let t=await box();
  ok('Aviso visible: compra máxima por carta 200 €',/Compra máxima por carta: 200,00\s€/.test(t));
- ok('Compra YA: Alakazam (EX+ 230 €) no sale; Mewtwo (95 €) sí',(await ids()).includes('base4-10')&&!(await ids()).includes('base4-1'),JSON.stringify(await ids()));
+ ok('Compra YA: Alakazam (EX+ 250 €, pagas 256 €) no sale; Mewtwo (194 €, pagas 200 €) sí',(await ids()).includes('base4-10')&&!(await ids()).includes('base4-1'),JSON.stringify(await ids()));
  ok('Punto de mira y Top 5 sin nada por encima de 200 €',!/Alakazam/.test(await page.textContent('[data-cp-snipe]'))&&!/Alakazam/.test(await page.textContent('#v4Buy .cpTop')));
  await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});t=await page.textContent('[data-cp-jpbox]');
  // M2A 44 vale 380 €: máximo 228,76 € > tope (200 − 15) / 1,21 − 20 = 132,89 € (lo que pagas en total ≤ 200 €) → 22.912 ¥ → 22.900 ¥
@@ -49,8 +49,8 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  ok('Supuestos: compra máxima guardada (300 €)',await page.evaluate(()=>window.CVVault.user().cfg.maxBuy)===300);
  await page.evaluate(()=>window.CVCompra.render());await page.waitForTimeout(300);
  t=await box();
- // Alakazam: 500·0,95 − 5 − (230 + 6) = +234
- ok('Con 300 €: aviso actualizado y Alakazam aparece en Compra YA, Punto de mira y Top 5 (+234 €)',/Compra máxima por carta: 300,00\s€/.test(t)&&(await ids()).includes('base4-1')&&/Alakazam/.test(await page.textContent('[data-cp-snipe]'))&&/Alakazam/.test(await page.textContent('#v4Buy .cpTop'))&&/\+234,00\s€/.test(t),JSON.stringify(await ids()));
+ // Alakazam: 330·0,95 − 5 − (250 + 6) = +52,50 (el punto de mira ya solo admite idioma comprobado, V131)
+ ok('Con 300 €: aviso actualizado y Alakazam aparece en Compra YA y Top 5 (+52,50 €)',/Compra máxima por carta: 300,00\s€/.test(t)&&(await ids()).includes('base4-1')&&/Alakazam/.test(await page.textContent('#v4Buy .cpTop'))&&/\+52,50\s€/.test(t),JSON.stringify(await ids()));
  await page.click('.mainNav [data-tab="sealed"]');await page.waitForSelector('#cpSealed .cpSum',{timeout:30000});
  ok('Sellado usa la misma compra máxima (Supuestos)',/Compra máxima300,00\s€ \(Supuestos\)/.test(await page.textContent('#cpSealed .rdctl')));
  ok('Sin errores de JavaScript',errors.length===0,errors.join(' | '));

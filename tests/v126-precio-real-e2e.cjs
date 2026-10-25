@@ -33,24 +33,23 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-sv04\\.5-232')?.textContent||''),null,{timeout:120000});
+ await page.waitForFunction(()=>window.CVCompra?.state()?.pt?.cards?.['sv04.5-232']&&document.querySelector('#v4Buy .cpTop'),null,{timeout:120000});await page.waitForTimeout(800);
+ // V131 · mismo idioma: el «desde EX o mejor» de 149,90 € es el 32 % de su valor (470,42 €) y Cardmarket no dice de qué
+ // idioma es (coreano y chino valen mucho menos) → no se calcula beneficio con él ni se recomienda.
+ const ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
+ ok('Mew ex 232 NO sale en Compra YA: su EX o mejor a 149,90 € (32 %) puede ser coreano o chino',!(await ids()).includes('sv04.5-232'),JSON.stringify(await ids()));
+ let t=await page.textContent('#v4Buy .cpTop');
+ ok('🏆 Top 5: sin Mew ex y lo explica (solo mismo idioma)',!/Mew ex/.test(t)&&/Solo con compra y venta del mismo idioma/.test(t),t.slice(0,400));
+ t=await page.textContent('[data-cp-snipe]');
+ ok('Punto de mira: Mew ex no entra y nunca con el «desde» de 50 €',!/Mew ex/.test(t)&&!/a 50,00/.test(t),t.slice(0,300));
+ await page.fill('[data-cp-q]','mew ex');await page.waitForSelector('#v4Buy #cp-sv04\\.5-232',{timeout:30000});await page.waitForTimeout(500);
  const T=sel=>page.textContent('#v4Buy #cp-sv04\\.5-232 '+sel);
- let t=await T('.cpMoney');
- // compra 149,90 € EX o mejor + 6 € = 155,90 € · venta 470,42 € · 470,42·0,95 − 5 − 155,90 = +286,00 €
- ok('Mew ex 232: compra = «desde» EX o mejor 149,90 € (155,90 € en 41020), nunca el «desde» de 50 €',/149,90\s€/.test(t)&&/EX o mejor/.test(t)&&/155,90\s€/.test(t)&&/\+286,00\s€/.test(t)&&!/^Compra en Cardmarket50,00/.test(t),t);
- ok('«Abrir en Cardmarket» abre la ficha con el mismo filtro (EX o mejor) que el precio mostrado',await page.getAttribute('#v4Buy #cp-sv04\\.5-232 .v4actions a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3');
  t=await T('.cpBuy');
  // TCGplayer: $420 · 0,9 = 378 € → (378 + 15) · 1,21 + 15 = 490,53 €
- ok('Dónde comprarla: EX o mejor 155,90 € (la mejor), cualquier estado 56 € con aviso, TCGplayer 490,53 € importada',/mejor|Cardmarket · EX o mejor 155,90/.test(t)&&/Cardmarket · EX o mejor ↗155,90\s€/.test(t)&&/Cardmarket · cualquier estado ↗56,00\s€/.test(t)&&/muy por debajo: casi seguro no es comparable/.test(t)&&/TCGplayer \(EE\. UU\.\) ↗490,53\s€/.test(t)&&/Cardmarket · EX o mejor 155,90\s€ puesta en 41020/.test(t),t);
+ ok('Buscándola: «Dónde comprarla» enseña EX o mejor 155,90 € con aviso de idioma, cualquier estado 56 € con aviso y TCGplayer 490,53 €',/Cardmarket · EX o mejor ↗155,90\s€/.test(t)&&/idioma sin indicar y muy por debajo de su valor: casi seguro coreano o chino/.test(t)&&/Cardmarket · cualquier estado ↗56,00\s€/.test(t)&&/muy por debajo: casi seguro no es comparable/.test(t)&&/TCGplayer \(EE\. UU\.\) ↗490,53\s€/.test(t)&&!/Cardmarket · EX o mejor 155,90\s€ puesta en 41020/.test(t),t);
  const bl=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-sv04\\.5-232 .cpBuy a')].map(a=>a.href));
  ok('Cada vía con su enlace directo (EX o mejor filtrado, cualquier estado sin filtro, TCGplayer)',bl[0]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3'&&bl[1]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779'&&bl[2]==='https://prices.pokemontcg.io/tcgplayer/sv4pt5-232',JSON.stringify(bl));
- t=await page.textContent('[data-cp-snipe]');
- // medias de 470 € a 726 € (±54 %): precio inestable → fuera del punto de mira, que exige ±25 %
- ok('Punto de mira: Mew ex no entra (precio inestable: medias 470–726 €) y nunca con el «desde» de 50 €',!/Mew ex/.test(t)&&!/a 50,00/.test(t),t.slice(0,300));
- ok('Su confianza lo refleja: estabilidad 0/20',/estabilidad 0\/20/.test(await T('.cpConf')));
- t=await page.textContent('#v4Buy .cpTop');
- ok('🏆 Top 5: Mew ex primero con su compra EX o mejor y enlace filtrado',/1\. Mew ex/.test(t)&&/Pagas 155,90\s€ \(Cardmarket, EX o mejor, puesta en 41020\)/.test(t)&&await page.getAttribute('#v4Buy .cpTop li a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3',t.slice(0,300));
- ok('Top 5 con imagen',await page.evaluate(()=>document.querySelectorAll('#v4Buy .cpTop .cpThumb img').length>=1));
+ await page.fill('[data-cp-q]','');await page.waitForTimeout(600);
  await page.evaluate(()=>{document.querySelector('[data-cp-jpbox]').open=true});
  ok('Importar (Japón y EE. UU.) con imagen de cada carta',await page.evaluate(()=>document.querySelectorAll('[data-cp-jpbox] li .cpThumb img').length)>=1);
  ok('Ya no hay plan de compra con presupuesto',!(await page.$('[data-cp-planbox]')));

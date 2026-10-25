@@ -12,7 +12,7 @@ const server=http.createServer((q,r)=>{const f=path.join(root,decodeURIComponent
 const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'));
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const F=['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'];
-const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[[273933,90,160,160,165,170,null,null,null]]};
+const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[[273933,150,258,258,263,268,null,null,null]]};
 const v=(t,l)=>[{name:'normal',eur:{trend:t,low:l,avg30:t,avg7:t,avg1:t}}];
 const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[
  {id:'tfc-1',name:'Mickey Mouse - Brave Little Tailor',number:'1',rarity:'Legendary',imageSmall:'https://images.example/a.png',cardmarketId:681001,variants:v(80,62)},

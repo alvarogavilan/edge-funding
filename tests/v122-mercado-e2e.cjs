@@ -13,12 +13,12 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const F=['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'];
 const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (verificada, EX+ 95 €)
+ [273933,150,258,258,263,268,null,null,null],   // base4-10 Mewtwo (verificada, EX+ 95 €)
  [273924,70,200,200,205,210,null,null,null],   // base4-1 Alakazam · vale ~200 € y hay un anuncio a 70 € (35 %) → punto de mira
  [574435,560,900,null,null,null,null,null,null],// Evolving Skies Booster Box · «desde» 62 % de su tendencia
  [583510,150,290,null,null,null,null,null,null],// Brilliant Stars ETB
  [271439,180,270,null,null,null,null,null,null]]};// Phantom Forces Booster (sube en 2 semanas)
-const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,90,160,160,165,170,null,null,null],[273924,120,200,200,205,210,null,null,null],[574435,560,880,null,null,null,null,null,null],[583510,150,290,null,null,null,null,null,null],[271439,250,262,null,null,null,null,null,null]]};
+const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,150,258,258,263,268,null,null,null],[273924,120,200,200,205,210,null,null,null],[574435,560,880,null,null,null,null,null,null],[583510,150,290,null,null,null,null,null,null],[271439,250,262,null,null,null,null,null,null]]};
 const OLD={...GUIDE,sourceCreatedAt:'2026-10-11T02:45:00+0200',rows:[[574435,600,850,null,null,null,null,null,null],[583510,150,280,null,null,null,null,null,null],[271439,240,220,null,null,null,null,null,null]]};
 const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-1',name:'Mickey Mouse - Brave Little Tailor',number:'1',rarity:'Legendary',imageSmall:'https://images.example/m.png',cardmarketId:681001,variants:[{name:'normal',eur:{trend:60,low:55,avg30:62,avg7:61,avg1:60}}]}]};
 (async()=>{
@@ -32,18 +32,18 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
   if(u.endsWith('/prices/2026/10/11.json'))return J(OLD);
   if(/\/prices\/\d{4}\/\d{2}\/\d{2}\.json$/.test(u))return route.fulfill({status:404,headers:H,body:'404'});
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:201,avg30:209,lowPrice:70,lowPriceExPlus:70}}}]:[];/* V126: el punto de mira exige el «desde» EX o mejor (2.ª fuente) */return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:201,avg30:209,lowPrice:70,lowPriceExPlus:70}}}]:[];/* V126: el punto de mira exige el «desde» EX o mejor (2.ª fuente) */return J({data,totalCount:data.length})}
   if(u.endsWith('/bindex-prices/v1/lorcana/sets.json'))return J(LOR);
   if(u.endsWith('/bindex-prices/v1/lorcana/sets/tfc.json'))return J(LORSET);
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||'')&&document.querySelector('[data-cp-snipe] li'),null,{timeout:120000});
- // Punto de mira
+ await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||'')&&document.querySelector('[data-cp-snipe]')&&window.CVCompra.state().pt.cards['base4-1'],null,{timeout:120000});
+ // Punto de mira · V131: el «desde EX o mejor» internacional no dice el idioma; a 70 € de una carta de ~200 € (35 %) casi
+ // seguro es coreano o chino → no se propone (antes salía con +109 € que no eran reales)
  let t=await page.textContent('[data-cp-snipe]');
- // 200·0,95 − 5 − (70 + 6) = +109 (V130: por debajo del 30 % sería proxy y no saldría)
- ok('🎯 Punto de mira: Alakazam vale ~200 € y hay un anuncio a 70 € (35 %) → +109 € si está bien; marcado NUEVO HOY (ayer 120 €)',/Alakazam/.test(t)&&/Vale ~200,00\s€/.test(t)&&/anuncio EX o mejor a 70,00\s€/.test(t)&&/35 % de su valor/.test(t)&&/\+109,00\s€/.test(t)&&/NUEVO HOY/.test(t),t.slice(0,400));
- ok('Punto de mira abierto y el enlace va al producto exacto',await page.evaluate(()=>document.querySelector('[data-cp-snipe]').open)&&await page.getAttribute('[data-cp-snipe] li a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273924&minCondition=3');
+ ok('🎯 Punto de mira: Alakazam internacional a 70 € (35 %, idioma sin indicar) NO sale, y se explica por qué',!/Alakazam/.test(t)&&/Solo anuncios con el idioma comprobado/.test(t)&&/coreano o chino/.test(t),t.slice(0,500));
+ ok('Punto de mira cerrado cuando no hay nada',!(await page.evaluate(()=>document.querySelector('[data-cp-snipe]').open)));
  ok('Ya no hay fila de enlaces por idioma en cada carta',!(await page.$('#v4Buy .cpLangLinks')));
  // Idioma de la carta
  await page.selectOption('[data-cp-view="lang"]','it');await page.waitForTimeout(500);
@@ -77,10 +77,10 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  // Graduadas
  await page.click('.mainNav [data-tab="pregrade"]');await page.waitForSelector('#cpGraded [data-gr-q]',{timeout:30000});
  await page.fill('#cpGraded [data-gr-q]','mewtwo base');await page.waitForSelector('[data-gr-pick="base4-10"]');await page.click('[data-gr-pick="base4-10"]');
- await page.fill('[data-gr="grade"]','10');await page.fill('[data-gr="price"]','150');await page.fill('[data-gr="ship"]','8');await page.fill('[data-gr="sale"]','260');await page.click('[data-gr-add]');await page.waitForTimeout(300);
+ await page.fill('[data-gr="grade"]','10');await page.fill('[data-gr="price"]','233');await page.fill('[data-gr="ship"]','8');await page.fill('[data-gr="sale"]','340');await page.click('[data-gr-add]');await page.waitForTimeout(300);
  t=await page.textContent('#cpGraded ol');
- // reposición 95 + 49,99 + 15 + 25 = 184,99 · anuncio 158 → 85 % · venta 260·0,95 − 5 = 242 → +84
- ok('Graduadas: PSA 10 Mewtwo a 158 € con envío → oferta (85 % de crearla tú: 184,99 €) y +84 € vendiéndola a 260 €',/Oferta: más barata que graduarla tú/.test(t)&&/184,99\s€/.test(t)&&/85 % de su reposición/.test(t)&&/\+84,00\s€/.test(t),t);
+ // reposición 194 + 49,99 + 15 + 25 = 283,99 · anuncio 241 → 85 % · venta 340·0,95 − 5 = 318 → +77
+ ok('Graduadas: PSA 10 Mewtwo a 241 € con envío → oferta (85 % de crearla tú: 283,99 €) y +77 € vendiéndola a 340 €',/Oferta: más barata que graduarla tú/.test(t)&&/283,99\s€/.test(t)&&/85 % de su reposición/.test(t)&&/\+77,00\s€/.test(t),t);
  ok('PSA: la calculadora de graduar sigue visible debajo',await page.isVisible('#cpPsa'));
  await page.reload();await page.click('.mainNav [data-tab="pregrade"]');await page.waitForSelector('#cpGraded ol li',{timeout:30000});
  ok('El anuncio analizado se conserva tras recargar',/PSA 10 · Mewtwo/.test(await page.textContent('#cpGraded ol')));

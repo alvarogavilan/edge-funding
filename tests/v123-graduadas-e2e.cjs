@@ -13,12 +13,12 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const F=['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'];
 const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (verificada, EX+ 95 €)
+ [273933,150,258,258,263,268,null,null,null],   // base4-10 Mewtwo (verificada, EX+ 95 €)
  [273924,30,200,200,205,210,null,null,null],   // base4-1 Alakazam · vale ~200 € y hay un anuncio a 30 € → punto de mira
  [574435,560,900,null,null,null,null,null,null],// Evolving Skies Booster Box · «desde» 62 % de su tendencia
  [583510,150,290,null,null,null,null,null,null],// Brilliant Stars ETB
  [271439,250,270,null,null,null,null,null,null]]};// Phantom Forces Booster (sube en 2 semanas)
-const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,90,160,160,165,170,null,null,null],[273924,120,200,200,205,210,null,null,null],[574435,560,880,null,null,null,null,null,null],[583510,150,290,null,null,null,null,null,null],[271439,250,262,null,null,null,null,null,null]]};
+const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,150,258,258,263,268,null,null,null],[273924,120,200,200,205,210,null,null,null],[574435,560,880,null,null,null,null,null,null],[583510,150,290,null,null,null,null,null,null],[271439,250,262,null,null,null,null,null,null]]};
 const OLD={...GUIDE,sourceCreatedAt:'2026-10-11T02:45:00+0200',rows:[[574435,600,850,null,null,null,null,null,null],[583510,150,280,null,null,null,null,null,null],[271439,240,220,null,null,null,null,null,null]]};
 const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-1',name:'Mickey Mouse - Brave Little Tailor',number:'1',rarity:'Legendary',imageSmall:'https://images.example/m.png',cardmarketId:681001,variants:[{name:'normal',eur:{trend:60,low:55,avg30:62,avg7:61,avg1:60}}]}]};
 (async()=>{
@@ -29,7 +29,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
   if(u.endsWith('/prices/latest.json'))return J(GUIDE);
   if(/\/prices\/\d{4}\/\d{2}\/\d{2}\.json$/.test(u))return route.fulfill({status:404,headers:H,body:'404'});
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}}]:[];return J({data,totalCount:data.length})}
   if(/bindex-prices/.test(u))return route.fulfill({status:404,body:''});
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -43,13 +43,13 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  const links=await page.evaluate(()=>[...document.querySelectorAll('#cpGraded .cpPlanList a')].map(a=>a.href));
  ok('Con la carta elegida, «Buscar» abre cada sitio con «Mewtwo 10»',links.length===7&&links.includes('https://www.pokemillon.com/search?type=product&q=Mewtwo%2010')&&links.includes('https://www.catawiki.com/es/s?q=Mewtwo%2010')&&links.includes('https://www.vinted.es/catalog?search_text=Mewtwo%2010'),JSON.stringify(links));
  await page.evaluate(()=>{document.querySelector('[data-gr-paste]').closest('details').open=true});
- await page.fill('[data-gr-paste]','Mewtwo Base Set 2 PSA 9 Mint · 139,90 € · Certificado 87654321');await page.click('[data-gr-parse]');
+ await page.fill('[data-gr-paste]','Mewtwo Base Set 2 PSA 9 Mint · 215,90 € · Certificado 87654321');await page.click('[data-gr-parse]');
  const f=await page.evaluate(()=>({co:document.querySelector('[data-gr="company"]').value,g:document.querySelector('[data-gr="grade"]').value,p:document.querySelector('[data-gr="price"]').value,c:document.querySelector('[data-gr="cert"]').value}));
- ok('Pegar anuncio: rellena PSA, nota 9, 139,90 € y certificado',f.co==='PSA'&&f.g==='9'&&f.p==='139,9'&&f.c==='87654321',JSON.stringify(f));
+ ok('Pegar anuncio: rellena PSA, nota 9, 215,90 € y certificado',f.co==='PSA'&&f.g==='9'&&f.p==='215,9'&&f.c==='87654321',JSON.stringify(f));
  await page.selectOption('[data-gr="store"]','Iberian Collect');await page.fill('[data-gr="ship"]','0');await page.click('[data-gr-add]');await page.waitForTimeout(300);
  t=await page.textContent('#cpGraded ol:last-of-type');
- // reposición 95 + 49,99 + 40 = 184,99 · 139,90 → 76 %
- ok('Analizado: tienda, certificado con «verificar» y oferta frente a crearla tú (76 % de 184,99 €)',/Iberian Collect · certificado 87654321/.test(t)&&/Oferta: más barata que graduarla tú/.test(t)&&/76 % de su reposición/.test(t),t);
+ // reposición 194 + 49,99 + 40 = 283,99 · 215,90 → 76 %
+ ok('Analizado: tienda, certificado con «verificar» y oferta frente a crearla tú (76 % de 283,99 €)',/Iberian Collect · certificado 87654321/.test(t)&&/Oferta: más barata que graduarla tú/.test(t)&&/76 % de su reposición/.test(t),t);
  ok('«Verificar» abre el certificado en psacard.com',await page.getAttribute('#cpGraded a[href*="psacard.com/cert/"]','href')==='https://www.psacard.com/cert/87654321');
  const P=await page.evaluate(()=>['Umbreon VMAX BGS 9.5 Gem Mint 1.250,00 €','CGC 9,5 Pikachu Precio: € 89','Gengar Beckett 8,5 75 €'].map(window.CVGraduadas.parseListing));
  ok('Lector: Beckett 9,5 a 1.250 €, CGC 9,5 a 89 € y Beckett 8,5 a 75 €',P[0].company==='Beckett (BGS)'&&P[0].grade===9.5&&P[0].price===1250&&P[1].company==='CGC'&&P[1].grade===9.5&&P[1].price===89&&P[2].grade===8.5&&P[2].price===75,JSON.stringify(P));

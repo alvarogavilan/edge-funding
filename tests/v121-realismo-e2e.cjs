@@ -12,7 +12,7 @@ const server=http.createServer((q,r)=>{const f=path.join(root,decodeURIComponent
 const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'));
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
+ [273933,200,300,300,305,310,null,null,null],   // base4-10 Mewtwo (todos los idiomas) · EX o mejor 225 € = 75 % (V131: mismo idioma probable)
  [273924,60,200,240,235,190,null,null,null],   // base4-1 Alakazam · semana +24 % sobre su media → buen momento de venta
  [861477,193,257,257,257,262,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};
@@ -37,24 +37,25 @@ Seller2 Near Mint English 129,99 € 2`;
   if(u.endsWith('/prices/latest.json'))return J(GUIDE);
   if(/\/prices\/\d{4}\/\d{2}\/\d{2}\.json$/.test(u))return route.fulfill({status:404,headers:H,body:'404'});
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:298,avg30:308,lowPrice:200,lowPriceExPlus:225}}}]:[];return J({data,totalCount:data.length})}
   if(/bindex-prices/.test(u))return route.fulfill({status:404,body:''});
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
+ await page.waitForSelector('#v4Buy [data-v4-cfg="maxBuy"]',{state:'attached',timeout:90000});await page.evaluate(()=>{document.querySelector('#v4Buy [data-v4-cfg="maxBuy"]').closest('details').open=true});await page.fill('#v4Buy [data-v4-cfg="maxBuy"]','300');await page.click('#v4Buy [data-v4-cfgsave]');await page.waitForTimeout(600);/* pagas 231 € */
  await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||''),null,{timeout:90000});
  const T=id=>page.textContent('#v4Buy #cp-'+id);
- ok('Por defecto: Mewtwo +46,00 € (envíos 5/6 €)',/\+46,00\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')));
+ ok('Por defecto: Mewtwo +49,00 € (envíos 5/6 €)',/\+49,00\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')));
  await page.evaluate(()=>{document.querySelector('#v4Buy .v4settings [data-v4-correos]').closest('details').open=true});
  ok('Supuestos: tarifas Correos 2026 explicadas',/nacional 5,74\s€, a o desde Europa 7,15\s€/.test(await page.textContent('#v4Buy .v4settings:has([data-v4-correos])')));
  await page.click('#v4Buy [data-v4-correos]');await page.waitForTimeout(600);
- // 160·0,95 − 5,74 − (95 + 7,15) = 152 − 5,74 − 102,15 = 44,11
+ // 300·0,95 − 5,74 − (225 + 7,15) = 285 − 5,74 − 232,15 = 47,11
  const cfg=await page.evaluate(()=>window.CVVault.user().cfg);
  ok('«Aplicar tarifas Correos 2026» guarda venta 5,74 €, compra 7,15 € y 5 %',cfg.sellShip===5.74&&cfg.buyShip===7.15&&cfg.feePct===5,JSON.stringify(cfg));
- await page.waitForFunction(()=>/\+44,11\s€/.test(document.querySelector('#v4Buy #cp-base4-10 .cpMoney')?.textContent||''),null,{timeout:10000}).catch(()=>{});
- ok('Mewtwo recalculado con Correos: +44,11 €',/\+44,11\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')),await page.textContent('#v4Buy #cp-base4-10 .cpMoney'));
+ await page.waitForFunction(()=>/\+47,11\s€/.test(document.querySelector('#v4Buy #cp-base4-10 .cpMoney')?.textContent||''),null,{timeout:10000}).catch(()=>{});
+ ok('Mewtwo recalculado con Correos: +47,11 €',/\+47,11\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')),await page.textContent('#v4Buy #cp-base4-10 .cpMoney'));
  await page.reload();await page.waitForSelector('#v4Buy #cp-base4-10',{timeout:60000});
- ok('Tras recargar se conservan las tarifas',/\+44,11\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')));
+ ok('Tras recargar se conservan las tarifas',/\+47,11\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpMoney')));
  await page.evaluate(()=>{document.querySelector('#v4Buy [data-v4-cfg="maxBuy"]').closest('details').open=true});await page.fill('#v4Buy [data-v4-cfg="maxBuy"]','300');await page.click('#v4Buy [data-v4-cfgsave]');await page.waitForTimeout(600);/* con Correos pagas 193 + 7,15 = 200,15 € > 200 */
  await page.selectOption('[data-cp-view="show"]','all');await page.waitForTimeout(300);/* y deja 39,11 € (< 40 €): se ve en «Todas con precio» */
  const cj=await page.textContent('#v4Buy #cp-jp-861477 .cpConf');

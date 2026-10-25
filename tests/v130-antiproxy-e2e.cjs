@@ -13,7 +13,7 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const F=['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'];
 const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // Mewtwo · EX+ 95 € → compra fiable
+ [273933,150,258,258,263,268,null,null,null],   // Mewtwo · EX+ 95 € → compra fiable
  [273924,60,200,200,200,200,null,null,null],   // Alakazam · anuncio de cualquier estado a 60 € (30 %) → chollo por verificar
  [273925,30,300,300,300,300,null,null,null],   // Blastoise · EX+ 30 € y vale ~300 € (10 %) → casi seguro proxy: ni punto de mira ni restaurar
  [861287,50,638,638,638,638,null,null,null]]};// caso real: japonesa a 50 € frente a ~638 € (8 %) → el anuncio era PROXY: descartada
@@ -27,7 +27,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
   if(u.endsWith('/prices/latest.json'))return J(GUIDE);
   if(/\/prices\/\d{4}\/\d{2}\/\d{2}\.json$/.test(u))return route.fulfill({status:404,headers:H,body:'404'});
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:200,avg30:200,lowPrice:60,lowPriceExPlus:100}}},{id:'base4-2',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:300,avg30:300,lowPrice:30,lowPriceExPlus:30}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:200,avg30:200,lowPrice:60,lowPriceExPlus:100}}},{id:'base4-2',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:300,avg30:300,lowPrice:30,lowPriceExPlus:30}}}]:[];return J({data,totalCount:data.length})}
   if(/bindex-prices/.test(u))return route.fulfill({status:404,body:''});
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -37,21 +37,15 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  const ids=await page.evaluate(()=>window.CVCompra.chollos(window.CVCompra.cfg()).map(o=>o.x.id));
  const top=await page.textContent('#v4Buy .cpTop'),ch=await page.textContent('#v4Buy [data-cp-chollo]');
  ok('La japonesa a 50 € que vale ~638 € (8 %) NO sale: ni en chollos ni en el Top 5',!ids.some(i=>/861287/.test(i))&&!/nº 44/.test(top)&&!/50,00\s€/.test(top),JSON.stringify(ids)+' '+top);
- ok('Escudo anti-proxy visible con lo descartado hoy',/Escudo anti-proxy: 2 anuncio\(s\) por debajo del 30 % de su valor descartados hoy/.test(ch),ch.slice(-700));
+ ok('Escudo anti-proxy visible con lo descartado hoy',/Escudo anti-proxy: 1 anuncio\(s\) por debajo del 30 % de su valor descartados hoy/.test(ch),ch.slice(-700));
  ok('Blastoise «EX o mejor» a 30 € de una carta de ~300 € (10 %) tampoco entra en el Top 5 como compra fiable',!/Blastoise/.test(top),top);
  const sn=await page.evaluate(()=>window.CVCompra.sniper().map(o=>o.x.id));
  ok('Punto de mira: el EX o mejor a 30 € de una carta de ~300 € (10 %) no sale',!sn.includes('base4-2'),JSON.stringify(sn));
  const po=await page.evaluate(()=>{const x=window.CVCompra.cardsPk().find(c=>c.id==='base4-2');return x?x.ops.filter(o=>o.k==='po').length:-1});
  ok('Restaurar: tampoco se propone comprar el anuncio del 10 %',po===0,String(po));
- ok('Alakazam (30 %) sigue como chollo, con aviso de leer la descripción',ids.includes('base4-1')&&/si dice «proxy», «réplica», «custom» o «no original» es FALSA/.test(ch),ch.slice(0,600));
+ ok('V131: Alakazam internacional a 60 € (30 %) ya no es chollo: idioma sin comprobar',!ids.includes('base4-1')&&/internacional(es)? descartadas?/.test(ch),ch.slice(-500));
  ok('Antes de pagar: punto «Que no sea proxy ni falsa»',await page.evaluate(()=>/Que no sea proxy ni falsa/.test([...document.querySelectorAll('#v4Buy .cpCheck')].map(e=>e.textContent).join(' '))));
- // marcar como proxy
- page.once('dialog',d=>d.accept());
- await page.click('#v4Buy [data-cp-chollo] [data-cp-bad^="base4-1|"]');await page.waitForTimeout(600);
- const ids2=await page.evaluate(()=>window.CVCompra.chollos(window.CVCompra.cfg()).map(o=>o.x.id)),top2=await page.textContent('#v4Buy .cpTop');
- ok('«🚫 Es proxy o falsa»: el anuncio de 60 € desaparece de chollos y del Top 5 (Alakazam sigue solo por su otro anuncio EX o mejor a 100 €)',!ids2.includes('base4-1')&&!/a 60,00\s€/.test(top2),JSON.stringify(ids2)+' '+top2);
- const kept=await page.reload().then(()=>page.waitForFunction(()=>window.CVCompra?.state()?.guide,null,{timeout:120000})).then(()=>page.evaluate(()=>window.CVCompra.isBad('base4-1',60)&&!window.CVCompra.isBad('base4-1',61)));
- ok('La marca se guarda y solo vale para ese anuncio (si aparece otro más caro, vuelve a evaluarse)',kept);
+ ok('V131: ya no hay botón «🚫 Es proxy o falsa» (cada anuncio lo miras tú)',!(await page.$('[data-cp-bad]'))&&!/Es proxy o falsa/.test(await page.textContent('#v4Buy')));
  // comprobador de descripción
  await page.waitForSelector('#v4Buy [data-cp-fakebox]',{state:'attached',timeout:60000});
  await page.evaluate(()=>{document.querySelector('#v4Buy [data-cp-chollo]').open=true;document.querySelector('#v4Buy [data-cp-fakebox]').open=true});
