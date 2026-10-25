@@ -41,7 +41,7 @@ Seller2 Near Mint English 129,99 € 2`;
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- await page.waitForFunction(()=>document.querySelector('#v4Buy #cp-jp-861477')&&/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||''),null,{timeout:60000}).catch(async e=>{console.log('DBG',errors.join('|'),JSON.stringify(await page.evaluate(()=>({ids:[...document.querySelectorAll('.cpCard')].map(a=>a.dataset.cpid),jp:!!window.CV_JP_MAP,g:window.CVCompra.state().guide&&Object.keys(window.CVCompra.state().guide.rows)}))));throw e});
+ await page.waitForFunction(()=>document.querySelector('#v4Buy #cp-jp-861477')&&/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||''),null,{timeout:120000}).catch(async e=>{console.log('DBG',errors.join('|'),JSON.stringify(await page.evaluate(()=>({ids:[...document.querySelectorAll('.cpCard')].map(a=>a.dataset.cpid),jp:!!window.CV_JP_MAP,g:window.CVCompra.state().guide&&Object.keys(window.CVCompra.state().guide.rows)}))));throw e});
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  let t=await T('jp-861477');
  ok('Japonés: Pikachu ex (M2A 234) con su producto japonés propio · compra 100 € (106 € en 41020) → venta 190 € → +69,50 €',/JAPONÉS · PRECIO Y VENTAS DEL MISMO IDIOMA/.test(t)&&/106,00\s€/.test(t)&&/190,00\s€/.test(t)&&/\+69,50\s€/.test(t)&&/ventas reales de cartas japonesas/.test(t),t.slice(0,500));

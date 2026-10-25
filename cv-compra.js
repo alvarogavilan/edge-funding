@@ -190,11 +190,11 @@ function langCheck(card){
 }
 /* Lee el bloque copiado de la ficha de Cardmarket (cualquier idioma de la web): «desde», tendencia, medias 30/7/1 días
    y, si se copió también la lista de anuncios, el anuncio más barato visible con el filtro aplicado. */
-const LBL=[["avg30",/(precio medio (de )?30 d[ií]as|30[- ]days? average( price)?|30-tages-durchschnitt|prix moyen 30 jours|prezzo medio (a )?30 giorni|pre[cç]o m[eé]dio (de )?30 dias)/i],
- ["avg7",/(precio medio (de )?7 d[ií]as|7[- ]days? average( price)?|7-tages-durchschnitt|prix moyen 7 jours|prezzo medio (a )?7 giorni|pre[cç]o m[eé]dio (de )?7 dias)/i],
- ["avg1",/(precio medio (de )?1 d[ií]a|1[- ]day average( price)?|1-tages-durchschnitt|prix moyen 1 jour|prezzo medio (a )?1 giorno|pre[cç]o m[eé]dio (de )?1 dia)/i],
+const LBL=[["avg30",/(precio medio (de )?30 d[ií]as|media (de )?30 d[ií]as|avg\.? ?30( days?)?|30[- ]days? average( price)?|30-tages-durchschnitt|prix moyen 30 jours|prezzo medio (a )?30 giorni|pre[cç]o m[eé]dio (de )?30 dias)/i],
+ ["avg7",/(precio medio (de )?7 d[ií]as|media (de )?7 d[ií]as|avg\.? ?7( days?)?|7[- ]days? average( price)?|7-tages-durchschnitt|prix moyen 7 jours|prezzo medio (a )?7 giorni|pre[cç]o m[eé]dio (de )?7 dias)/i],
+ ["avg1",/(precio medio (de )?1 d[ií]a|media (de )?1 d[ií]a|avg\.? ?1( day)?\b|1[- ]day average( price)?|1-tages-durchschnitt|prix moyen 1 jour|prezzo medio (a )?1 giorno|pre[cç]o m[eé]dio (de )?1 dia)/i],
  ["trend",/(tendencia( de precio)?|price trend|preis-trend|tendance des prix|tendenza( di prezzo)?|tend[eê]ncia( de pre[cç]o)?)/i],
- ["from",/(^|\n|\s)(desde|from|ab|[àa] partir de|da|a partir de)(?=\s*[:\n]?\s*[\d€])/i]];
+ ["from",/(^|\n|\s)(desde|from|ab|[àa] partir de|da|a partir de|precio m[ií]nimo|m[ií]nimo)(?=\s*[:\n]?\s*[\d€])/i]];
 const PRICE=/(?:€\s*)?(\d{1,3}(?:[.\s\u00a0]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*€|€\s*(\d{1,3}(?:[.,\s\u00a0]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)/;
 function pnum(t){t=String(t).replace(/[\s\u00a0]/g,"");const c=t.lastIndexOf(","),d=t.lastIndexOf(".");const dec=Math.max(c,d);let x;
  if(dec>=0&&t.length-dec-1<=2)x=Number(t.slice(0,dec).replace(/[.,]/g,"")+"."+t.slice(dec+1));else x=Number(t.replace(/[.,]/g,""));return Number.isFinite(x)&&x>0?x:NaN}
@@ -207,16 +207,19 @@ function parseCmPaste(txt){
  return o;
 }
 /* Confianza 0–100: cuánto fiarse de la oferta. Suma transparente de 5 partes (todas con datos reales de la guía):
-   versión (30) · ventas recientes (25) · estabilidad de precio entre media 1/7/30 días y tendencia (20) ·
-   tendencia de la semana (10) · colchón de margen (15). «Beneficio prudente» = beneficio × confianza. */
+   versión (25) · ventas recientes (20) · estabilidad de precio entre media 1/7/30 días y tendencia (20) ·
+   tendencia de la semana (10) · colchón de margen (10) · estado conocido de la compra (15: «desde» EX o mejor 15, pegado
+   de la ficha filtrada 8, «desde» sin estado 0 — el más barato puede ser una carta jugada).
+   «Beneficio prudente» = beneficio × confianza. */
 function confidence(x,o){
  const p=x.p||{},S=saleRef(p),parts={};
- parts.version={3:30,2:22,1:8,0:0}[TRUST[x.res?.status]??0]??0;
- parts.ventas={3:25,2:18,1:8,0:0}[x.liq?.k??0];
+ parts.version={3:25,2:18,1:6,0:0}[TRUST[x.res?.status]??0]??0;
+ parts.ventas={3:20,2:14,1:6,0:0}[x.liq?.k??0];
  const xs=[p.avg1,p.avg7,p.avg30,p.trend].filter(Number.isFinite),disp=xs.length>=2&&S>0?(Math.max(...xs)-Math.min(...xs))/S:NaN;
  parts.estabilidad=!Number.isFinite(disp)?0:disp<=.1?20:disp<=.25?14:disp<=.5?7:0;
  const m=x.mom;parts.tendencia=!Number.isFinite(m)?5:m>=-.05?10:m>=-.15?5:0;
- const mg=o?.margin;parts.colchon=!Number.isFinite(mg)?0:mg>=.5?15:mg>=.25?10:mg>=.1?5:0;
+ const mg=o?.margin;parts.colchon=!Number.isFinite(mg)?0:mg>=.5?10:mg>=.25?7:mg>=.1?3:0;
+ parts.estado=!o?0:o.k==="ex"?15:o.own||o.k==="po"?8:0;/* en restaurar el mal estado es lo esperado; queda por ver cuánto */
  const score=Object.values(parts).reduce((a,b)=>a+b,0);
  return {score,parts,disp,prudent:Number.isFinite(o?.profit)?o.profit*score/100:NaN};
 }
@@ -318,7 +321,7 @@ function sameLangTable(x,c){
 }
 function pasteBox(x){
  const l=links(x);if(x.kind==="jp"||!l.lang.length)return '';
- return '<details class="v4more cpPaste" data-cp-pastebox="'+E(x.id)+'"><summary>Pegar datos de Cardmarket por idioma</summary><ol class="v4help"><li>Pulsa «Abrir ficha» del idioma en la tabla de arriba (se abre filtrada por ese idioma'+(view.cond==="mal"?'':' y EX o mejor')+').</li><li>En Cardmarket, mantén pulsado sobre «Disponible» y arrastra hasta los primeros anuncios; pulsa «Copiar».</li><li>Vuelve aquí, elige el idioma y pega.</li></ol>'+
+ return '<details class="v4more cpPaste" data-cp-pastebox="'+E(x.id)+'"><summary>Pegar datos de Cardmarket por idioma</summary><ol class="v4help"><li>Pulsa «Abrir ficha» del idioma en la tabla de arriba (se abre filtrada por ese idioma'+(view.cond==="mal"?'':' y EX o mejor')+').</li><li>En Cardmarket, mantén pulsado sobre «Disponible» y arrastra hasta los primeros anuncios; pulsa «Copiar».</li><li>Vuelve aquí, elige el idioma y pega.</li><li>Truco de iPhone: también puedes hacer una captura de la ficha, abrirla en Fotos, mantener pulsado el texto (Texto en vivo) y copiarlo.</li></ol>'+
  '<div class="cpPasteRow"><label>Idioma<select data-cp-pastelang>'+l.lang.map(o=>'<option value="'+o.k+'">'+o.n+'</option>').join("")+'</select></label><label>Estado<select data-cp-pastecond><option value="buen">Buen estado</option><option value="mal"'+(view.cond==="mal"?" selected":"")+'>Mal estado</option></select></label></div>'+
  '<textarea data-cp-paste rows="5" placeholder="Pega aquí el texto copiado de Cardmarket (Desde, Tendencia de precio, Precio medio 30 días… y los anuncios)" aria-label="Texto copiado de Cardmarket"></textarea>'+
  '<button type="button" class="v4btn primary" data-cp-pastesave="'+E(x.id)+'">Leer y calcular beneficio</button><p class="v4note">Se usa el anuncio más barato que hayas copiado (o «desde») como compra, y la menor de tendencia, media 30 y 7 días como venta de ese idioma. Si la media coincide con la general o con la de otro idioma, se avisa y no se usa como venta del idioma.</p></details>';
@@ -354,7 +357,7 @@ function cardHtml(x,rank,c,pre="cp-"){
 }
 function confHtml(x,b){
  const k=confidence(x,b),P=k.parts,lvl=k.score>=75?"ok":k.score>=50?"mid":"low";
- return '<div class="cpConf '+lvl+'"><div class="cpConfBar" role="img" aria-label="Confianza '+k.score+' de 100"><i style="width:'+k.score+'%"></i></div><p><b>Confianza '+k.score+'/100</b>'+(b&&Number.isFinite(k.prudent)?' · beneficio prudente <b>'+SIGNED(k.prudent)+'</b>':'')+'</p><small>Versión '+P.version+'/30 · ventas '+P.ventas+'/25 · estabilidad '+P.estabilidad+'/20'+(Number.isFinite(k.disp)?' (medias a ±'+Math.round(k.disp*50)+' %)':'')+' · tendencia '+P.tendencia+'/10 · colchón '+P.colchon+'/15</small></div>';
+ return '<div class="cpConf '+lvl+'"><div class="cpConfBar" role="img" aria-label="Confianza '+k.score+' de 100"><i style="width:'+k.score+'%"></i></div><p><b>Confianza '+k.score+'/100</b>'+(b&&Number.isFinite(k.prudent)?' · beneficio prudente <b>'+SIGNED(k.prudent)+'</b>':'')+'</p><small>Versión '+P.version+'/25 · ventas '+P.ventas+'/20 · estabilidad '+P.estabilidad+'/20'+(Number.isFinite(k.disp)?' (medias a ±'+Math.round(k.disp*50)+' %)':'')+' · tendencia '+P.tendencia+'/10 · colchón '+P.colchon+'/10 · estado '+P.estado+'/15'+(P.estado===0&&b&&b.cond==="buen"?' (el «desde» no dice el estado: abre la ficha con «EX o mejor»)':'')+'</small></div>';
 }
 /* Plan de compra con presupuesto: elige, de las ofertas fiables, la combinación que más beneficio prudente da por cada
    euro invertido, sin pasarse del presupuesto, sin repetir carta y como máximo 2 por colección (para no concentrar riesgo). */

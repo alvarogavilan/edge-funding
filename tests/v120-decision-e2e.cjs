@@ -44,14 +44,14 @@ Seller2 Near Mint English 129,99 € 2`;
  await page.goto(base);
  await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||''),null,{timeout:90000});
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
- // Mewtwo: versión verificada 30 · se vende a diario 25 · medias 160–170 sobre 160 → ±3 % → 20 · tendencia 165/170 −3 % → 10 · margen 46/101 = 45 % → 10 → 95
+ // Mewtwo: versión verificada 25 · se vende a diario 20 · medias 160–170 sobre 160 → ±3 % → 20 · tendencia 165/170 −3 % → 10 · margen 46/101 = 45 % → 7 · compra EX o mejor → estado 15 → 97
  let t=await page.textContent('#v4Buy #cp-base4-10 .cpConf');
- ok('Confianza Mewtwo 95/100 con su desglose y beneficio prudente (+43,70 €)',/Confianza 95\/100/.test(t)&&/beneficio prudente \+43,70\s€/.test(t)&&/Versión 30\/30 · ventas 25\/25 · estabilidad 20\/20/.test(t)&&/colchón 10\/15/.test(t),t);
+ ok('Confianza Mewtwo 97/100 con su desglose y beneficio prudente (+44,62 €)',/Confianza 97\/100/.test(t)&&/beneficio prudente \+44,62\s€/.test(t)&&/Versión 25\/25 · ventas 20\/20 · estabilidad 20\/20/.test(t)&&/colchón 7\/10 · estado 15\/15/.test(t),t);
  t=await page.textContent('#v4Buy #cp-jp-861477 .cpConf');
- // Pikachu ex JP: versión 30 · ventas 25 · medias 190–210 sobre 190 → 10,5 % → 14 · tendencia 190/210 −9,5 % → 5 · margen 69,5/106 = 66 % → 15 → 89
- ok('Confianza japonesa 89/100: estabilidad 14 y tendencia 5 por la semana a la baja',/Confianza 89\/100/.test(t)&&/estabilidad 14\/20/.test(t)&&/tendencia 5\/10/.test(t),t);
+ // Pikachu ex JP: versión 25 · ventas 20 · medias 190–210 sobre 190 → 10,5 % → 14 · tendencia 190/210 −9,5 % → 5 · margen 69,5/106 = 66 % → 10 · «desde» sin estado → 0 → 74
+ ok('Confianza japonesa 74/100: estabilidad 14, tendencia 5 y estado 0 con aviso (el «desde» no dice el estado)',/Confianza 74\/100/.test(t)&&/estabilidad 14\/20/.test(t)&&/tendencia 5\/10/.test(t)&&/estado 0\/15 \(el «desde» no dice el estado/.test(t),t);
  await page.selectOption('[data-cp-view="sort"]','risk');await page.waitForTimeout(300);
- ok('Orden «Mejor beneficio prudente»: Pikachu (61,86 €) antes que Mewtwo (43,70 €)',(await ids()).slice(0,2).join()==='jp-861477,base4-10',JSON.stringify(await ids()));
+ ok('Orden «Mejor beneficio prudente»: Pikachu (51,43 €) antes que Mewtwo (44,62 €)',(await ids()).slice(0,2).join()==='jp-861477,base4-10',JSON.stringify(await ids()));
  // Plan de compra
  await page.evaluate(()=>{document.querySelector('[data-cp-planbox]').open=true});
  await page.fill('[data-cp-plan="budget"]','150');await page.fill('[data-cp-plan="max"]','200');await page.fill('[data-cp-plan="minConf"]','50');await page.click('[data-cp-plancalc]');await page.waitForTimeout(300);
@@ -59,7 +59,7 @@ Seller2 Near Mint English 129,99 € 2`;
  ok('Plan con 150 €: elige solo Pikachu ex (106 €), porque las dos no caben',/1 cartas, 106,00\s€/.test(t)&&/Pikachu ex/.test(t)&&!/Mewtwo/.test(t.split('Calcular plan')[1]||''),t.slice(0,400));
  await page.fill('[data-cp-plan="budget"]','300');await page.click('[data-cp-plancalc]');await page.waitForTimeout(300);
  t=await page.textContent('[data-cp-planbox]');
- ok('Plan con 300 €: las dos, 207 € de inversión, +115,50 € de referencia y +105,56 € prudente',/2 cartas, 207,00\s€/.test(t)&&/\+115,50\s€/.test(t)&&/\+105,56\s€/.test(t),t.slice(0,500));
+ ok('Plan con 300 €: las dos, 207 € de inversión, +115,50 € de referencia y +96,05 € prudente',/2 cartas, 207,00\s€/.test(t)&&/\+115,50\s€/.test(t)&&/\+96,05\s€/.test(t),t.slice(0,500));
  await page.fill('[data-cp-plan="minConf"]','150');let al='';page.once('dialog',d=>{al=d.message();d.dismiss()});await page.click('[data-cp-plancalc]');await page.waitForTimeout(200);
  ok('Plan: confianza fuera de 0–100 se rechaza',/confianza entre 0 y 100/.test(al),al);
  await page.reload();await page.waitForSelector('[data-cp-planbox]',{timeout:60000,state:'attached'});
