@@ -60,6 +60,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.click('[data-v4-verify="'+id+'"]');await page.waitForSelector('#v4Sheet form');
  await page.fill('#v4Sheet [name=url]','https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=charizard');
  await page.fill('#v4Sheet [name=price]','180');await page.click('#v4Sheet button[type=submit]');
+ await page.waitForFunction(()=>/búsqueda/.test(document.querySelector('#v4Sheet .v4err')?.textContent||''),null,{timeout:5000}).catch(()=>{});/* espera al mensaje: antes se leía en el mismo instante del clic */
  ok('Rechaza enlace de búsqueda',/búsqueda/.test(await page.textContent('#v4Sheet .v4err')));
  await page.fill('#v4Sheet [name=url]','https://www.ebay.es/itm/123');await page.click('#v4Sheet button[type=submit]');
  ok('Rechaza eBay',/eBay/.test(await page.textContent('#v4Sheet .v4err')));

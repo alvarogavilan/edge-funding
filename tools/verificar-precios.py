@@ -36,7 +36,7 @@ for grp in ('sure','pending'):
   cost=exp_buy+cfg['buyShip'];prof=exp_sale*(1-cfg['feePct']/100)-cfg['sellShip']-cost
   for nm,a,e in (('buy',b['buy'],exp_buy),('sale',b['sale'],exp_sale),('cost',b['cost'],cost),('profit',b['profit'],prof)):
     if abs(a-e)>0.005: errs.append(('cálculo',x['id'],nm,a,e))
-  if b['k']=='low' and not exp_buy>=0.5*S: errs.append(('regla buen estado',x['id']))
+  if b['k']=='low' and not exp_buy>=0.75*S: errs.append(('regla buen estado: «desde» < 75 % de la venta',x['id']))
 # 3. lo pintado = lo calculado
 byid={x['id']:x for x in d['sure']}
 for c in d['dom']:
@@ -49,9 +49,10 @@ for c in d['dom']:
 # 4. punto de mira
 for s in d['sn']:
   g=T[s['pid']];S=S_of(g)
-  if abs(s['low']-g['low'])>1e-9 or abs(s['S']-S)>1e-9: errs.append(('mira precio',s['id']))
-  if abs(s['profit']-(S*(1-cfg['feePct']/100)-cfg['sellShip']-(g['low']+cfg['buyShip'])))>0.005: errs.append(('mira cálculo',s['id']))
-  if not g['low']<=0.6*S: errs.append(('mira regla',s['id']))
+  # el punto de mira usa el «desde» EX o mejor (2.ª fuente, no está en la guía): se comprueban venta, fórmula y regla
+  if abs(s['S']-S)>1e-9: errs.append(('mira precio de venta',s['id']))
+  if abs(s['profit']-(S*(1-cfg['feePct']/100)-cfg['sellShip']-(s['low']+cfg['buyShip'])))>0.005: errs.append(('mira cálculo',s['id']))
+  if not s['low']<=0.6*S: errs.append(('mira regla',s['id']))
 print('Comprobadas:',len(d['sure']),'recomendadas ·',len(d['pending']),'pendientes ·',len(d['dom']),'pintadas ·',len(d['sn']),'en punto de mira')
 print('ERRORES',len(errs));[print(' ',e) for e in errs[:40]]
 print('AVISOS',len(warn));[print(' ',w) for w in warn[:20]]

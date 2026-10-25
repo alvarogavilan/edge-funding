@@ -16,7 +16,7 @@ const server=http.createServer((q,r)=>{const f=path.join(root,decodeURIComponent
   const d=u.match(/\/prices\/(\d{4})\/(\d{2})\/(\d{2})\.json$/);if(d){const b=await get('prev_'+d[1]+'-'+d[2]+'-'+d[3]+'.json');return b?route.fulfill({status:200,headers:H,contentType:'application/json',body:b}):route.fulfill({status:404,headers:H,body:'404'})}
   return route.abort()});
  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));const t0=Date.now();await p.goto(base);
- await p.waitForFunction(()=>window.CVCompra?.state()?.guide&&document.querySelector('#v4Buy .cpCard'),null,{timeout:120000});await p.waitForTimeout(4000);
+ await p.waitForFunction(()=>window.CVCompra?.state()?.guide&&document.querySelector('#v4Buy .cpBox .cpSum'),null,{timeout:120000});await p.waitForTimeout(4000);
  const t1=Date.now();
  const r=await p.evaluate(async()=>{await window.CVCompra.loadPrev();window.CVCompra.render();await new Promise(r=>setTimeout(r,300));const C=window.CVCompra;
  const dump=x=>({id:x.id,kind:x.kind,name:x.name,set:x.set,number:x.number,pid:x.res.pid,st:x.res.status,p:x.p,best:x.best&&{k:x.best.k,cond:x.best.cond,buy:x.best.buy,sale:x.best.sale,cost:x.best.cost,profit:x.best.profit,maxBuy:x.best.maxBuy,margin:x.best.margin},conf:x.conf&&x.conf.score,prudent:x.conf&&x.conf.prudent});

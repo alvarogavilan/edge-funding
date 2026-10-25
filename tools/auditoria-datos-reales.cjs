@@ -14,7 +14,7 @@ const server=http.createServer((q,r)=>{const f=path.join(root,decodeURIComponent
   const d=u.match(/\/prices\/(\d{4})\/(\d{2})\/(\d{2})\.json$/);if(d){const b=await get('prev_'+d[1]+'-'+d[2]+'-'+d[3]+'.json');return b?route.fulfill({status:200,headers:H,contentType:'application/json',body:b}):route.fulfill({status:404,headers:H,body:'404'})}
   return route.abort()});
  const p=await ctx.newPage(),errs=[];p.on('pageerror',e=>errs.push(e.message));const t0=Date.now();await p.goto(base);
- await p.waitForFunction(()=>window.CVCompra?.state()?.guide&&document.querySelector('#v4Buy .cpCard'),null,{timeout:120000});await p.waitForTimeout(4000);
+ await p.waitForFunction(()=>window.CVCompra?.state()?.guide&&document.querySelector('#v4Buy .cpBox .cpSum'),null,{timeout:120000});await p.waitForTimeout(4000);
  const t1=Date.now();
  const r=await p.evaluate(()=>{const t=performance.now();const L=window.CVCompra.list();const dt=performance.now()-t;const f=x=>({id:x.id,n:x.name,set:x.set,num:x.number,st:x.res.status,buy:x.best?.buy,sale:x.best?.sale,profit:x.best?.profit&&+x.best.profit.toFixed(1),k:x.best?.k,conf:x.conf?.score,liq:x.liq.k,low:x.p.low,trend:x.p.trend,a30:x.p.avg30,a7:x.p.avg7,hot:x.hot,drop:x.dl&&+x.dl.drop.toFixed(2)});
   return {ms:Math.round(dt),sure:L.sure.length,pending:L.pending.length,top:L.sure.slice(0,25).map(f),hot:L.sure.concat(L.pending).filter(x=>x.hot).slice(0,10).map(f),stat:L.sure.reduce((o,x)=>(o[x.res.status]=(o[x.res.status]||0)+1,o),{}),kinds:L.sure.reduce((o,x)=>(o[x.kind]=(o[x.kind]||0)+1,o),{})}});

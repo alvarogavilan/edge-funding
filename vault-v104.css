@@ -298,3 +298,12 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpMine{margin:14px 0 6px}
 .cpPlanIn label.wide{grid-column:1/-1}
 .cpPlanIn select{min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 8px;min-width:0}
+/* V126 · top 5, dónde comprar y miniaturas */
+.cpTop{border:2px solid var(--v4warn);border-radius:14px;padding:10px;margin:10px 0}
+.cpTop h4{margin:0 0 6px}
+.cpPlanList li{grid-template-columns:48px minmax(0,1fr) auto}
+.cpPlanList li>small{grid-column:1/-1}
+.cpPlanList li:not(:has(.cpThumb)){grid-template-columns:minmax(0,1fr) auto}
+.cpThumb{width:48px;height:67px;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border-radius:4px;background:var(--v4line)}
+.cpThumb img{width:48px;height:67px;object-fit:cover}
+.cpLTtab tr.best th,.cpLTtab tr.best td{background:rgba(61,220,132,.08)}

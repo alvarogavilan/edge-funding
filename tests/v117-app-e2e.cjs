@@ -18,7 +18,7 @@ const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','
  [273934,30,400,null,null,null,null,null,null],// base4-11 Nidoking · sin ventas recientes
  [275113,24.99,98.29,90,59.11,165.15,26,232.88,173.55],[275070,298,748.52,1650,1194.3,1008.71,null,null,null], // Umbreon Aquapolis
  [273862,20,300,300,300,300,null,null,null]]}; // base3-1 Aerodactyl · colisión TCGdex
-const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-207',name:'Elsa - Spirit of Winter',number:'207',rarity:'Enchanted',imageSmall:'https://images.example/elsa.png',cardmarketId:681234,variants:[{name:'normal',eur:null},{name:'foil',eur:{trend:300,low:150,avg30:320,avg7:310,avg1:305}}]}]};
+const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-207',name:'Elsa - Spirit of Winter',number:'207',rarity:'Enchanted',imageSmall:'https://images.example/elsa.png',cardmarketId:681234,variants:[{name:'normal',eur:null},{name:'foil',eur:{trend:260,low:195,avg30:265,avg7:262,avg1:261}}]}]};
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});const hits={guide:0,pt:[],bx:0,us:0,ct:[]};let bxDown=false;
@@ -51,13 +51,13 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  const main0=await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href');
  await page.selectOption('[data-cp-view="lang"]','es');await page.waitForTimeout(300);/* V122: un selector de idioma en lugar de un botón por idioma */
  const lk={main:main0,es:await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href')};await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
- ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y, con el idioma elegido, filtrado (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933'&&lk.es==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3',JSON.stringify(lk));
+ ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y, con el idioma elegido, filtrado (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&minCondition=3'&&/* V126: mismo filtro que el precio mostrado (EX o mejor) */lk.es==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3',JSON.stringify(lk));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
  t=await T('base4-1');
  ok('«Mal estado · restaurar»: Alakazam «desde» 30 € → venta mejorada al 60 % 120 € → +73,00 €',/Restaurar/.test(t)&&/120,00\s€/.test(t)&&/\+73,00\s€/.test(t),t.slice(0,300));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
  t=await T('lo-tfc-207');
- ok('Lorcana (Bindex): Elsa foil · compra 150 € → venta 300 € → +124,00 €',/LORCANA · BINDEX/.test(t)&&/\+124,00\s€/.test(t),t.slice(0,300));
+ ok('Lorcana (Bindex): Elsa foil · compra 195 € (75 % de la venta) → venta 260 € → +41,00 €',/LORCANA · BINDEX/.test(t)&&/\+41,00\s€/.test(t),t.slice(0,300));/* 260·0,95 − 5 − 201 */
  ok('Los números de las operaciones no se parten en vertical',await page.evaluate(()=>[...document.querySelectorAll('.cpOp dd')].every(d=>d.getBoundingClientRect().height<30)));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
  const pend=await page.textContent('.cpBox > details.v4old');await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
@@ -83,7 +83,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.selectOption('[data-cp-fav="type"]','reg');await page.waitForTimeout(200);
  ok('Favoritos · Registradas vacío al principio',/Aún no has registrado/.test(await page.textContent('#cpFavs')));
  await page.selectOption('[data-cp-fav="type"]','all');await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
- await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 details.v4more').open=true});await page.click('#v4Buy #cp-base4-10 [data-cp-histload="273933"]');await page.waitForSelector('#v4Buy #cp-base4-10 svg.cpSpark');
+ await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 [data-cp-histload]').closest('details').open=true});/* V126: el primero es «Dónde comprarla» */await page.click('#v4Buy #cp-base4-10 [data-cp-histload="273933"]');await page.waitForSelector('#v4Buy #cp-base4-10 svg.cpSpark');
  ok('Historial de precio (guía diaria acumulada)',/150,00\s€ → 160,00\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpHist')));
  await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 [data-cp-lbuy]').closest('details').open=true});/* V118: antes va «Pegar datos de Cardmarket» */
  await page.fill('#v4Buy [data-cp-lbuy="base4-10|es"]','70');await page.fill('#v4Buy [data-cp-lsell="base4-10|es"]','180');await page.click('#v4Buy [data-cp-lsave="base4-10"]');await page.waitForTimeout(300);

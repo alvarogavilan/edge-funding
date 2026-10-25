@@ -32,7 +32,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
   if(u.endsWith('/prices/2026/10/11.json'))return J(OLD);
   if(/\/prices\/\d{4}\/\d{2}\/\d{2}\.json$/.test(u))return route.fulfill({status:404,headers:H,body:'404'});
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}},{id:'base4-1',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:201,avg30:209,lowPrice:30,lowPriceExPlus:30}}}]:[];/* V126: el punto de mira exige el «desde» EX o mejor (2.ª fuente) */return J({data,totalCount:data.length})}
   if(u.endsWith('/bindex-prices/v1/lorcana/sets.json'))return J(LOR);
   if(u.endsWith('/bindex-prices/v1/lorcana/sets/tfc.json'))return J(LORSET);
   return route.abort()});
@@ -42,8 +42,8 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  // Punto de mira
  let t=await page.textContent('[data-cp-snipe]');
  // 200·0,95 − 5 − (30 + 6) = +149
- ok('🎯 Punto de mira: Alakazam vale ~200 € y hay un anuncio a 30 € (15 %) → +149 € si está bien; marcado NUEVO HOY (ayer 120 €)',/Alakazam/.test(t)&&/Vale ~200,00\s€/.test(t)&&/anuncio a 30,00\s€/.test(t)&&/15 % de su valor/.test(t)&&/\+149,00\s€/.test(t)&&/NUEVO HOY/.test(t),t.slice(0,400));
- ok('Punto de mira abierto y el enlace va al producto exacto',await page.evaluate(()=>document.querySelector('[data-cp-snipe]').open)&&await page.getAttribute('[data-cp-snipe] li a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273924');
+ ok('🎯 Punto de mira: Alakazam vale ~200 € y hay un anuncio a 30 € (15 %) → +149 € si está bien; marcado NUEVO HOY (ayer 120 €)',/Alakazam/.test(t)&&/Vale ~200,00\s€/.test(t)&&/anuncio EX o mejor a 30,00\s€/.test(t)&&/15 % de su valor/.test(t)&&/\+149,00\s€/.test(t)&&/NUEVO HOY/.test(t),t.slice(0,400));
+ ok('Punto de mira abierto y el enlace va al producto exacto',await page.evaluate(()=>document.querySelector('[data-cp-snipe]').open)&&await page.getAttribute('[data-cp-snipe] li a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273924&minCondition=3');
  ok('Ya no hay fila de enlaces por idioma en cada carta',!(await page.$('#v4Buy .cpLangLinks')));
  // Idioma de la carta
  await page.selectOption('[data-cp-view="lang"]','it');await page.waitForTimeout(500);

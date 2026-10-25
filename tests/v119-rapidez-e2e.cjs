@@ -13,10 +13,10 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
  [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
- [861477,100,200,195,190,210,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
+ [861477,195,260,260,260,265,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
  [861287,0.5,0.75,null,0.8,0.7,null,null,null],
- [803330,190,351.85,340,350,367.12,null,null,null]]};// Umbreon ex SV8A 217 (japonés, emparejado por nombre y orden)
-const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,120,160,160,165,170,null,null,null],[861477,100,200,195,190,210,null,null,null]]};
+ [861466,150,200,200,200,205,null,null,null]]};// Mega Charizard X ex M2A 223 (japonés, emparejado por nombre y orden)
+const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,120,160,160,165,170,null,null,null],[861477,195,260,260,260,265,null,null,null]]};
 const pasteES=`Disponible
 128
 Desde
@@ -56,8 +56,8 @@ Seller2 Near Mint English 129,99 € 2`;
  await page.selectOption('[data-cp-view="sort"]','drop');await page.waitForTimeout(300);
  ok('Ordenar «🔥 Bajadas desde ayer»: Mewtwo primero',(await ids())[0]==='base4-10',JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="sort"]','profit');await page.selectOption('[data-cp-view="show"]','all');await page.selectOption('[data-cp-view="game"]','jp');await page.waitForTimeout(400);
- t=await page.evaluate(()=>{const a=document.querySelector('#cp-jp-803330');return a?a.textContent:''});
- ok('Japonesa ampliada: Umbreon ex SV8A nº 217 (producto 803330) con su precio japonés y método explicado',/Umbreon ex/.test(t)&&/nº 217/.test(t)&&/emparejado por nombre y orden/.test(t)&&/JAPONÉS/.test(t),t.slice(0,300));
+ t=await page.evaluate(()=>{const a=document.querySelector('#cp-jp-861466');return a?a.textContent:''});
+ ok('Japonesa ampliada: Mega Charizard X ex M2A nº 223 (producto 861466) con su precio japonés y método explicado',/Mega Charizard X ex/.test(t)&&/nº 223/.test(t)&&/emparejado por nombre y orden/.test(t)&&/JAPONÉS/.test(t),t.slice(0,300));
  await page.selectOption('[data-cp-view="game"]','all');await page.selectOption('[data-cp-view="show"]','profit');await page.waitForTimeout(300);
  await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 .cpCheck').open=true});
  const ck=await page.textContent('#v4Buy #cp-base4-10 .cpCheck');

@@ -19,7 +19,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  [574435,560,900,null,null,null,null,null,null],// Evolving Skies Booster Box · «desde» 62 % de su tendencia
  [583510,150,290,null,null,null,null,null,null],// Brilliant Stars ETB
  [271439,250,270,null,null,null,null,null,null],// Phantom Forces Booster
- [861477,100,200,195,190,210,null,null,null],   // Pikachu ex M2A 234 · producto japonés (venta de referencia 190 €)
+ [861477,195,260,260,260,265,null,null,null],   // Pikachu ex M2A 234 · producto japonés (venta de referencia 190 €)
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};// Pikachu ex M2A 44 · japonés barato
 const PREV={...GUIDE,sourceCreatedAt:'2026-10-23T02:45:00+0200',rows:[[273933,90,160,160,165,170,null,null,null],[273924,120,200,200,205,210,null,null,null],[574435,560,880,null,null,null,null,null,null],[583510,150,290,null,null,null,null,null,null],[271439,250,262,null,null,null,null,null,null]]};
 const OLD={...GUIDE,sourceCreatedAt:'2026-10-11T02:45:00+0200',rows:[[574435,600,850,null,null,null,null,null,null],[583510,150,280,null,null,null,null,null,null],[271439,240,220,null,null,null,null,null,null]]};
