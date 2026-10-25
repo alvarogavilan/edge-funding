@@ -307,3 +307,7 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpThumb{width:48px;height:67px;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border-radius:4px;background:var(--v4line)}
 .cpThumb img{width:48px;height:67px;object-fit:cover}
 .cpLTtab tr.best th,.cpLTtab tr.best td{background:rgba(61,220,132,.08)}
+/* V132 · Comprar japonesas: calculadora de importación */
+.cpJpCalc{margin-top:12px;padding:10px;border:1px solid var(--v4line);border-radius:8px}
+.cpJpCalc .cpChk{display:flex;align-items:center;gap:6px}
+.cpJpCalc .cpChk input{width:auto}

@@ -68,10 +68,20 @@ for s in d.get('ch',[]):
   if not s['low']>=0.3*S: errs.append(('chollo por debajo del 30 % (proxy/falsa)',s['id']))
   if not str(s['id']).startswith('jp-'): errs.append(('chollo sin idioma comprobado (solo japonesas, V131)',s['id']))
   if s['cost']>cfg['maxBuy']+1e-9: errs.append(('chollo fuera de presupuesto',s['id'],s['cost']))
+# 5b. Comprar japonesas (V132): precio = «desde» de la guía para ese producto japonés, coste y enlace al mismo producto
+for s in d.get('jp',[]):
+  g=T.get(s['pid'])
+  if not g: errs.append(('japonesa sin fila guía',s['id']));continue
+  if abs(s['low']-g['low'])>1e-9: errs.append(('japonesa precio',s['id'],s['low'],g['low']))
+  if abs(s['S']-S_of(g))>1e-9: errs.append(('japonesa venta',s['id']))
+  if abs(s['cost']-(s['low']+cfg['buyShip']))>0.005 or abs(s['profit']-(S_of(g)*(1-cfg['feePct']/100)-cfg['sellShip']-s['cost']))>0.005: errs.append(('japonesa cálculo',s['id']))
+  if f"idProduct={s['pid']}" not in s['url']: errs.append(('japonesa enlace',s['id'],s['url']))
+  pn=P.get(s['pid'])
+  if pn is None: warn.append(('japonesa sin nombre en products.json',s['id']))
 # 6. Top 5: lo que pagas en total ≤ compra máxima
 for t in d.get('top',[]):
   if not t['cost']<=cfg['maxBuy']+1e-9: errs.append(('top5 fuera de presupuesto',t))
-print('Comprobadas:',len(d['sure']),'recomendadas ·',len(d['pending']),'pendientes ·',len(d['dom']),'pintadas ·',len(d['sn']),'en punto de mira ·',len(d.get('ch',[])),'chollos ·',len(d.get('top',[])),'en el Top 5')
+print('Comprobadas:',len(d['sure']),'recomendadas ·',len(d['pending']),'pendientes ·',len(d['dom']),'pintadas ·',len(d['sn']),'en punto de mira ·',len(d.get('ch',[])),'chollos ·',len(d.get('jp',[])),'japonesas ·',len(d.get('top',[])),'en el Top 5')
 print('ERRORES',len(errs));[print(' ',e) for e in errs[:40]]
 print('AVISOS',len(warn));[print(' ',w) for w in warn[:20]]
 sys.exit(1 if errs else 0)

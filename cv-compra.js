@@ -403,7 +403,7 @@ function cardHtml(x,rank,c,pre="cp-"){
   '<div><span>Venta en Cardmarket</span><b>'+EUR(b?b.sale:S)+'</b><small>'+(b&&b.k==="po"?"mejorada · ":"")+(x.kind==="jp"?"ventas reales de cartas japonesas":b&&b.own&&b.sameLang?"ventas en "+E(b.lang.toLowerCase())+" (comprobadas)":"ventas reales de todos los idiomas")+'</small></div>'+
   '<div class="'+(b&&!out&&b.profit>=c.minProfit?'pos':'neg')+'"><span>'+(out?'Beneficio (fuera de presupuesto)':'Beneficio')+'</span><b>'+(b?SIGNED(b.profit):"—")+'</b><small>'+(b?"margen "+PCT(b.margin)+" · tras "+String(c.feePct).replace(".",",")+" % y envíos":"")+'</small></div></div>'+
  confHtml(x,b)+
- langLine(x)+jpLine(x,c)+
+ langLine(x)+jpRouteLine(x,c)+
  (x.res.status!=="verificado"&&x.res.status!=="una-fuente"&&x.res.status!=="bindex"&&x.res.status!=="pt-only"||alts.length?'<p class="v4missing"><b>Versión:</b> '+E(x.res.why)+(alts.length?' · otras versiones con el mismo nombre: '+alts.map(a=>EUR(a.trend)).join(", ")+'. En Cardmarket comprueba que el número es <b>'+E(x.number)+'</b>.':'')+'</p>':'')+
  buyTable(x,c)+sameLangTable(x,c)+opRows(x,c)+
  '<details class="v4more"><summary>Datos de Cardmarket e historial</summary><p class="v4note">Guía oficial de Cardmarket '+E(DATE(p.date))+': «desde» '+EUR(p.low)+(Number.isFinite(p.exPlus)?' · «desde» EX o mejor '+EUR(p.exPlus):'')+' · tendencia '+EUR(p.trend)+' · media 1 día '+EUR(p.avg1)+' · 7 días '+EUR(p.avg7)+' · 30 días '+EUR(p.avg30)+'. '+(x.kind==="jp"?'Producto japonés: todos los estados, solo cartas japonesas.':'Todos los idiomas y estados.')+' '+E(x.res.why)+'.</p>'+
@@ -434,37 +434,65 @@ function sniper(){
   x.dl=x.res?.pid?delta(x.res.pid):null;x.best=x.best||{k:"ex"};out.push({x,S,low:p.exPlus,cost,profit,ratio:p.exPlus/S,isNew:!!(x.dl&&x.dl.drop>=.15)})}
  return out.sort((a,b)=>(b.isNew-a.isNew)||b.profit-a.profit);
 }
-/* 🇯🇵 Importar de Japón: en Japón las cartas japonesas suelen costar menos que en Europa. Para cada carta japonesa que se
-   vende cada semana en Cardmarket, el máximo en yenes que puedes pagar allí para seguir ganando tu mínimo al revenderla aquí:
-   venta neta en Cardmarket − beneficio mínimo = coste máximo puesto en Sevilla = (precio + envío) × (1 + IVA) + gestión.
-   Envío y gestión por defecto prudentes (guías 2026: envío 15–30 €, gestión del transportista 15–25 €; Correos menos).
-   Cambio: tipo de referencia del BCE (frankfurter.app), guardado del día. */
-const JKEY="cv_v124_jp",FXKEY="cv_v124_fx";let jp={ship:20,shipUS:15,vat:21,handling:15,...readLS(JKEY,{})},fx=readLS(FXKEY,{});
+/* 🇯🇵 Comprar japonesas (V132). Solo lo que se puede comprobar:
+   1) Cardmarket, ficha SOLO japonesa: el «desde» es el anuncio real más barato de hoy (guía oficial), Cardmarket envía a
+      41020, cobra el IVA antes de pagar en pedidos de vendedores de fuera de la UE de menos de 150 € (IOSS, desde enero de
+      2026) y tiene protección al comprador (si llega falsa, se reclama). Desde el 1/7/2026 la UE cobra además 3 € de
+      arancel por paquete pequeño de fuera de la UE.
+   2) Comprar EN Japón (tiendas como Hareruya2 o Card Rush, o Mercari/Yahoo vía Buyee): sus precios NO se pueden leer
+      desde la app (sin acceso público), así que no se inventan: calculadora con el precio que tú veas → total puesto en
+      41020 = (precio + envío en Japón + comisión de Buyee ¥500 + EMS) × cambio + arancel 3 € + IVA 21 % sobre todo eso +
+      gestión del transportista. EMS: mínimo ¥3.450 (Japan Post, tarifa publicada por Hareruya). Cambio del BCE.
+   Antes (V124–V131) aquí salía un «máximo a pagar en Japón» sin ningún anuncio real: no servía para comprar y se quita. */
+const JKEY="cv_v124_jp",FXKEY="cv_v124_fx";let jp={shipUS:15,vat:21,handling:15,ems:3450,buyee:500,dom:0,duty:3,...readLS(JKEY,{})},fx=readLS(FXKEY,{});
 function impCfg(){return jp}/* supuestos de importación (Japón y EE. UU.) */
 async function loadFx(){
  const today=new Date().toISOString().slice(0,10);if(fx.date===today&&N(fx.rate)&&(N(fx.usd)||fx.usdTried===today))return;/* un intento al día aunque falle el dólar */
  try{const [j,u]=await Promise.all([getJSON("https://api.frankfurter.app/latest?from=JPY&to=EUR",null,15000,1),getJSON("https://api.frankfurter.app/latest?from=USD&to=EUR",null,15000,1).catch(()=>null)]),r=N(j?.rates?.EUR);if(r){fx={rate:r,usd:N(u?.rates?.EUR)||fx.usd,usdTried:today,date:today,ecb:j.date||""};writeLS(FXKEY,fx)}}catch{}
 }
-function jpMax(x,c){
- const S=saleRef(x.p);if(!Number.isFinite(S))return null;const net=netSale(S,c),maxCost=net-c.minProfit,eur0=(maxCost-jp.handling)/(1+jp.vat/100)-jp.ship;
- /* tope: tu compra máxima por carta (Supuestos); una carta que vale más de 2 × ese tope no se compra por debajo de él */
- const capEur=(c.maxBuy-jp.handling)/(1+jp.vat/100)-jp.ship,capped=eur0>capEur,eur=Math.min(eur0,capEur),over=S>2*c.maxBuy;/* lo que pagas en total (con envío, IVA y gestión) ≤ compra máxima */
- return {S,net,maxCost,eur,capped,over,yen:N(fx.rate)&&eur>0?Math.floor(eur/fx.rate/100)*100:NaN};
-}
 const YEN=v=>Number.isFinite(v)?"¥"+v.toLocaleString("es-ES"):"—";
-function jpLinks(x){const q=encodeURIComponent((x.code||"")+" "+String(x.number||"").split("/")[0]+" "+x.name);
- return [["Mercari (vía Buyee)","https://buyee.jp/mercari/search?keyword="+q],["Yahoo! Subastas (vía Buyee)","https://buyee.jp/item/search/query/"+q],["Card Rush","https://www.cardrush-pokemon.jp/"]]}
-function jpLine(x,c){
- if(x.kind!=="jp")return '';const m=jpMax(x,c);if(!m||m.over)return '';
- return '<p class="cpLangSel">🇯🇵 <b>Comprar en Japón:</b> '+(m.eur>0?'paga como máximo <b>'+(Number.isFinite(m.yen)?YEN(m.yen)+' (≈ '+EUR(m.yen*fx.rate)+')':EUR(m.eur))+'</b>'+(m.capped?' (tope de tu presupuesto)':'')+' por la carta para ganar '+EUR(c.minProfit)+' revendiéndola aquí a '+EUR(m.S)+' (con envío '+EUR(jp.ship)+', IVA '+jp.vat+' % y gestión '+EUR(jp.handling)+').':'ni gratis compensa importarla: los gastos superan lo que ganas.')+' '+jpLinks(x).map(([n,u])=>'<a href="'+E(u)+'" target="_blank" rel="noopener noreferrer">'+E(n)+' ↗</a>').join(" · ")+'</p>';
+/* Cardmarket (ficha solo japonesa): precio real de hoy, lo que pagas en 41020 y en qué estado puede estar */
+function jpRoute(x,c){
+ const p=x.p,S=saleRef(p);if(x.kind!=="jp"||!Number.isFinite(S)||!Number.isFinite(p.low))return null;
+ const r=p.low/S,cost=p.low+c.buyShip,profit=netSale(S,c)-cost;
+ const st=r<FAKE_RATIO?{k:"fake",t:"⛔ por debajo del 30 % de su valor: casi seguro proxy, falsa u otra carta"}:r>=LANG_OK?{k:"ok",t:"precio de mercado: anuncio normal"}:r<=.5?{k:"chollo",t:"🎲 muy barato: puede ser una ganga o estar dañada, míralo"}:{k:"mid",t:"estado sin indicar: puede estar jugada"};
+ return {S,low:p.low,cost,profit,r,st,url:links(x).cm.replace(/&minCondition=3/,"")};
+}
+/* Comprar EN Japón: total puesto en 41020 a partir del precio que tú ves allí */
+function jpCalc(yen,o={}){
+ const rate=N(fx.rate);if(!Number.isFinite(yen)||!rate)return null;const dom=Number.isFinite(o.dom)?o.dom:jp.dom,fee=o.buyee===false?0:jp.buyee;
+ const goods=(yen+dom+fee)*rate,ship=jp.ems*rate,duty=jp.duty,vat=(goods+ship+duty)*jp.vat/100,total=goods+ship+duty+vat+jp.handling;
+ return {goods,ship,duty,vat,handling:jp.handling,total,rate,fee,dom};
+}
+function jpRouteLine(x,c){
+ const r=jpRoute(x,c);if(!r)return '';
+ return '<p class="cpLangSel">🇯🇵 <b>Cardmarket, solo japonesas:</b> anuncio más barato hoy <b>'+EUR(r.low)+'</b> → pagas '+EUR(r.cost)+' con envío → se vende a '+EUR(r.S)+' → '+SIGNED(r.profit)+' · '+E(r.st.t)+'. <a href="'+E(r.url)+'" target="_blank" rel="noopener noreferrer">Ver anuncios ↗</a> · <button type="button" class="v4btn" data-cp-jpcalc="'+E(x.id)+'">¿Y si la compro en Japón?</button></p>';
 }
 function importHtml(c){
- if(!M.guide||view.game==="lorcana")return '';const L=cardsJp().filter(x=>(x.liq?.k||0)>=2&&TRUST[x.res.status]>=2).map(x=>({x,m:jpMax(x,c)})).filter(o=>o.m&&o.m.eur>=20&&!o.m.over).sort((a,b)=>b.m.eur-a.m.eur);
- return '<details class="cpPlan" data-cp-jpbox'+(jp.open?' open':'')+'><summary><b>🌍 Importar (Japón y EE. UU.)</b> · '+L.length+(L.length===1?' carta japonesa que se vende':' cartas japonesas que se venden')+' cada semana aquí, con el máximo a pagar allí</summary>'+
- '<div class="cpPlanIn"><label>Envío desde Japón por carta (€)<input inputmode="decimal" data-cp-jp="ship" value="'+E(String(jp.ship).replace(".",","))+'"></label><label>Envío desde EE. UU. por carta (€)<input inputmode="decimal" data-cp-jp="shipUS" value="'+E(String(jp.shipUS).replace(".",","))+'"></label><label>IVA de importación %<input inputmode="decimal" data-cp-jp="vat" value="'+E(String(jp.vat).replace(".",","))+'"></label><label>Gestión aduanera (€)<input inputmode="decimal" data-cp-jp="handling" value="'+E(String(jp.handling).replace(".",","))+'"></label><label>Cambio 1 ¥ = € '+(fx.date?'<small>(BCE '+E(fx.ecb||fx.date)+')</small>':'')+'<input inputmode="decimal" data-cp-jp="rate" value="'+E(N(fx.rate)?String(fx.rate).replace(".",","):"")+'" placeholder="cargando…"></label></div>'+
- '<button type="button" class="v4btn" data-cp-jpsave>Recalcular</button>'+
- (L.length?'<ol class="cpPlanList">'+L.slice(0,25).map(({x,m})=>'<li>'+thumb(x)+'<span><b>'+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+'</span><a class="v4btn" href="'+E(jpLinks(x)[0][1])+'" target="_blank" rel="noopener noreferrer">Buscar en Japón ↗</a><small>Se vende aquí a '+EUR(m.S)+' (producto japonés en Cardmarket) · paga allí como máximo <b>'+(Number.isFinite(m.yen)?YEN(m.yen)+' ≈ '+EUR(m.yen*fx.rate):EUR(m.eur))+'</b>'+(m.capped?' (tope de tu presupuesto)':'')+' para ganar '+EUR(c.minProfit)+'.</small></li>').join("")+'</ol>':'<p class="v4empty">Ninguna carta japonesa deja margen con estos gastos.</p>')+
- '<p class="v4note">Mercari y Yahoo! Subastas no envían fuera de Japón: se compra a través de un intermediario como Buyee (cobra su comisión y el envío). Al llegar pagas IVA y gestión. Si juntas varias cartas en un envío, el coste por carta baja. Compra solo si el precio, con todo, queda por debajo del máximo.</p></details>';
+ if(!M.guide||view.game==="lorcana")return '';
+ const L=cardsJp().filter(x=>(x.liq?.k||0)>=2&&TRUST[x.res.status]>=2).map(x=>({x,r:jpRoute(x,c)})).filter(o=>o.r&&o.r.st.k!=="fake"&&o.r.st.k!=="mid"&&o.r.cost<=c.maxBuy&&o.r.profit>=c.minProfit).sort((a,b)=>b.r.profit*(b.r.st.k==="ok"?1:.5)-a.r.profit*(a.r.st.k==="ok"?1:.5));
+ const sel=jp.calcFor?cardsJp().find(x=>x.id===jp.calcFor):null,S0=sel?saleRef(sel.p):NaN;
+ return '<details class="cpPlan" data-cp-jpbox'+(jp.open?' open':'')+'><summary><b>🇯🇵 Comprar japonesas</b> · '+(L.length?L.length+' con precio real en Cardmarket y beneficio ≥ '+EUR(c.minProfit):'ninguna hoy con beneficio dentro de tu presupuesto')+'</summary>'+
+ (L.length?'<ol class="cpPlanList">'+L.slice(0,25).map(({x,r})=>'<li>'+thumb(x)+'<span><b>'+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+(r.st.k==="chollo"?' · 🎲 por verificar':'')+'</span><a class="v4btn primary" href="'+E(r.url)+'" target="_blank" rel="noopener noreferrer">Ver anuncios ↗</a><small>Cardmarket (ficha solo japonesa): anuncio más barato hoy <b>'+EUR(r.low)+'</b> · pagas <b>'+EUR(r.cost)+'</b> con envío desde la UE → se vende a '+EUR(r.S)+' (ventas de japonesas) → <b>'+SIGNED(r.profit)+'</b> · '+E(r.st.t)+'. <button type="button" class="v4btn" data-cp-jpcalc="'+E(x.id)+'">¿Y si la compro en Japón?</button></small></li>').join("")+'</ol>':'')+
+ '<p class="v4note"><b>Precio y envío:</b> el precio es el anuncio real más barato de hoy (guía oficial de Cardmarket, de madrugada). Si el vendedor está en Japón, Cardmarket te enseña el envío y el IVA antes de pagar (lo cobra él en pedidos de menos de 150 €) y la UE cobra 3 € de arancel por paquete desde el 1/7/2026: mira el total del carrito y no compres si pasa de tu compra máxima ('+EUR(c.maxBuy)+').</p>'+
+ '<details class="v4more"><summary><b>¿Es auténtica?</b> Cómo comprobarlo antes y al recibirla</summary><ol class="v4help"><li>Compra solo dentro de Cardmarket: si llega falsa o distinta, abres una reclamación y te devuelven el dinero.</li><li>Lee la descripción: si dice «proxy», «réplica», «custom» u «orica», es falsa (usa «🔎 ¿Es proxy?»).</li><li>Vendedor con muchas ventas y buena valoración; desconfía de cuentas nuevas con precios muy bajos.</li><li>Compara las fotos con la imagen oficial de la carta: código de colección y número abajo, tipografía japonesa, textura y brillo del holo, y el reverso.</li><li>Al recibirla: mismo tamaño y grosor que una japonesa tuya, sin brillo raro ni bordes impresos borrosos. Si dudas, reclama antes de confirmar la recepción.</li><li>Graduadas: comprueba el número de certificado en la web de PSA/CGC/Beckett.</li></ol><p class="v4note">Ninguna app puede certificar una carta sin verla: esto reduce el riesgo, no lo elimina.</p></details>'+
+ '<div class="cpJpCalc" data-cp-jpcalcbox><p><b>¿Y si la compro EN Japón?</b> (tienda japonesa como Hareruya2 o Card Rush, o Mercari/Yahoo vía Buyee). La app no puede leer sus precios: escribe el que veas y te digo lo que pagas en 41020'+(sel?' y lo que ganas con <b>'+E(sel.name)+' · '+E(sel.set)+' nº '+E(sel.number)+'</b> (se vende aquí a '+EUR(S0)+')':'')+'.</p>'+
+ '<div class="cpPlanIn"><label>Precio en Japón (¥)<input inputmode="numeric" data-cp-jpc="yen" value="'+E(jp.lastYen?String(jp.lastYen):"")+'" placeholder="por ejemplo 12000"></label><label>Envío dentro de Japón (¥)<input inputmode="numeric" data-cp-jpc="dom" value="'+E(String(jp.dom))+'"></label><label>Se vende aquí a (€)<input inputmode="decimal" data-cp-jpc="sale" value="'+(Number.isFinite(S0)?E(String(S0).replace(".",",")):"")+'"></label><label class="cpChk"><input type="checkbox" data-cp-jpc="buyee"'+(jp.noBuyee?'':' checked')+'> Vía Buyee (+¥'+jp.buyee+' por pedido)</label></div>'+
+ '<button type="button" class="v4btn primary" data-cp-jpcalcgo>Calcular</button><p class="v4note" data-cp-jpcalcout role="status"></p>'+
+ '<details class="v4more"><summary>Gastos de importación (editables)</summary><div class="cpPlanIn"><label>EMS desde Japón (¥)<input inputmode="numeric" data-cp-jp="ems" value="'+E(String(jp.ems))+'"></label><label>Comisión Buyee por pedido (¥)<input inputmode="numeric" data-cp-jp="buyee" value="'+E(String(jp.buyee))+'"></label><label>Arancel UE por paquete (€)<input inputmode="decimal" data-cp-jp="duty" value="'+E(String(jp.duty).replace(".",","))+'"></label><label>IVA de importación %<input inputmode="decimal" data-cp-jp="vat" value="'+E(String(jp.vat).replace(".",","))+'"></label><label>Gestión del transportista (€)<input inputmode="decimal" data-cp-jp="handling" value="'+E(String(jp.handling).replace(".",","))+'"></label><label>Envío desde EE. UU. (TCGplayer) (€)<input inputmode="decimal" data-cp-jp="shipUS" value="'+E(String(jp.shipUS).replace(".",","))+'"></label><label>Cambio 1 ¥ = € '+(fx.date?'<small>(BCE '+E(fx.ecb||fx.date)+')</small>':'')+'<input inputmode="decimal" data-cp-jp="rate" value="'+(N(fx.rate)?E(String(fx.rate).replace(".",",")):"")+'"></label></div><button type="button" class="v4btn" data-cp-jpsave>Guardar gastos</button><p class="v4note">EMS: mínimo ¥3.450 (Japan Post, tarifa publicada por Hareruya; sube con el peso). Buyee: ¥500 por pedido desde el 1/4/2026, más su envío interno. Arancel de 3 € de la UE a paquetes de menos de 150 € desde el 1/7/2026. El IVA (21 %) se calcula sobre el precio, el envío y el arancel. La gestión la cobra Correos o el transportista al entregar: mira su tarifa.</p></details>'+
+ '<p class="v4note">Autenticidad comprándola en Japón: en una tienda de cartas japonesa el riesgo es bajo; en Mercari o Yahoo (particulares) hay más falsas y no hay protección como la de Cardmarket. Comprueba si la tienda envía a España antes de pagar.</p></div></details>';
+}
+function jpCalcOut(box){
+ const v=k=>{const r=String(box.querySelector('[data-cp-jpc="'+k+'"]')?.value||"").trim();return r===""?NaN:NUM(r)};
+ const yen=v("yen"),dom=v("dom"),sale=v("sale"),via=!!box.querySelector('[data-cp-jpc="buyee"]')?.checked,out=box.querySelector("[data-cp-jpcalcout]");if(!out)return;
+ if(!Number.isFinite(yen)){out.textContent="Escribe el precio en yenes que ves en la tienda o en Buyee.";return}
+ if(!N(fx.rate)){out.textContent="Falta el cambio del yen: escríbelo en «Gastos de importación».";return}
+ jp.lastYen=yen;jp.dom=Number.isFinite(dom)?dom:0;jp.noBuyee=!via;writeLS(JKEY,jp);
+ const k=jpCalc(yen,{dom:jp.dom,buyee:via}),c=cfg();
+ let t="Pagas en 41020 "+EUR(k.total)+" = carta"+(via?" + Buyee":"")+(jp.dom?" + envío en Japón":"")+" "+EUR(k.goods)+" + EMS "+EUR(k.ship)+" + arancel "+EUR(k.duty)+" + IVA "+EUR(k.vat)+" + gestión "+EUR(k.handling)+" (1 ¥ = "+k.rate.toFixed(5).replace(".",",")+" €).";
+ if(Number.isFinite(sale)){const pr=netSale(sale,c)-k.total;t+=" Vendiéndola aquí a "+EUR(sale)+": "+SIGNED(pr)+(pr>=c.minProfit?" ✅ compensa.":pr>0?" (menos de tu mínimo de "+EUR(c.minProfit)+").":" ❌ no compensa.")}
+ if(k.total>c.maxBuy)t+=" ⚠ Pasa de tu compra máxima ("+EUR(c.maxBuy)+").";
+ out.textContent=t;
 }
 const thumb=x=>{const h=img(x);return h?'<span class="cpThumb">'+h+'</span>':'<span class="cpThumb"></span>'};
 /* 🏆 Top 5 de hoy: une todas las opciones (Cardmarket EX o mejor, «desde», TCGplayer importada, datos pegados por idioma,
@@ -499,8 +527,7 @@ function buyTable(x,c){
  if(Number.isFinite(p.low))rows.push(["Cardmarket · cualquier estado",p.low+c.buyShip,"«desde» de madrugada; puede ser jugada u otro idioma"+(p.low<saleRef(p)*.75?" · ⚠ muy por debajo: casi seguro no es comparable":""),base,p.low>=saleRef(p)*.75]);
  const us=x.ops.find(o=>o.us);if(us)rows.push(["TCGplayer (EE. UU.)",us.cost,"mercado + envío "+EUR(I.shipUS)+", IVA "+I.vat+" % y gestión "+EUR(I.handling),us.url,true]);
  const ct=ctRes[x.id];if(ct&&ct.rows){const r=ct.rows.find(o=>o.lang==="en")||ct.rows[0];if(r&&(r.cheapestGood||r.cheapest))rows.push(["CardTrader · "+(LNAME[r.lang]||r.lang),(r.cheapestGood||r.cheapest).eur+c.buyShip,"anuncio más barato "+(r.cheapestGood?"NM/EX":"")+" + envío "+EUR(c.buyShip),"https://www.cardtrader.com/cards/"+encodeURIComponent(ct.bp),true])}
- if(x.kind==="jp"){const m=jpMax(x,c);if(m&&m.eur>0)rows.push(["Japón (Mercari/Yahoo vía Buyee)",NaN,"paga allí como máximo "+(Number.isFinite(m.yen)?YEN(m.yen):EUR(m.eur))+" para ganar "+EUR(c.minProfit),jpLinks(x)[0][1],false])}
- for(const r of rows)if(Number.isFinite(r[1])&&r[1]>c.maxBuy){r[2]+=" · fuera de tu presupuesto ("+EUR(c.maxBuy)+")";r[4]=false}
+  for(const r of rows)if(Number.isFinite(r[1])&&r[1]>c.maxBuy){r[2]+=" · fuera de tu presupuesto ("+EUR(c.maxBuy)+")";r[4]=false}
  const ok=rows.filter(r=>r[4]&&Number.isFinite(r[1])),best=ok.reduce((m,r)=>!m||r[1]<m[1]?r:m,null);
  return '<details class="v4more cpBuy" open><summary><b>Dónde comprarla más barata</b>'+(best?' · '+E(best[0])+' '+EUR(best[1])+' puesta en 41020':'')+'</summary><table class="cpLTtab"><tbody>'+rows.map(r=>'<tr'+(r===best?' class="best"':'')+'><th scope="row"><a href="'+E(r[3])+'" target="_blank" rel="noopener noreferrer">'+E(r[0])+' ↗</a></th><td class="'+(r===best?'pos':'')+'">'+(Number.isFinite(r[1])?EUR(r[1]):'—')+'</td><td><small>'+E(r[2])+'</small></td></tr>').join("")+'</tbody></table>'+
   (ctRes[x.id]?'':'<p class="v4note">CardTrader: pulsa «Precios por idioma ahora (CardTrader)» para añadirlo.</p>')+'</details>';
@@ -575,21 +602,34 @@ function sourcesHtml(){
    del campo. Y al repintar se conservan los desplegables abiertos y lo escrito (pegar datos, precios, plan, Japón). */
 let rT=null,rPending=false;
 function typingIn(slot){const a=document.activeElement;return !!(a&&slot&&slot.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&!a.matches("[data-cp-q]"))}
-function render(){clearTimeout(rT);rT=setTimeout(()=>{const slot=document.querySelector('[data-rd-live="compra"]');if(typingIn(slot)){rPending=true;return}renderNow()},30)}
+/* V132 · Repintados en segundo plano (comprobación de versiones, CardTrader, foto de ayer…): en el iPhone llegaban cada ~2 s
+   durante minutos y, al rehacer toda la sección, cerraban/abrían desplegables y movían la página («se queda colgada y me
+   desplaza»). Ahora: como mucho uno cada 8 s, nunca mientras tocas, desplazas o escribes (espera 2,5 s de calma), se
+   respetan los desplegables tal como los dejaste y la página no se mueve. */
+let lastUI=0,lastPaint=0;
+["touchstart","touchmove","pointerdown","wheel","scroll","keydown"].forEach(ev=>addEventListener(ev,()=>{lastUI=Date.now()},{passive:true,capture:true}));
+function render(){clearTimeout(rT);const now=Date.now(),wait=Math.max(30,lastPaint+8000-now,lastUI+2500-now);
+ rT=setTimeout(()=>{if(Date.now()-lastUI<2500){render();return}const slot=document.querySelector('[data-rd-live="compra"]');if(typingIn(slot)){rPending=true;return}renderNow()},wait)}
 document.addEventListener("focusout",()=>{if(rPending)setTimeout(()=>{const slot=document.querySelector('[data-rd-live="compra"]');if(!typingIn(slot)){rPending=false;renderNow()}},60)});
 const KEEP="textarea,input:not([type=search]),select:not([data-cp-view])";
 function keyOf(el){const card=el.closest(".cpCard"),box=el.closest("[data-cp-planbox],[data-cp-jpbox],[data-cp-snipe],.v4settings");const own=[...el.attributes].filter(a=>a.name.startsWith("data-")).map(a=>a.name+"="+a.value).join("&");
  return (card?card.id:box?(box.getAttribute("data-cp-planbox")!=null?"plan":box.getAttribute("data-cp-jpbox")!=null?"jp":box.getAttribute("data-cp-snipe")!=null?"snipe":"settings"):"")+"|"+el.tagName+"|"+own}
+const openSt={};let restoring=false;
+function detKey(d){const card=d.closest(".cpCard"),own=["data-cp-snipe","data-cp-chollo","data-cp-jpbox","data-cp-fakebox","data-cp-planbox","data-cp-pastebox"].find(a=>d.hasAttribute(a));
+ if(own&&!card)return own;const scope=card||d.closest("[data-cp-jpbox],[data-cp-chollo]")||document.querySelector('[data-rd-live="compra"]');return (card?card.id:(scope&&scope.getAttribute&&["data-cp-jpbox","data-cp-chollo"].find(a=>scope.hasAttribute(a))||""))+"|"+(d.className||"")+"|"+[...scope.querySelectorAll("details")].indexOf(d)}
+document.addEventListener("toggle",e=>{const d=e.target;if(restoring||!(d instanceof HTMLDetailsElement)||!d.closest('[data-rd-live="compra"]'))return;openSt[detKey(d)]=d.open;if(Date.now()-lastPaint>200)lastUI=Date.now();if(d.hasAttribute("data-cp-jpbox")){jp.open=d.open;writeLS(JKEY,jp)}},true);
+function anchorOf(slot){const r0=slot.getBoundingClientRect();if(r0.top>=0)return null;
+ for(const el of slot.querySelectorAll(".cpCard[id],[data-cp-snipe],[data-cp-chollo],[data-cp-jpbox],.cpTop,.cpSum")){const r=el.getBoundingClientRect();if(r.bottom>0)return {k:el.id?"#"+CSS.escape(el.id):el.matches(".cpTop")?".cpTop":el.matches(".cpSum")?".cpSum":"["+["data-cp-snipe","data-cp-chollo","data-cp-jpbox"].find(a=>el.hasAttribute(a))+"]",top:r.top}}return null}
 function snapUI(slot){const det=[],val=[];slot.querySelectorAll("details").forEach((d,i)=>{if(d.open){const card=d.closest(".cpCard");det.push((card?card.id:"")+"|"+(d.className||"")+"|"+[...(card||slot).querySelectorAll("details")].indexOf(d))}});
  slot.querySelectorAll(KEEP).forEach(el=>{if(el.value!==el.defaultValue||el.tagName==="SELECT"&&el.value!==(el.querySelector("option[selected]")?.value??el.options?.[0]?.value))val.push([keyOf(el),el.value])});return {det,val}}
-function restoreUI(slot,st){if(!st)return;slot.querySelectorAll("details").forEach(d=>{const card=d.closest(".cpCard"),k=(card?card.id:"")+"|"+(d.className||"")+"|"+[...(card||slot).querySelectorAll("details")].indexOf(d);if(st.det.includes(k))d.open=true});
+function restoreUI(slot,st){if(!st)return;restoring=true;slot.querySelectorAll("details").forEach(d=>{const card=d.closest(".cpCard"),k=(card?card.id:"")+"|"+(d.className||"")+"|"+[...(card||slot).querySelectorAll("details")].indexOf(d),k2=detKey(d);if(k2 in openSt)d.open=openSt[k2];else if(st.det.includes(k))d.open=true});setTimeout(()=>{restoring=false},0);
  const m=new Map(st.val);slot.querySelectorAll(KEEP).forEach(el=>{const k=keyOf(el);if(m.has(k))el.value=m.get(k)})}
 function renderNow(){
  if(typeof document.querySelector!=="function")return;const slot=document.querySelector('[data-rd-live="compra"]');if(!slot)return;
  langData=readLS(LKEY,{});watch=readLS(WKEY,{});const c=cfg(),L=list();
  const sel=(k,opts,label)=>'<label>'+label+'<select data-cp-view="'+k+'">'+opts.map(([v,t])=>'<option value="'+v+'"'+(view[k]===v?' selected':'')+'>'+t+'</option>').join("")+'</select></label>';
  const loading=!M.guide&&!M.lo;
- const ui=slot.firstChild?snapUI(slot):null;
+ const ui=slot.firstChild?snapUI(slot):null,anc=slot.firstChild?anchorOf(slot):null;lastPaint=Date.now();
  slot.innerHTML='<section class="rdlivebox cpBox"><h3>Ofertas en Cardmarket · compra y venta desde 41020 Sevilla</h3>'+summaryHtml(L,c)+
   (busy?'<p class="v4note">⏳ '+E(busy)+'</p>':'')+((view.game==="all"||view.game==="lorcana")&&loState?'<p class="v4note'+(loState.startsWith("Cargando")?'':' neg')+'">'+E(loState)+'</p>':'')+
   '<div class="rdctl"><label class="cpQ">Buscar carta<input type="search" data-cp-q value="'+E(view.q)+'" placeholder="Nombre, colección o número"></label>'+sel("game",[["all","Todas"],["pokemon","Pokémon"],["jp","Pokémon japonés (idioma seguro)"],["lorcana","Lorcana"]],"Juego")+sel("lang",[["all","Todos los idiomas"]].concat(LANGS.map(([k,n])=>[k,n])),"Idioma de la carta")+sel("cond",[["buen","Buen estado"],["mal","Mal estado · restaurar"]],"Estado")+
@@ -599,6 +639,7 @@ function renderNow(){
    '<p class="v4empty">'+(loading?'Cargando la guía oficial de Cardmarket…':view.q?'Ninguna carta coincide con «'+E(view.q)+'».':'Ninguna oportunidad cumple estos filtros. Prueba «Todas con precio», otro estado u ordenar distinto.')+'</p>'+loBest(c))+
   (L.pending.length?'<details class="v4old"><summary>Por confirmar versión o sin ventas recientes ('+L.pending.length+')</summary><p class="v4note">Cardmarket tiene varias versiones con el mismo nombre y aún no hay una segunda fuente que confirme cuál es, o no hay ventas en los últimos 30 días. Comprueba el número en la ficha antes de comprar.</p><div class="v4list">'+L.pending.slice(0,40).map(x=>cardHtml(x,0,c)).join("")+'</div></details>':'')+'</section>';
  restoreUI(slot,ui);
+ if(anc){const el=slot.querySelector(anc.k);if(el){const dy=el.getBoundingClientRect().top-anc.top;if(Math.abs(dy)>1)window.scrollBy(0,dy)}}
  slot.querySelectorAll("img[data-v4img]").forEach(im=>{if(im.dataset.wired)return;im.dataset.wired="1";im.addEventListener("error",()=>{const a=im.dataset.alt;if(a&&!im.dataset.usedAlt){im.dataset.usedAlt="1";im.src=a;return}im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false})});
 }
 
@@ -769,10 +810,14 @@ async function verifyVisible(){
 }
 function onShow(){ready.then(()=>{render();if(!started&&navigator.onLine!==false){started=true;setTimeout(()=>refresh(false),900)}})}
 document.addEventListener("click",e=>{
- const t=e.target.closest("[data-cp-fakecheck],[data-cp-jpsave],[data-cp-refresh],[data-cp-lsave],[data-cp-pastesave],[data-cp-pasteopen],[data-cp-watch],[data-cp-unwatch],[data-cp-promote],[data-cp-histload],[data-cp-ctload],[data-cp-ctsave],[data-cp-ctdel]");if(!t)return;const d=t.dataset;
- if("cpJpsave" in d){const box=t.closest("[data-cp-jpbox]"),v=k=>{const r=String(box.querySelector('[data-cp-jp="'+k+'"]')?.value||"").trim();return r==="0"?0:NUM(r)};/* 0 € de gestión es válido */const sh=v("ship"),su=v("shipUS"),va=v("vat"),ha=v("handling"),ra=Number(String(box.querySelector('[data-cp-jp="rate"]')?.value||"").replace(",","."));
-  if(!Number.isFinite(sh)||!Number.isFinite(su)||!Number.isFinite(va)||!Number.isFinite(ha)){alert("Revisa envío, IVA y gestión: números como 20, 21 o 15.");return}
-  jp={ship:sh,shipUS:su,vat:va,handling:ha,open:true};writeLS(JKEY,jp);if(ra>0&&ra<1){fx={...fx,rate:ra,date:fx.date||new Date().toISOString().slice(0,10),manual:true};writeLS(FXKEY,fx)}renderNow();return}
+ const t=e.target.closest("[data-cp-jpcalc],[data-cp-jpcalcgo],[data-cp-fakecheck],[data-cp-jpsave],[data-cp-refresh],[data-cp-lsave],[data-cp-pastesave],[data-cp-pasteopen],[data-cp-watch],[data-cp-unwatch],[data-cp-promote],[data-cp-histload],[data-cp-ctload],[data-cp-ctsave],[data-cp-ctdel]");if(!t)return;const d=t.dataset;
+ if("cpJpsave" in d){const box=t.closest("[data-cp-jpbox]"),v=k=>{const r=String(box.querySelector('[data-cp-jp="'+k+'"]')?.value||"").trim();return r==="0"?0:NUM(r)};/* 0 es válido */
+  const f={ems:v("ems"),buyee:v("buyee"),duty:v("duty"),vat:v("vat"),handling:v("handling"),shipUS:v("shipUS")},ra=Number(String(box.querySelector('[data-cp-jp="rate"]')?.value||"").replace(",","."));
+  if(Object.values(f).some(x=>!Number.isFinite(x))){alert("Revisa los gastos: números como 3450, 500, 3, 21 o 15.");return}
+  jp={...jp,...f,open:true};writeLS(JKEY,jp);if(ra>0&&ra<1){fx={...fx,rate:ra,date:fx.date||new Date().toISOString().slice(0,10),manual:true};writeLS(FXKEY,fx)}
+  const out=box.querySelector("[data-cp-jpcalcout]");if(out&&box.querySelector('[data-cp-jpc="yen"]')?.value)jpCalcOut(box.querySelector("[data-cp-jpcalcbox]"));toastCp("Gastos de importación guardados");return}
+ if(d.cpJpcalc){jp={...jp,calcFor:d.cpJpcalc,open:true};writeLS(JKEY,jp);renderNow();const b=document.querySelector("[data-cp-jpcalcbox]");if(b){b.closest("[data-cp-jpbox]").open=true;b.scrollIntoView?.({block:"start"});b.querySelector('[data-cp-jpc="yen"]')?.focus({preventScroll:true})}return}
+ if("cpJpcalcgo" in d){jpCalcOut(t.closest("[data-cp-jpcalcbox]"));return}
  if("cpFakecheck" in d){const b=t.closest("[data-cp-fakebox]"),o=b?.querySelector("[data-cp-fakeout]");if(o)o.textContent=fakeVerdict(b.querySelector("[data-cp-faketxt]")?.value);return}
  if(d.cpCtload){ctLoad(d.cpCtload);return}
  if(d.cpPastesave){savePaste(d.cpPastesave,t.closest(".cpPaste"));return}
@@ -792,5 +837,5 @@ let qT=null;document.addEventListener("input",e=>{const t=e.target.closest("[dat
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"]'))setTimeout(onShow,60);if(e.target.closest('.mainNav [data-tab="favoritos"]'))setTimeout(onFavs,60)});
 if(location.hash==="#favoritos")setTimeout(onFavs,1300);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(onShow,1200));else setTimeout(onShow,1200);
-window.CVCompra={fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpMax,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
+window.CVCompra={fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpRoute,jpCalc,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
 })();
