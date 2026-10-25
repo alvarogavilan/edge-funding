@@ -18,7 +18,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
 const hits=[];
 async function setup(withToken){
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});
- if(withToken)await ctx.addInitScript(()=>{try{localStorage.setItem('cv_cardtrader_token','prueba')}catch{}});
+ if(withToken)await ctx.addInitScript(()=>{try{localStorage.setItem('cv_cardtrader_token','eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.prueba')}catch{}});
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
   if(/images\.|assets\.tcgdex|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.startsWith('https://api.frankfurter.app/latest?from=JPY'))return J({rates:{EUR:0.0058},date:'2026-10-24'});
@@ -52,7 +52,7 @@ async function setup(withToken){
  const ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  ok('«Todos los idiomas»: salen internacionales y japonesas en Compra YA',(await ids()).includes('base4-10')&&(await ids()).includes('jp-861477'),JSON.stringify(await ids()));
  let t=await page.textContent('#v4Buy .cpLangNote');
- ok('Aviso de idiomas: cuántas de cada y por qué faltan internacionales (anuncio barato sin idioma = coreano o chino)',/1 japonesa\(s\) y 1 internacional\(es\) con beneficio de mismo idioma/.test(t)&&/1 internacional\(es\) tienen un anuncio barato que no dice su idioma/.test(t)&&/CardTrader/.test(t),t);
+ ok('Aviso de idiomas: cuántas de cada y por qué faltan internacionales (anuncio barato sin idioma = coreano o chino)',/1 japonesa\(s\) y 1 internacional\(es\) con el idioma comprobado · 1 internacional\(es\) con IDIOMA POR CONFIRMAR/.test(t),t);
  await page.selectOption('[data-cp-view="lang"]','ja');await page.waitForTimeout(400);
  ok('Idioma «Japonés»: las japonesas salen en Compra YA (y solo ellas)',JSON.stringify(await ids())==='["jp-861477"]',JSON.stringify(await ids()));
  t=await page.textContent('#v4Buy #cp-jp-861477');

@@ -21,7 +21,7 @@ const P=(id,cents,lang,user,cc,hub,cond='Near Mint')=>({id,price:{cents,currency
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});
- await ctx.addInitScript(()=>{try{localStorage.setItem('cv_cardtrader_token','prueba')}catch{}});
+ await ctx.addInitScript(()=>{try{localStorage.setItem('cv_cardtrader_token','eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.prueba')}catch{}});
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
   if(/images\.|assets\.tcgdex|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.startsWith('https://api.frankfurter.app/latest?from=JPY'))return J({rates:{EUR:0.0058},date:'2026-10-24'});
@@ -31,7 +31,7 @@ const P=(id,cents,lang,user,cc,hub,cond='Near Mint')=>({id,price:{cents,currency
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
   if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}}]:[];return J({data,totalCount:data.length})}
   if(u.startsWith('https://api.cardtrader.com/api/v2/')){const p=u.slice('https://api.cardtrader.com/api/v2'.length);hits.push(p);
-   if(route.request().headers()['authorization']!=='Bearer prueba')return route.fulfill({status:401,headers:H,body:'{}'});
+   if(route.request().headers()['authorization']!=='Bearer eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.prueba')return route.fulfill({status:401,headers:H,body:'{}'});
    if(p==='/info')return J({id:42,name:'Card Vault',shared_secret:'x'});
    if(p==='/games')return J([{id:5,name:'Pokemon'}]);
    if(p==='/expansions')return J([{id:10,game_id:5,code:'base1',name:'Base Set'},{id:11,game_id:5,code:'b2',name:'Base Set 2'},{id:21,game_id:5,code:'m2a',name:'MEGA Dream ex'}]);
@@ -54,7 +54,7 @@ const P=(id,cents,lang,user,cc,hub,cond='Near Mint')=>({id,price:{cents,currency
  await page.waitForTimeout(800);
  await page.evaluate(()=>{document.querySelectorAll('#v4Buy details.v4settings').forEach(d=>d.open=true)});
  let t=await page.textContent('#v4Buy .cpShops');
- ok('«Probar CardTrader» (GET /info): ✓ conectado con tu token',/CardTrader: ✓ conectado \(Card Vault\)/.test(t)&&hits.includes('/info'),t);
+ ok('«Probar CardTrader» (GET /info): ✓ conectado con tu token',/CardTrader: ✓ conectado \(Card Vault · token válido hasta 1\/1\/2100\)/.test(t)&&hits.includes('/info'),t);
  t=await page.textContent('#v4Buy #cp-base4-10 .cpBuy');
  // 170 € (NM, inglés, Italia) + envío real 5,90 € = 175,90 € · el coreano de 90 € y la «Played» de 120 € no cuentan
  ok('Mewtwo en CardTrader: emparejada por id de Cardmarket (aunque el número sea «10a» y exista «Base Set»), anuncio en INGLÉS 170 € + envío REAL 5,90 € = 175,90 €',/CardTrader · Inglés Near Mint ↗175,90\s€/.test(t)&&/anuncio 170,00\s€ \(vendedor de IT\) \+ envío real 5,90\s€/.test(t)&&hits.includes('/marketplace/products?blueprint_id=900&language=en'),t);

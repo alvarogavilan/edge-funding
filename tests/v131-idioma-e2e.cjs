@@ -54,7 +54,7 @@ let ctHits=[];
  ok('Chollos: solo japonesas; la internacional se cuenta como descartada por idioma',/Pikachu ex/.test(ch)&&!/Alakazam/.test(ch)&&/1 internacional descartada/.test(ch),ch.slice(-600));
  ok('Sin botón «Es proxy o falsa»',!(await page.$('[data-cp-bad]')));
  // 2) Con token de CardTrader: comprueba solo las candidatas y usa el anuncio en INGLÉS (no el coreano)
- await page.evaluate(()=>localStorage.setItem('cv_cardtrader_token','prueba'));
+ await page.evaluate(()=>localStorage.setItem('cv_cardtrader_token','eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.prueba'));
  await page.reload();
  await page.waitForFunction(()=>/CardTrader, inglés/.test(document.querySelector('#v4Buy .cpTop')?.textContent||''),null,{timeout:120000});
  top=await page.textContent('#v4Buy .cpTop');

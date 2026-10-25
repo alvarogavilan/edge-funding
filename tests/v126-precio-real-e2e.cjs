@@ -37,7 +37,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  // V131 · mismo idioma: el «desde EX o mejor» de 149,90 € es el 32 % de su valor (470,42 €) y Cardmarket no dice de qué
  // idioma es (coreano y chino valen mucho menos) → no se calcula beneficio con él ni se recomienda.
  const ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
- ok('Mew ex 232 NO sale en Compra YA: su EX o mejor a 149,90 € (32 %) puede ser coreano o chino',!(await ids()).includes('sv04.5-232'),JSON.stringify(await ids()));
+ ok('V136 · Mew ex 232 sale en Compra YA marcada «🌐 IDIOMA POR CONFIRMAR» (su EX o mejor a 149,90 € puede ser coreano o chino) y con el enlace solo en inglés',(await ids()).includes('sv04.5-232')&&/IDIOMA POR CONFIRMAR/.test(await page.textContent('#v4Buy #cp-sv04\\.5-232'))&&await page.getAttribute('#v4Buy #cp-sv04\\.5-232 .v4actions a','href')==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&language=1&minCondition=3',JSON.stringify(await ids()));
  let t=await page.textContent('#v4Buy .cpTop');
  ok('🏆 Top 5: sin Mew ex y lo explica (solo mismo idioma)',!/Mew ex/.test(t)&&/Solo con compra y venta del mismo idioma/.test(t),t.slice(0,400));
  t=await page.textContent('[data-cp-snipe]');
@@ -46,9 +46,9 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  const T=sel=>page.textContent('#v4Buy #cp-sv04\\.5-232 '+sel);
  t=await T('.cpBuy');
  // TCGplayer: $420 · 0,9 = 378 € → (378 + 15) · 1,21 + 15 = 490,53 €
- ok('Buscándola: «Dónde comprarla» enseña EX o mejor 155,90 € con aviso de idioma, cualquier estado 56 € con aviso y TCGplayer 490,53 €',/Cardmarket · EX o mejor ↗155,90\s€/.test(t)&&/idioma sin indicar y muy por debajo de su valor: casi seguro coreano o chino/.test(t)&&/Cardmarket · cualquier estado ↗56,00\s€/.test(t)&&/muy por debajo: casi seguro no es comparable/.test(t)&&/TCGplayer \(EE\. UU\.\) ↗490,53\s€/.test(t)&&!/Cardmarket · EX o mejor 155,90\s€ puesta en 41020/.test(t),t);
+ ok('Buscándola: «Dónde comprarla» enseña EX o mejor 155,90 € con aviso de idioma, cualquier estado 56 € con aviso y TCGplayer 490,53 €',/Cardmarket · EX o mejor ↗155,90\s€/.test(t)&&/idioma sin indicar: a este precio puede ser coreano o chino; el enlace abre solo los anuncios en INGLÉS/.test(t)&&/Cardmarket · cualquier estado ↗56,00\s€/.test(t)&&/muy por debajo: casi seguro no es comparable/.test(t)&&/TCGplayer \(EE\. UU\.\) ↗490,53\s€/.test(t)&&!/Cardmarket · EX o mejor 155,90\s€ puesta en 41020/.test(t),t);
  const bl=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-sv04\\.5-232 .cpBuy a')].map(a=>a.href));
- ok('Cada vía con su enlace directo (EX o mejor filtrado, cualquier estado sin filtro, TCGplayer)',['https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3','https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779','https://prices.pokemontcg.io/tcgplayer/sv4pt5-232'].every(u=>bl.includes(u))/* V133: filas ordenadas por lo que pagas */,JSON.stringify(bl));
+ ok('Cada vía con su enlace directo (EX o mejor filtrado, cualquier estado sin filtro, TCGplayer)',['https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3&language=1','https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779','https://prices.pokemontcg.io/tcgplayer/sv4pt5-232'].every(u=>bl.includes(u))/* V133: filas ordenadas por lo que pagas */,JSON.stringify(bl));
  await page.fill('[data-cp-q]','');await page.waitForTimeout(600);
  ok('Ya no hay plan de compra con presupuesto',!(await page.$('[data-cp-planbox]')));
  ok('Sin errores de JavaScript',errors.length===0,errors.join(' | '));
