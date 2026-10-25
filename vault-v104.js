@@ -6,7 +6,7 @@
    - Ninguna cifra es beneficio seguro. Sin eBay. */
 (()=>{"use strict";
 const STORE="cv_v104_user",IDB="cardvault-v104";
-const DEFAULTS={maxBuy:200,feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
+const DEFAULTS={maxBuy:200,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
 const N=v=>{if(v==null||v==="")return NaN;const n=Number(String(v).replace(/\s/g,"").replace(",","."));return Number.isFinite(n)?n:NaN};
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>Number.isFinite(v)?v.toLocaleString("es-ES",{style:"currency",currency:"EUR"}):"—";
@@ -356,6 +356,7 @@ function settingsBlock(cfg){
 
   f("maxBuy","Compra máxima por carta €","Tu presupuesto: no se recomienda ninguna compra por encima (en las importadas, coste total con IVA y gestión).")+
   f("minProfit","Beneficio mínimo €","Umbral para considerar la operación interesante.")+
+  f("minProfitLo","Beneficio mínimo en Lorcana €","Sus cartas valen menos: con 40 € casi ninguna cabe. Bájalo si aceptas márgenes menores.")+
   f("usShip","Envío desde EE. UU. €","Inglés automático (TCGplayer): envío internacional estimado hasta Sevilla.")+
   f("usVat","IVA de importación %","Se aplica a carta + envío al importar desde fuera de la UE.")+
   f("usHandling","Gestión aduanera €","Tasa de despacho del transportista (estimada).")+
@@ -404,7 +405,9 @@ function sheet(html){
  let s=document.getElementById("v4Sheet");
  if(!s){s=document.createElement("div");s.id="v4Sheet";s.className="v4sheet";s.setAttribute("role","dialog");s.setAttribute("aria-modal","true");document.body.appendChild(s)}
  s.innerHTML='<div class="v4sheetIn">'+html+'</div>';s.hidden=false;document.documentElement.classList.add("v4lock");
- setTimeout(()=>s.querySelector("input,select,textarea")?.focus?.({preventScroll:true}),50);return s;
+ /* enfoca el primer campo solo si aún no estás escribiendo en la hoja: antes robaba el foco y lo siguiente que escribías
+    acababa en el campo del enlace («…charizard180») */
+ setTimeout(()=>{if(!s.contains(document.activeElement))s.querySelector("input,select,textarea")?.focus?.({preventScroll:true})},50);return s;
 }
 function closeSheet(){const s=document.getElementById("v4Sheet");if(s){s.hidden=true;s.innerHTML=""}document.documentElement.classList.remove("v4lock")}
 const fld=(name,label,val,attrs="")=>'<label>'+label+'<input name="'+name+'" value="'+E(val??"")+'" '+attrs+'></label>';

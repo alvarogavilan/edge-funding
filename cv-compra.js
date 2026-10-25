@@ -21,7 +21,7 @@ const DATE=t=>{const d=new Date(String(t||"").replace(/\//g,"-"));return Number.
 const WHEN=t=>{const d=new Date(t);return Number.isFinite(d.getTime())?d.toLocaleString("es-ES",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"};
 const NUM=v=>{const t=String(v??"").trim().replace(/\s|€/g,"");if(!t)return NaN;const x=Number(t.includes(",")?t.replace(/\./g,"").replace(",","."):t);return Number.isFinite(x)&&x>0?x:NaN};
 const sleep=ms=>new Promise(ok=>setTimeout(ok,ms));
-const cfg=()=>({maxBuy:200,feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,...(window.CVVault?.user?.().cfg||{})});
+const cfg=()=>({maxBuy:200,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,...(window.CVVault?.user?.().cfg||{})});
 const readLS=(k,d)=>{try{const x=JSON.parse(localStorage.getItem(k)||"null");return x&&typeof x==="object"?x:d}catch{return d}};
 const writeLS=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}};
 
@@ -171,6 +171,8 @@ let langData=readLS(LKEY,{}),watch=readLS(WKEY,{}),view={game:"all",cond:"buen",
 const netSale=(v,c)=>v*(1-c.feePct/100)-c.sellShip;
 /* Presupuesto: precio de la carta entre 20 € y la «Compra máxima por carta» (Supuestos, 200 € por defecto). En compras
    importadas (TCGplayer) cuenta el coste total puesto en 41020, porque el IVA y la gestión se pagan sí o sí. */
+/* Beneficio mínimo: el de Supuestos; Lorcana tiene el suyo (sus cartas valen menos y el margen de 40 € casi nunca cabe). */
+const minP=(x,c)=>x&&x.kind==="lo"&&Number.isFinite(Number(c.minProfitLo))?Number(c.minProfitLo):c.minProfit;
 const inBudget=v=>Number.isFinite(v)&&v>=20&&v<=cfg().maxBuy;
 const opIn=o=>o.us?Number.isFinite(o.cost)&&o.cost>=20&&o.cost<=cfg().maxBuy:inBudget(o.buy);
 function liquidity(p){if(N(p.avg1)&&N(p.avg7))return {k:3,t:"Se vende a diario"};if(N(p.avg7))return {k:2,t:"Ventas esta semana"};if(N(p.avg30))return {k:1,t:"Pocas ventas (30 días)"};return {k:0,t:"Sin ventas recientes"}}
@@ -178,7 +180,7 @@ function momentum(p){return N(p.avg7)&&N(p.avg30)?p.avg7/p.avg30-1:NaN}
 function saleRef(p){const xs=[p.trend,p.avg30,p.avg7].filter(Number.isFinite);return xs.length?Math.min(...xs):NaN}
 function ops(card,c){
  const {p,res}=card,S=saleRef(p),out=[],saved=langData[card.id]||{},jp=card.kind==="jp",idi=jp?"japonés":"idioma sin indicar";
- const add=o=>{o.cost=Number.isFinite(o.costFull)?o.costFull:o.buy+c.buyShip;o.profit=Number.isFinite(o.sale)?netSale(o.sale,c)-o.cost:NaN;o.margin=o.profit/o.cost;o.maxBuy=Number.isFinite(o.sale)?netSale(o.sale,c)-c.minProfit-c.buyShip:NaN;out.push(o)};
+ const add=o=>{o.cost=Number.isFinite(o.costFull)?o.costFull:o.buy+c.buyShip;o.profit=Number.isFinite(o.sale)?netSale(o.sale,c)-o.cost:NaN;o.margin=o.profit/o.cost;o.maxBuy=Number.isFinite(o.sale)?netSale(o.sale,c)-minP(card,c)-c.buyShip:NaN;out.push(o)};
  if(Number.isFinite(S)){
   if(Number.isFinite(p.exPlus))add({k:"ex",cond:"buen",label:"Cardmarket · EX o mejor ("+idi+") → venta en Cardmarket"+(jp?" (ventas de cartas japonesas)":""),buy:p.exPlus,sale:S});
   /* «desde» de cualquier estado e idioma: solo si no es un valor atípico (≥ 75 % de la venta). Un «desde» muy bajo suele
@@ -293,7 +295,7 @@ function list(){
  if((view.game==="all"||view.game==="pokemon")&&lg!=="ja")all=all.concat(cardsPk());if(view.game!=="lorcana"&&(!lg||lg==="ja"))all=all.concat(cardsJp());if((view.game==="all"||view.game==="lorcana")&&lg!=="ja"&&lg!=="pt"&&lg!=="es")all=all.concat(cardsLo());
  for(const x of all){x.best=bestOp(x.ops,view.cond);x.conf=confidence(x,x.best);x.dl=x.kind!=="lo"&&x.res?.pid?delta(x.res.pid):null;x.hot=!!(x.dl&&x.dl.drop>=.15&&x.best&&x.best.profit>=c.minProfit);x.watch=watch[x.id];x.hit=x.watch&&x.best&&x.best.buy<=x.watch.target}
  if(q)all=all.filter(x=>nq(x.name+" "+x.set+" "+x.number).includes(q));
- else all=all.filter(x=>!x.owned&&(x.watch||x.best&&(view.show==="all"||x.best.profit>=c.minProfit)));
+ else all=all.filter(x=>!x.owned&&(x.watch||x.best&&(view.show==="all"||x.best.profit>=minP(x,c))));
  const pr=x=>x.best?x.best.profit:-1e9,by={profit:(a,b)=>pr(b)-pr(a),buy:(a,b)=>(a.best?a.best.buy:1e9)-(b.best?b.best.buy:1e9),margin:(a,b)=>(b.best?b.best.margin:-9)-(a.best?a.best.margin:-9),
   sale:(a,b)=>(saleRef(b.p)||0)-(saleRef(a.p)||0),liq:(a,b)=>b.liq.k-a.liq.k||pr(b)-pr(a),mom:(a,b)=>(Number.isFinite(b.mom)?b.mom:-9)-(Number.isFinite(a.mom)?a.mom:-9),name:(a,b)=>a.name.localeCompare(b.name,"es"),risk:(a,b)=>(N(b.conf?.prudent)||-1e9)-(N(a.conf?.prudent)||-1e9),drop:(a,b)=>(b.hot-a.hot)||((b.dl?b.dl.drop:-9)-(a.dl?a.dl.drop:-9))};
  all.sort((a,b)=>(b.hit?1:0)-(a.hit?1:0)||by[view.sort||"profit"](a,b));
@@ -452,7 +454,7 @@ const thumb=x=>{const h=img(x);return h?'<span class="cpThumb">'+h+'</span>':'<s
 function top5(c){
  const cands=[];
  for(const x of cardsPk().concat(cardsJp(),cardsLo())){
-  const o=x.ops.filter(o=>o.cond==="buen"&&Number.isFinite(o.profit)&&o.profit>=c.minProfit&&opIn(o)).sort((a,b)=>b.profit-a.profit)[0];
+  const o=x.ops.filter(o=>o.cond==="buen"&&Number.isFinite(o.profit)&&o.profit>=minP(x,c)&&opIn(o)).sort((a,b)=>b.profit-a.profit)[0];
   if(!o||(TRUST[x.res?.status]??0)<2||(x.liq?.k||0)<1)continue;x.best=o;const k=confidence(x,o);
   cands.push({kind:"card",x,o,conf:k.score,prudent:o.profit*k.score/100})}
  const S=window.CVSellado?.rows?.()||[];
@@ -486,12 +488,24 @@ function sniperHtml(){
  (L.length?'<ol class="cpPlanList">'+L.slice(0,12).map(o=>{const x=o.x,l=links(x);return '<li>'+thumb(x)+'<span><b>'+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+(o.isNew?' · <b>🔥 NUEVO HOY</b>':'')+'</span><a class="v4btn primary" href="'+E(l.cm)+'" target="_blank" rel="noopener noreferrer">Ver ya ↗</a><small>Vale ~'+EUR(o.S)+' (se vende cada semana) y hay un anuncio EX o mejor a <b>'+EUR(o.low)+'</b> ('+Math.round(o.ratio*100)+' % de su valor) · si está bien: '+SIGNED(o.profit)+' con envíos y comisión. Comprueba en 1 minuto: estado y fotos, idioma, número y vendedor.</small></li>'}).join("")+'</ol><p class="v4note">Precio «desde» de la guía de Cardmarket (de madrugada): a ese precio suelen venderse en horas. Si el anuncio ya no está, la carta seguirá en la lista hasta la próxima guía.</p>':'<p class="v4note">Busca a diario cartas que se venden con regularidad y tienen un anuncio EX o mejor por debajo del 60 % de su valor (dato «desde EX o mejor» de Cardmarket, comprobado con 2 fuentes).</p>')+'</details>';
 }
 /* Lorcana sin oportunidades: en vez de una lista vacía, cuántas cartas tienen precio y las de mejor margen de hoy. */
+/* Lorcana: por qué no hay oportunidades, con números. Sin «desde EX o mejor» la compra fiable es un «desde» ≥ 75 % de la
+   venta; para dejar el beneficio mínimo tras comisión y envíos la carta debe valer al menos Smin, y para costar ≤ compra
+   máxima, como mucho Smax. Se cuentan las cartas reales en esa ventana y se enseñan las de mejor margen. */
+function loDiag(c){
+ const mp=minP({kind:"lo"},c),f=1-c.feePct/100,Smin=(mp+c.sellShip+c.buyShip)/(f-.75),Smax=c.maxBuy/.75;
+ return {mp,Smin,Smax,possible:Smin<=Smax};
+}
 function loBest(c){
  if(view.game!=="lorcana"||view.q)return '';const all=cardsLo();
- if(!all.length)return '<p class="v4note neg">Lorcana: aún no hay precios cargados'+(loState?' ('+E(loState)+')':'')+'. Pulsa «Actualizar precios».</p>';
- const best=all.map(x=>({x,o:x.ops.filter(o=>o.cond===view.cond&&Number.isFinite(o.profit)).sort((a,b)=>b.profit-a.profit)[0]})).filter(y=>y.o).sort((a,b)=>b.o.profit-a.o.profit).slice(0,10);
- return '<div class="cpPlan"><p><b>Lorcana: '+all.length.toLocaleString("es-ES")+(all.length===1?' carta':' cartas')+' con precio de Cardmarket hoy.</b> Ninguna deja '+EUR(c.minProfit)+' con compra entre 20 y 200 €: en Lorcana casi todas valen menos de 100 € y el anuncio más barato está muy cerca de su precio de venta. Estas son las de mejor margen ahora (baja el «Beneficio mínimo» en Supuestos si quieres verlas como oportunidad):</p><ol class="cpPlanList">'+
-  best.map(({x,o})=>'<li><span><b>'+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+'</span><a class="v4btn" href="'+E(links(x).cm)+'" target="_blank" rel="noopener noreferrer">Abrir ↗</a><small>Compra '+EUR(o.cost)+' → venta '+EUR(o.sale)+' · '+SIGNED(o.profit)+'</small></li>').join("")+'</ol></div>';
+ if(!all.length)return '<p class="v4note neg">Lorcana: aún no hay precios cargados'+(loState?' ('+E(loState)+')':'')+'. Pulsa «Actualizar precios». Fuente: Bindex (guía oficial de Cardmarket para Lorcana).</p>';
+ const d=loDiag(c),S=x=>saleRef(x.p),win=all.filter(x=>S(x)>=d.Smin&&S(x)<=d.Smax).length,cheap=all.filter(x=>Number.isFinite(x.p.low)&&x.p.low<=c.maxBuy).length,over=all.filter(x=>S(x)>d.Smax).length;
+ const best=all.map(x=>({x,o:x.ops.filter(o=>o.cond===view.cond&&Number.isFinite(o.profit)&&opIn(o)).sort((a,b)=>b.profit-a.profit)[0]})).filter(y=>y.o).sort((a,b)=>b.o.profit-a.o.profit).slice(0,10);
+ return '<div class="cpPlan"><p><b>Lorcana: '+all.length.toLocaleString("es-ES")+(all.length===1?' carta':' cartas')+' con precio de Cardmarket hoy; ninguna deja '+EUR(d.mp)+'.</b></p>'+
+  '<ul class="v4help"><li>Lorcana no tiene el dato «desde EX o mejor»: la compra fiable es un «desde» de al menos el 75 % de su venta (por debajo suele ser una carta jugada o ya vendida).</li>'+
+  '<li>Con ese margen, tras la comisión del '+E(String(c.feePct).replace(".",","))+' % y '+EUR(c.sellShip+c.buyShip)+' de envíos, para ganar '+EUR(d.mp)+' la carta tiene que valer <b>al menos '+EUR(d.Smin)+'</b>, y para costar como mucho tu compra máxima ('+EUR(c.maxBuy)+'), <b>como mucho '+EUR(d.Smax)+'</b>.'+(d.possible?'':' Esa ventana no existe: ninguna carta puede cumplir las dos cosas.')+'</li>'+
+  '<li>Hoy: '+win+' carta(s) en esa ventana de valor · '+cheap+' con «desde» dentro de tu presupuesto · '+over+' valen más de '+EUR(d.Smax)+' (fuera de presupuesto).</li>'+
+  '<li>Para ver márgenes más pequeños, baja el «Beneficio mínimo en Lorcana» en Supuestos del cálculo.</li></ul>'+
+  (best.length?'<p>Las de mejor margen dentro de tu presupuesto:</p><ol class="cpPlanList">'+best.map(({x,o})=>'<li>'+thumb(x)+'<span><b>'+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+'</span><a class="v4btn" href="'+E(links(x).cm)+'" target="_blank" rel="noopener noreferrer">Abrir ↗</a><small>Compra '+EUR(o.cost)+' → venta '+EUR(o.sale)+' · '+SIGNED(o.profit)+'</small></li>').join("")+'</ol>':'<p class="v4note">Ninguna carta de Lorcana tiene hoy un «desde» fiable dentro de tu presupuesto.</p>')+'</div>';
 }
 function summaryHtml(L,c){
  const g=M.guide,lo=M.lo,pt=Object.keys(M.pt.cards).length,ver=window.CV_UNIVERSE?window.CV_UNIVERSE.cards.filter(r=>resolve(r[0])?.status==="verificado").length:0;
@@ -710,9 +724,9 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{const f=e.target.closest("[data-cp-fav]");if(f){fv[f.dataset.cpFav]=f.value;writeLS("cv_v117_favview",fv);renderFavs();return}});
 document.addEventListener("change",e=>{const t=e.target.closest("[data-cp-view]");if(!t)return;view[t.dataset.cpView]=t.value;writeLS(VKEY,view);if(t.dataset.cpView==="cond")window.CVVault?.setCondView?.(t.value);if(t.dataset.cpView==="game"&&(t.value==="all"||t.value==="lorcana")&&!M.lo)loadLorcana(new AbortController()).then(render);renderNow()});
-let qT=null;document.addEventListener("input",e=>{const t=e.target.closest("[data-cp-q]");if(!t)return;clearTimeout(qT);qT=setTimeout(()=>{view.q=t.value;writeLS(VKEY,view);renderNow();if(view.q.trim())verifyVisible();const q=document.querySelector("[data-cp-q]");if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}},250)});
+let qT=null;document.addEventListener("input",e=>{const t=e.target.closest("[data-cp-q]");if(!t)return;clearTimeout(qT);qT=setTimeout(()=>{view.q=t.value;writeLS(VKEY,view);renderNow();if(view.q.trim())verifyVisible();const q=document.querySelector("[data-cp-q]"),ae=document.activeElement;if(q&&(!ae||ae===document.body||!ae.isConnected)){q.focus();q.setSelectionRange(q.value.length,q.value.length)}},250)});/* devuelve el foco al buscador solo si no te has ido a otro campo */
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"]'))setTimeout(onShow,60);if(e.target.closest('.mainNav [data-tab="favoritos"]'))setTimeout(onFavs,60)});
 if(location.hash==="#favoritos")setTimeout(onFavs,1300);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(onShow,1200));else setTimeout(onShow,1200);
-window.CVCompra={opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpMax,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
+window.CVCompra={loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpMax,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
 })();
