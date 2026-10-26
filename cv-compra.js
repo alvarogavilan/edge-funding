@@ -27,7 +27,7 @@ const ERRKEY="cv_v137_errors";
 function logErr(msg,where){try{const L=JSON.parse(localStorage.getItem(ERRKEY)||"[]");L.unshift({at:new Date().toISOString(),v:document.body?.dataset?.release||"",msg:String(msg||"").slice(0,200),where:String(where||"").slice(0,120)});localStorage.setItem(ERRKEY,JSON.stringify(L.slice(0,20)))}catch{}}
 addEventListener("error",e=>logErr(e.message,(e.filename||"").split("/").pop()+":"+(e.lineno||"")));
 addEventListener("unhandledrejection",e=>logErr(e.reason?.message||e.reason,"promesa"));
-const cfg=()=>({maxBuy:200,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,...(window.CVVault?.user?.().cfg||{})});
+const cfg=()=>({maxBuy:200,minMargin:25,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,minProfit:40,restLow:.6,restMid:.75,restHigh:.9,...(window.CVVault?.user?.().cfg||{})});
 /* V130 · Escudo anti-proxy (caso real: Mewtwo & Mew GX japonés a 50 € frente a ~638 € → el anuncio decía «proxy», carta
    falsa). 1) Un anuncio por debajo del 30 % de lo que la carta vale y se vende casi nunca es una ganga: es proxy,
    falsificación, otra carta o un error, y no se propone nunca (ni chollo, ni punto de mira, ni restaurar, ni Top 5).
@@ -210,6 +210,9 @@ const netSale=(v,c)=>v*(1-c.feePct/100)-c.sellShip;
    importadas (TCGplayer) cuenta el coste total puesto en 41020, porque el IVA y la gestión se pagan sí o sí. */
 /* Beneficio mínimo: el de Supuestos; Lorcana tiene el suyo (sus cartas valen menos y el margen de 40 € casi nunca cabe). */
 const minP=(x,c)=>x&&x.kind==="lo"&&Number.isFinite(Number(c.minProfitLo))?Number(c.minProfitLo):c.minProfit;
+/* V139 · Margen mínimo: además del beneficio en euros, ganar al menos minMargin % de lo que pagas (25 %: pagas 160 € → ≥ 40 €) */
+const mgOk=(profit,cost,c)=>Number.isFinite(profit)&&Number.isFinite(cost)&&cost>0&&profit/cost>=(Number.isFinite(c.minMargin)?c.minMargin:25)/100;
+const goodOp=(o,x,c)=>!!o&&!o.mixLang&&Number.isFinite(o.profit)&&o.profit>=minP(x,c)&&mgOk(o.profit,o.cost,c);
 const inBudget=v=>Number.isFinite(v)&&v>=20&&v<=cfg().maxBuy;
 /* V129: el presupuesto es lo que PAGAS en total (carta + envío, y en importadas + IVA y gestión): nunca más que la compra máxima. */
 const opIn=o=>Number.isFinite(o.cost)&&o.buy>=20&&o.cost<=cfg().maxBuy;
@@ -341,8 +344,8 @@ function list(){
  if((view.game==="all"||view.game==="pokemon")&&lg!=="ja")all=all.concat(cardsPk());if(view.game!=="lorcana"&&(!lg||lg==="ja"))all=all.concat(cardsJp());if((view.game==="all"||view.game==="lorcana")&&lg!=="ja"&&lg!=="pt"&&lg!=="es")all=all.concat(cardsLo());
  for(const x of all){x.best=bestOp(x.ops,view.cond);x.conf=confidence(x,x.best);x.dl=x.kind!=="lo"&&x.res?.pid?delta(x.res.pid):null;x.hot=!!(x.dl&&x.dl.drop>=.15&&x.best&&x.best.profit>=c.minProfit);x.watch=watch[x.id];x.hit=x.watch&&x.best&&x.best.buy<=x.watch.target}
  if(q)all=all.filter(x=>nq(x.name+" "+x.set+" "+x.number).includes(q));
- for(const x of all){const ok=x.best&&!x.best.mixLang&&x.best.profit>=minP(x,c);x.tgt=ok||view.cond==="mal"?null:tgtOf(x,c);/* el objetivo es para comprar en buen estado */x.tgtOnly=!ok&&!!x.tgt}
- if(q)all=all;else all=all.filter(x=>!x.owned&&(x.watch||x.best&&(view.show==="all"||x.best.profit>=minP(x,c))||x.tgtOnly&&(x.liq?.k||0)>=2));
+ for(const x of all){const ok=goodOp(x.best,x,c);x.tgt=ok?null:tgtOf(x,c,view.cond);x.tgtOnly=!ok&&!!x.tgt}
+ if(q)all=all;else all=all.filter(x=>!x.owned&&(x.watch||x.best&&(view.show==="all"||goodOp(x.best,x,c))||x.tgtOnly&&(x.liq?.k||0)>=2));
  const pr=x=>x.tgtOnly?-1e5+(x.liq?.k||0)*100+x.tgt.maxBuy/x.tgt.S:x.best?x.best.profit:-1e9,/* las de precio objetivo, detrás de las compras confirmadas */by={profit:(a,b)=>pr(b)-pr(a),buy:(a,b)=>(a.best?a.best.buy:1e9)-(b.best?b.best.buy:1e9),margin:(a,b)=>(b.best?b.best.margin:-9)-(a.best?a.best.margin:-9),
   sale:(a,b)=>(saleRef(b.p)||0)-(saleRef(a.p)||0),liq:(a,b)=>b.liq.k-a.liq.k||pr(b)-pr(a),mom:(a,b)=>(Number.isFinite(b.mom)?b.mom:-9)-(Number.isFinite(a.mom)?a.mom:-9),name:(a,b)=>a.name.localeCompare(b.name,"es"),risk:(a,b)=>(N(b.conf?.prudent)||-1e9)-(N(a.conf?.prudent)||-1e9),drop:(a,b)=>(b.hot-a.hot)||((b.dl?b.dl.drop:-9)-(a.dl?a.dl.drop:-9))};
  all.sort((a,b)=>(b.hit?1:0)-(a.hit?1:0)||by[view.sort||"profit"](a,b));
@@ -423,25 +426,27 @@ function langBox(x){
 /* V138 · Internacional sin compra confirmada en su idioma: precio OBJETIVO. «Cómprala en inglés por ≤ X € (con envío
    ≤ Y €) → la vendes a S € → ganas ≥ tu mínimo». No depende de pokemontcg.io: con la guía basta. Así las internacionales
    salen siempre en «Todos los idiomas» (antes, sin «EX o mejor», desaparecían y solo quedaban japonesas). */
-function tgtOf(x,c){
+function tgtOf(x,c,cond){
  if(x.kind!=="pk")return null;const p=x.p,S=saleRef(p);if(!Number.isFinite(S)||S<40)return null;
- const maxPay=Math.min(netSale(S,c)-minP(x,c),c.maxBuy),maxBuy=Math.floor((maxPay-c.buyShip)*100)/100;if(!(maxBuy>=20))return null;
- /* realista: tendrías que pagar al menos el 60 % de su valor (una inglesa al 20 % de su valor no existe: sería coreana o falsa) */
- if(maxBuy<S*TGT_MIN)return null;
- const cheap=Math.min(...[p.low,p.exPlus].filter(Number.isFinite));if(!Number.isFinite(cheap)||cheap>maxBuy)return null;/* ni el más barato de cualquier idioma llega: no hay nada que buscar */
- const pid=x.res?.pid;return {S,maxPay,maxBuy,cheap,url:pid?"https://www.cardmarket.com/es/Pokemon/Products?idProduct="+encodeURIComponent(pid)+"&language=1&minCondition=3":links(x).cm};
+ const mal=cond==="mal",sale=mal?S*c.restLow:S,net=netSale(sale,c);/* mal estado: restaurada se vende al restLow (60 %) de su valor, conservador */
+ const maxPay=Math.min(net-minP(x,c),net/(1+(Number.isFinite(c.minMargin)?c.minMargin:25)/100),c.maxBuy),maxBuy=Math.floor((maxPay-c.buyShip)*100)/100;if(!(maxBuy>=20))return null;/* lo que pagas deja tu beneficio Y tu margen mínimos */
+ /* realista: en buen estado hay que pagar ≥ 60 % de su valor (una inglesa al 20 % no existe: sería coreana o falsa); en mal estado ≥ 25 % */
+ if(maxBuy<S*(mal?TGT_MIN_MAL:TGT_MIN))return null;
+ const cheap=Math.min(...[p.low,mal?NaN:p.exPlus].filter(Number.isFinite));if(!Number.isFinite(cheap)||cheap>maxBuy)return null;/* ni el más barato de cualquier idioma llega: no hay nada que buscar */
+ const pid=x.res?.pid;return {mal,S,sale,maxPay,maxBuy,gain:net-maxPay,cheap,url:pid?"https://www.cardmarket.com/es/Pokemon/Products?idProduct="+encodeURIComponent(pid)+"&language=1"+(mal?"":"&minCondition=3"):links(x).cm};
 }
-const TGT_MIN=.6;
+const TGT_MIN=.6,TGT_MIN_MAL=.25;
 const LANGUP=o=>({jp:"JAPONÉS",ja:"JAPONÉS",en:"INGLÉS"})[o]||"";
 /* La línea que manda: qué comprar, en qué idioma, dónde, lo que pagas, a cuánto la vendes y lo que ganas. */
 function decide(x,c){
- const o=x.best&&!x.best.mixLang&&x.best.profit>=minP(x,c)?x.best:null;
+ const o=goodOp(x.best,x,c)?x.best:null;
  if(o){const lang=o.k==="ct"?(x.kind==="jp"?"JAPONÉS":"INGLÉS"):o.k==="shop"||x.kind==="jp"?"JAPONÉS":o.us?"INGLÉS":o.own?String(o.lang||"").toUpperCase():x.kind==="lo"?"idioma sin indicar":"idioma sin indicar (a precio de mercado: no es una coreana barata)";
   const where=o.us?"TCGplayer (EE. UU.), importada":o.k==="ct"?"CardTrader":o.k==="shop"?o.shop:"Cardmarket",cond=o.k==="ex"?"EX o mejor":o.k==="ct"?"NM/EX":o.k==="po"?"mal estado (restaurar)":"estado sin indicar";
   return {k:"buy",text:"COMPRA en "+where+" · "+lang+" · "+cond+": pagas "+EUR(o.cost)+" (carta "+EUR(o.buy)+" + envío"+(o.us||o.k==="shop"&&o.costFull?", IVA y gestión":"")+") → la vendes en Cardmarket a "+EUR(o.sale)+(x.kind==="jp"?" (ventas de japonesas)":"")+" → ganas "+SIGNED(o.profit),
    html:'<div class="cpDecide buy"><b>✅ COMPRA</b> en <b>'+E(where)+'</b> · <b>'+E(lang)+'</b> · '+E(cond)+'<br>Pagas <b>'+EUR(o.cost)+'</b> (carta '+EUR(o.buy)+' + envío) → la vendes en Cardmarket a <b>'+EUR(o.sale)+'</b>'+(x.kind==="jp"?' (ventas de japonesas)':'')+' → <b class="pos">ganas '+SIGNED(o.profit)+'</b></div>'};}
- const t=x.tgt;if(t)return {k:"check",text:"BUSCA EN INGLÉS: cómprala solo si la encuentras a ≤ "+EUR(t.maxBuy)+" (≤ "+EUR(t.maxPay)+" con envío) → la vendes a "+EUR(t.S)+" → ganas ≥ "+EUR(minP(x,c)),
-  html:'<div class="cpDecide check"><b>🔎 BUSCA EN INGLÉS</b> · cómprala solo si la encuentras a <b>≤ '+EUR(t.maxBuy)+'</b> ('+Math.round(t.maxBuy/t.S*100)+' % de su valor; ≤ '+EUR(t.maxPay)+' con envío) → la vendes en Cardmarket a <b>'+EUR(t.S)+'</b> → <b class="pos">ganas ≥ '+EUR(minP(x,c))+'</b><br><small>El anuncio más barato ('+EUR(t.cheap)+') no dice el idioma: puede ser coreano o chino, que valen menos. '+(ctRes[x.id]?.rows?'CardTrader no tiene ninguna en inglés por debajo de ese precio ahora.':ctToken()?'CardTrader la comprobará en inglés.':'')+' <a href="'+E(t.url)+'" target="_blank" rel="noopener noreferrer">Ver solo anuncios en inglés ↗</a></small></div>'};
+ const t=x.tgt;if(t){const head=t.mal?"🔧 BUSCA EN INGLÉS EN MAL ESTADO":"🔎 BUSCA EN INGLÉS",sell=t.mal?"restaurada la vendes a ~"+EUR(t.sale)+" ("+Math.round(c.restLow*100)+" % de su valor, conservador)":"la vendes en Cardmarket a "+EUR(t.S);
+  return {k:"check",text:head.replace(/^\S+ /,"")+": cómprala solo si la encuentras a ≤ "+EUR(t.maxBuy)+" (≤ "+EUR(t.maxPay)+" con envío) → "+sell+" → ganas ≥ "+EUR(t.gain),
+  html:'<div class="cpDecide check"><b>'+head+'</b> · cómprala solo si la encuentras a <b>≤ '+EUR(t.maxBuy)+'</b> ('+Math.round(t.maxBuy/t.S*100)+' % de su valor; ≤ '+EUR(t.maxPay)+' con envío) → '+E(sell).replace(EUR(t.mal?t.sale:t.S),'<b>'+EUR(t.mal?t.sale:t.S)+'</b>')+' → <b class="pos">ganas ≥ '+EUR(t.gain)+'</b><br><small>'+(t.mal?'Cardmarket no separa el estado ni el idioma en su precio más barato ('+EUR(t.cheap)+'): mira fotos (que sea restaurable) y que sea inglesa. ':'El anuncio más barato ('+EUR(t.cheap)+') no dice el idioma: puede ser coreano o chino, que valen menos. ')+(ctRes[x.id]?.rows?'CardTrader no tiene ninguna en inglés por debajo de ese precio ahora.':ctToken()?'CardTrader la comprobará en inglés.':'')+' <a href="'+E(t.url)+'" target="_blank" rel="noopener noreferrer">Ver solo anuncios en inglés ↗</a></small></div>'}}
  return null;
 }
 function cardHtml(x,rank,c,pre="cp-"){
@@ -449,7 +454,7 @@ function cardHtml(x,rank,c,pre="cp-"){
  const alts=x.kind==="pk"&&x.res.status!=="verificado"?(window.CV_CM_MAP?.[x.id]||[]).slice(2).map(G).filter(Boolean):[];
  return '<article class="v4card cpCard" id="'+pre+E(x.id)+'" data-cpid="'+E(x.id)+'" data-game="'+(x.kind==="lo"?"lorcana":"pokemon")+'">'+
  '<figure class="v4photo">'+img(x)+'<div class="v4noimg"'+(img(x)?' hidden':'')+'><b>'+E(x.name)+'</b><span>'+E(x.set)+' nº '+E(x.number)+'</span></div><figcaption>Imagen de catálogo · el ejemplar se ve en el anuncio</figcaption></figure>'+
- '<div class="v4body"><div class="v4badges">'+(rank?'<span class="v4tag rank">#'+rank+'</span>':'')+(x.hit?'<span class="v4status s-comprobada">¡BAJO TU PRECIO!</span>':'')+(x.tgtOnly?'<span class="v4status s-observacion">🔎 BUSCA EN INGLÉS</span>':'')+(x.hot?'<span class="v4status s-comprobada">🔥 BAJÓ '+Math.round(x.dl.drop*100)+' % DESDE AYER</span>':'')+'<span class="v4tag '+sc+'">'+st+'</span><span class="v4tag">'+(x.kind==="lo"?"Lorcana":"Pokémon")+'</span><span class="v4tag">'+E(x.liq.t)+'</span>'+(Number.isFinite(x.mom)&&Math.abs(x.mom)>=.1?'<span class="v4tag">'+(x.mom>0?"▲ ":"▼ ")+PCT(x.mom)+' semana</span>':'')+'</div>'+
+ '<div class="v4body"><div class="v4badges">'+(rank?'<span class="v4tag rank">#'+rank+'</span>':'')+(x.hit?'<span class="v4status s-comprobada">¡BAJO TU PRECIO!</span>':'')+(x.tgtOnly?'<span class="v4status s-observacion">'+(x.tgt.mal?'🔧 BUSCA EN MAL ESTADO':'🔎 BUSCA EN INGLÉS')+'</span>':'')+(x.hot?'<span class="v4status s-comprobada">🔥 BAJÓ '+Math.round(x.dl.drop*100)+' % DESDE AYER</span>':'')+'<span class="v4tag '+sc+'">'+st+'</span><span class="v4tag">'+(x.kind==="lo"?"Lorcana":"Pokémon")+'</span><span class="v4tag">'+E(x.liq.t)+'</span>'+(Number.isFinite(x.mom)&&Math.abs(x.mom)>=.1?'<span class="v4tag">'+(x.mom>0?"▲ ":"▼ ")+PCT(x.mom)+' semana</span>':'')+'</div>'+
  '<h3>'+E(x.name)+'</h3><p class="v4id">'+E(x.set)+' · nº '+E(x.number)+' · '+E(x.rarity||"—")+'</p>'+(decide(x,c)?.html||'')+
  (x.dl&&Math.abs(x.dl.drop)>=.1?'<p class="v4note cpDelta">«Desde» en Cardmarket: '+EUR(x.dl.lo0)+' ayer → <b>'+EUR(x.dl.lo)+'</b> hoy ('+PCT(-x.dl.drop)+'). '+(x.dl.drop>0?'Un anuncio barato acaba de aparecer: puede venderse en horas.':'')+'</p>':'')+
  '<div class="cpMoney"><div><span>'+(b&&b.us?'Compra en TCGplayer':'Compra en Cardmarket')+'</span><b>'+EUR(b?b.buy:p.exPlus||p.low)+'</b><small>'+(b?(b.k==="ex"?"EX o mejor":b.k==="exu"?"EX o mejor · 🌐 idioma por confirmar":b.k==="po"?"cualquier estado (casi siempre mal estado)":b.own?b.lang+(b.sameLang?" · mismo idioma":" (anotado)"):b.us?"TCGplayer (EE. UU.) · importada con IVA y gestión":x.kind==="jp"?"japonés · "+(b.k==="ex"?"EX o mejor":"estado sin indicar"):"estado sin indicar")+" · con envío a 41020 "+EUR(b.cost)+(out?" · fuera de tu presupuesto 20–200 €":""):"—")+'</small></div>'+
@@ -483,7 +488,7 @@ function sniper(){
   if(!Number.isFinite(S)||S<40||!Number.isFinite(p.exPlus)||p.exPlus>S*.6||p.exPlus<S*FAKE_RATIO||p.exPlus+c.buyShip>c.maxBuy)continue;/* solo «desde» EX o mejor: el de cualquier estado engaña */
   if((x.liq?.k||0)<2||(TRUST[x.res?.status]??0)<2)continue;
   const xs=[p.avg1,p.avg7,p.avg30,p.trend].filter(Number.isFinite),disp=xs.length>=2?(Math.max(...xs)-Math.min(...xs))/S:1;if(disp>.25)continue;
-  const cost=p.exPlus+c.buyShip,profit=netSale(S,c)-cost;if(profit<c.minProfit)continue;
+  const cost=p.exPlus+c.buyShip,profit=netSale(S,c)-cost;if(profit<c.minProfit||!mgOk(profit,cost,c))continue;
   x.dl=x.res?.pid?delta(x.res.pid):null;x.best=x.best||{k:"ex"};out.push({x,S,low:p.exPlus,cost,profit,ratio:p.exPlus/S,isNew:!!(x.dl&&x.dl.drop>=.15)})}
  return out.sort((a,b)=>(b.isNew-a.isNew)||b.profit-a.profit);
 }
@@ -530,7 +535,7 @@ const thumb=x=>{const h=img(x);return h?'<span class="cpThumb">'+h+'</span>':'<s
 function top5(c){
  const cands=[];
  for(const x of cardsPk().concat(cardsJp(),cardsLo())){
-  const o=x.ops.filter(o=>!o.mixLang&&!o.langUnk&&o.cond==="buen"&&Number.isFinite(o.profit)&&o.profit>=minP(x,c)&&opIn(o)).sort((a,b)=>b.profit-a.profit)[0];
+  const o=x.ops.filter(o=>!o.mixLang&&!o.langUnk&&o.cond==="buen"&&goodOp(o,x,c)&&opIn(o)).sort((a,b)=>b.profit-a.profit)[0];
   if(!o||(TRUST[x.res?.status]??0)<2||(x.liq?.k||0)<1)continue;x.best=o;const k=confidence(x,o);
   cands.push({kind:"card",x,o,conf:k.score,prudent:o.profit*k.score/100})}
  const inTop=new Set(cands.map(t=>t.x.id));/* una carta solo una vez: si ya tiene compra fiable, no se repite como chollo */
@@ -591,17 +596,26 @@ function shopRows(x,c){
 }
 function buyTable(x,c){
  const p=x.p,rows=[],I=impCfg(),l=links(x),base=l.cm.split("&")[0];
- if(Number.isFinite(p.exPlus)){const okL=x.kind==="jp"||p.exPlus>=saleRef(p)*LANG_OK;rows.push(["Cardmarket · EX o mejor",p.exPlus+c.buyShip,"«desde» EX o mejor + envío "+EUR(c.buyShip)+(okL?"":" · ⚠ idioma sin indicar: a este precio puede ser coreano o chino; el enlace abre solo los anuncios en INGLÉS para que veas su precio real"),base+"&minCondition=3"+(okL?"":"&language=1"),okL])}
- if(Number.isFinite(p.low))rows.push(["Cardmarket · cualquier estado",p.low+c.buyShip,"«desde» de madrugada; puede ser jugada u otro idioma"+(p.low<saleRef(p)*.75?" · ⚠ muy por debajo: casi seguro no es comparable":""),base,p.low>=saleRef(p)*.75]);
+ /* V139 · UNA fila por sitio. Cardmarket: la compra comparable (EX o mejor del mismo idioma, o «desde» a precio de mercado);
+    si no hay, el más barato marcado «no comparable» con el enlace filtrado (inglés y EX o mejor). */
+ {const S=saleRef(p),jp=x.kind==="jp",exOk=Number.isFinite(p.exPlus)&&(jp||p.exPlus>=S*LANG_OK),loOk=Number.isFinite(p.low)&&p.low>=S*.75;
+  if(view.cond==="mal"&&Number.isFinite(p.low))rows.push(["Cardmarket · cualquier estado",p.low+c.buyShip,"«desde» de cualquier estado"+(jp?"":" e idioma: compruébalo")+" + envío "+EUR(c.buyShip),base+(jp?"":"&language=1"),jp]);
+  else if(exOk)rows.push(["Cardmarket · EX o mejor",p.exPlus+c.buyShip,"«desde» EX o mejor"+(jp?" (japonés)":"")+" + envío "+EUR(c.buyShip),base+"&minCondition=3"+(jp?"":"&language=1"),true]);
+  else if(loOk)rows.push(["Cardmarket · «desde»",p.low+c.buyShip,"anuncio más barato (a precio de mercado) + envío "+EUR(c.buyShip),base,true]);
+  else{const ex=Number.isFinite(p.exPlus),v=ex?p.exPlus:p.low;if(Number.isFinite(v))rows.push(["Cardmarket",v+c.buyShip,"⚠ el más barato "+(ex?"EX o mejor":"de cualquier estado")+" ("+EUR(v)+") no dice "+(jp?"el estado":ex?"el idioma":"el idioma ni el estado")+": a ese precio puede ser coreano o chino, no comparable. El enlace abre solo "+(jp?"":"inglés y ")+"EX o mejor",base+"&minCondition=3"+(jp?"":"&language=1"),false])}}
  const us=x.ops.find(o=>o.us);if(us)rows.push(["TCGplayer (EE. UU.)",us.cost,"mercado + envío "+EUR(I.shipUS)+", IVA "+I.vat+" % y gestión "+EUR(I.handling),us.url,true]);
- const ct=ctRes[x.id];if(ct&&ct.rows){const r=x.kind==="jp"?ct.rows.find(o=>o.lang==="jp"||o.lang==="ja"):ct.rows.find(o=>o.lang==="en");const a=r&&r.cheapestGood;
+ const ct=ctRes[x.id],ctL=x.kind==="jp"?"japonés":"inglés";
+ if(ctToken()&&x.kind!=="lo"&&(!ct||ct.loading))rows.push(["CardTrader",NaN,"⏳ consultando su anuncio en "+ctL+"…","https://www.cardtrader.com/",false]);
+ else if(ct?.error)rows.push(["CardTrader",NaN,ct.error.replace(/^CardTrader: /,""),"https://www.cardtrader.com/",false]);
+ else if(ct?.rows&&!(x.kind==="jp"?ct.rows.find(o=>o.lang==="jp"||o.lang==="ja"):ct.rows.find(o=>o.lang==="en"))?.cheapestGood)rows.push(["CardTrader",NaN,"no tiene ninguna en "+ctL+" NM/EX a la venta ahora","https://www.cardtrader.com/cards/"+encodeURIComponent(ct.bp),false]);
+ if(ct&&ct.rows){const r=x.kind==="jp"?ct.rows.find(o=>o.lang==="jp"||o.lang==="ja"):ct.rows.find(o=>o.lang==="en");const a=r&&r.cheapestGood;
   if(a){const sh=Number.isFinite(a.ship);rows.push(["CardTrader · "+(LNAME[r.lang]||r.lang)+" "+(a.cond||"NM/EX"),a.eur+(sh?a.ship:c.buyShip),"anuncio "+EUR(a.eur)+(a.country?" (vendedor de "+a.country+")":"")+" + envío "+(sh?"real "+EUR(a.ship):"estimado "+EUR(c.buyShip)+" (CardTrader no lo dio)")+(a.hub?" · admite CardTrader Zero: revisan la carta antes de enviártela":""),"https://www.cardtrader.com/cards/"+encodeURIComponent(ct.bp),true])}}
  rows.push(...shopRows(x,c));
   for(const r of rows)if(Number.isFinite(r[1])&&r[1]>c.maxBuy){r[2]+=" · fuera de tu presupuesto ("+EUR(c.maxBuy)+")";r[4]=false}
  rows.sort((a,b)=>(b[4]-a[4])||(Number.isFinite(a[1])?a[1]:1e9)-(Number.isFinite(b[1])?b[1]:1e9));/* primero lo comparable (mismo idioma y estado), de más barata a más cara */
  const ok=rows.filter(r=>r[4]&&Number.isFinite(r[1])),best=ok.reduce((m,r)=>!m||r[1]<m[1]?r:m,null);
  return '<details class="v4more cpBuy" open><summary><b>Dónde comprarla más barata</b>'+(best?' · '+E(best[0])+' '+EUR(best[1])+' puesta en 41020':'')+'</summary><table class="cpLTtab"><tbody>'+rows.map(r=>'<tr'+(r===best?' class="best"':'')+'><th scope="row"><a href="'+E(r[3])+'" target="_blank" rel="noopener noreferrer">'+E(r[0])+' ↗</a></th><td class="'+(r===best?'pos':'')+'">'+(Number.isFinite(r[1])?EUR(r[1]):'—')+'</td><td><small>'+E(r[2])+'</small></td></tr>').join("")+'</tbody></table>'+
-  (ctRes[x.id]?.loading?'<p class="v4note">⏳ Consultando CardTrader…</p>':ctRes[x.id]?.error?'<p class="v4note neg">CardTrader: '+E(ctRes[x.id].error)+'</p>':ctRes[x.id]?'':ctToken()?'<button type="button" class="v4btn" data-cp-ctload="'+E(x.id)+'">Añadir precio de CardTrader</button>':'<p class="v4note">Con tu token de CardTrader («Estado de las fuentes») se añade su precio con envío real.</p>')+'<p class="v4note">Ordenadas de más barata a más cara por lo que pagas en total en 41020. Solo se compara el mismo idioma'+(x.kind==='jp'?' (japonés)':'')+'.</p></details>';
+  (ctRes[x.id]||ctToken()?'':'<p class="v4note">Con tu token de CardTrader («Estado de las fuentes») se añade su precio con envío real.</p>')+'<p class="v4note">Ordenadas de más barata a más cara por lo que pagas en total en 41020. Solo se compara el mismo idioma'+(x.kind==='jp'?' (japonés)':'')+'.</p></details>';
 }
 /* 🎲 Chollos por verificar: el anuncio más barato de CUALQUIER estado está al 50 % o menos de su valor, la carta se vende
    cada semana y lo que pagas cabe en tu presupuesto (caso real: Mewtwo & Mew GX de Miracle Twins a 50 €). Pueden ser
@@ -616,7 +630,7 @@ function chollos(c){
   if(x.kind!=="jp"){langN++;continue}/* V131: idioma sin comprobar */
   if(p.low<S*FAKE_RATIO){fakeN++;continue}/* V130: proxy, falsa o error */
   if((x.liq?.k||0)<2||(TRUST[x.res?.status]??0)<2)continue;
-  const cost=p.low+c.buyShip;if(cost>c.maxBuy)continue;const profit=netSale(S,c)-cost;if(profit<minP(x,c))continue;
+  const cost=p.low+c.buyShip;if(cost>c.maxBuy)continue;const profit=netSale(S,c)-cost;if(profit<minP(x,c)||!mgOk(profit,cost,c))continue;
   const op={k:"low",cond:"buen",buy:p.low,cost,sale:S,profit,margin:profit/cost},k=confidence(x,op);
   x.dl=x.res?.pid?delta(x.res.pid):null;out.push({x,op,S,low:p.low,cost,profit,ratio:p.low/S,conf:Math.round(k.score/2),isNew:!!(x.dl&&x.dl.drop>=.15)})}
  return out.sort((a,b)=>(b.isNew-a.isNew)||b.profit*b.conf-a.profit*a.conf);
@@ -731,7 +745,7 @@ function renderNow(){
   (L.sure.length?'<div class="v4list">'+L.sure.slice(0,25).map((x,i)=>cardHtml(x,i+1,c)).join("")+'</div>'+(L.sure.length>25?'<details class="v4old"><summary>Ver más ('+(L.sure.length-25)+')</summary><div class="v4list">'+L.sure.slice(25,150).map((x,i)=>cardHtml(x,i+26,c)).join("")+'</div></details>':''):
    '<p class="v4empty">'+(loading?'Cargando la guía oficial de Cardmarket…':view.q?'Ninguna carta coincide con «'+E(view.q)+'».':'Ninguna oportunidad cumple estos filtros. Prueba «Todas con precio», otro estado u ordenar distinto.')+'</p>'+loBest(c))+
   (L.pending.length?'<details class="v4old"><summary>Por confirmar versión o sin ventas recientes ('+L.pending.length+')</summary><p class="v4note">Cardmarket tiene varias versiones con el mismo nombre y aún no hay una segunda fuente que confirme cuál es, o no hay ventas en los últimos 30 días. Comprueba el número en la ficha antes de comprar.</p><div class="v4list">'+L.pending.slice(0,40).map(x=>cardHtml(x,0,c)).join("")+'</div></details>':'')+'</section>';
- restoreUI(slot,ui);
+ restoreUI(slot,ui);ctWatch(slot);
  if(anc){const el=slot.querySelector(anc.k);if(el){const dy=el.getBoundingClientRect().top-anc.top;if(Math.abs(dy)>1)window.scrollBy(0,dy)}}
  slot.querySelectorAll("img[data-v4img]").forEach(im=>{if(im.dataset.wired)return;im.dataset.wired="1";im.addEventListener("error",()=>{const a=im.dataset.alt;if(a&&!im.dataset.usedAlt){im.dataset.usedAlt="1";im.src=a;return}im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false})});
 }
@@ -920,6 +934,16 @@ async function refresh(force){
 /* V131 (V134: 30): con token de CardTrader, comprueba solo las CT_AUTO cartas con más margen posible cuyo anuncio más barato de Cardmarket
    es de idioma desconocido: si en CardTrader hay una en INGLÉS lo bastante barata, sale como oportunidad del mismo idioma. */
 let ctAutoDone=false;const CT_AUTO=60;
+/* V139 · CardTrader en TODAS las cartas que ves: al aparecer en pantalla, su precio en su idioma se pide solo (en cola, de
+   una en una, con pausa: el límite de CardTrader es 10/s). */
+const ctQ=[];let ctQBusy=false,ctObs=null;
+function ctEnqueue(id){if(!ctToken()||ctRes[id]||ctQ.includes(id))return;ctQ.push(id);ctRes[id]={loading:true};ctRun()}
+async function ctRun(){if(ctQBusy)return;ctQBusy=true;try{while(ctQ.length){const id=ctQ.shift();delete ctRes[id];await ctLoad(id);await new Promise(r=>setTimeout(r,250))}}finally{ctQBusy=false}}
+function ctWatch(slot){
+ if(!ctToken()||typeof IntersectionObserver!=="function")return;ctObs?.disconnect();
+ ctObs=new IntersectionObserver(es=>{for(const e of es){if(!e.isIntersecting)continue;const id=e.target.dataset.cpid;if(id&&e.target.dataset.game!=="lorcana")ctEnqueue(id);ctObs.unobserve(e.target)}},{rootMargin:"200px"});
+ slot.querySelectorAll(".cpCard[data-cpid]").forEach(el=>{if(!ctRes[el.dataset.cpid])ctObs.observe(el)});
+}
 /* «Probar CardTrader»: GET /info (la llamada que CardTrader indica para comprobar el token) */
 async function ctTest(){
  const t=ctToken(),ti=tokInfo(t);let r;
@@ -941,7 +965,7 @@ async function ctAuto(){
  const t=await ctTest();if(!t.ok){render();return}
  /* además de las candidatas, las cartas que ves en Compra YA (las 25 primeras), para comparar Cardmarket y CardTrader */
  const vis=list().sure.slice(0,25).filter(x=>x.kind!=="lo"&&!ctRes[x.id]&&!cand.some(o=>o.x.id===x.id)).map(x=>({x}));
- for(const o of cand.concat(vis)){await ctLoad(o.x.id);if(ctRes[o.x.id]?.error&&/token|navegador|no responde/i.test(ctRes[o.x.id].error))break;await new Promise(r=>setTimeout(r,250))}
+ for(const o of cand.concat(vis)){if(ctRes[o.x.id]&&!ctRes[o.x.id].error)continue;/* ya pedida por la cola de pantalla */await ctLoad(o.x.id);if(ctRes[o.x.id]?.error&&/token|navegador|no responde/i.test(ctRes[o.x.id].error))break;await new Promise(r=>setTimeout(r,250))}
  /* tiendas que dejen leer su precio (si ninguna, no se enseña nada) */
  if(!SHOPS.some(sh=>shopSt[sh.id]&&Date.now()-shopSt[sh.id].at<864e5))await shopProbe();
  if(SHOPS.some(sh=>shopSt[sh.id]?.ok))for(const x of list().sure.filter(x=>x.kind==="jp").slice(0,15))await shopLoad(x.id,true);

@@ -22,6 +22,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});const hits={guide:0,pt:[],bx:0,us:0,ct:[]};let bxDown=false;
+ await ctx.addInitScript(()=>{try{const u=JSON.parse(localStorage.getItem('cv_v104_user')||'{}');u.cfg=u.cfg||{};if(u.cfg.minMargin==null){u.cfg.minMargin=0;localStorage.setItem('cv_v104_user',JSON.stringify(u))}}catch{}});/* V139: estas pruebas no miden el margen mínimo */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
   if(/tcgplayer\.com|api\.tcgdex\.net\/v2\/[a-z-]+\/cards\/./.test(u)){hits.us++;/* V125: TCGplayer vuelve, pero llega en la misma consulta por colección a pokemontcg.io (select=…,tcgplayer) */if(process.env.DBG)console.log('precio EE. UU./carta a carta:',u);return route.abort()}/* el índice de nombres de TCGdex (identificar cartas) no cuenta */
   if(/images\.|assets\.tcgdex|cards\.lorcast|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
@@ -53,7 +54,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  const lk={main:main0,es:await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href')};await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
  ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y, con el idioma elegido, filtrado (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&minCondition=3'&&/* V126: mismo filtro que el precio mostrado (EX o mejor) */lk.es==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3',JSON.stringify(lk));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
- ok('V131 · «Mal estado · restaurar»: Alakazam internacional a 60 € (idioma sin indicar: puede ser coreano o chino) NO se propone',!(await ids()).includes('base4-1'),JSON.stringify(await ids()));
+ ok('V139 · «Mal estado»: Alakazam internacional a 60 € no se propone como compra (idioma sin indicar) sino como «🔧 BUSCA EN INGLÉS EN MAL ESTADO» con su precio máximo',/BUSCA EN INGLÉS EN MAL ESTADO/.test(await T('base4-1'))&&!/✅ COMPRA/.test(await T('base4-1')),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
  t=await T('lo-tfc-207');
  ok('Lorcana (Bindex): Elsa foil · pagas 199 € (193 + envío) → venta 257 € → +40,15 €',/LORCANA · BINDEX/.test(t)&&/\+40,15\s€/.test(t),t.slice(0,300));/* 257·0,95 − 5 − 199 */
@@ -67,7 +68,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.selectOption('[data-cp-view="sort"]','buy');await page.waitForTimeout(300);
  ok('Ordenar por menor precio de compra (Elsa 193 €, Mewtwo 194 €)',(await ids()).slice(0,2).join()==='lo-tfc-207,base4-10'/* V138: detrás, las de precio objetivo */,JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
- ok('Estado «Mal estado · restaurar»: sin anuncios internacionales de idioma desconocido',!(await ids()).includes('base4-1'),JSON.stringify(await ids()));
+ ok('Estado «Mal estado · restaurar»: ninguna compra internacional de idioma desconocido (solo precio objetivo)',!/✅ COMPRA/.test(await page.textContent('#v4Buy .cpBox > .v4list')),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
  const ids0=await ids();ok('Estado «Buen estado»',['base4-10','lo-tfc-207'].every(i=>ids0.includes(i)),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.selectOption('[data-cp-view="game"]','lorcana');await page.waitForTimeout(300);

@@ -22,6 +22,7 @@ const P=(id,cents,lang,user,cc,hub,cond='Near Mint')=>({id,price:{cents,currency
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});
  await ctx.addInitScript(()=>{try{localStorage.setItem('cv_cardtrader_token','eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.prueba')}catch{}});
+ await ctx.addInitScript(()=>{try{const u=JSON.parse(localStorage.getItem('cv_v104_user')||'{}');u.cfg=u.cfg||{};if(u.cfg.minMargin==null){u.cfg.minMargin=0;localStorage.setItem('cv_v104_user',JSON.stringify(u))}}catch{}});/* V139: estas pruebas no miden el margen mínimo */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
   if(/images\.|assets\.tcgdex|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.startsWith('https://api.frankfurter.app/latest?from=JPY'))return J({rates:{EUR:0.0058},date:'2026-10-24'});
@@ -59,7 +60,7 @@ const P=(id,cents,lang,user,cc,hub,cond='Near Mint')=>({id,price:{cents,currency
  // 170 € (NM, inglés, Italia) + envío real 5,90 € = 175,90 € · el coreano de 90 € y la «Played» de 120 € no cuentan
  ok('Mewtwo en CardTrader: emparejada por id de Cardmarket (aunque el número sea «10a» y exista «Base Set»), anuncio en INGLÉS 170 € + envío REAL 5,90 € = 175,90 €',/CardTrader · Inglés Near Mint ↗175,90\s€/.test(t)&&/anuncio 170,00\s€ \(vendedor de IT\) \+ envío real 5,90\s€/.test(t)&&hits.includes('/marketplace/products?blueprint_id=900&language=en'),t);
  ok('…y admite CardTrader Zero (revisan la carta)',/admite CardTrader Zero/.test(t));
- ok('Comparación ordenada: CardTrader 175,90 € (la mejor), Cardmarket 200,00 € y al final lo no comparable (cualquier estado 156 €)',/Dónde comprarla más barata · CardTrader · Inglés Near Mint 175,90\s€ puesta en 41020/.test(t)&&t.indexOf('CardTrader · Inglés Near Mint ↗')<t.indexOf('Cardmarket · EX o mejor ↗')&&t.indexOf('Cardmarket · EX o mejor ↗')<t.indexOf('Cardmarket · cualquier estado ↗'),t.slice(0,500));
+ ok('Comparación ordenada: CardTrader 175,90 € (la mejor) y luego Cardmarket 200,00 € (una sola fila)',/Dónde comprarla más barata · CardTrader · Inglés Near Mint 175,90\s€ puesta en 41020/.test(t)&&t.indexOf('CardTrader · Inglés Near Mint ↗')<t.indexOf('Cardmarket · EX o mejor ↗')&&!/cualquier estado/.test(t),t.slice(0,500));
  ok('Solo sitios con precio: sin Buyee, Hareruya2, Zenpan ni calculadoras',!/Buyee|Mercari|Hareruya|Zenpan/.test(t)&&!(await page.$('[data-cp-jpcalcbox]'))&&!/¿Y si la compro en Japón\?/.test(await page.textContent('#v4Buy')),t);
  t=await page.textContent('#v4Buy #cp-jp-861477 .cpBuy');
  ok('Japonesa: CardTrader en japonés con envío estimado cuando el vendedor no da métodos (y lo dice)',/CardTrader · Japonés Near Mint ↗156,00\s€/.test(t)&&/envío estimado 6,00\s€ \(CardTrader no lo dio\)/.test(t),t);

@@ -20,6 +20,7 @@ const hits={shop:[],ct:[]};
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});
  await ctx.addInitScript(()=>{try{localStorage.setItem('cv_cardtrader_token','eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjQxMDI0NDQ4MDB9.prueba')}catch{}});
+ await ctx.addInitScript(()=>{try{const u=JSON.parse(localStorage.getItem('cv_v104_user')||'{}');u.cfg=u.cfg||{};if(u.cfg.minMargin==null){u.cfg.minMargin=0;localStorage.setItem('cv_v104_user',JSON.stringify(u))}}catch{}});/* V139: estas pruebas no miden el margen mínimo */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
   if(/images\.|assets\.tcgdex|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.startsWith('https://api.frankfurter.app/latest?from=JPY'))return J({rates:{EUR:0.0058},date:'2026-10-24'});
@@ -60,9 +61,9 @@ const hits={shop:[],ct:[]};
  await page.fill('[data-cp-q]','pikachu ex');await page.waitForSelector('#v4Buy #cp-jp-861477 .cpBuy',{timeout:30000});
  await page.waitForFunction(()=>/CardTrader · Japonés/.test(document.querySelector('#v4Buy #cp-jp-861477 .cpBuy')?.textContent||''),null,{timeout:30000});
  t=await page.textContent('#v4Buy #cp-jp-861477 .cpBuy');
- const order=[...t.matchAll(/(Zenpan EU \(Lisboa, UE\)|CardTrader · Japonés Near Mint|Zenpan Japan \(Japón\)|Cardmarket · cualquier estado) ↗([\d.,]+)\s€/g)].map(m=>m[1]+' '+m[2]);
+ const order=[...t.matchAll(/(Zenpan EU \(Lisboa, UE\)|CardTrader · Japonés Near Mint|Zenpan Japan \(Japón\)|Cardmarket · «desde») ↗([\d.,]+)\s€/g)].map(m=>m[1]+' '+m[2]);
  // Zenpan Japan: ¥20.000 = 116 € + EMS 20,01 + arancel 3 + IVA 21 % de 139,01 = 29,19 + gestión 15 = 183,20 €
- ok('«Dónde comprarla»: todas las vías ordenadas por lo que pagas en 41020 (Zenpan EU 156 → CardTrader japonés 176 → Zenpan Japan 183,20 → Cardmarket 199)',JSON.stringify(order)===JSON.stringify(['Zenpan EU (Lisboa, UE) 156,00','CardTrader · Japonés Near Mint 176,00','Zenpan Japan (Japón) 183,20','Cardmarket · cualquier estado 199,00']),JSON.stringify(order)+' '+t.slice(0,900));
+ ok('«Dónde comprarla»: todas las vías ordenadas por lo que pagas en 41020 (Zenpan EU 156 → CardTrader japonés 176 → Zenpan Japan 183,20 → Cardmarket 199)',JSON.stringify(order)===JSON.stringify(['Zenpan EU (Lisboa, UE) 156,00','CardTrader · Japonés Near Mint 176,00','Zenpan Japan (Japón) 183,20','Cardmarket · «desde» 199,00']),JSON.stringify(order)+' '+t.slice(0,900));
  ok('La mejor marcada: Zenpan EU con su anuncio y enlace al producto',/Dónde comprarla más barata · Zenpan EU \(Lisboa, UE\) 156,00\s€ puesta en 41020/.test(t)&&await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-jp-861477 .cpBuy tr.best a')].some(a=>a.href==='https://zenpan-eu.com/products/pikachu-ex-234')),t.slice(0,300));
  ok('Solo cuenta la disponible y del mismo número (no la agotada de 140 € ni la nº 44 de 9 €)',!/140,00/.test(t)&&!/9,00\s€ \+/.test(t)&&/«Pikachu ex SAR 234\/193 \[M2a\] Japanese» 150,00\s€ \+ envío estimado 6,00\s€ \(el real, en su carrito; stock en la UE: IVA incluido, sin aduana\)/.test(t),t);
  ok('Hareruya2 no deja leer su precio: no sale (solo sitios con precio)',!/Hareruya2/.test(t),t);

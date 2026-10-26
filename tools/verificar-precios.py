@@ -48,7 +48,8 @@ for c in d['dom']:
     # V138 · precio objetivo en inglés: máximo = min(venta·(1−comisión) − envío venta − mínimo, compra máxima) − envío compra
     t=x['tgt'];g=T.get(x['pid']);S=S_of(g) if g else None
     if S is None or abs(t['S']-S)>1e-9: errs.append(('objetivo venta',c['id']));continue
-    mp=min(S*(1-cfg['feePct']/100)-cfg['sellShip']-cfg['minProfit'],cfg['maxBuy']);mb=int((mp-cfg['buyShip'])*100)/100
+    net=S*(1-cfg['feePct']/100)-cfg['sellShip'];m=cfg.get('minMargin',25)
+    mp=min(net-cfg['minProfit'],net/(1+m/100),cfg['maxBuy']);mb=int((mp-cfg['buyShip'])*100)/100  # V139: beneficio Y margen mínimos
     if abs(t['maxBuy']-mb)>0.011: errs.append(('objetivo cálculo',c['id'],t['maxBuy'],mb))
     if not t['maxBuy']>=0.6*S: errs.append(('objetivo irreal (< 60 %)',c['id']))
     if eur(t['maxBuy']) not in c['decide'] or eur(S) not in c['decide']: errs.append(('objetivo pintado',c['id'],c['decide'][:120]))

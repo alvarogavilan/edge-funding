@@ -21,6 +21,7 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});
+ await ctx.addInitScript(()=>{try{const u=JSON.parse(localStorage.getItem('cv_v104_user')||'{}');u.cfg=u.cfg||{};if(u.cfg.minMargin==null){u.cfg.minMargin=0;localStorage.setItem('cv_v104_user',JSON.stringify(u))}}catch{}});/* V139: estas pruebas no miden el margen mínimo */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
   if(/images\.|assets\.tcgdex|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.startsWith('https://api.frankfurter.app/latest?from=JPY'))return J({rates:{EUR:0.0058},date:'2026-10-24'});
@@ -46,9 +47,9 @@ const GUIDE={fields:F,sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'20
  const T=sel=>page.textContent('#v4Buy #cp-sv04\\.5-232 '+sel);
  t=await T('.cpBuy');
  // TCGplayer: $420 · 0,9 = 378 € → (378 + 15) · 1,21 + 15 = 490,53 €
- ok('Buscándola: «Dónde comprarla» enseña EX o mejor 155,90 € con aviso de idioma, cualquier estado 56 € con aviso y TCGplayer 490,53 €',/Cardmarket · EX o mejor ↗155,90\s€/.test(t)&&/idioma sin indicar: a este precio puede ser coreano o chino; el enlace abre solo los anuncios en INGLÉS/.test(t)&&/Cardmarket · cualquier estado ↗56,00\s€/.test(t)&&/muy por debajo: casi seguro no es comparable/.test(t)&&/TCGplayer \(EE\. UU\.\) ↗490,53\s€/.test(t)&&!/Cardmarket · EX o mejor 155,90\s€ puesta en 41020/.test(t),t);
+ ok('Buscándola: «Dónde comprarla» con UNA fila de Cardmarket (EX o mejor 155,90 €, avisando de que no dice el idioma) y TCGplayer 490,53 €',/Cardmarket ↗155,90\s€/.test(t)&&/el más barato EX o mejor \(149,90\s€\) no dice el idioma: a ese precio puede ser coreano o chino/.test(t)&&!/cualquier estado/.test(t)&&/TCGplayer \(EE\. UU\.\) ↗490,53\s€/.test(t),t);
  const bl=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-sv04\\.5-232 .cpBuy a')].map(a=>a.href));
- ok('Cada vía con su enlace directo (EX o mejor filtrado, cualquier estado sin filtro, TCGplayer)',['https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3&language=1','https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779','https://prices.pokemontcg.io/tcgplayer/sv4pt5-232'].every(u=>bl.includes(u))/* V133: filas ordenadas por lo que pagas */,JSON.stringify(bl));
+ ok('Cada vía con su enlace directo (EX o mejor filtrado, cualquier estado sin filtro, TCGplayer)',['https://www.cardmarket.com/es/Pokemon/Products?idProduct=751779&minCondition=3&language=1','https://prices.pokemontcg.io/tcgplayer/sv4pt5-232'].every(u=>bl.includes(u))/* V133: filas ordenadas por lo que pagas */,JSON.stringify(bl));
  await page.fill('[data-cp-q]','');await page.waitForTimeout(600);
  ok('Ya no hay plan de compra con presupuesto',!(await page.$('[data-cp-planbox]')));
  ok('Sin errores de JavaScript',errors.length===0,errors.join(' | '));
