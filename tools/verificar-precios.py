@@ -53,7 +53,8 @@ for c in d['dom']:
     if abs(t['maxBuy']-mb)>0.011: errs.append(('objetivo cálculo',c['id'],t['maxBuy'],mb))
     if not t['maxBuy']>=0.6*S: errs.append(('objetivo irreal (< 60 %)',c['id']))
     if eur(t['maxBuy']) not in c['decide'] or eur(S) not in c['decide']: errs.append(('objetivo pintado',c['id'],c['decide'][:120]))
-    if f"idProduct={x['pid']}" not in c['tgtHref'] or 'language=1' not in c['tgtHref']: errs.append(('objetivo enlace',c['id'],c['tgtHref']))
+    jp=str(c['id']).startswith('jp-')  # japonesas: su ficha es solo japonesa, no lleva filtro de idioma
+    if f"idProduct={x['pid']}" not in c['tgtHref'] or (not jp and 'language=1' not in c['tgtHref']): errs.append(('objetivo enlace',c['id'],c['tgtHref']))
     continue
   for v in (b['buy'],b['sale'],b['profit']):
     if eur(v) not in c['money']: errs.append(('pintado',c['id'],v,c['money'][:120]))

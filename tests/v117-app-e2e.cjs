@@ -66,7 +66,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  ok('Umbreon Aquapolis H29: la 2.ª fuente corrige la versión (748,52 €, no 98 €) y avisa del presupuesto',/748,52\s€/.test(t)&&!/24,99\s€ cualquier/.test(t)&&/fuera de tu presupuesto/.test(t)&&/310,00\s€/.test(t),t.slice(0,400));
  await page.fill('[data-cp-q]','');await page.waitForTimeout(600);
  await page.selectOption('[data-cp-view="sort"]','buy');await page.waitForTimeout(300);
- ok('Ordenar por menor precio de compra (Elsa 193 €, Mewtwo 194 €)',(await ids()).slice(0,2).join()==='lo-tfc-207,base4-10'/* V138: detrás, las de precio objetivo */,JSON.stringify(await ids()));
+ ok('Ordenar por menor precio de compra (Elsa 193 €, Mewtwo 194 €)',(await ids()).filter(i=>i!=='base4-1').join()==='lo-tfc-207,base4-10'/* V140: se ordena por lo que pagas; Alakazam es precio objetivo */,JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
  ok('Estado «Mal estado · restaurar»: ninguna compra internacional de idioma desconocido (solo precio objetivo)',!/✅ COMPRA/.test(await page.textContent('#v4Buy .cpBox > .v4list')),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
