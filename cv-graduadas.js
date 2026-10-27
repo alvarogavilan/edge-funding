@@ -42,7 +42,7 @@ async function scanGraded(){
   for(const {e,xs} of pairs){
    const bps=await C.ctGet("/blueprints/export?expansion_id="+encodeURIComponent(e.id)),bpA=Array.isArray(bps)?bps:(bps?.array||[]),bpM=new Map(bpA.map(b=>[b.id,b]));
    const j=await C.ctGet("/marketplace/products?expansion_id="+encodeURIComponent(e.id)),prods=Array.isArray(j)?j:Object.entries(j||{}).flatMap(([k,v])=>(Array.isArray(v)?v:[]).map(p=>({blueprint_id:Number(k),...p})));/* la API agrupa por id de carta */
-   const grp={};for(const p of prods){if(!isGraded(p))continue;const cur=String(p.price?.currency||"EUR").toUpperCase(),eur=cur==="EUR"?Number(p.price?.cents??p.price_cents)/100:NaN;if(!(eur>0))continue;const G=gradeOf(p);if(!G.co||!Number.isFinite(G.gr))continue;
+   const grp={};for(const p of prods){if(!isGraded(p)||p.on_vacation||(C.fakeWords?.(p.description)||[]).length)continue;/* V141: de vacaciones o «proxy»/«réplica» en la descripción, fuera */const cur=String(p.price?.currency||"EUR").toUpperCase(),eur=cur==="EUR"?Number(p.price?.cents??p.price_cents)/100:NaN;if(!(eur>0))continue;const G=gradeOf(p);if(!G.co||!Number.isFinite(G.gr))continue;
     const k=p.blueprint_id+"|"+G.co+"|"+G.gr+"|"+G.lang;(grp[k]=grp[k]||[]).push({eur,country:p.user?.country_code||"",G,bp:p.blueprint_id})}
    for(const G0 of Object.values(grp)){const bp=bpM.get(G0[0].bp)||{},num=String(bp.fixed_properties?.collector_number||bp.collector_number||"").split("/")[0].replace(/^0+/,"");
     const cm=(bp.card_market_ids||[]).map(Number),x=xs.find(y=>cm.includes(Number(y.res?.pid)))||xs.find(y=>String(y.number||"").split("/")[0].replace(/^0+/,"")===num&&nrmS(bp.name||"").split(" ")[0]===nrmS(y.name).split(" ")[0]);/* V135: por id de Cardmarket */

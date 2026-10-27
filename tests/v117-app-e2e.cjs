@@ -59,7 +59,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  t=await T('lo-tfc-207');
  ok('Lorcana (Bindex): Elsa foil · pagas 199 € (193 + envío) → venta 257 € → +40,15 €',/LORCANA · BINDEX/.test(t)&&/\+40,15\s€/.test(t),t.slice(0,300));/* 257·0,95 − 5 − 199 */
  ok('Los números de las operaciones no se parten en vertical',await page.evaluate(()=>[...document.querySelectorAll('.cpOp dd')].every(d=>d.getBoundingClientRect().height<30)));
- const pend=await page.textContent('.cpBox > details.v4old');
+ await page.click('.cpBox > details[data-cp-pend] > summary');await page.waitForTimeout(300);/* V141: se rellena al abrirla */const pend=await page.textContent('.cpBox > details[data-cp-pend]');
  ok('Aparte, sin recomendar: Nidoking sin ventas recientes y Aerodactyl con versión dudosa (colisión TCGdex)',/Nidoking/.test(pend)&&/Aerodactyl/.test(pend)&&/VERSIÓN DUDOSA/.test(pend)&&!(await ids()).includes('base4-11'),pend.slice(0,160));
  await page.fill('[data-cp-q]','umbreon');await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-ecard2-H29')?.textContent||''),null,{timeout:30000});
  t=await T('ecard2-H29');

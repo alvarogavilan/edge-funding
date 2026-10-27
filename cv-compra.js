@@ -300,7 +300,10 @@ function confidence(x,o){
 function bestOp(list,cond){return list.filter(o=>!o.mixLang&&(cond==="all"||o.cond===cond)&&Number.isFinite(o.profit)&&opIn(o)).sort((a,b)=>b.profit-a.profit)[0]||null}
 function ownedSet(){const st=window.CVStateBridge?.get?.(),n=v=>String(v||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim(),num=v=>String(v||"").split("/")[0].replace(/\D/g,"").replace(/^0+/,"");
  const s=new Set();for(const c of (st?.cards||[]))if(!c.archivedSold)s.add(n(c.name)+"|"+num(c.number));return {has:(name,number)=>s.has(n(name)+"|"+num(number))}}
-function cardsPk(){
+/* V141 · Durante un pintado las cartas se calculan una sola vez (antes, 4 veces: lista, Top 5, punto de mira y chollos) */
+let memo=null;const memoOf=(k,f)=>memo?(memo.has(k)?memo.get(k):(memo.set(k,f()),memo.get(k))):f();
+function cardsPk(){return memoOf("pk",cardsPk_)}
+function cardsPk_(){
  const U=window.CV_UNIVERSE;if(!U||!M.guide&&!Object.keys(M.pt.cards).length)return [];
  const c=cfg(),own=ownedSet(),out=[];
  for(const r of U.cards){const res=resolve(r[0]);if(!res)continue;
@@ -312,7 +315,8 @@ function cardsPk(){
 }
 /* Cartas japonesas: expansión japonesa = producto propio en Cardmarket, así que «desde», tendencia y medias de venta
    son de cartas japonesas (idioma seguro). Catálogo verificado por nombre y por orden de numeración (tools/build-jp-map.mjs). */
-function cardsJp(){
+function cardsJp(){return memoOf("jp",cardsJp_)}
+function cardsJp_(){
  const J=window.CV_JP_MAP;if(!J?.cards||!M.guide)return [];const c=cfg(),out=[];
  for(const r of J.cards){const [pid,name,set,code,number,image,f]=r,g=G(pid);if(!g)continue;
   const res={pid,status:f&4?"sin-confirmar":"jp",why:f&16?"Producto japonés de Cardmarket; emparejado por nombre y orden de numeración dentro de su expansión (método comprobado 130 de 130); confirma el número "+number+" en la ficha":f&4?"Hay otra versión japonesa con el mismo nombre y precio muy distinto; comprueba el número "+number+" en la ficha":f&8?"Producto japonés de Cardmarket; versión comprobada por nombre y orden de numeración":"Producto japonés de Cardmarket; único con este nombre en la expansión"};
@@ -332,7 +336,8 @@ function matchOwned(c){
  if(cand.length>1&&c.set){const z=cand.filter(y=>nq(y.set).includes(nq(c.set))||nq(c.set).includes(nq(y.set).replace(" (japones)","")));if(z.length===1)return {card:z[0],how:"nombre, número y colección"}}
  return cand.length>1?{ambiguous:cand.length}:null;
 }
-function cardsLo(){
+function cardsLo(){return memoOf("lo",cardsLo_)}
+function cardsLo_(){
  if(!M.lo?.cards)return [];const c=cfg(),own=ownedSet();
  return M.lo.cards.map(x=>{const card={kind:"lo",id:x.id,x,name:x.name,set:x.set,number:x.number,rarity:x.rarity,res:{pid:x.cm,status:"bindex",why:"Bindex empareja Cardmarket por nombre y precio dentro de la expansión"},p:{low:x.low,trend:x.trend,avg1:x.avg1,avg7:x.avg7,avg30:x.avg30,date:x.updated},owned:own.has(x.name,x.number)};
   card.ops=ops(card,c);card.liq=liquidity(card.p);card.mom=momentum(card.p);return card});
@@ -490,7 +495,7 @@ function sniper(){
   if((x.liq?.k||0)<2||(TRUST[x.res?.status]??0)<2)continue;
   const xs=[p.avg1,p.avg7,p.avg30,p.trend].filter(Number.isFinite),disp=xs.length>=2?(Math.max(...xs)-Math.min(...xs))/S:1;if(disp>.25)continue;
   const cost=p.exPlus+c.buyShip,profit=netSale(S,c)-cost;if(profit<c.minProfit||!mgOk(profit,cost,c))continue;
-  x.dl=x.res?.pid?delta(x.res.pid):null;x.best=x.best||{k:"ex"};out.push({x,S,low:p.exPlus,cost,profit,ratio:p.exPlus/S,isNew:!!(x.dl&&x.dl.drop>=.15)})}
+  out.push({x:{...x,dl:x.res?.pid?delta(x.res.pid):null,best:{k:"ex"}},S,low:p.exPlus,cost,profit,ratio:p.exPlus/S,isNew:!!(x.res?.pid&&delta(x.res.pid)?.drop>=.15)})}
  return out.sort((a,b)=>(b.isNew-a.isNew)||b.profit-a.profit);
 }
 /* 🇯🇵 Comprar japonesas (V132). Solo lo que se puede comprobar:
@@ -537,7 +542,7 @@ function top5(c){
  const cands=[];
  for(const x of cardsPk().concat(cardsJp(),cardsLo())){
   const o=x.ops.filter(o=>!o.mixLang&&!o.langUnk&&o.cond==="buen"&&goodOp(o,x,c)&&opIn(o)).sort((a,b)=>b.profit-a.profit)[0];
-  if(!o||(TRUST[x.res?.status]??0)<2||(x.liq?.k||0)<1)continue;x.best=o;const k=confidence(x,o);
+  if(!o||(TRUST[x.res?.status]??0)<2||(x.liq?.k||0)<1)continue;const k=confidence(x,o);/* sin tocar x.best: la carta es la misma que pinta la lista */
   cands.push({kind:"card",x,o,conf:k.score,prudent:o.profit*k.score/100})}
  const inTop=new Set(cands.map(t=>t.x.id));/* una carta solo una vez: si ya tiene compra fiable, no se repite como chollo */
  for(const h of chollos(c))if(!inTop.has(h.x.id))cands.push({kind:"chollo",x:h.x,o:h.op,h,conf:h.conf,prudent:h.profit*h.conf/100});
@@ -623,7 +628,8 @@ function buyTable(x,c){
    gangas o cartas dañadas, de otro idioma o ya vendidas: el beneficio es «si está bien» y la confianza se reduce a la mitad.
    El enlace abre la ficha SIN filtro, para que veas ese mismo anuncio. */
 let fakeN=0,langN=0;
-function chollos(c){
+function chollos(c){return memoOf("ch",()=>chollos_(c))}
+function chollos_(c){
  const lg=selLang();let all=[];
  if(view.game!=="lorcana"&&lg!=="ja")all=all.concat(cardsPk());if(view.game!=="lorcana"&&(!lg||lg==="ja"))all=all.concat(cardsJp());if((view.game==="all"||view.game==="lorcana")&&!lg)all=all.concat(cardsLo());
  const out=[];fakeN=0;langN=0;
@@ -723,18 +729,27 @@ const KEEP="textarea,input:not([type=search]),select:not([data-cp-view])";
 function keyOf(el){const card=el.closest(".cpCard"),box=el.closest("[data-cp-planbox],[data-cp-jpbox],[data-cp-snipe],.v4settings");const own=[...el.attributes].filter(a=>a.name.startsWith("data-")).map(a=>a.name+"="+a.value).join("&");
  return (card?card.id:box?(box.getAttribute("data-cp-planbox")!=null?"plan":box.getAttribute("data-cp-jpbox")!=null?"jp":box.getAttribute("data-cp-snipe")!=null?"snipe":"settings"):"")+"|"+el.tagName+"|"+own}
 const openSt={};let restoring=false;
-function detKey(d){const card=d.closest(".cpCard"),own=["data-cp-snipe","data-cp-chollo","data-cp-jpbox","data-cp-fakebox","data-cp-planbox","data-cp-pastebox"].find(a=>d.hasAttribute(a));
+function detKey(d){const card=d.closest(".cpCard"),own=["data-cp-snipe","data-cp-chollo","data-cp-jpbox","data-cp-fakebox","data-cp-planbox","data-cp-pastebox","data-cp-more","data-cp-pend"].find(a=>d.hasAttribute(a));
  if(own&&!card)return own;const scope=card||d.closest("[data-cp-jpbox],[data-cp-chollo]")||document.querySelector('[data-rd-live="compra"]');return (card?card.id:(scope&&scope.getAttribute&&["data-cp-jpbox","data-cp-chollo"].find(a=>scope.hasAttribute(a))||""))+"|"+(d.className||"")+"|"+[...scope.querySelectorAll("details")].indexOf(d)}
-document.addEventListener("toggle",e=>{const d=e.target;if(restoring||!(d instanceof HTMLDetailsElement)||!d.closest('[data-rd-live="compra"]'))return;openSt[detKey(d)]=d.open;if(Date.now()-lastPaint>200)lastUI=Date.now();if(d.hasAttribute("data-cp-jpbox")){jp.open=d.open;writeLS(JKEY,jp)}},true);
+document.addEventListener("toggle",e=>{const d=e.target;if(restoring||!(d instanceof HTMLDetailsElement)||!d.closest('[data-rd-live="compra"]'))return;openSt[detKey(d)]=d.open;if(d.open&&(d.hasAttribute("data-cp-more")||d.hasAttribute("data-cp-pend")))fillLazy(d);if(Date.now()-lastPaint>200)lastUI=Date.now();if(d.hasAttribute("data-cp-jpbox")){jp.open=d.open;writeLS(JKEY,jp)}},true);
 function anchorOf(slot){const r0=slot.getBoundingClientRect();if(r0.top>=0)return null;
  for(const el of slot.querySelectorAll(".cpCard[id],[data-cp-snipe],[data-cp-chollo],[data-cp-jpbox],.cpTop,.cpSum")){const r=el.getBoundingClientRect();if(r.bottom>0)return {k:el.id?"#"+CSS.escape(el.id):el.matches(".cpTop")?".cpTop":el.matches(".cpSum")?".cpSum":"["+["data-cp-snipe","data-cp-chollo","data-cp-jpbox"].find(a=>el.hasAttribute(a))+"]",top:r.top}}return null}
 function snapUI(slot){const det=[],val=[];slot.querySelectorAll("details").forEach((d,i)=>{if(d.open){const card=d.closest(".cpCard");det.push((card?card.id:"")+"|"+(d.className||"")+"|"+[...(card||slot).querySelectorAll("details")].indexOf(d))}});
  slot.querySelectorAll(KEEP).forEach(el=>{if(el.value!==el.defaultValue||el.tagName==="SELECT"&&el.value!==(el.querySelector("option[selected]")?.value??el.options?.[0]?.value))val.push([keyOf(el),el.value])});return {det,val}}
 function restoreUI(slot,st){if(!st)return;restoring=true;slot.querySelectorAll("details").forEach(d=>{const card=d.closest(".cpCard"),k=(card?card.id:"")+"|"+(d.className||"")+"|"+[...(card||slot).querySelectorAll("details")].indexOf(d),k2=detKey(d);if(k2 in openSt)d.open=openSt[k2];else if(st.det.includes(k))d.open=true});setTimeout(()=>{restoring=false},0);
  const m=new Map(st.val);slot.querySelectorAll(KEEP).forEach(el=>{const k=keyOf(el);if(m.has(k))el.value=m.get(k)})}
-function renderNow(){
+function renderNow(){memo=new Map();try{paint()}finally{memo=null}}
+/* V141 · «Ver más» y «Por confirmar» cerrados no se construyen (eran 1,3 MB de HTML y 18.000 elementos en cada pintado):
+   se rellenan al abrirlos. */
+let lastL=null;
+const moreHtml=(L,c)=>L.sure.slice(25,150).map((x,i)=>cardHtml(x,i+26,c)).join(""),pendHtml=(L,c)=>L.pending.slice(0,40).map(x=>cardHtml(x,0,c)).join("");
+function lazyBox(k,sum,note,html){const open=!!openSt[k];return '<details class="v4old" '+k+(open?' open':'')+'><summary>'+sum+'</summary>'+note+'<div class="v4list" data-cp-lazy>'+(open?html():'')+'</div></details>'}
+function fillLazy(d){const box=d.querySelector(":scope > [data-cp-lazy]");if(!box||box.childElementCount||!lastL)return;const {L,c}=lastL;
+ memo=new Map();try{box.innerHTML=d.hasAttribute("data-cp-more")?moreHtml(L,c):pendHtml(L,c)}finally{memo=null}const slot=d.closest('[data-rd-live="compra"]');if(slot){ctWatch(slot);wireImgs(slot)}}
+function wireImgs(slot){slot.querySelectorAll("img[data-v4img]").forEach(im=>{if(im.dataset.wired)return;im.dataset.wired="1";im.addEventListener("error",()=>{const a=im.dataset.alt;if(a&&!im.dataset.usedAlt){im.dataset.usedAlt="1";im.src=a;return}im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false})})}
+function paint(){
  if(typeof document.querySelector!=="function")return;const slot=document.querySelector('[data-rd-live="compra"]');if(!slot)return;
- langData=readLS(LKEY,{});watch=readLS(WKEY,{});const c=cfg(),L=list();
+ langData=readLS(LKEY,{});watch=readLS(WKEY,{});const c=cfg(),L=list();lastL={L,c};
  const sel=(k,opts,label)=>'<label>'+label+'<select data-cp-view="'+k+'">'+opts.map(([v,t])=>'<option value="'+v+'"'+(view[k]===v?' selected':'')+'>'+t+'</option>').join("")+'</select></label>';
  const loading=!M.guide&&!M.lo;
  trackNew(L,c);
@@ -744,12 +759,12 @@ function renderNow(){
   '<div class="rdctl"><label class="cpQ">Buscar carta<input type="search" data-cp-q value="'+E(view.q)+'" placeholder="Nombre, colección o número"></label>'+sel("game",[["all","Todas"],["pokemon","Pokémon"],["jp","Pokémon japonés (idioma seguro)"],["lorcana","Lorcana"]],"Juego")+sel("lang",[["all","Todos los idiomas"]].concat(LANGS.map(([k,n])=>[k,n])),"Idioma de la carta")+sel("cond",[["buen","Buen estado"],["mal","Mal estado · restaurar"]],"Estado")+
   sel("show",[["profit","Solo con beneficio ≥ "+EUR(c.minProfit)],["all","Todas con precio"]],"Mostrar")+sel("sort",[["profit","Mayor beneficio"],["risk","Mejor beneficio prudente (con riesgo)"],["buy","Menor precio de compra"],["margin","Mayor margen %"],["sale","Mayor precio de venta"],["liq","Se venden más rápido"],["mom","Subiendo esta semana"],["drop","🔥 Bajadas desde ayer"],["name","Nombre A–Z"]],"Ordenar")+'</div>'+
   '<div class="v4actions"><button type="button" class="v4btn" data-cp-refresh>Actualizar precios</button></div>'+top5Html(c)+sourcesHtml()+sniperHtml()+cholloHtml(c)+
-  (L.sure.length?'<div class="v4list">'+L.sure.slice(0,25).map((x,i)=>cardHtml(x,i+1,c)).join("")+'</div>'+(L.sure.length>25?'<details class="v4old"><summary>Ver más ('+(L.sure.length-25)+')</summary><div class="v4list">'+L.sure.slice(25,150).map((x,i)=>cardHtml(x,i+26,c)).join("")+'</div></details>':''):
+  (L.sure.length?'<div class="v4list">'+L.sure.slice(0,25).map((x,i)=>cardHtml(x,i+1,c)).join("")+'</div>'+(L.sure.length>25?lazyBox("data-cp-more",'Ver más ('+(L.sure.length-25)+')','',()=>moreHtml(L,c)):''):
    '<p class="v4empty">'+(loading?'Cargando la guía oficial de Cardmarket…':view.q?'Ninguna carta coincide con «'+E(view.q)+'».':'Ninguna oportunidad cumple estos filtros. Prueba «Todas con precio», otro estado u ordenar distinto.')+'</p>'+loBest(c))+
-  (L.pending.length?'<details class="v4old"><summary>Por confirmar versión o sin ventas recientes ('+L.pending.length+')</summary><p class="v4note">Cardmarket tiene varias versiones con el mismo nombre y aún no hay una segunda fuente que confirme cuál es, o no hay ventas en los últimos 30 días. Comprueba el número en la ficha antes de comprar.</p><div class="v4list">'+L.pending.slice(0,40).map(x=>cardHtml(x,0,c)).join("")+'</div></details>':'')+'</section>';
+  (L.pending.length?lazyBox("data-cp-pend",'Por confirmar versión o sin ventas recientes ('+L.pending.length+')','<p class="v4note">Cardmarket tiene varias versiones con el mismo nombre y aún no hay una segunda fuente que confirme cuál es, o no hay ventas en los últimos 30 días. Comprueba el número en la ficha antes de comprar.</p>',()=>pendHtml(L,c)):'')+'</section>';
  restoreUI(slot,ui);ctWatch(slot);
  if(anc){const el=slot.querySelector(anc.k);if(el){const dy=el.getBoundingClientRect().top-anc.top;if(Math.abs(dy)>1)window.scrollBy(0,dy)}}
- slot.querySelectorAll("img[data-v4img]").forEach(im=>{if(im.dataset.wired)return;im.dataset.wired="1";im.addEventListener("error",()=>{const a=im.dataset.alt;if(a&&!im.dataset.usedAlt){im.dataset.usedAlt="1";im.src=a;return}im.hidden=true;const n=im.parentElement.querySelector(".v4noimg");if(n)n.hidden=false})});
+ wireImgs(slot);
 }
 
 /* ---------- CardTrader (opcional): anuncios reales por IDIOMA y estado ----------
@@ -784,12 +799,14 @@ async function ctExps(x){
  if(!ctCache.exps)ctCache.exps=await ctGet("/expansions");
  return (Array.isArray(ctCache.exps)?ctCache.exps:(ctCache.exps?.array||[])).filter(e=>e.game_id===g.id);
 }
+function ctExpCands(x,exps){const sn=nrm(String(x.set).replace(/\s*\(japon[eé]s\)$/i,"")),jc=x.kind==="jp"?String(x.code||"").toLowerCase():"";
+ return [...new Set([...(jc?exps.filter(e=>String(e.code||"").toLowerCase()===jc):[]),...exps.filter(e=>nrm(e.name)===sn),...exps.filter(e=>nrm(e.name).includes(sn)||sn.includes(nrm(e.name)))])].slice(0,4)}
+async function ctBpOf(exp){if(!ctCache.bp[exp.id]){try{const j=await ctGet("/blueprints/export?expansion_id="+encodeURIComponent(exp.id));ctCache.bp[exp.id]=Array.isArray(j)?j:(j?.array||[])}catch(e){if(/token|navegador|no responde/i.test(e.message))throw e;ctCache.bp[exp.id]=[]}}return ctCache.bp[exp.id]}/* una colección que falla no impide probar la siguiente */
 async function ctBlueprint(x){
- const exps=await ctExps(x),sn=nrm(String(x.set).replace(/\s*\(japon[eé]s\)$/i,"")),jc=x.kind==="jp"?String(x.code||"").toLowerCase():"";
- const cands=[...new Set([...(jc?exps.filter(e=>String(e.code||"").toLowerCase()===jc):[]),...exps.filter(e=>nrm(e.name)===sn),...exps.filter(e=>nrm(e.name).includes(sn)||sn.includes(nrm(e.name)))])].slice(0,4);
+ const exps=await ctExps(x),cands=ctExpCands(x,exps);
  if(!cands.length)throw new Error("CardTrader: colección «"+x.set+"» no encontrada");
  const pid=Number(x.res?.pid),num=numK(x.number),nn=nrm(x.name).split(" ")[0];
- for(const exp of cands){if(!ctCache.bp[exp.id]){try{const j=await ctGet("/blueprints/export?expansion_id="+encodeURIComponent(exp.id));ctCache.bp[exp.id]=Array.isArray(j)?j:(j?.array||[])}catch(e){if(/token|navegador|no responde/i.test(e.message))throw e;ctCache.bp[exp.id]=[]}}/* una colección que falla no impide probar la siguiente */
+ for(const exp of cands){await ctBpOf(exp);
   const bp=pid&&ctCache.bp[exp.id].find(b=>(b.card_market_ids||[]).map(Number).includes(pid));if(bp)return {bp,exp,how:"id de Cardmarket"}}
  for(const exp of cands){const bp=ctCache.bp[exp.id].find(b=>numK(b.fixed_properties?.collector_number||b.collector_number)===num&&nrm(b.name).includes(nn));if(bp)return {bp,exp,how:"número y nombre"}}
  throw new Error("CardTrader: carta nº "+x.number+" no encontrada en «"+cands[0].name+"»");
@@ -807,7 +824,7 @@ async function ctShip(user){
 function ctSummary(list){
  const by={};
  for(const p of list){const h=p.properties_hash||{},lk=Object.keys(h).find(k=>/language/i.test(k)),lang=String(lk?h[lk]:"?").toLowerCase(),cond=String(h.condition||"");
-  const eur=ctEur(p);if(!Number.isFinite(eur)||p.graded)continue;
+  const eur=ctEur(p);if(!Number.isFinite(eur)||p.graded||p.on_vacation||fakeWords(p.description).length)continue;/* V141: vendedor de vacaciones o descripción con «proxy», «réplica»… fuera */
   (by[lang]=by[lang]||[]).push({eur,cond,good:/mint|near|excellent|^nm|^ex/i.test(cond),country:p.user?.country_code||"",user:p.user?.username||"",hub:!!p.user?.can_sell_via_hub,qty:p.quantity||1})}
  return Object.entries(by).map(([lang,a])=>{a.sort((x,y)=>x.eur-y.eur);const g=a.filter(o=>o.good),top=g.slice(0,5).map(o=>o.eur),med=top.length?top[Math.floor(top.length/2)]:NaN;
   return {lang,n:a.length,cheapest:a[0],cheapestGood:g[0]||null,exit:med}}).sort((x,y)=>(y.n-x.n));
@@ -957,13 +974,14 @@ function trackNew(L,c){
 function apTick(force){
  if(force!==true&&(document.visibilityState!=="visible"||Date.now()-apLast<AP_EVERY))return;apLast=Date.now();
  loadGuide(force===true).then(render).catch(()=>{});/* la guía solo se baja si hay una nueva (6 h) */
+ if(ctToken()&&ctAutoDone)ctSweep();
  if(ctToken())for(const x of list().sure.slice(0,30)){const r=ctRes[x.id];if(r&&!r.loading&&(!r.at||Date.now()-r.at>AP_EVERY)){delete ctRes[x.id];ctEnqueue(x.id)}}
  render();
 }
 setInterval(apTick,60e3);document.addEventListener("visibilitychange",apTick);
 function apHtml(){
  const n=apNew.filter(o=>Date.now()-(seen[oppKey(o.x,o.o)]||0)<DAY).length,perm=typeof Notification==="function"?Notification.permission:"no";
- return '<p class="v4note cpAuto">🤖 <b>Piloto automático</b> · con la app abierta revisa la guía y CardTrader cada 15 min y marca <b>🆕 NUEVA</b> cada compra que no estaba antes'+(n?' · <b>'+n+' nueva(s) hoy</b>':'')+' · última revisión '+new Date(apLast).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})+'.'+(perm==="default"?' <button type="button" class="v4btn" data-cp-notify>🔔 Avisarme de compras nuevas</button>':perm==="granted"?' 🔔 Avisos activados.':perm==="no"?' (Para avisos del sistema en iPhone, añade la app a la pantalla de inicio.)':'')+'</p>';
+ return '<p class="v4note cpAuto">🤖 <b>Piloto automático</b> · con la app abierta revisa la guía y CardTrader cada 15 min y marca <b>🆕 NUEVA</b> cada compra que no estaba antes'+(n?' · <b>'+n+' nueva(s) hoy</b>':'')+(ctToken()&&(sweep.busy||sweep.cards)?' · CardTrader: '+(sweep.busy?'⏳ barriendo colecciones…':'cartas comparadas '+sweep.cards+' (en '+sweep.exps+' colecc.) · compras con tu beneficio: '+sweep.buys):'')+(ctToken()&&sweep.err?' · <span class="neg">barrido: '+E(sweep.err)+'</span>':'')+' · última revisión '+new Date(apLast).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})+'.'+(perm==="default"?' <button type="button" class="v4btn" data-cp-notify>🔔 Avisarme de compras nuevas</button>':perm==="granted"?' 🔔 Avisos activados.':perm==="no"?' (Para avisos del sistema en iPhone, añade la app a la pantalla de inicio.)':'')+'</p>';
 }
 /* V139 · CardTrader en TODAS las cartas que ves: al aparecer en pantalla, su precio en su idioma se pide solo (en cola, de
    una en una, con pausa: el límite de CardTrader es 10/s). */
@@ -989,11 +1007,37 @@ async function ctTest(){
  M.src.ct={...(M.src.ct||{}),test:{...r,at:Date.now()},lastErr:r.ok?"":r.err};
  return M.src.ct.test;
 }
+/* V141 · Barrido de CardTrader por COLECCIÓN: una sola consulta trae los 25 anuncios más baratos de CADA carta de la
+   colección en el idioma que se compara (antes, una consulta por carta: 60 al abrir). Se eligen las colecciones con más
+   beneficio posible y se van rotando (una colección no se repite en 6 h), así en pocas horas se compara casi todo. */
+const SWKEY="cv_v141_sweep",SWEEP_EXPS=12,SWEEP_EVERY=60*60e3,SWEEP_AGAIN=6*36e5;let sweep={at:0,busy:false,exps:0,cards:0,buys:0,err:"",...readLS(SWKEY,{}),busy:false};sweep.done=sweep.done||{};
+function sweepGroups(c,exps){
+ const g={};for(const x of cardsPk().concat(cardsJp(),cardsLo())){if(x.owned||(TRUST[x.res?.status]??0)<2||(x.liq?.k||0)<2||!Number(x.res?.pid))continue;
+  const S=saleRef(x.p);if(!Number.isFinite(S)||S<40)continue;const room=Math.min(netSale(S,c)-minP(x,c),netSale(S,c)/(1+(c.minMargin||0)/100),c.maxBuy)-c.buyShip;if(room<S*FAKE_RATIO)continue;/* ni el anuncio más barato posible dejaría tu beneficio */
+  const e=ctExpCands(x,exps[x.kind==="lo"?"lo":"pk"])[0];if(!e)continue;const k=e.id+"|"+(x.kind==="jp"?"jp":"en");(g[k]=g[k]||{exp:e,lg:x.kind==="jp"?"jp":"en",cards:[],pot:0}).cards.push(x);g[k].pot+=room}
+ return Object.entries(g).filter(([k])=>Date.now()-(sweep.done[k]||0)>SWEEP_AGAIN).sort((a,b)=>b[1].pot-a[1].pot).slice(0,SWEEP_EXPS);
+}
+async function ctSweep(force){
+ if(sweep.busy||!ctToken()||!M.guide||(!force&&Date.now()-sweep.at<SWEEP_EVERY))return;sweep.busy=true;sweep.at=Date.now();const c=cfg();let nc=0,nb=0,ne=0;
+ try{const exps={pk:await ctExps({kind:"pk"}),lo:await ctExps({kind:"lo"}).catch(()=>[])};
+  for(const [k,G] of sweepGroups(c,exps)){
+   const bps=await ctBpOf(G.exp),byPid=new Map();for(const b of bps)for(const id of (b.card_market_ids||[]))byPid.set(Number(id),b);
+   let j;try{j=await ctGet("/marketplace/products?expansion_id="+encodeURIComponent(G.exp.id)+"&language="+G.lg)}catch(e){if(/token|navegador|no responde|demasiadas/i.test(e.message))throw e;j=await ctGet("/marketplace/products?expansion_id="+encodeURIComponent(G.exp.id))}
+   for(const x of G.cards){const b=byPid.get(Number(x.res.pid)),old=ctRes[x.id];if(!b||old?.loading||old&&!old.sweep&&!old.error&&Date.now()-(old.at||0)<AP_EVERY)continue;/* la consulta carta a carta reciente trae todos los idiomas: se queda */const rows=ctSummary((j&&j[b.id])||[]);nc++;
+    const tg=rows.find(o=>o.lang===G.lg||(G.lg==="jp"&&o.lang==="ja")),S=saleRef(x.p);if(!tg)continue;/* sin anuncios en su idioma entre los más baratos: la consulta carta a carta (por idioma) lo mirará */
+    if(tg?.cheapestGood&&tg.cheapestGood.eur>=S*FAKE_RATIO&&netSale(S,c)-tg.cheapestGood.eur-minP(x,c)>=0){tg.cheapestGood.ship=await ctShip(tg.cheapestGood.user);const cost=tg.cheapestGood.eur+(Number.isFinite(tg.cheapestGood.ship)?tg.cheapestGood.ship:c.buyShip),pr=netSale(S,c)-cost;if(pr>=minP(x,c)&&mgOk(pr,cost,c)&&cost<=c.maxBuy)nb++}
+    ctRes[x.id]={rows,exp:G.exp.name,bp:b.id,how:"id de Cardmarket",at:Date.now(),sweep:true}}
+   ne++;sweep.done[k]=Date.now();M.src.ct={...(M.src.ct||{}),ok:(M.src.ct?.ok||0)+1,last:Date.now(),lastErr:""};render();await new Promise(r=>setTimeout(r,300))}
+  sweep.err=""}
+ catch(e){sweep.err=String(e.message||e).slice(0,90);logErr("CardTrader barrido: "+sweep.err)}
+ finally{sweep.busy=false;sweep.exps=ne;sweep.cards=nc;sweep.buys=nb;for(const k in sweep.done)if(Date.now()-sweep.done[k]>SWEEP_AGAIN)delete sweep.done[k];writeLS(SWKEY,{at:sweep.at,exps:ne,cards:nc,buys:nb,err:sweep.err,done:sweep.done});render()}
+}
 async function ctAuto(){
  if(ctAutoDone||!ctToken())return;ctAutoDone=true;const c=cfg();
  const cand=cardsPk().concat(cardsJp(),cardsLo()).filter(x=>!x.owned&&!ctRes[x.id]&&(TRUST[x.res?.status]??0)>=2&&(x.liq?.k||0)>=2).map(x=>{const S=saleRef(x.p),lo=Math.min(...[x.p.low,x.p.exPlus].filter(Number.isFinite));return {x,S,lo,room:netSale(S,c)-minP(x,c)-c.buyShip}})
   .filter(o=>Number.isFinite(o.S)&&o.S>=40&&Number.isFinite(o.lo)&&o.lo<o.S*LANG_OK&&o.lo<=Math.min(o.room,c.maxBuy-c.buyShip)).sort((a,b)=>(b.room-b.lo)-(a.room-a.lo)).slice(0,CT_AUTO);
  const t=await ctTest();if(!t.ok){render();return}
+ await ctSweep(true);/* V141: primero el barrido por colección (cubre muchas más cartas con menos consultas) */
  /* además de las candidatas, las cartas que ves en Compra YA (las 25 primeras), para comparar Cardmarket y CardTrader */
  const vis=list().sure.slice(0,25).filter(x=>!ctRes[x.id]&&!cand.some(o=>o.x.id===x.id)).map(x=>({x}));
  for(const o of cand.concat(vis)){if(ctRes[o.x.id]&&!ctRes[o.x.id].error)continue;/* ya pedida por la cola de pantalla */await ctLoad(o.x.id);if(ctRes[o.x.id]?.error&&/token|navegador|no responde/i.test(ctRes[o.x.id].error))break;await new Promise(r=>setTimeout(r,250))}
@@ -1042,5 +1086,5 @@ let qT=null;document.addEventListener("input",e=>{const t=e.target.closest("[dat
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"]'))setTimeout(onShow,60);if(e.target.closest('.mainNav [data-tab="favoritos"]'))setTimeout(onFavs,60)});
 if(location.hash==="#favoritos")setTimeout(onFavs,1300);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(onShow,1200));else setTimeout(onShow,1200);
-window.CVCompra={apTick,trackNew,seenState:()=>seen,decide,tgtOf,diagText,logErr,verifyPriority,ctTest,ctShip,SHOPS,shopProbe,shopLoad,shopState:()=>shopSt,fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpRoute,jpCalc,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
+window.CVCompra={ctSweep,ctState:()=>({sweep,ctRes}),apTick,trackNew,seenState:()=>seen,decide,tgtOf,diagText,logErr,verifyPriority,ctTest,ctShip,SHOPS,shopProbe,shopLoad,shopState:()=>shopSt,fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpRoute,jpCalc,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
 })();
