@@ -31,13 +31,14 @@ function gradeOf(p){const h=p.properties_hash||{};let co="",gr=NaN;
 const isGraded=p=>p.graded===true||Object.entries(p.properties_hash||{}).some(([k,v])=>/grad/i.test(k)&&v&&v!=="false");
 async function scanGraded(){
  const C=window.CVCompra;if(!C?.ctToken()){opp={error:"Sin token de CardTrader: pégalo en Compra YA → Estado de las fuentes (es gratis, en tu cuenta de CardTrader → Ajustes → API)."};renderOpp();return}
- const c=C.cfg(),cards=C.cardsPk().concat(C.cardsJp()).filter(x=>{const S=C.saleRef_(x.p);return Number.isFinite(S)&&S>=15&&S<=2*c.maxBuy&&(x.liq?.k||0)>=1});/* graduada ≤ tu compra máxima: la carta sin graduar no suele valer más del doble */
+ const c=C.cfg(),cards=C.cardsPk().concat(C.cardsJp(),C.cardsLo?.()||[]).filter(x=>{const S=C.saleRef_(x.p);return Number.isFinite(S)&&S>=15&&S<=2*c.maxBuy&&(x.liq?.k||0)>=1});/* graduada ≤ tu compra máxima: la carta sin graduar no suele valer más del doble */
  if(!cards.length){opp={error:"Aún se están cargando los precios de Cardmarket: vuelve a pulsar «Buscar oportunidades» en unos segundos."};renderOpp();return}
- const bySet={};for(const x of cards){const k=x.kind==="jp"?"jp|"+String(x.code||"").toLowerCase():"n|"+nrmS(x.set);(bySet[k]=bySet[k]||[]).push(x)}
+ const bySet={};for(const x of cards){const k=x.kind==="jp"?"jp|"+String(x.code||"").toLowerCase():(x.kind==="lo"?"lo|":"n|")+nrmS(x.set);/* V143: también Lorcana */(bySet[k]=bySet[k]||[]).push(x)}
  try{oppBusy={done:0,total:0};renderOpp();
   const games=await C.ctGet("/games"),g=(Array.isArray(games)?games:games?.array||[]).find(o=>/pok[eé]mon/i.test(String(o.name||o.display_name||"")));if(!g)throw new Error("CardTrader: juego Pokémon no encontrado");
-  const exps=(await C.ctGet("/expansions")).filter(e=>e.game_id===g.id);
-  const pairs=Object.entries(bySet).map(([k,xs])=>{const [t,v]=k.split("|");const e=t==="jp"?exps.find(e=>String(e.code||"").toLowerCase()===v):exps.find(e=>nrmS(e.name)===v);return e?{e,xs}:null}).filter(Boolean).sort((a,b)=>b.xs.length-a.xs.length).slice(0,SCAN_SETS);
+  const gl=(Array.isArray(games)?games:games?.array||[]).find(o=>/lorcana/i.test(String(o.name||o.display_name||""))),all=await C.ctGet("/expansions"),exps=all.filter(e=>e.game_id===g.id),expsL=gl?all.filter(e=>e.game_id===gl.id):[];
+  const P=Object.entries(bySet).map(([k,xs])=>{const [t,v]=k.split("|");const e=t==="jp"?exps.find(e=>String(e.code||"").toLowerCase()===v):t==="lo"?expsL.find(e=>nrmS(e.name)===v):exps.find(e=>nrmS(e.name)===v);return e?{e,xs,lo:t==="lo"}:null}).filter(Boolean).sort((a,b)=>b.xs.length-a.xs.length);
+  const pairs=P.filter(o=>!o.lo).slice(0,SCAN_SETS-4).concat(P.filter(o=>o.lo).slice(0,4));/* V143: hasta 4 colecciones de Lorcana */
   oppBusy.total=pairs.length;renderOpp();const rows=[];
   for(const {e,xs} of pairs){
    const bps=await C.ctGet("/blueprints/export?expansion_id="+encodeURIComponent(e.id)),bpA=Array.isArray(bps)?bps:(bps?.array||[]),bpM=new Map(bpA.map(b=>[b.id,b]));

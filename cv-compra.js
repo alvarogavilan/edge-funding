@@ -167,8 +167,12 @@ async function loadLorcana(ctrl){
    try{const f=await getJSON(BX+"sets/"+encodeURIComponent(s.id)+".json",ctrl.signal,30000);
     for(const c of (f?.cards||[])){const vs=(c.variants||[]).filter(v=>v?.eur&&N(v.eur.trend));if(!vs.length)continue;
      const ench=/enchanted|iconic|epic/i.test(c.rarity||"");const v=(ench&&vs.find(x=>x.name==="foil"))||vs.find(x=>x.name==="normal")||vs[0];
-     cards.push({id:"lo-"+c.id,name:c.name,number:String(c.number||""),set:s.name||f?.set?.name||"",rarity:c.rarity||"",variant:v.name,image:c.imageLarge||c.imageSmall||"",cm:c.cardmarketId||null,
-      low:N(v.eur.low),trend:N(v.eur.trend),avg1:N(v.eur.avg1),avg7:N(v.eur.avg7),avg30:N(v.eur.avg30),updated:f?.updatedAt||""})}
+     const mk=(v,id)=>({id,bxId:c.id,setId:s.id,name:c.name,number:String(c.number||""),set:s.name||f?.set?.name||"",rarity:c.rarity||"",variant:v.name,fo:/foil/i.test(v.name),image:c.imageLarge||c.imageSmall||"",cm:c.cardmarketId||null,
+      low:N(v.eur.low),trend:N(v.eur.trend),avg1:N(v.eur.avg1),avg7:N(v.eur.avg7),avg30:N(v.eur.avg30),updated:f?.updatedAt||""});
+     cards.push(mk(v,"lo-"+c.id));
+     /* V143 · La versión FOIL de una carta normal es otro precio en Cardmarket (columnas «foil» de la guía): sale aparte
+        cuando vale ≥ 20 € (las legendarias y súper raras foil pueden valer varias veces la normal). */
+     const vf=!/foil/i.test(v.name)&&vs.find(x=>/foil/i.test(x.name));if(vf&&N(vf.eur.trend)>=20)cards.push(mk(vf,"lo-"+c.id+"~foil"))}
    }catch(e){if(ctrl.signal.aborted)break;M.src.bindex.fail++;M.src.bindex.lastErr=String(e.message||e).slice(0,80)}
    await sleep(150)}
   if(cards.length){M.lo={at:Date.now(),cards};M.src.bindex.ok++;M.src.bindex.last=Date.now();M.src.bindex.lastErr="";loState=""}
@@ -250,6 +254,17 @@ function ops(card,c){
   const sale=Math.min(r.exit2*.95,S),g=r.cheapestGood;if(g.eur<sale*FAKE_RATIO)continue;const name=LNAME2[lk];
   add({k:"ctl-"+lk,ctl:true,langK:lk,lang:name,sameLang:true,cond:"buen",costFull:g.eur+(Number.isFinite(g.ship)?g.ship:c.buyShip),url:"https://www.cardtrader.com/cards/"+encodeURIComponent(ctRes[card.id].bp),
    label:"CardTrader · "+name.toLowerCase()+" "+(g.cond||"NM/EX")+" (idioma comprobado) → venta en "+name.toLowerCase()+" a lo que piden los otros "+r.n2+" vendedores −5 % (como mucho su valor en Cardmarket)",buy:g.eur,sale,exitN:r.n2})}
+ /* V143 · CardNexus: el anuncio más barato de CARDMARKET en el idioma de la carta y en NM (la guía oficial mezcla idiomas y
+    estados), y el anuncio de CardNexus con su envío real a España. En otro idioma, la venta es la del mismo idioma (arriba). */
+ const cn=cnRes[card.id];
+ if(cn&&Number.isFinite(S)){const lgs=jp?["ja"]:["en"].concat(OTHER_L.filter(l=>card.kind!=="lo"||LO_LANGS.includes(l)));
+  for(const lk of lgs){const base=lk==="en"||lk==="ja",name=LNAME2[lk];let sale=S,exitN=0;
+   if(!base){const r=(ctRes[card.id]?.rows||[]).find(o=>o.lang===lk);if(!r||!(r.n2>=3)||!Number.isFinite(r.exit2))continue;sale=Math.min(r.exit2*.95,S);exitN=r.n2}
+   const cmLow=N(cn.cm?.byCondition?.NM?.byLanguage?.[lk]?.low),url="https://www.cardmarket.com/es/"+(card.kind==="lo"?"Lorcana":"Pokemon")+"/Products?idProduct="+encodeURIComponent(res.pid)+"&language="+CMID[lk]+"&minCondition=2"+(card.fo?"&isFoil=Y":"");
+   if(Number.isFinite(cmLow)&&cmLow>=sale*FAKE_RATIO)add({k:"cnm-"+lk,cn:true,where:"Cardmarket",langK:lk,lang:name,ctl:!base,exitN,sameLang:true,cond:"buen",url,
+    label:"Cardmarket · "+name.toLowerCase()+" NM"+(card.fo?" foil":"")+": su anuncio más barato en "+name.toLowerCase()+" (dato de CardNexus, del día) → venta "+(base?"en Cardmarket":"en "+name.toLowerCase()+" a lo que piden los demás vendedores −5 %"),buy:cmLow,sale});
+   const xb=cn.cxBuy;if(base&&xb&&!xb.none&&Number.isFinite(xb.eur)&&xb.eur>=sale*FAKE_RATIO)add({k:"cnx",cn:true,where:"CardNexus",langK:lk,lang:name,sameLang:true,cond:"buen",url:"https://cardnexus.com/",costFull:xb.eur+(Number.isFinite(xb.ship)?xb.ship:c.buyShip),
+    label:"CardNexus · "+name.toLowerCase()+" NM"+(card.fo?" foil":"")+", vendedor «"+xb.user+"» ("+xb.country+")"+(Number.isFinite(xb.ship)?" + envío real a España "+EUR(xb.ship):"")+(xb.photos?" · con "+xb.photos+" foto(s) de la carta":"")+" · pago retenido hasta que la recibes → venta en Cardmarket",buy:xb.eur,sale})}}
  /* V133: tiendas leídas en vivo (precio real, con envío o importación hasta 41020) */
  if(jp&&shopRes[card.id]?.res&&Number.isFinite(S))for(const sh of SHOPS){const o=shopRes[card.id].res[sh.id]?.best;if(o&&o.eur>=S*FAKE_RATIO)add({k:"shop",cond:"buen",shop:sh.name+" ("+sh.where+")",url:o.url,label:sh.name+" ("+sh.where+") · «"+o.title+"» precio leído ahora "+EUR(o.eur)+(sh.eu?" + envío":" + importación (EMS, arancel, IVA, gestión)")+" → venta en Cardmarket",buy:o.eur,costFull:o.total,sale:S})}
  const chk=langCheck(card);
@@ -303,7 +318,7 @@ function confidence(x,o){
  parts.estabilidad=!Number.isFinite(disp)?0:disp<=.1?20:disp<=.25?14:disp<=.5?7:0;
  const m=x.mom;parts.tendencia=!Number.isFinite(m)?5:m>=-.05?10:m>=-.15?5:0;
  const mg=o?.margin;parts.colchon=!Number.isFinite(mg)?0:mg>=.5?10:mg>=.25?7:mg>=.1?3:0;
- parts.estado=!o?0:o.k==="ex"||o.k==="exu"||o.k==="ct"?15:o.ctl||o.own||o.k==="po"||o.k==="us"||o.k==="shop"?8:0;/* TCGplayer: precio de mercado (ventas), no un anuncio concreto *//* en restaurar el mal estado es lo esperado; queda por ver cuánto */
+ parts.estado=!o?0:o.k==="ex"||o.k==="exu"||o.k==="ct"||o.cn&&!o.ctl?15:o.ctl||o.own||o.k==="po"||o.k==="us"||o.k==="shop"?8:0;/* TCGplayer: precio de mercado (ventas), no un anuncio concreto *//* en restaurar el mal estado es lo esperado; queda por ver cuánto */
  let score=Object.values(parts).reduce((a,b)=>a+b,0);if(o?.langUnk)score=Math.min(score,40);if(o?.ctl)score=Math.min(score,60);/* V142: venta estimada con anuncios (precio pedido), no con ventas cerradas *//* idioma sin comprobar: como mucho 40 */
  return {score,parts,disp,prudent:Number.isFinite(o?.profit)?o.profit*score/100:NaN};
 }
@@ -349,12 +364,12 @@ function matchOwned(c){
 function cardsLo(){return memoOf("lo",cardsLo_)}
 function cardsLo_(){
  if(!M.lo?.cards)return [];const c=cfg(),own=ownedSet();
- return M.lo.cards.map(x=>{const card={kind:"lo",id:x.id,x,name:x.name,set:x.set,number:x.number,rarity:x.rarity,res:{pid:x.cm,status:"bindex",why:"Bindex empareja Cardmarket por nombre y precio dentro de la expansión"},p:{low:x.low,trend:x.trend,avg1:x.avg1,avg7:x.avg7,avg30:x.avg30,date:x.updated},owned:own.has(x.name,x.number)};
+ return M.lo.cards.map(x=>{const card={kind:"lo",id:x.id,x,fo:!!x.fo,name:x.name+(x.fo&&!/enchanted|iconic|epic/i.test(x.rarity||"")?" (foil)":""),set:x.set,number:x.number,rarity:x.rarity,res:{pid:x.cm,status:"bindex",why:"Bindex empareja Cardmarket por nombre y precio dentro de la expansión"},p:{low:x.low,trend:x.trend,avg1:x.avg1,avg7:x.avg7,avg30:x.avg30,date:x.updated},owned:own.has(x.name,x.number)};
   card.ops=ops(card,c);card.liq=liquidity(card.p);card.mom=momentum(card.p);return card});
 }
 const nq=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 /* V142 · Idioma de cada compra: CardTrader lo dice; el «desde»/«EX o mejor» de Cardmarket no (cuenta como inglés, como hasta ahora) */
-const opLang=(o,x)=>o.ctl?o.langK:o.own?String(o.k).slice(4):o.k==="ct"?(x.kind==="jp"?"ja":"en"):o.k==="shop"||x.kind==="jp"?"ja":o.us?"en":null;
+const opLang=(o,x)=>o.ctl||o.cn?o.langK:o.own?String(o.k).slice(4):o.k==="ct"?(x.kind==="jp"?"ja":"en"):o.k==="shop"||x.kind==="jp"?"ja":o.us?"en":null;
 const langOk=(o,x,lg)=>{const l=opLang(o,x);return lg==="en"?l==="en"||l===null:lg==="ja"?l==="ja":l===lg};
 const payOf=x=>x.langPend?1e9:x.tgtOnly?x.tgt.maxPay:x.best&&Number.isFinite(x.best.cost)?x.best.cost:1e9;
 function list(){
@@ -387,7 +402,8 @@ function links(x){
  const game=x.kind==="lo"?"Lorcana":"Pokemon",pid=x.res?.pid;
  if(pid&&x.kind==="jp"){const base="https://www.cardmarket.com/es/Pokemon/Products?idProduct="+encodeURIComponent(pid);return {cm:(selLang()==="ja"?base+"&language=7":base)+(view.cond!=="mal"&&exShown(x)?"&minCondition=3":""),exact:true,lang:[{k:"ja",n:"Japonés",url:base+"&language=7"+(view.cond==="mal"?"":"&minCondition=3")}]}}
  if(pid){const base="https://www.cardmarket.com/es/"+game+"/Products?idProduct="+encodeURIComponent(pid),cond=view.cond!=="mal"&&exShown(x)?"&minCondition=3":"",lg=selLang()||(x.tgtOnly?"en":"");/* precio objetivo en inglés: se abre filtrado en inglés */
-  return {cm:lg&&CMID[lg]&&!(x.kind==="lo"&&!LO_LANGS.includes(lg))?base+"&language="+CMID[lg]+cond:base+cond,exact:true,lang:CM_LANG.filter(l=>x.kind!=="lo"||LO_LANGS.includes(l[0])).map(([k,n,id])=>({k,n,url:base+"&language="+id+cond}))}}
+  const fo=x.fo?"&isFoil=Y":"";/* V143: Lorcana foil → solo anuncios foil */
+  return {cm:(lg&&CMID[lg]&&!(x.kind==="lo"&&!LO_LANGS.includes(lg))?base+"&language="+CMID[lg]+cond:base+cond)+fo,exact:true,lang:CM_LANG.filter(l=>x.kind!=="lo"||LO_LANGS.includes(l[0])).map(([k,n,id])=>({k,n,url:base+"&language="+id+cond}))}}
  if(x.kind==="lo")return {cm:"https://www.cardmarket.com/es/Lorcana/Products/Search?searchString="+encodeURIComponent(x.name.split(" - ")[0]),lang:[]};
  const q=encodeURIComponent(x.name+" "+String(x.r[3]).replace(/^0+(?=\d)/,""));
  return {cm:hasPtcg(x.id)?"https://prices.pokemontcg.io/cardmarket/"+ptcgId(x.id):"https://www.cardmarket.com/es/Pokemon/Products/Search?searchString="+q,lang:[]};
@@ -454,15 +470,15 @@ function tgtOf(x,c,cond){
  /* realista: en buen estado hay que pagar ≥ 60 % de su valor (una inglesa al 20 % no existe: sería coreana o falsa); en mal estado ≥ 25 % */
  if(maxBuy<S*(mal?TGT_MIN_MAL:TGT_MIN))return null;
  const cheap=Math.min(...[p.low,mal?NaN:p.exPlus].filter(Number.isFinite));if(!Number.isFinite(cheap)||cheap>maxBuy)return null;/* ni el más barato de cualquier idioma llega: no hay nada que buscar */
- const pid=x.res?.pid,jp=x.kind==="jp";return {mal,jp,S,sale,maxPay,maxBuy,gain:net-maxPay,cheap,url:pid?"https://www.cardmarket.com/es/"+(x.kind==="lo"?"Lorcana":"Pokemon")+"/Products?idProduct="+encodeURIComponent(pid)+(jp?"":"&language=1")+(mal?"":"&minCondition=3"):links(x).cm};
+ const pid=x.res?.pid,jp=x.kind==="jp";return {mal,jp,S,sale,maxPay,maxBuy,gain:net-maxPay,cheap,url:pid?"https://www.cardmarket.com/es/"+(x.kind==="lo"?"Lorcana":"Pokemon")+"/Products?idProduct="+encodeURIComponent(pid)+(jp?"":"&language=1")+(mal?"":"&minCondition=3")+(x.fo?"&isFoil=Y":""):links(x).cm};
 }
 const TGT_MIN=.6,TGT_MIN_MAL=.25;
 const LANGUP=o=>({jp:"JAPONÉS",ja:"JAPONÉS",en:"INGLÉS"})[o]||"";
 /* La línea que manda: qué comprar, en qué idioma, dónde, lo que pagas, a cuánto la vendes y lo que ganas. */
 function decide(x,c){
  const o=goodOp(x.best,x,c)?x.best:null;
- if(o){const lang=o.ctl?String(o.lang).toUpperCase():o.k==="ct"?(x.kind==="jp"?"JAPONÉS":"INGLÉS"):o.k==="shop"||x.kind==="jp"?"JAPONÉS":o.us?"INGLÉS":o.own?String(o.lang||"").toUpperCase():x.kind==="lo"?"idioma sin indicar":"idioma sin indicar (a precio de mercado: no es una coreana barata)";
-  const where=o.us?"TCGplayer (EE. UU.), importada":o.k==="ct"||o.ctl?"CardTrader":o.k==="shop"?o.shop:"Cardmarket",cond=o.k==="ex"?"EX o mejor":o.k==="ct"||o.ctl?"NM/EX":o.k==="po"?"mal estado (restaurar)":"estado sin indicar";
+ if(o){const lang=o.ctl||o.cn?String(o.lang).toUpperCase():o.k==="ct"?(x.kind==="jp"?"JAPONÉS":"INGLÉS"):o.k==="shop"||x.kind==="jp"?"JAPONÉS":o.us?"INGLÉS":o.own?String(o.lang||"").toUpperCase():x.kind==="lo"?"idioma sin indicar":"idioma sin indicar (a precio de mercado: no es una coreana barata)";
+  const where=o.where?o.where:o.us?"TCGplayer (EE. UU.), importada":o.k==="ct"||o.ctl?"CardTrader":o.k==="shop"?o.shop:"Cardmarket",cond=o.cn?"NM"+(x.fo?" · foil":""):o.k==="ex"?"EX o mejor":o.k==="ct"||o.ctl?"NM/EX":o.k==="po"?"mal estado (restaurar)":"estado sin indicar";
   return {k:"buy",text:"COMPRA en "+where+" · "+lang+" · "+cond+": pagas "+EUR(o.cost)+" (carta "+EUR(o.buy)+" + envío"+(o.us||o.k==="shop"&&o.costFull?", IVA y gestión":"")+") → la vendes "+(o.ctl?"en "+String(o.lang).toLowerCase()+" (Cardmarket o CardTrader)":"en Cardmarket")+" a "+EUR(o.sale)+(x.kind==="jp"?" (ventas de japonesas)":"")+" → ganas "+SIGNED(o.profit),
    html:'<div class="cpDecide buy"><b>✅ COMPRA</b> en <b>'+E(where)+'</b> · <b>'+E(lang)+'</b> · '+E(cond)+'<br>Pagas <b>'+EUR(o.cost)+'</b> (carta '+EUR(o.buy)+' + envío) → la vendes '+(o.ctl?'en '+E(String(o.lang).toLowerCase())+' (Cardmarket o CardTrader)':'en Cardmarket')+' a <b>'+EUR(o.sale)+'</b>'+(x.kind==="jp"?' (ventas de japonesas)':'')+' → <b class="pos">ganas '+SIGNED(o.profit)+'</b>'+(o.ctl?'<br><small>Venta estimada con lo que piden los otros '+o.exitN+' vendedores de '+E(String(o.lang).toLowerCase())+' en CardTrader, −5 % para venderla antes y nunca por encima de su valor en Cardmarket ('+EUR(saleRef(x.p))+'). Son precios pedidos, no ventas cerradas: confianza como mucho 60/100.</small>':'')+'</div>'};}
  if(x.langPend){const lg=selLang(),nm=(LNAME2[lg]||"").toLowerCase(),r=ctRes[x.id],url=links(x).cm;
@@ -492,7 +508,7 @@ function cardHtml(x,rank,c,pre="cp-"){
  (x.res.status!=="verificado"&&x.res.status!=="una-fuente"&&x.res.status!=="bindex"&&x.res.status!=="pt-only"||alts.length?'<p class="v4missing"><b>Versión:</b> '+E(x.res.why)+(alts.length?' · otras versiones con el mismo nombre: '+alts.map(a=>EUR(a.trend)).join(", ")+'. En Cardmarket comprueba que el número es <b>'+E(x.number)+'</b>.':'')+'</p>':'')+
  buyTable(x,c)+sameLangTable(x,c)+opRows(x,c)+
  '<details class="v4more"><summary>Datos de Cardmarket e historial</summary><p class="v4note">Guía oficial de Cardmarket '+E(DATE(p.date))+': «desde» '+EUR(p.low)+(Number.isFinite(p.exPlus)?' · «desde» EX o mejor '+EUR(p.exPlus):'')+' · tendencia '+EUR(p.trend)+' · media 1 día '+EUR(p.avg1)+' · 7 días '+EUR(p.avg7)+' · 30 días '+EUR(p.avg30)+'. '+(x.kind==="jp"?'Producto japonés: todos los estados, solo cartas japonesas.':'Todos los idiomas y estados.')+' '+E(x.res.why)+'.</p>'+
- (x.res.pid&&x.kind!=="lo"?'<div class="cpHist" data-cp-hist="'+E(x.res.pid)+'"><button type="button" class="v4btn" data-cp-histload="'+E(x.res.pid)+'">Ver historial de precio</button></div>':'')+'</details>'+
+ (x.res.pid&&x.kind!=="lo"?'<div class="cpHist" data-cp-hist="'+E(x.res.pid)+'"><button type="button" class="v4btn" data-cp-histload="'+E(x.res.pid)+'">Ver historial de precio</button></div>':x.kind==="lo"&&x.x?.setId?'<div class="cpHist" data-cp-hist="'+E(x.id)+'"><button type="button" class="v4btn" data-cp-histload="'+E(x.id)+'">Ver historial de precio</button></div>':'')+'</details>'+
  '<div class="cpCT" data-cp-ct="'+E(x.id)+'">'+(ctRes[x.id]?ctHtml(ctRes[x.id]):'<button type="button" class="v4btn" data-cp-ctload="'+E(x.id)+'">Precios por idioma ahora (CardTrader)</button>')+'</div>'+
  pasteBox(x)+langBox(x)+
  '<div class="cpWatch">'+(w?'Vigilando: avisa si baja de <b>'+EUR(w.target)+'</b> <button type="button" class="v4btn" data-cp-unwatch="'+E(x.id)+'">Dejar de vigilar</button>':'<label>Avisar si la compra baja de <input inputmode="decimal" data-cp-target="'+E(x.id)+'" value="'+(b&&Number.isFinite(b.maxBuy)&&b.maxBuy>0?String(Math.floor(b.maxBuy)):"")+'" aria-label="Precio objetivo"> €</label><button type="button" class="v4btn" data-cp-watch="'+E(x.id)+'">Vigilar</button>')+'</div>'+
@@ -577,8 +593,8 @@ function top5Html(c){
  return '<section class="cpTop"><h4>🏆 Top 5 de hoy · lo que yo compraría</h4>'+(T.length?'<ol class="cpPlanList">'+T.map((t,i)=>{
   if(t.kind==="sealed"){const r=t.r,u="https://www.cardmarket.com/es/Pokemon/Products?idProduct="+encodeURIComponent(r.pid);return '<li><span class="cpThumb">📦</span><span><b>'+(i+1)+'. '+E(r.name)+'</b> · sellado ('+E(r.type)+')</span><a class="v4btn primary" href="'+E(u)+'" target="_blank" rel="noopener noreferrer">Comprar ↗</a><small><b>Pagas '+EUR(r.cost)+'</b> (Cardmarket «desde» '+EUR(r.low)+' + envío) → reventa a su tendencia '+EUR(r.trend)+' → '+SIGNED(r.profit)+' · confianza 50/100 (sellado: sin medias de venta) · prudente '+SIGNED(t.prudent)+'</small></li>'}
   if(t.kind==="chollo"){const x=t.x,h=t.h,u=links(x).cm.replace(/&minCondition=3/,"");return '<li>'+thumb(x)+'<span><b>'+(i+1)+'. '+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+' · 🎲 por verificar</span><a class="v4btn primary" href="'+E(u)+'" target="_blank" rel="noopener noreferrer">Ver ya ↗</a><small><b>Pagas '+EUR(h.cost)+'</b> (anuncio de cualquier estado a '+EUR(h.low)+' + envío) → vale ~'+EUR(h.S)+' → si está bien '+SIGNED(h.profit)+' · confianza '+t.conf+'/100 (estado sin comprobar) · prudente '+SIGNED(t.prudent)+'. Lee la descripción: si dice «proxy» es falsa.</small></li>'}
-  const x=t.x,o=t.o,u=o.url||links(x).cm,where=o.us?"TCGplayer (EE. UU.), importada":o.k==="shop"?o.shop:o.ctl?"CardTrader, "+String(o.lang).toLowerCase()+" NM/EX":o.k==="ct"?"CardTrader, "+(x.kind==="jp"?"japonés":"inglés")+" NM/EX":o.k==="ex"?"Cardmarket, EX o mejor":o.own?"Cardmarket, "+(o.lang||"").toLowerCase():"Cardmarket «desde»";
-  const lg=o.ctl?String(o.lang).toUpperCase():o.k==="ct"?(x.kind==="jp"?"JAPONÉS":"INGLÉS"):o.k==="shop"||x.kind==="jp"?"JAPONÉS":o.us?"INGLÉS":o.own?String(o.lang||"").toUpperCase():"idioma sin indicar";
+  const x=t.x,o=t.o,u=o.url||links(x).cm,where=o.us?"TCGplayer (EE. UU.), importada":o.k==="shop"?o.shop:o.cn?o.where+", "+String(o.lang).toLowerCase()+" NM":o.ctl?"CardTrader, "+String(o.lang).toLowerCase()+" NM/EX":o.k==="ct"?"CardTrader, "+(x.kind==="jp"?"japonés":"inglés")+" NM/EX":o.k==="ex"?"Cardmarket, EX o mejor":o.own?"Cardmarket, "+(o.lang||"").toLowerCase():"Cardmarket «desde»";
+  const lg=o.ctl||o.cn?String(o.lang).toUpperCase():o.k==="ct"?(x.kind==="jp"?"JAPONÉS":"INGLÉS"):o.k==="shop"||x.kind==="jp"?"JAPONÉS":o.us?"INGLÉS":o.own?String(o.lang||"").toUpperCase():"idioma sin indicar";
   return '<li>'+thumb(x)+'<span><b>'+(i+1)+'. '+E(x.name)+'</b> · '+E(x.set)+' nº '+E(x.number)+' · <b>'+E(lg)+'</b></span><a class="v4btn primary" href="'+E(u)+'" target="_blank" rel="noopener noreferrer">Comprar ↗</a><small><b>Pagas '+EUR(o.cost)+'</b> ('+E(where)+', puesta en 41020) → venta '+EUR(o.sale)+' → <b>'+SIGNED(o.profit)+'</b> · confianza '+t.conf+'/100 · prudente '+SIGNED(t.prudent)+'. '+E(x.liq.t)+'.</small></li>'}).join("")+'</ol>':'<p class="v4note">Hoy ninguna opción deja tu beneficio mínimo con suficiente confianza.</p>')+
  '<p class="v4note">Une todas las opciones (Cardmarket, TCGplayer importada, japonesas, idiomas pegados y sellado) y las ordena por beneficio × confianza. Solo con compra y venta del mismo idioma: un anuncio internacional por debajo del 75 % de su valor suele ser coreano o chino y no entra. Ninguna es segura: comprueba cada anuncio con «Antes de pagar».</p></section>';
 }
@@ -637,6 +653,12 @@ function buyTable(x,c){
  else if(ct?.rows&&!(x.kind==="jp"?ct.rows.find(o=>o.lang==="jp"||o.lang==="ja"):ct.rows.find(o=>o.lang==="en"))?.cheapestGood)rows.push(["CardTrader",NaN,"no tiene ninguna en "+ctL+" NM/EX a la venta ahora","https://www.cardtrader.com/cards/"+encodeURIComponent(ct.bp),false]);
  if(ct&&ct.rows){const r=x.kind==="jp"?ct.rows.find(o=>o.lang==="jp"||o.lang==="ja"):ct.rows.find(o=>o.lang==="en");const a=r&&r.cheapestGood;
   if(a){const sh=Number.isFinite(a.ship);rows.push(["CardTrader · "+(LNAME[r.lang]||r.lang)+" "+(a.cond||"NM/EX"),a.eur+(sh?a.ship:c.buyShip),"anuncio "+EUR(a.eur)+(a.country?" (vendedor de "+a.country+")":"")+" + envío "+(sh?"real "+EUR(a.ship):"estimado "+EUR(c.buyShip)+" (CardTrader no lo dio)")+(a.hub?" · admite CardTrader Zero: revisan la carta antes de enviártela":""),"https://www.cardtrader.com/cards/"+encodeURIComponent(ct.bp),true])}}
+ {const cn=cnRes[x.id],lk=x.kind==="jp"?"ja":"en",nm=(LNAME2[lk]||"").toLowerCase();/* V143 */
+  if(cnKey()&&!cn&&Number(x.res?.pid))rows.push(["CardNexus",NaN,cnSt.busy?"⏳ revisando…":"aún sin revisar (se revisa sola cada hora)","https://cardnexus.com/",false]);
+  else if(cn){const cm=N(cn.cm?.byCondition?.NM?.byLanguage?.[lk]?.low),xb=cn.cxBuy;
+   if(Number.isFinite(cm))rows.push(["Cardmarket · "+nm+" NM",cm+c.buyShip,"anuncio más barato en "+nm+" y NM (dato de CardNexus, del día) + envío "+EUR(c.buyShip),"https://www.cardmarket.com/es/"+(x.kind==="lo"?"Lorcana":"Pokemon")+"/Products?idProduct="+encodeURIComponent(x.res.pid)+"&language="+CMID[lk]+"&minCondition=2"+(x.fo?"&isFoil=Y":""),true]);
+   if(xb&&!xb.none)rows.push(["CardNexus · "+nm+" NM",xb.eur+(Number.isFinite(xb.ship)?xb.ship:c.buyShip),"anuncio "+EUR(xb.eur)+" de «"+xb.user+"» ("+xb.country+") + envío "+(Number.isFinite(xb.ship)?"real "+EUR(xb.ship):"estimado")+" · pago retenido hasta recibirla","https://cardnexus.com/",true]);
+   else rows.push(["CardNexus",NaN,xb?.none?"no tiene ninguna en "+nm+" NM que envíe a España ahora":cn.cxErr?cn.cxErr:"su anuncio no deja tu beneficio","https://cardnexus.com/",false])}}
  rows.push(...shopRows(x,c));
   for(const r of rows)if(Number.isFinite(r[1])&&r[1]>c.maxBuy){r[2]+=" · fuera de tu presupuesto ("+EUR(c.maxBuy)+")";r[4]=false}
  rows.sort((a,b)=>(b[4]-a[4])||(Number.isFinite(a[1])?a[1]:1e9)-(Number.isFinite(b[1])?b[1]:1e9));/* primero lo comparable (mismo idioma y estado), de más barata a más cara */
@@ -722,13 +744,14 @@ function diagText(){
   "Guía Cardmarket: "+(M.guide?M.guide.count+" productos del "+DATE(M.guide.sourceCreatedAt):"no cargada")+" · "+(s.guide?.ok||0)+" ok / "+(s.guide?.fail||0)+" fallos"+(s.guide?.lastErr?" · "+s.guide.lastErr:""),
   "pokemontcg.io: "+Object.keys(M.pt.cards).length+" cartas con «EX o mejor» · "+(s.ptcg?.ok||0)+" ok / "+(s.ptcg?.fail||0)+" fallos · hoy "+budget().n+"/"+PT_DAILY+(s.ptcg?.lastErr?" · "+s.ptcg.lastErr:""),
   "CardTrader: "+(!t?"sin token":"token "+t.length+" caracteres, "+(ti.ok?"forma correcta"+(ti.exp?", válido hasta "+ti.exp:""):ti.why)+" · prueba: "+(s.ct?.test?(s.ct.test.ok?"✓ "+s.ct.test.name:"✗ "+s.ct.test.err):"sin hacer")+" · "+(s.ct?.ok||0)+" ok / "+(s.ct?.fail||0)+" fallos"),
+  "CardNexus: "+(cnKey()?"clave "+cnKey().length+" caracteres · prueba: "+(cnSt.test?(cnSt.test.ok?"✓":"✗ "+cnSt.test.err):"sin hacer")+" · "+cnSt.ok+" ok / "+cnSt.fail+" fallos"+(cnSt.err?" · "+cnSt.err:""):"sin clave"),
   "Tiendas: "+SHOPS.map(sh=>sh.name+" "+(shopSt[sh.id]?(shopSt[sh.id].ok?"✓":"✗ "+shopSt[sh.id].err):"sin probar")).join(" · "),
   "Cambio: 1 ¥ = "+(fx.rate||"?")+" € · 1 $ = "+(fx.usd||"?")+" € ("+(fx.date||"?")+")",
   "Errores ("+errs.length+"):"].concat(errs.map(e=>"· "+e.at+" "+e.msg+" ["+e.where+"]")).join("\n");
 }
 function sourcesHtml(){
  const s=M.src,b=budget(),line=(n,o)=>'<li><b>'+n+'</b> · '+(o.ok||0)+' correctas, '+(o.fail||0)+' fallidas'+(o.last?' · última '+WHEN(o.last):'')+(o.lastErr?' · <span class="neg">'+E(o.lastErr)+'</span>':'')+'</li>';
- return '<details class="v4settings"><summary>Estado de las fuentes</summary><ul class="v4help">'+line("Guía oficial de Cardmarket (espejo diario en GitHub)",s.guide)+line("pokemontcg.io · verificación y «desde» EX+ · "+b.n+"/"+PT_DAILY+" hoy"+(ptRunning?" · comprobando "+ptRunning.done+"/"+ptRunning.total+" colecciones":""),s.ptcg)+line("Bindex · Lorcana en Cardmarket",s.bindex)+ctPanel()+'</ul>'+
+ return '<details class="v4settings"><summary>Estado de las fuentes</summary><ul class="v4help">'+line("Guía oficial de Cardmarket (espejo diario en GitHub)",s.guide)+line("pokemontcg.io · verificación y «desde» EX+ · "+b.n+"/"+PT_DAILY+" hoy"+(ptRunning?" · comprobando "+ptRunning.done+"/"+ptRunning.total+" colecciones":""),s.ptcg)+line("Bindex · Lorcana en Cardmarket",s.bindex)+ctPanel()+cnPanel()+'</ul>'+
   (()=>{let n=0;try{n=JSON.parse(localStorage.getItem(ERRKEY)||"[]").length}catch{}return '<p class="v4note"><b>Errores registrados en este iPhone:</b> '+(n?'<span class="neg">'+n+'</span>':'ninguno')+' <button type="button" class="v4btn" data-cp-diag>Copiar diagnóstico</button>'+(n?' <button type="button" class="v4btn" data-cp-diagclear>Borrar errores</button>':'')+'</p><pre class="cpDiag" data-cp-diagout hidden></pre>'})()+
   '<div class="cpShops"><p><b>CardTrader</b>: '+(!ctToken()?'sin token':!s.ct?.test?'token guardado, sin probar':s.ct.test.ok?'<span class="pos">✓ conectado ('+E(s.ct.test.name)+')</span>':'<span class="neg">✗ '+E(s.ct.test.err)+'</span>')+(ctToken()?' <button type="button" class="v4btn" data-cp-cttest>Probar CardTrader</button>':'')+'</p>'+
   '<details class="v4more" data-cp-impbox><summary>Gastos de importación (TCGplayer y tiendas fuera de la UE)</summary><div class="cpPlanIn"><label>Envío desde EE. UU. (€)<input inputmode="decimal" data-cp-jp="shipUS" value="'+E(String(jp.shipUS).replace(".",","))+'"></label><label>EMS desde Japón (¥)<input inputmode="numeric" data-cp-jp="ems" value="'+E(String(jp.ems))+'"></label><label>Comisión Buyee (¥)<input inputmode="numeric" data-cp-jp="buyee" value="'+E(String(jp.buyee))+'"></label><label>Arancel UE por paquete (€)<input inputmode="decimal" data-cp-jp="duty" value="'+E(String(jp.duty).replace(".",","))+'"></label><label>IVA de importación %<input inputmode="decimal" data-cp-jp="vat" value="'+E(String(jp.vat).replace(".",","))+'"></label><label>Gestión del transportista (€)<input inputmode="decimal" data-cp-jp="handling" value="'+E(String(jp.handling).replace(".",","))+'"></label><label>Cambio 1 ¥ = €<input inputmode="decimal" data-cp-jp="rate" value="'+(N(fx.rate)?E(String(fx.rate).replace(".",",")):"")+'"></label></div><button type="button" class="v4btn" data-cp-jpsave>Guardar gastos</button></details>'+
@@ -844,9 +867,10 @@ async function ctShip(user){
   const cents=L.map(m=>Number(m.price?.cents??m.price_cents??m.cost?.cents??m.shipping_cost?.cents??m.total?.cents)).filter(n=>Number.isFinite(n)&&n>=0);if(cents.length)v=Math.min(...cents)/100}catch{}
  return ctShipC[user]=v;
 }
-function ctSummary(list){
+const ctFoil=p=>Object.entries(p.properties_hash||{}).some(([k,v])=>/foil/i.test(k)&&(v===true||v==="true"||v==="foil"));
+function ctSummary(list,fo){
  const by={};
- for(const p of list){const h=p.properties_hash||{},lk=Object.keys(h).find(k=>/language/i.test(k)),lang=normL(lk?h[lk]:"?"),cond=String(h.condition||"");
+ for(const p of list){if(fo!==undefined&&ctFoil(p)!==!!fo)continue;/* V143: Lorcana foil solo con foil, normal solo con normal */const h=p.properties_hash||{},lk=Object.keys(h).find(k=>/language/i.test(k)),lang=normL(lk?h[lk]:"?"),cond=String(h.condition||"");
   const eur=ctEur(p);if(!Number.isFinite(eur)||p.graded||p.on_vacation||fakeWords(p.description).length)continue;/* V141: vendedor de vacaciones o descripción con «proxy», «réplica»… fuera */
   (by[lang]=by[lang]||[]).push({eur,cond,good:/mint|near|excellent|^nm|^ex/i.test(cond),country:p.user?.country_code||"",user:p.user?.username||"",hub:!!p.user?.can_sell_via_hub,qty:p.quantity||1})}
  return Object.entries(by).map(([lang,a])=>{a.sort((x,y)=>x.eur-y.eur);const g=a.filter(o=>o.good),top=g.slice(0,5).map(o=>o.eur),med=top.length?top[Math.floor(top.length/2)]:NaN;
@@ -870,13 +894,73 @@ async function ctLoad(id){
   /* los 25 más baratos pueden ser todos coreanos: se piden aparte los del idioma que se compara */
   let mine=[];try{mine=flat(await ctGet("/marketplace/products?blueprint_id="+encodeURIComponent(bp.id)+"&language="+lg))}catch{}
   const ol=selLang();if(x.kind!=="jp"&&OTHER_L.includes(ol))try{mine=mine.concat(flat(await ctGet("/marketplace/products?blueprint_id="+encodeURIComponent(bp.id)+"&language="+CTLANG[ol])))}catch{}/* V142: y el idioma que has elegido */
-  const seen=new Set(),rows=ctSummary(all.concat(mine).filter(p=>{const k=p.id??JSON.stringify(p);if(seen.has(k))return false;seen.add(k);return true}));
+  const seen=new Set(),rows=ctSummary(all.concat(mine).filter(p=>{const k=p.id??JSON.stringify(p);if(seen.has(k))return false;seen.add(k);return true}),x.kind==="lo"?x.fo:undefined);
   const tg=rows.find(o=>o.lang===lg||(lg==="jp"&&o.lang==="ja"));if(tg?.cheapestGood){tg.cheapestGood.ship=await ctShip(tg.cheapestGood.user)}
   ctRes[id]={rows,exp:exp.name,bp:bp.id,how,at:Date.now()};M.src.ct={...(M.src.ct||{}),ok:(M.src.ct?.ok||0)+1,last:Date.now(),lastErr:""}}
  catch(e){ctRes[id]={error:String(e.message||e),id};M.src.ct={...(M.src.ct||{}),fail:(M.src.ct?.fail||0)+1,lastErr:String(e.message||e).slice(0,80)}}
  paintCT(id);
 }
 function paintCT(id){document.querySelectorAll('[data-cp-ct="'+CSS.escape(id)+'"]').forEach(b=>b.innerHTML=ctHtml(ctRes[id]));if(ctRes[id]&&!ctRes[id].loading)render()}
+/* ---------- CardNexus (opcional, V143) ----------
+   Mercado europeo de cartas (Francia, desde 2026) con API pública y clave GRATUITA de tu cuenta (cardnexus.com → Ajustes →
+   API Keys). Por cada carta da lo que la guía oficial de Cardmarket NO separa: el anuncio más barato de CARDMARKET por
+   IDIOMA y ESTADO (y normal/foil por separado), además de los anuncios reales de CardNexus con el envío a España. Límites:
+   600 consultas de precios por hora y 120 de anuncios: la app lleva la cuenta y nunca los supera. La clave solo vive en
+   este iPhone y no sale en el diagnóstico. */
+const CN="https://public-api.cardnexus.com/v1",CNKEY="cv_cardnexus_key",CNMAP="cv_v143_cnmap",CNBUD="cv_v143_cnbud",cnRes={};
+let cnMap=readLS(CNMAP,{}),cnSt={ok:0,fail:0,err:"",busy:false,cards:0,at:0,test:null};
+const cnKey=()=>{try{return cleanTok(localStorage.getItem(CNKEY)||"")}catch{return ""}};
+function cnBudget(kind,max){const h=new Date().toISOString().slice(0,13),b=readLS(CNBUD,{});if(b.h!==h){b.h=h;b.p=0;b.l=0}if(b[kind]>=max)return false;b[kind]++;writeLS(CNBUD,b);return true}
+async function cnGet(path,body){
+ const k=cnKey();if(!k)throw new Error("Sin clave de CardNexus");let r;
+ try{r=await fetch(CN+path,{method:body?"POST":"GET",headers:{Authorization:"Bearer "+k,Accept:"application/json",...(body?{"Content-Type":"application/json"}:{})},...(body?{body:JSON.stringify(body)}:{})})}catch{throw new Error("CardNexus no responde o no permite consultas desde el navegador")}
+ if(r.status===401||r.status===403)throw new Error("Clave de CardNexus no válida (HTTP "+r.status+"): créala en cardnexus.com → Ajustes → API Keys");
+ if(r.status===429)throw new Error("CardNexus: límite de consultas de esta hora alcanzado; sigue sola en un rato");
+ if(!r.ok){let b="";try{b=(await r.text()).replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,90)}catch{}throw new Error("CardNexus HTTP "+r.status+(b?": "+b:""))}
+ return r.json();
+}
+/* id de Cardmarket → producto de CardNexus (200 por consulta; se guarda: no cambia) */
+async function cnResolve(pids){
+ const need=[...new Set(pids.map(Number))].filter(n=>n>0&&!(cnMap[n]&&(cnMap[n].id||Date.now()-cnMap[n].miss<7*DAY)));
+ for(let i=0;i<need.length;i+=200){const ch=need.slice(i,i+200),j=await cnGet("/products/resolve",{marketplace:"cardmarket",ids:ch});
+  for(const r of (j?.results||[]))cnMap[r.externalId]=r.product?{id:r.product.id,fin:r.product.finish||"Standard"}:{miss:Date.now()};
+  for(const id of ch)if(!cnMap[id])cnMap[id]={miss:Date.now()}}
+ writeLS(CNMAP,cnMap);
+}
+/* precios de una carta: Cardmarket por idioma y estado + CardNexus; en las que pueden dar beneficio, el anuncio real con envío a España */
+async function cnLoad(x,c){
+ const m=cnMap[Number(x.res?.pid)];if(!m?.id||!cnBudget("p",590))return false;
+ const j=await cnGet("/products/"+m.id+"/prices"),pf=j?.pricesByFinish||{},fins=Object.keys(pf);
+ const fin=x.kind==="lo"&&x.fo?fins.find(f=>/foil/i.test(f)):pf[m.fin]&&!(x.kind==="lo"&&/foil/i.test(m.fin))?m.fin:fins.find(f=>!/reverse|foil/i.test(f));
+ const b=fin?pf[fin]:null,r={at:Date.now(),pid:m.id,fin:fin||"",cm:b?.cardmarket||null,cx:b?.cardnexus||null};
+ /* anuncio de CardNexus con el envío real a 41020 (España), solo si su precio puede dejar tu beneficio */
+ const S=saleRef(x.p),lk=x.kind==="jp"?"ja":"en",cx=N(r.cx?.regions?.eu?.byCondition?.NM?.byLanguage?.[lk]?.low);
+ if(Number.isFinite(cx)&&Number.isFinite(S)&&netSale(S,c)-cx-minP(x,c)>=0&&cnBudget("l",110)){
+  try{const L=await cnGet("/products/"+m.id+"/listings?condition=NM&language="+lk+(fin?"&finish="+encodeURIComponent(fin):"")+"&deliveryCountry=ES&limit=10");
+   const ok=(L?.data||[]).filter(o=>!o.graded&&o.price?.currency==="EUR"&&!fakeWords(o.comment).length&&o.seller?.shipping);/* sin «proxy»/«réplica» en la nota y que envíe a España */
+   if(ok.length){const o=ok[0];r.cxBuy={eur:o.price.amount,ship:o.seller.shipping.currency==="EUR"?o.seller.shipping.amount:NaN,user:o.seller.username,country:o.seller.country,rating:o.seller.rating?.average??null,photos:(o.photos||[]).length}}
+   else r.cxBuy={none:true}}catch(e){r.cxErr=String(e.message||e).slice(0,80)}}
+ cnRes[x.id]=r;return true;
+}
+function cnCands(c){
+ return cardsPk().concat(cardsJp(),cardsLo()).filter(x=>!x.owned&&(TRUST[x.res?.status]??0)>=2&&(x.liq?.k||0)>=2&&Number(x.res?.pid)).map(x=>{const S=saleRef(x.p);return {x,S,room:Number.isFinite(S)?Math.min(netSale(S,c)-minP(x,c),netSale(S,c)/(1+(c.minMargin||0)/100),c.maxBuy)-c.buyShip:NaN}})
+  .filter(o=>o.S>=40&&o.room>=o.S*FAKE_RATIO).sort((a,b)=>b.room-a.room);
+}
+/* revisión: primero las cartas que ves, después las de más beneficio posible (cada hora, sin pasar del límite) */
+async function cnScan(force){
+ if(cnSt.busy||!cnKey()||!M.guide||(!force&&Date.now()-cnSt.at<60*60e3))return;cnSt.busy=true;cnSt.at=Date.now();const c=cfg();let n=0;
+ try{const vis=list().sure.slice(0,25).map(x=>x.id),C=cnCands(c),ord=[...new Set(vis.concat(C.map(o=>o.x.id)))].slice(0,150),all=cardsPk().concat(cardsJp(),cardsLo()),by=new Map(all.map(x=>[x.id,x]));
+  const xs=ord.map(id=>by.get(id)).filter(x=>x&&Number(x.res?.pid));await cnResolve(xs.map(x=>x.res.pid));
+  for(const x of xs){const r=cnRes[x.id];if(!force&&r&&Date.now()-r.at<AP_EVERY)continue;if(!await cnLoad(x,c))continue;n++;cnSt.ok++;if(n%10===0)render();await new Promise(r=>setTimeout(r,400))}
+  cnSt.err=""}
+ catch(e){cnSt.fail++;cnSt.err=String(e.message||e).slice(0,90);logErr("CardNexus: "+cnSt.err)}
+ finally{cnSt.busy=false;cnSt.cards=Object.keys(cnRes).length;render()}
+}
+async function cnTest(){try{await cnGet("/games");cnSt.test={ok:true};return {ok:true}}catch(e){cnSt.test={ok:false,err:String(e.message||e)};return {ok:false,err:cnSt.test.err}}}
+function cnPanel(){const k=cnKey();
+ return '<li><b>CardNexus (opcional) · Cardmarket por idioma y estado</b> · '+(k?'conectado'+(cnSt.busy?' · ⏳ revisando cartas…':cnSt.cards?' · '+cnSt.cards+' cartas con precio por idioma':''):'no conectado')+(cnSt.err?' · <span class="neg">'+E(cnSt.err)+'</span>':'')+
+  '<div class="cpCTk"><input type="password" autocomplete="off" data-cp-cnkey placeholder="'+(k?'Clave guardada en este iPhone':'Pega tu clave de CardNexus (cnk_live_…)')+'" aria-label="Clave de CardNexus"><button type="button" class="v4btn" data-cp-cnsave>'+(k?'Cambiar':'Conectar')+'</button>'+(k?'<button type="button" class="v4btn" data-cp-cntest>Probar CardNexus</button><button type="button" class="v4btn" data-cp-cndel>Desconectar</button>':'')+'</div>'+
+  '<small>Opcional y gratis: con una cuenta de CardNexus (cardnexus.com → Ajustes → API Keys) la app ve el anuncio más barato de Cardmarket <b>en cada idioma y estado</b> (la guía oficial los mezcla) y los anuncios de CardNexus con su envío a España. Solo lectura; la clave se guarda únicamente en este dispositivo.</small></li>'}
 function ctPanel(){const t=ctToken();
  return '<li><b>CardTrader (opcional) · anuncios por idioma</b> · '+(t?'conectado':'no conectado')+(M.src.ct?.lastErr?' · <span class="neg">'+E(M.src.ct.lastErr)+'</span>':'')+
   '<div class="cpCTk"><input type="password" autocomplete="off" data-cp-cttoken placeholder="'+(t?'Token guardado en este iPhone':'Pega tu token de CardTrader')+'" aria-label="Token de CardTrader"><button type="button" class="v4btn" data-cp-ctsave>'+(t?'Cambiar':'Conectar')+'</button>'+(t?'<button type="button" class="v4btn" data-cp-ctdel>Desconectar</button>':'')+'</div>'+
@@ -907,7 +991,11 @@ function onFavs(){ready.then(async()=>{renderFavs();try{await loadCatalog();if(!
 const histCache={};
 async function loadHist(pid,box){
  box=box||document.querySelector('[data-cp-hist="'+CSS.escape(String(pid))+'"]');if(!box)return;box.innerHTML='<p class="v4note">Cargando historial…</p>';
- try{const sh=Number(pid)%1000;const j=histCache[sh]||(histCache[sh]=await getJSON(ZZ+"history/"+sh+".json",null,30000));const rows=(j?.[String(pid)]||[]).filter(r=>N(r[2]));
+ try{let rows;
+  if(String(pid).startsWith("lo-")){/* V143 · Lorcana: historial diario de Bindex (tendencia de Cardmarket de cada versión, normal o foil); sin los puntos estimados */
+   const x=cardsLo().find(c=>c.id===pid),b=x?.x;if(!b?.setId)throw new Error("carta sin colección");const k="lo:"+b.setId;
+   const j=histCache[k]||(histCache[k]=await getJSON(BX+"history/"+encodeURIComponent(b.setId)+".json",null,30000));rows=(j?.points?.[b.bxId+"|"+b.variant]||[]).filter(r=>N(r[2])&&!r[3]).map(r=>[r[0],null,r[2]])}
+  else{const sh=Number(pid)%1000;const j=histCache[sh]||(histCache[sh]=await getJSON(ZZ+"history/"+sh+".json",null,30000));rows=(j?.[String(pid)]||[]).filter(r=>N(r[2]))}
   if(rows.length<2){box.innerHTML='<p class="v4note">Aún no hay historial suficiente para este producto.</p>';return}
   const xs=rows.map(r=>N(r[2])),lo=Math.min(...xs),hi=Math.max(...xs),W=300,H=70,pts=xs.map((v,i)=>(i*(W/(xs.length-1))).toFixed(1)+","+(H-4-(hi===lo?.5:(v-lo)/(hi-lo))*(H-8)).toFixed(1)).join(" ");
   box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" class="cpSpark" role="img" aria-label="Tendencia de precio"><polyline fill="none" stroke="currentColor" stroke-width="2" points="'+pts+'"/></svg><p class="v4note">Tendencia de Cardmarket del '+E(DATE(rows[0][0]))+' al '+E(DATE(rows[rows.length-1][0]))+': '+EUR(xs[0])+' → '+EUR(xs[xs.length-1])+' ('+PCT(xs[xs.length-1]/xs[0]-1)+') · mínimo '+EUR(lo)+' · máximo '+EUR(hi)+'.</p>';
@@ -971,6 +1059,7 @@ async function refresh(force){
   const lor=view.game==="all"||view.game==="lorcana"?loadLorcana(ctrl).then(render):Promise.resolve();
   if(ctToken()&&!M.src.ct?.test)ctTest().then(render);/* el estado de CardTrader, al momento */
   await verifyPriority(ctrl);ctAuto();/* CardTrader en paralelo, sin esperar a todas las colecciones */
+  if(cnKey())lor.then(()=>cnScan(false));/* V143: CardNexus (Cardmarket por idioma), con Lorcana ya cargada */
   await verifySets(first.concat(rest),ctrl);await lor;
  }finally{busy="";ctrl=null;render()}
  ctAuto();
@@ -999,6 +1088,7 @@ function trackNew(L,c){
 function apTick(force){
  if(force!==true&&(document.visibilityState!=="visible"||Date.now()-apLast<AP_EVERY))return;apLast=Date.now();
  loadGuide(force===true).then(render).catch(()=>{});/* la guía solo se baja si hay una nueva (6 h) */
+ if(cnKey())cnScan();/* V143 */
  if(ctToken()&&ctAutoDone)ctSweep().then(()=>{const l=selLang();if(OTHER_L.includes(l))return ctSweep(false,l)});
  if(ctToken())for(const x of list().sure.slice(0,30)){const r=ctRes[x.id];if(r&&!r.loading&&(!r.at||Date.now()-r.at>AP_EVERY)){delete ctRes[x.id];ctEnqueue(x.id)}}
  render();
@@ -1054,7 +1144,7 @@ async function ctSweep(force,lang="base"){
    const bps=await ctBpOf(G.exp),byPid=new Map();for(const b of bps)for(const id of (b.card_market_ids||[]))byPid.set(Number(id),b);
    let j;try{j=await ctGet("/marketplace/products?expansion_id="+encodeURIComponent(G.exp.id)+"&language="+CTLANG[G.lg])}catch(e){if(/token|navegador|no responde|demasiadas/i.test(e.message))throw e;j=await ctGet("/marketplace/products?expansion_id="+encodeURIComponent(G.exp.id))}
    for(const x of G.cards){const b=byPid.get(Number(x.res.pid)),old=ctRes[x.id];if(!b||old?.loading)continue;
-    const fresh=ctSummary((j&&j[b.id])||[]),tg=fresh.find(o=>o.lang===G.lg);nc++;if(!tg)continue;/* sin anuncios en su idioma entre los más baratos: la consulta carta a carta (por idioma) lo mirará */
+    const fresh=ctSummary((j&&j[b.id])||[],x.kind==="lo"?x.fo:undefined),tg=fresh.find(o=>o.lang===G.lg);nc++;if(!tg)continue;/* sin anuncios en su idioma entre los más baratos: la consulta carta a carta (por idioma) lo mirará */
     const S=saleRef(x.p);if(tg.cheapestGood&&tg.cheapestGood.eur>=S*FAKE_RATIO*.5&&netSale(S,c)-tg.cheapestGood.eur-minP(x,c)>=0)tg.cheapestGood.ship=await ctShip(tg.cheapestGood.user);
     /* se juntan con lo que ya había de otros idiomas (el barrido en alemán no borra el inglés) */
     const langs=new Set(fresh.map(o=>o.lang)),rows=(old?.rows||[]).filter(o=>!langs.has(o.lang)).concat(fresh);
@@ -1088,7 +1178,7 @@ async function verifyVisible(){
 }
 function onShow(){ready.then(()=>{render();if(!started&&navigator.onLine!==false){started=true;setTimeout(()=>refresh(false),900)}})}
 document.addEventListener("click",e=>{
- const t=e.target.closest("[data-cp-notify],[data-cp-diag],[data-cp-diagclear],[data-cp-cttest],[data-cp-shopload],[data-cp-shopprobe],[data-cp-fakecheck],[data-cp-jpsave],[data-cp-refresh],[data-cp-lsave],[data-cp-pastesave],[data-cp-pasteopen],[data-cp-watch],[data-cp-unwatch],[data-cp-promote],[data-cp-histload],[data-cp-ctload],[data-cp-ctsave],[data-cp-ctdel]");if(!t)return;const d=t.dataset;
+ const t=e.target.closest("[data-cp-cnsave],[data-cp-cntest],[data-cp-cndel],[data-cp-notify],[data-cp-diag],[data-cp-diagclear],[data-cp-cttest],[data-cp-shopload],[data-cp-shopprobe],[data-cp-fakecheck],[data-cp-jpsave],[data-cp-refresh],[data-cp-lsave],[data-cp-pastesave],[data-cp-pasteopen],[data-cp-watch],[data-cp-unwatch],[data-cp-promote],[data-cp-histload],[data-cp-ctload],[data-cp-ctsave],[data-cp-ctdel]");if(!t)return;const d=t.dataset;
  if("cpJpsave" in d){const box=t.closest("[data-cp-impbox]"),v=k=>{const r=String(box.querySelector('[data-cp-jp="'+k+'"]')?.value||"").trim();return r==="0"?0:NUM(r)};/* 0 es válido */
   const f={ems:v("ems"),buyee:v("buyee"),duty:v("duty"),vat:v("vat"),handling:v("handling"),shipUS:v("shipUS")},ra=Number(String(box.querySelector('[data-cp-jp="rate"]')?.value||"").replace(",","."));
   if(Object.values(f).some(x=>!Number.isFinite(x))){alert("Revisa los gastos: números como 3450, 500, 3, 21 o 15.");return}
@@ -1106,6 +1196,9 @@ document.addEventListener("click",e=>{
  if(d.cpPastesave){savePaste(d.cpPastesave,t.closest(".cpPaste"));return}
  if(d.cpPasteopen){const k=d.cpPasteopen.split("|")[1],box=t.closest(".cpCard")?.querySelector(".cpPaste");if(!box)return;box.open=true;const sl=box.querySelector("[data-cp-pastelang]");if(sl)sl.value=k;box.querySelector("[data-cp-paste]")?.focus();box.scrollIntoView?.({block:"nearest"});return}
  if("cpCtsave" in d){const v=cleanTok(document.querySelector("[data-cp-cttoken]")?.value);if(!v){alert("Pega el token de tu cuenta de CardTrader.");return}try{localStorage.setItem(CTKEY,v)}catch{alert("NO se ha guardado el token: el almacenamiento del navegador no lo permite.");return}M.src.ct={};for(const k in ctRes)delete ctRes[k];renderNow();return}
+ if("cpCnsave" in d){const v=cleanTok(document.querySelector("[data-cp-cnkey]")?.value);if(!v){alert("Pega la clave de tu cuenta de CardNexus.");return}try{localStorage.setItem(CNKEY,v)}catch{alert("NO se ha guardado la clave: el almacenamiento del navegador no lo permite.");return}cnSt.err="";cnTest().then(r=>{toastCp(r.ok?"CardNexus conectado ✓":"CardNexus: "+r.err);if(r.ok)cnScan(true);renderNow()});renderNow();return}
+ if("cpCntest" in d){t.disabled=true;t.textContent="Probando…";cnTest().then(r=>{renderNow();toastCp(r.ok?"CardNexus conectado ✓":"CardNexus: "+r.err)});return}
+ if("cpCndel" in d){try{localStorage.removeItem(CNKEY)}catch{}for(const k in cnRes)delete cnRes[k];cnSt={ok:0,fail:0,err:"",busy:false,cards:0,at:0,test:null};renderNow();return}
  if("cpCtdel" in d){try{localStorage.removeItem(CTKEY)}catch{}M.src.ct={};for(const k in ctRes)delete ctRes[k];renderNow();return}
  if("cpRefresh" in d){M.pt.sets={};if(M.lo)M.lo.at=0;loState="";refresh(true)}
  else if(d.cpLsave)saveLang(d.cpLsave,t.closest(".cpCard"));
@@ -1120,5 +1213,5 @@ let qT=null;document.addEventListener("input",e=>{const t=e.target.closest("[dat
 document.addEventListener("click",e=>{if(e.target.closest('.mainNav [data-tab="radar"]'))setTimeout(onShow,60);if(e.target.closest('.mainNav [data-tab="favoritos"]'))setTimeout(onFavs,60)});
 if(location.hash==="#favoritos")setTimeout(onFavs,1300);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>setTimeout(onShow,1200));else setTimeout(onShow,1200);
-window.CVCompra={ctSweep,ctState:()=>({sweep,ctRes}),apTick,trackNew,seenState:()=>seen,decide,tgtOf,diagText,logErr,verifyPriority,ctTest,ctShip,SHOPS,shopProbe,shopLoad,shopState:()=>shopSt,fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpRoute,jpCalc,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
+window.CVCompra={cardsLo,cnScan,cnState:()=>({cnSt,cnRes,cnMap}),ctSweep,ctState:()=>({sweep,ctRes}),apTick,trackNew,seenState:()=>seen,decide,tgtOf,diagText,logErr,verifyPriority,ctTest,ctShip,SHOPS,shopProbe,shopLoad,shopState:()=>shopSt,fakeWords,FAKE_RATIO,chollos,loDiag,minP,opIn,top5,ctBlueprint,ctGet,ctToken,ctSummary,parseTcg,bgRender:render,jpRoute,jpCalc,loadFx,loadOld,loadPrev,sniper,matchOwned,loadCatalog,loadGuide,ready_:()=>ready,confidence,cardsPk,links,netSale,cfg,G,saleRef_:saleRef,parseCmPaste,langCheck,cardsJp,renderFavs,render:renderNow,refresh,resolve,ops,bestOp,parseGuide,parsePtCard,liquidity,momentum,saleRef,list,state:()=>M,ready:()=>ready,setState:x=>{M={...M,...x}},reloadLocal:()=>{langData=readLS(LKEY,{});watch=readLS(WKEY,{});view={...view,...readLS(VKEY,{})}}};
 })();
