@@ -57,7 +57,7 @@ async function setup(withToken){
  await page.selectOption('[data-cp-view="lang"]','ja');await page.waitForTimeout(400);
  ok('Idioma «Japonés»: las japonesas salen en Compra YA (y solo ellas)',JSON.stringify(await ids())==='["jp-861477"]',JSON.stringify(await ids()));
  t=await page.textContent('#v4Buy #cp-jp-861477');
- ok('La ficha japonesa lleva el precio real de Cardmarket y «Dónde comprarla» (solo sitios con precio)',/Cardmarket, solo japonesas:/.test(t)&&/Dónde comprarla más barata/.test(t)&&!/Zenpan EU/.test(t),t.slice(0,300));
+ ok('La ficha japonesa lleva el precio real de Cardmarket y «Dónde comprarla» (solo sitios con precio)',/Cardmarket, solo japonesas:/.test(t)&&/Dónde comprarla/.test(t)&&!/Zenpan EU/.test(t),t.slice(0,300));
  ok('V135: la ficha japonesa ya no lleva calculadora sin precio',!(await page.$('#v4Buy #cp-jp-861477 [data-cp-jpcalcbox]')));
  // Graduadas sin token
  await page.click('.mainNav [data-tab="pregrade"]');await page.waitForSelector('#cpGraded h4',{timeout:30000});

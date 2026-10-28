@@ -53,7 +53,7 @@ const hits={shop:[],ct:[]};
  await page.waitForFunction(()=>/Zenpan EU \(Lisboa, UE\) ↗156,00/.test(document.querySelector('#v4Buy #cp-jp-861477 .cpBuy')?.textContent||''),null,{timeout:150000});
  let t=await page.textContent('#v4Buy #cp-jp-861477 .cpBuy');
  // Zenpan EU: 150 € + envío 6 € = 156 € (en la UE: sin aduana)
- ok('Ficha japonesa en Compra YA (lectura automática): la más barata es Zenpan EU 156 € puesta en 41020',/Dónde comprarla más barata · Zenpan EU \(Lisboa, UE\) 156,00\s€ puesta en 41020/.test(t),t.slice(0,600));
+ ok('Ficha japonesa en Compra YA (lectura automática): la más barata es Zenpan EU 156 € puesta en 41020',/Dónde comprarla · lo más barato comparable: Zenpan EU \(Lisboa, UE\) 156,00\s€ con envío/.test(t),t.slice(0,600));
  await page.evaluate(()=>{document.querySelectorAll('#v4Buy details.v4settings').forEach(d=>d.open=true)});
  t=await page.textContent('#v4Buy .cpShops');
  ok('Estado de las fuentes: Zenpan EU y Zenpan Japan se pueden leer (Hareruya2 no: no se enseña)',/✓ Zenpan EU, Zenpan Japan se pueden leer/.test(t),t);
@@ -64,7 +64,7 @@ const hits={shop:[],ct:[]};
  const order=[...t.matchAll(/(Zenpan EU \(Lisboa, UE\)|CardTrader · Japonés Near Mint|Zenpan Japan \(Japón\)|Cardmarket · «desde») ↗([\d.,]+)\s€/g)].map(m=>m[1]+' '+m[2]);
  // Zenpan Japan: ¥20.000 = 116 € + EMS 20,01 + arancel 3 + IVA 21 % de 139,01 = 29,19 + gestión 15 = 183,20 €
  ok('«Dónde comprarla»: todas las vías ordenadas por lo que pagas en 41020 (Zenpan EU 156 → CardTrader japonés 176 → Zenpan Japan 183,20 → Cardmarket 199)',JSON.stringify(order)===JSON.stringify(['Zenpan EU (Lisboa, UE) 156,00','CardTrader · Japonés Near Mint 176,00','Zenpan Japan (Japón) 183,20','Cardmarket · «desde» 199,00']),JSON.stringify(order)+' '+t.slice(0,900));
- ok('La mejor marcada: Zenpan EU con su anuncio y enlace al producto',/Dónde comprarla más barata · Zenpan EU \(Lisboa, UE\) 156,00\s€ puesta en 41020/.test(t)&&await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-jp-861477 .cpBuy tr.best a')].some(a=>a.href==='https://zenpan-eu.com/products/pikachu-ex-234')),t.slice(0,300));
+ ok('La mejor marcada: Zenpan EU con su anuncio y enlace al producto',/Dónde comprarla · lo más barato comparable: Zenpan EU \(Lisboa, UE\) 156,00\s€ con envío/.test(t)&&await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-jp-861477 .cpBuy tr.best a')].some(a=>a.href==='https://zenpan-eu.com/products/pikachu-ex-234')),t.slice(0,300));
  ok('Solo cuenta la disponible y del mismo número (no la agotada de 140 € ni la nº 44 de 9 €)',!/140,00/.test(t)&&!/9,00\s€ \+/.test(t)&&/«Pikachu ex SAR 234\/193 \[M2a\] Japanese» 150,00\s€ \+ envío estimado 6,00\s€ \(el real, en su carrito; stock en la UE: IVA incluido, sin aduana\)/.test(t),t);
  ok('Hareruya2 no deja leer su precio: no sale (solo sitios con precio)',!/Hareruya2/.test(t),t);
  ok('CardTrader en japonés (no el coreano de 90 €), con su colección japonesa por código M2a',/CardTrader · Japonés Near Mint ↗176,00\s€/.test(t)&&!/90,00/.test(t)&&hits.ct.some(p=>p.includes('expansion_id=21')),JSON.stringify(hits.ct));

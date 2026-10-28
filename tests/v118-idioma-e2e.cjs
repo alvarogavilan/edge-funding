@@ -46,8 +46,8 @@ Seller2 Near Mint English 129,99 € 2`;
  const openPaste=async k=>{await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 .cpPaste').open=true});await page.selectOption('#v4Buy #cp-base4-10 [data-cp-pastelang]',k)};/* V122: el cuadro tiene su propio selector de idioma */
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  let t=await T('jp-861477');
- ok('Japonés: Pikachu ex (M2A 234) con su producto japonés propio · compra 193 € (199 € en 41020) → venta 257 € → +40,15 €',/JAPONÉS · PRECIO Y VENTAS DEL MISMO IDIOMA/.test(t)&&/199,00\s€/.test(t)&&/257,00\s€/.test(t)&&/\+40,15\s€/.test(t)&&/ventas reales de cartas japonesas/.test(t),t.slice(0,500));
- ok('Japonés: la tabla «mismo idioma» marca la venta como comprobada en japonés',/Japonés.*✔ venta comprobada · japonés/.test(await page.textContent('#v4Buy #cp-jp-861477 .cpLTbox .cpLTtab')));
+ ok('Japonés: Pikachu ex (M2A 234) con su producto japonés propio · compra 193 € (199 € en 41020) → venta 257 € → +40,15 €',/JAPONÉS · PRECIO Y VENTAS DEL MISMO IDIOMA/.test(t)&&/199,00\s€/.test(t)&&/257,00\s€/.test(t)&&/\+40,15\s€/.test(t)&&/ventas reales de japonesas/.test(t)/* V145: cajas iguales a la decisión */,t.slice(0,500));
+ ok('Japonés: sin tabla de idiomas (su ficha ya es solo japonesa) y la venta dice «ventas reales de japonesas» (V145)',!(await page.$('#v4Buy #cp-jp-861477 .cpLTbox'))&&/ventas reales de japonesas/.test(await page.textContent('#v4Buy #cp-jp-861477 .cpMoney')));
  const jl=await page.evaluate(()=>({main:document.querySelector('#v4Buy #cp-jp-861477 .v4actions a').href,img:document.querySelector('#v4Buy #cp-jp-861477 img')?.src||''}));
  await page.selectOption('[data-cp-view="lang"]','ja');await page.waitForTimeout(300);jl.ja=await page.getAttribute('#v4Buy #cp-jp-861477 .v4actions a','href');jl.ids=await ids();await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
  ok('Japonés: enlace exacto al producto; con idioma «Japonés» solo japonesas y filtro language=7; foto del catálogo japonés',jl.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=861477'&&/idProduct=861477&language=7$/.test(jl.ja)/* V126: su compra es el «desde» sin estado, así que la ficha se abre sin filtro de estado */&&jl.ids.join()==='jp-861477'&&/den-cards\.pokellector\.com\/.*Pikachu-ex\.M2A\.234/.test(jl.img),JSON.stringify(jl));
@@ -58,8 +58,7 @@ Seller2 Near Mint English 129,99 € 2`;
  ok('Filtro «Pokémon» incluye inglés/internacional y japonés',(await ids()).includes('base4-10')&&(await ids()).includes('jp-861477'),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="game"]','all');await page.waitForTimeout(300);
  // Carta internacional: tabla por idioma con «Abrir ficha» y «Pegar datos»
- const lt=await page.textContent('#v4Buy #cp-base4-10 .cpLTbox .cpLTtab');
- ok('Mewtwo: tabla por idioma con la guía (mezcla idiomas); sin filas vacías por idioma',/Todos \(guía\).*mezcla idiomas/.test(lt)&&!/Ver en inglés en Cardmarket/.test(lt),lt.slice(0,300));
+ ok('Mewtwo sin datos pegados: sin la tabla confusa «Todos (guía)» (V145)',!(await page.$('#v4Buy #cp-base4-10 .cpLTbox'))&&!/Todos \(guía\)/.test(await page.textContent('#v4Buy #cp-base4-10')));
  await page.selectOption('[data-cp-view="lang"]','en');await page.waitForTimeout(300);/* V122: con el idioma elegido aparece su fila */
  const ifl=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy #cp-base4-10 .cpLTtab a')].map(a=>a.href).find(h=>/language=1&/.test(h)));await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
  ok('Con idioma «Inglés», su fila abre el producto exacto filtrado por inglés y EX o mejor',ifl==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=1&minCondition=3',String(ifl));
@@ -80,7 +79,7 @@ Seller2 Near Mint English 129,99 € 2`;
  // 250·0,95−5 = 232,50 − (120+6) = +106,50
  ok('Tabla: inglés 120 € (+6 € de envío) → 250 € → +106,50 € «✔ venta comprobada · inglés»',/Inglés120,00\s€250,00\s€\+106,50\s€✔ venta comprobada · inglés/.test(t)&&/compra: anuncio más barato copiado/.test(t),t.slice(0,500));
  const mon=await page.textContent('#v4Buy #cp-base4-10 .cpMoney');
- ok('La mejor operación pasa a ser la del mismo idioma (inglés) y lo dice',/Inglés · mismo idioma/.test(mon)&&/ventas en inglés \(comprobadas\)/.test(mon)&&/\+106,50\s€/.test(mon),mon);
+ ok('La mejor operación pasa a ser la del mismo idioma (inglés) y lo dice',/inglés · mismo idioma/.test(mon)&&/ventas en inglés \(comprobadas\)/.test(mon)&&/\+106,50\s€/.test(mon),mon);
  // Pegado sin precios: no inventa nada
  await openPaste('fr');await page.fill('#v4Buy #cp-base4-10 [data-cp-paste]','texto sin precios');
  let alerted='';page.once('dialog',d=>{alerted=d.message();d.dismiss()});await page.click('#v4Buy #cp-base4-10 [data-cp-pastesave]');await page.waitForTimeout(300);

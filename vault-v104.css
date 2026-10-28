@@ -318,3 +318,8 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpDecide.buy{border-color:var(--v4good);background:rgba(46,204,113,.10)}
 .cpDecide.check{border-color:var(--v4warn);background:rgba(241,196,15,.10)}
 .cpDecide small{display:block;margin-top:6px;font-size:13px;opacity:.9}
+/* V145 · «Dónde comprarla»: compras comparables y, aparte y atenuado, precios solo de referencia; sin cortar el texto en el iPhone */
+.cpBuy .cpLTtab th,.cpBuy .cpLTtab td{white-space:normal;overflow-wrap:anywhere}
+.cpBuy .cpLTtab th{width:40%}.cpBuy .cpLTtab td:nth-child(2){white-space:nowrap}
+.cpBuy .cpLTtab caption{font-size:.82rem}
+.cpRef{opacity:.7;margin-top:10px}.cpRef caption{color:#f5c451}
