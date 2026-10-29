@@ -6,7 +6,7 @@
    - Ninguna cifra es beneficio seguro. Sin eBay. */
 (()=>{"use strict";
 const STORE="cv_v104_user",IDB="cardvault-v104";
-const DEFAULTS={maxBuy:200,minMargin:25,minLiq:2,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
+const DEFAULTS={maxBuy:200,minMargin:25,minLiq:2,malMax:35,malRatio:2.5,malMinProfit:15,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
 const N=v=>{if(v==null||v==="")return NaN;const n=Number(String(v).replace(/\s/g,"").replace(",","."));return Number.isFinite(n)?n:NaN};
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>Number.isFinite(v)?v.toLocaleString("es-ES",{style:"currency",currency:"EUR"}):"—";
@@ -358,6 +358,9 @@ function settingsBlock(cfg){
   f("minProfit","Beneficio mínimo €","Umbral para considerar la operación interesante.")+
   f("minMargin","Margen mínimo %","Además del beneficio en euros, lo que ganas debe ser al menos este % de lo que pagas (25 %: pagas 160 € → ganas 40 € o más). Evita compras con muy poco margen.")+
   f("minLiq","Ventas mínimas (1, 2 o 3)","Solo se recomiendan cartas que se venden de verdad en Cardmarket: 1 = al menos una venta en los últimos 30 días · 2 = cada semana (recomendado) · 3 = a diario.")+
+  f("malMax","🩹 Mal estado barato: precio máximo €","Precio máximo de la carta en mal estado (sin envío). Por defecto 35 €.")+
+  f("malRatio","🩹 Mal estado barato: vale al menos × veces","Lo que vale en buen estado frente a lo que pagas (2,5 = una carta de 25 € que vale ≥ 62,50 €).")+
+  f("malMinProfit","🩹 Mal estado barato: beneficio mínimo €","Lo que ganas vendiéndola tal cual, sin restaurar, tras comisión y envíos (y con tu margen mínimo %).")+
   f("minProfitLo","Beneficio mínimo en Lorcana €","Sus cartas valen menos: con 40 € casi ninguna cabe. Bájalo si aceptas márgenes menores.")+
   f("usShip","Envío desde EE. UU. €","Inglés automático (TCGplayer): envío internacional estimado hasta Sevilla.")+
   f("usVat","IVA de importación %","Se aplica a carta + envío al importar desde fuera de la UE.")+
