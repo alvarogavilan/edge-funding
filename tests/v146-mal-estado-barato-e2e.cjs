@@ -43,13 +43,18 @@ const L={
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- await page.waitForFunction(()=>/1 carta\(s\) en mal estado/.test(document.querySelector('#v4Buy [data-cp-mal] summary')?.textContent||''),null,{timeout:150000});
+ await page.waitForFunction(()=>/✅ 1 comprobada\(s\)/.test(document.querySelector('#v4Buy [data-cp-mal] summary')?.textContent||''),null,{timeout:150000});
  const t=await page.textContent('#v4Buy [data-cp-mal]');
  // HP a 22 € + 5 € de envío real = 27 · otros en mal estado piden 60/64/68 → 64 × 0,95 = 60,80 (< 35 % de 200 = 70) → 60,80·0,95 − 5 − 27 = +25,76
  ok('🩹 Alakazam INGLÉS muy jugada (HP): pagas 27 € (22 € + envío real) · vale 200 € (×9,1) · tal cual ~60,80 € · ganas +25,76 €',/Alakazam/.test(t)&&/INGLÉS · muy jugada \(HP\)/.test(t)&&/Pagas 27,00\s€/.test(t)&&/×9,1/.test(t)&&/tal cual la vendes a ~60,80\s€/.test(t)&&/ganas \+25,76\s€/.test(t),t.slice(0,700));
  ok('…la venta sale de lo que piden otros 3 vendedores en ese estado (no del precio de una en buen estado)',/lo que piden otros 3 vendedores en ese estado −5 %/.test(t),t.slice(0,700));
- ok('El anuncio «PROXY» de 21 € y la coreana de 15 € no cuentan',!/21,00\s€/.test(t)&&!/15,00\s€/.test(t));
- ok('Mewtwo HP a 25 € NO sale: los demás HP piden 26-28 € (tal cual no deja beneficio)',!/Mewtwo/.test(t));
+ {const A0=await page.textContent('#v4Buy [data-cp-mal] ol:not([data-cp-malchk])');ok('El anuncio «PROXY» de 21 € y la coreana de 15 € no cuentan',!/21,00\s€/.test(A0)&&!/15,00\s€/.test(A0),A0.slice(0,300))}
+ const A=await page.textContent('#v4Buy [data-cp-mal] ol:not([data-cp-malchk])'),B=await page.textContent('#v4Buy [data-cp-mal] [data-cp-malchk]');
+ ok('Mewtwo HP a 25 € NO es «comprobada»: los demás HP piden 26-28 € (tal cual no deja beneficio)',!/Mewtwo/.test(A),A.slice(0,200));
+ // V147 · por comprobar: «desde» 24 € (30 € con envío), vale 100 € → necesita ≥ 53 % de su valor → MP o mejor
+ ok('V147 · Mewtwo pasa a «🔎 Por comprobar en un toque»: desde 24 €, vale 100 € → «Te compensa: sirve si está en MP o mejor», con lo que dice CardTrader',/Mewtwo/.test(B)&&/Hay un anuncio desde 24,00\s€ \(30,00\s€ con envío; la carta vale 4,2 veces más\)/.test(B)&&/sirve si está en MP o mejor/.test(B)&&/CardTrader no tiene ninguna inglesa en mal estado que lo cumpla ahora/.test(B),B.slice(0,500));
+ ok('V147 · Su enlace abre la ficha solo con inglesas',await page.evaluate(()=>[...document.querySelectorAll('#v4Buy [data-cp-malchk] a')].some(a=>/idProduct=273933&language=1/.test(a.href))));
+ ok('V147 · Alakazam (ya comprobada) no se repite en «por comprobar»',!/Alakazam/.test(B));
  ok('Restaurar es un extra, no se cuenta: «podría venderse a ~120 € (no contado)»',/podría venderse a ~120,00\s€ \(no contado\)/.test(t));
  ok('Enlace a su anuncio en CardTrader',await page.evaluate(()=>[...document.querySelectorAll('#v4Buy [data-cp-mal] a')].some(a=>/cardtrader\.com\/cards\/777/.test(a.href))));
  const H=await page.evaluate(()=>{const C=window.CVCompra;return C.malHunt(C.cfg()).map(h=>({id:h.x.id,lvl:h.o.lvl}))});

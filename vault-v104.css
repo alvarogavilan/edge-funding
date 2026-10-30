@@ -323,3 +323,8 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpBuy .cpLTtab th{width:40%}.cpBuy .cpLTtab td:nth-child(2){white-space:nowrap}
 .cpBuy .cpLTtab caption{font-size:.82rem}
 .cpRef{opacity:.7;margin-top:10px}.cpRef caption{color:#f5c451}
+/* V147 · Listas (mal estado barato, chollos, punto de mira, Top 5): el botón debajo del nombre, a lo ancho; el nombre ya no se aprieta en el iPhone */
+.cpPlanList li{grid-template-columns:56px minmax(0,1fr)}
+.cpPlanList li:not(:has(.cpThumb)){grid-template-columns:minmax(0,1fr)}
+.cpPlanList li>a.v4btn{grid-column:1/-1;justify-self:stretch;text-align:center;min-height:0}
+.cpMal h4{margin:12px 0 4px}
