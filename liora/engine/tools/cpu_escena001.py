@@ -13,6 +13,7 @@ Con --model-dir <canalización diminuta> se prueba el código sin descargar nada
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -70,9 +71,11 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=20261019)
     ap.add_argument("--wait-hours", type=float, default=0.0, help="Esperar hasta N horas a que huggingface.co sea accesible")
     ap.add_argument("--model-dir", help="Canalización local (pruebas): no descarga nada y la salida se marca test_only")
+    ap.add_argument("--die-after", type=int, default=0, help="PRUEBAS: terminar en seco tras N pasos de esta ejecución (simula una suspensión del contenedor)")
     a = ap.parse_args()
     work = Path(a.work)
     work.mkdir(parents=True, exist_ok=True)
+    ckpt = work / "denoise-ckpt.pt"
     ev = {"format": "liora-escena001-cpu-v1", "started_at": datetime.now(timezone.utc).isoformat(), "generated": False,
           "test_only": bool(a.model_dir), "budget_eur": 0, "params": vars(a)}
     out_ev = work / "evidence.json"
@@ -80,6 +83,8 @@ def main() -> int:
     def finish(status: str, **kw) -> int:
         ev.update(status=status, finished_at=datetime.now(timezone.utc).isoformat(), **kw)
         media.write_json(out_ev, ev)
+        if status in ("REVISION", "RECHAZADO"):
+            ckpt.unlink(missing_ok=True)  # la generación terminó: el punto de control ya no debe reanudar nada
         log(work, "ESTADO:", status, kw.get("error", ""))
         return 0 if status == "REVISION" else 2
 
@@ -155,29 +160,73 @@ def main() -> int:
     grey = Image.new("RGB", (a.width, a.height), (128, 128, 128))
     video = [first] + [grey] * (nf - 1)
     mask = [Image.new("L", (a.width, a.height), 0)] + [Image.new("L", (a.width, a.height), 255)] * (nf - 1)
+
+    # Punto de control por paso: si el contenedor se suspende, se reanuda donde se quedó (se pierde a lo sumo el paso en curso).
+    fingerprint = hashlib.sha256(json.dumps([a.seed, a.steps, nf, a.width, a.height, a.guidance, a.cfg_steps, prompt, negative]).encode()).hexdigest()
+    base, full_ts, latents_in, guidance = 0, None, None, a.guidance
+    if ckpt.exists():
+        try:
+            c = torch.load(ckpt, weights_only=False)
+        except Exception as e:  # noqa: BLE001
+            c = None
+            log(work, "Punto de control ilegible; se ignora:", e)
+        if c and c.get("fingerprint") == fingerprint and 0 < c["next_i"] <= a.steps:
+            base, latents_in, sched, full_ts = c["next_i"], c["latents"], c["scheduler"], c["timesteps"]
+
+            def _resume_set_timesteps(num_inference_steps=None, device=None, **_kw):
+                sched.timesteps = full_ts[base:]  # el bucle solo recorre los pasos pendientes
+                sched.__dict__.pop("set_timesteps", None)  # restaura el método de clase (el cierre no es serializable)
+
+            sched.set_timesteps = _resume_set_timesteps
+            pipe.scheduler = sched
+            orig_prepare = pipe.prepare_latents
+
+            def _resume_prepare(*ar, **kw2):
+                # Se ejecuta después de que el bucle capture los pasos pendientes y antes del primer paso:
+                # el planificador recupera la lista completa (this_order depende de len(timesteps) - step_index).
+                sched.timesteps = full_ts
+                return orig_prepare(*ar, **kw2)
+
+            pipe.prepare_latents = _resume_prepare
+            if base >= a.cfg_steps:
+                guidance = 1.0  # la CFG ya se había desactivado al llegar a este paso
+            log(work, f"Reanudando desde el punto de control: paso {base + 1}/{a.steps}" if base < a.steps
+                else "Difusión ya completa en el punto de control: solo decodificación y verificación")
+        elif c:
+            log(work, "Punto de control de otra configuración; se descarta")
     t0, step_t = time.time(), [time.time()]
 
     def on_step(p, i, t, kw):
-        now = time.time()
-        log(work, f"paso {i + 1}/{a.steps} · {now - step_t[0]:.0f} s · total {(now - t0) / 60:.1f} min")
+        now, j = time.time(), base + i + 1  # j: paso global de la generación
+        log(work, f"paso {j}/{a.steps} · {now - step_t[0]:.0f} s · total {(now - t0) / 60:.1f} min")
         step_t[0] = now
-        media.write_json(work / "progress.json", {"step": i + 1, "steps": a.steps, "elapsed_min": round((now - t0) / 60, 1)})
-        if i + 1 >= a.cfg_steps and p._guidance_scale > 1:
+        media.write_json(work / "progress.json", {"step": j, "steps": a.steps, "elapsed_min": round((now - t0) / 60, 1)})
+        if j >= a.cfg_steps and p._guidance_scale > 1:
             p._guidance_scale = 1.0  # CFG solo en los primeros pasos
             log(work, "CFG desactivada para los pasos restantes")
+        tmp = ckpt.with_suffix(".tmp")
+        torch.save({"fingerprint": fingerprint, "next_i": j, "latents": kw["latents"], "scheduler": p.scheduler,
+                    "timesteps": full_ts if full_ts is not None else p.scheduler.timesteps}, tmp)
+        os.replace(tmp, ckpt)
+        if a.die_after and i + 1 >= a.die_after:
+            log(work, f"PRUEBA: terminando en seco tras {a.die_after} pasos (--die-after)")
+            os._exit(3)
         return kw
 
     # 45 bloques (30 + 15 VACE); coste medido de 1 bloque fp32 en este CPU: 49 fotogramas ≈ 19,4 s, 65 ≈ 29,3 s, 81 ≈ 40,9 s
     block_s = {49: 19.4, 65: 29.3, 81: 40.9}.get(nf, 19.4 * nf / 49)
     est_h = block_s * 45 * (min(a.cfg_steps, a.steps) * (2 if a.guidance > 1 else 1) + max(0, a.steps - a.cfg_steps)) / 3600
     ev["estimated_hours"] = round(est_h, 1)
-    log(work, f"Generando {nf} fotogramas {a.width}×{a.height} · {a.steps} pasos (CFG {a.guidance} en {a.cfg_steps}) · estimado {est_h:.1f} h")
+    log(work, f"Generando {nf} fotogramas {a.width}×{a.height} · {a.steps} pasos (CFG {a.guidance} en {a.cfg_steps}) · estimado {est_h:.1f} h" +
+        (f" · reanudado en el paso {base + 1}" if base else ""))
     try:
         frames = pipe(video=video, mask=mask, reference_images=[master.convert("RGB")], prompt_embeds=embs["prompt"],
-                      negative_prompt_embeds=embs["negative"] if a.guidance > 1 else None, height=a.height, width=a.width, num_frames=nf,
-                      num_inference_steps=a.steps, guidance_scale=a.guidance, generator=torch.Generator("cpu").manual_seed(a.seed),
-                      output_type="np", callback_on_step_end=on_step).frames[0]
+                      negative_prompt_embeds=embs["negative"] if guidance > 1 else None, height=a.height, width=a.width, num_frames=nf,
+                      num_inference_steps=a.steps, guidance_scale=guidance, generator=torch.Generator("cpu").manual_seed(a.seed),
+                      latents=latents_in, output_type="np", callback_on_step_end=on_step).frames[0]
     except Exception as e:  # noqa: BLE001
+        import traceback
+        log(work, traceback.format_exc())
         return finish("error_generacion", error=f"{type(e).__name__}: {e}")
     ev["generation_s"] = round(time.time() - t0, 1)
 
