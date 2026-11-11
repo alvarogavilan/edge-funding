@@ -233,7 +233,7 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpSpark{width:100%;height:70px;color:var(--v4good)}
 .v4tag.v4ok{border-color:var(--v4good)}.v4tag.v4warn{border-color:#f5a524;color:#f5a524}.v4tag.v4bad{border-color:#e5484d;color:#e5484d}
 /* V117 · Favoritos, idiomas, CardTrader, PSA y Valorar PSA */
-#pregrade.cpPsaOn>:not(#cpPsa){display:none!important}
+#pregrade.cpPsaOn>:not(#cpPsa):not(#cpGraded){display:none!important}
 .cpLangLinks{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;font-size:13px}
 .cpLangLinks span{width:100%;color:var(--v4soft)}
 .cpLangLinks a{display:inline-flex;align-items:center;min-height:40px;padding:0 12px;border:1px solid var(--v4line);border-radius:999px;text-decoration:none;color:inherit;font-weight:700}
@@ -291,3 +291,40 @@ body.v104 .mainNav{margin:6px 0 14px}
 .cpTot div{border:1px solid var(--v4line);border-radius:10px;padding:6px 8px}.cpTot b{display:block;font-size:1.05rem}.cpTot span{font-size:.8rem;opacity:.8}
 .cpSig{display:inline-block;font-weight:700;font-size:.78rem;border-radius:8px;padding:2px 6px;border:1px solid currentColor}
 .cpSig.go{color:var(--v4good)}.cpSig.wait{color:var(--v4warn)}.cpSig.flat{opacity:.75}
+/* V122 · punto de mira, idioma, sellado y graduadas */
+.cpSnipe{border:2px solid var(--v4good);border-radius:14px;padding:10px;margin:10px 0}
+.cpSnipe summary{font-size:1.02rem}
+.cpLangSel{margin:6px 0;padding:6px 8px;border-left:3px solid var(--v4blue);font-size:.9rem}
+.cpMine{margin:14px 0 6px}
+.cpPlanIn label.wide{grid-column:1/-1}
+.cpPlanIn select{min-height:44px;border:1px solid var(--v4line);border-radius:10px;background:transparent;color:inherit;font:inherit;padding:4px 8px;min-width:0}
+/* V126 · top 5, dónde comprar y miniaturas */
+.cpTop{border:2px solid var(--v4warn);border-radius:14px;padding:10px;margin:10px 0}
+.cpTop h4{margin:0 0 6px}
+.cpPlanList li{grid-template-columns:48px minmax(0,1fr) auto}
+.cpPlanList li>small{grid-column:1/-1}
+.cpPlanList li:not(:has(.cpThumb)){grid-template-columns:minmax(0,1fr) auto}
+.cpThumb{width:48px;height:67px;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;border-radius:4px;background:var(--v4line)}
+.cpThumb img{width:48px;height:67px;object-fit:cover}
+.cpLTtab tr.best th,.cpLTtab tr.best td{background:rgba(61,220,132,.08)}
+/* V132 · Comprar japonesas: calculadora de importación */
+.cpJpCalc{margin-top:12px;padding:10px;border:1px solid var(--v4line);border-radius:8px}
+.cpJpCalc .cpChk{display:flex;align-items:center;gap:6px}
+.cpJpCalc .cpChk input{width:auto}
+/* V137 · diagnóstico copiable */
+.cpDiag{white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:240px;overflow:auto;padding:8px;border:1px solid var(--v4line);border-radius:8px}
+/* V138 · La línea que manda: qué comprar, idioma, dónde, pagas, vendes, ganas */
+.cpDecide{margin:10px 0;padding:12px 14px;border-radius:12px;font-size:16px;line-height:1.45;border:2px solid}
+.cpDecide.buy{border-color:var(--v4good);background:rgba(46,204,113,.10)}
+.cpDecide.check{border-color:var(--v4warn);background:rgba(241,196,15,.10)}
+.cpDecide small{display:block;margin-top:6px;font-size:13px;opacity:.9}
+/* V145 · «Dónde comprarla»: compras comparables y, aparte y atenuado, precios solo de referencia; sin cortar el texto en el iPhone */
+.cpBuy .cpLTtab th,.cpBuy .cpLTtab td{white-space:normal;overflow-wrap:anywhere}
+.cpBuy .cpLTtab th{width:40%}.cpBuy .cpLTtab td:nth-child(2){white-space:nowrap}
+.cpBuy .cpLTtab caption{font-size:.82rem}
+.cpRef{opacity:.7;margin-top:10px}.cpRef caption{color:#f5c451}
+/* V147 · Listas (mal estado barato, chollos, punto de mira, Top 5): el botón debajo del nombre, a lo ancho; el nombre ya no se aprieta en el iPhone */
+.cpPlanList li{grid-template-columns:56px minmax(0,1fr)}
+.cpPlanList li:not(:has(.cpThumb)){grid-template-columns:minmax(0,1fr)}
+.cpPlanList li>a.v4btn{grid-column:1/-1;justify-self:stretch;text-align:center;min-height:0}
+.cpMal h4{margin:12px 0 4px}

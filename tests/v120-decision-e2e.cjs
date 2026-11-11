@@ -12,9 +12,9 @@ const server=http.createServer((q,r)=>{const f=path.join(root,decodeURIComponent
 const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'));
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
+ [273933,150,258,258,263,268,null,null,null],   // base4-10 Mewtwo (todos los idiomas)
  [273924,60,200,240,235,190,null,null,null],   // base4-1 Alakazam · semana +24 % sobre su media → buen momento de venta
- [861477,100,200,195,190,210,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
+ [861477,193,257,257,257,262,null,null,null],   // Pikachu ex M2A 234 · producto JAPONÉS
  [861287,0.5,0.75,null,0.8,0.7,null,null,null]]};
 const pasteES=`Disponible
 128
@@ -32,38 +32,32 @@ Seller2 Near Mint English 129,99 € 2`;
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});
+ await ctx.addInitScript(()=>{try{const u=JSON.parse(localStorage.getItem('cv_v104_user')||'{}');u.cfg=u.cfg||{};if(u.cfg.minMargin==null){u.cfg.minMargin=0;localStorage.setItem('cv_v104_user',JSON.stringify(u))}}catch{}});/* V139: estas pruebas no miden el margen mínimo */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
   if(/images\.|assets\.tcgdex|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.endsWith('/prices/latest.json'))return J(GUIDE);
   if(/\/prices\/\d{4}\/\d{2}\/\d{2}\.json$/.test(u))return route.fulfill({status:404,headers:H,body:'404'});
   const m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]),data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}}]:[];return J({data,totalCount:data.length})}
   if(/bindex-prices/.test(u))return route.fulfill({status:404,body:''});
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
  await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10')?.textContent||''),null,{timeout:90000});
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
- // Mewtwo: versión verificada 30 · se vende a diario 25 · medias 160–170 sobre 160 → ±3 % → 20 · tendencia 165/170 −3 % → 10 · margen 46/101 = 45 % → 10 → 95
+ // Mewtwo: versión verificada 25 · se vende a diario 20 · medias 258–268 sobre 258 → ±2 % → 20 · tendencia → 10 · margen 40,10/200 = 20 % → 3 · compra EX o mejor → estado 15 → 93
  let t=await page.textContent('#v4Buy #cp-base4-10 .cpConf');
- ok('Confianza Mewtwo 95/100 con su desglose y beneficio prudente (+43,70 €)',/Confianza 95\/100/.test(t)&&/beneficio prudente \+43,70\s€/.test(t)&&/Versión 30\/30 · ventas 25\/25 · estabilidad 20\/20/.test(t)&&/colchón 10\/15/.test(t),t);
+ ok('Confianza Mewtwo 93/100 con su desglose y beneficio prudente (+37,29 €)',/Confianza 93\/100/.test(t)&&/beneficio prudente \+37,29\s€/.test(t)&&/Versión 25\/25 · ventas 20\/20 · estabilidad 20\/20/.test(t)&&/colchón 3\/10 · estado 15\/15/.test(t),t);
  t=await page.textContent('#v4Buy #cp-jp-861477 .cpConf');
- // Pikachu ex JP: versión 30 · ventas 25 · medias 190–210 sobre 190 → 10,5 % → 14 · tendencia 190/210 −9,5 % → 5 · margen 69,5/106 = 66 % → 15 → 89
- ok('Confianza japonesa 89/100: estabilidad 14 y tendencia 5 por la semana a la baja',/Confianza 89\/100/.test(t)&&/estabilidad 14\/20/.test(t)&&/tendencia 5\/10/.test(t),t);
+ // Pikachu ex JP («desde» 195 € = 75 % de 260 €): versión 25 · ventas 20 · medias 260–265 sobre 260 → ±1 % → 20 · tendencia 260/265 −2 % → 10 · margen 41/201 = 20 % → 3 · «desde» sin estado → 0 → 78
+ ok('Confianza japonesa 78/100: estabilidad 20, colchón 3 y estado 0 con aviso (el «desde» no dice el estado)',/Confianza 78\/100/.test(t)&&/estabilidad 20\/20/.test(t)&&/colchón 3\/10 · estado 0\/15/.test(t)&&/beneficio prudente \+31,32\s€/.test(t),t);
  await page.selectOption('[data-cp-view="sort"]','risk');await page.waitForTimeout(300);
- ok('Orden «Mejor beneficio prudente»: Pikachu (61,86 €) antes que Mewtwo (43,70 €)',(await ids()).slice(0,2).join()==='jp-861477,base4-10',JSON.stringify(await ids()));
- // Plan de compra
- await page.evaluate(()=>{document.querySelector('[data-cp-planbox]').open=true});
- await page.fill('[data-cp-plan="budget"]','150');await page.fill('[data-cp-plan="max"]','200');await page.fill('[data-cp-plan="minConf"]','50');await page.click('[data-cp-plancalc]');await page.waitForTimeout(300);
- t=await page.textContent('[data-cp-planbox]');
- ok('Plan con 150 €: elige solo Pikachu ex (106 €), porque las dos no caben',/1 cartas, 106,00\s€/.test(t)&&/Pikachu ex/.test(t)&&!/Mewtwo/.test(t.split('Calcular plan')[1]||''),t.slice(0,400));
- await page.fill('[data-cp-plan="budget"]','300');await page.click('[data-cp-plancalc]');await page.waitForTimeout(300);
- t=await page.textContent('[data-cp-planbox]');
- ok('Plan con 300 €: las dos, 207 € de inversión, +115,50 € de referencia y +105,56 € prudente',/2 cartas, 207,00\s€/.test(t)&&/\+115,50\s€/.test(t)&&/\+105,56\s€/.test(t),t.slice(0,500));
- await page.fill('[data-cp-plan="minConf"]','150');let al='';page.once('dialog',d=>{al=d.message();d.dismiss()});await page.click('[data-cp-plancalc]');await page.waitForTimeout(200);
- ok('Plan: confianza fuera de 0–100 se rechaza',/confianza entre 0 y 100/.test(al),al);
- await page.reload();await page.waitForSelector('[data-cp-planbox]',{timeout:60000,state:'attached'});
- ok('El plan recuerda presupuesto y límites',await page.inputValue('[data-cp-plan="budget"]')==='300');
+ ok('Orden «Mejor beneficio prudente»: Mewtwo (37,29 €) antes que Pikachu (31,32 €)',(await ids()).slice(0,2).join()==='base4-10,jp-861477',JSON.stringify(await ids()));
+ ok('Ya no hay plan de compra con presupuesto',!(await page.$('[data-cp-planbox]')));
+ t=await page.textContent('#v4Buy .cpTop');
+ ok('🏆 Top 5 de hoy: 1. Mewtwo (EX o mejor, +37,29 € prudente), 2. Pikachu ex japonés (+31,32 €); Alakazam internacional a 60 € (idioma sin indicar) NO entra',/1\. Mewtwo/.test(t)&&/Pagas 200,00\s€ \(Cardmarket, EX o mejor, puesta en 41020\) → venta 258,00\s€ → \+40,10\s€ · confianza 93\/100 · prudente \+37,29\s€/.test(t)&&/2\. Pikachu ex/.test(t)&&/prudente \+31,32\s€/.test(t)&&!/Alakazam/.test(t)&&!/3\./.test(t.split('Une todas')[0]),t);
+ {const h=await page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpTop li a')].map(a=>a.href));ok('Top 5: «Comprar» abre la ficha con el mismo filtro que el precio (Mewtwo EX o mejor; Pikachu «desde» sin filtro)',h[0]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&minCondition=3'&&h[1]==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=861477',JSON.stringify(h))}
+ ok('Top 5 con imagen de cada carta',await page.evaluate(()=>document.querySelectorAll('#v4Buy .cpTop .cpThumb img').length)===2);
  // Vender YA: dos cartas RAW (una en buen momento de venta) y las graduadas de ejemplo
  const sv=await page.evaluate(()=>{const s=window.CVStateBridge.get();s.cards.push({id:'t-ala',universe:'pokemon',name:'Alakazam',set:'Base Set 2',number:'1',grading:'RAW',purchase:120,quantity:1,catalogId:'base4-1'},{id:'t-mew',universe:'pokemon',name:'Mewtwo',set:'Base Set 2',number:'10/130',grading:'RAW',purchase:200,quantity:1},{id:'t-x',universe:'pokemon',name:'Carta Inventada',number:'999',grading:'RAW'});return window.CVStateBridge.save()});
  ok('Cartas de prueba guardadas en Mi colección',sv===true);
@@ -72,12 +66,12 @@ Seller2 Near Mint English 129,99 € 2`;
  // Alakazam: semana 235 vs mes 190 → +24 % → buen momento; precio sugerido max(trend 200, avg7 235) = 235; neto 235·0,95−5 = 218,25; pagó 120 → +98,25
  ok('Alakazam: 🟢 buen momento (+24 % sobre su media), anuncio 235 €, neto 218,25 €, resultado +98,25 €, mínimo 131,58 €',/Buen momento para vender/.test(t)&&/\+24 %/.test(t)&&/235,00\s€/.test(t)&&/218,25\s€/.test(t)&&/\+98,25\s€/.test(t)&&/131,58\s€/.test(t),t);
  t=await page.textContent('#cpSell [data-sell="t-mew"]');
- // Mewtwo por nombre y número: estable; anuncio = tendencia 160; neto 147; pagó 200 → −53; mínimo (200+5)/0,95 = 215,79
- ok('Mewtwo (emparejado por nombre y número): estable, neto 147 €, resultado −53 € y aviso de precio mínimo 215,79 €',/Precio estable/.test(t)&&/147,00\s€/.test(t)&&/−53,00\s€/.test(t)&&/215,79\s€/.test(t)&&/nombre y número/.test(t),t);
+ // Mewtwo por nombre y número: estable; anuncio = tendencia 258; neto 240,10; pagó 200 → +40,10; mínimo (200+5)/0,95 = 215,79
+ ok('Mewtwo (emparejado por nombre y número): estable, neto 240,10 €, resultado +40,10 € y aviso de precio mínimo 215,79 €',/Precio estable/.test(t)&&/240,10\s€/.test(t)&&/\+40,10\s€/.test(t)&&/215,79\s€/.test(t)&&/nombre y número/.test(t),t);
  const all=await page.textContent('#cpSell');
  ok('Carta sin catálogo: lo dice sin inventar precio',/Carta Inventada.*No la encuentro en el catálogo/.test(all));
  ok('Cartas graduadas: no se valoran con la guía de cartas sin graduar',/Carta graduada: la guía de Cardmarket es de cartas sin graduar/.test(all));
- ok('Resumen: neto total 365,25 € y 1 en buen momento',/365,25\s€/.test(all)&&/1🟢 en buen momento de venta/.test(all),all.slice(0,300));
+ ok('Resumen: neto total 458,35 € (Mewtwo 240,10 + Alakazam 218,25) y 1 en buen momento',/458,35\s€/.test(all)&&/1🟢 en buen momento de venta/.test(all),all.slice(0,300));
  const order=await page.evaluate(()=>[...document.querySelectorAll('#cpSell [data-sell]')].map(a=>a.dataset.sell));
  ok('Primero lo que conviene vender',order[0]==='t-ala',JSON.stringify(order));
  await page.selectOption('[data-sell-view="show"]','go');await page.waitForTimeout(300);

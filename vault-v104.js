@@ -6,7 +6,7 @@
    - Ninguna cifra es beneficio seguro. Sin eBay. */
 (()=>{"use strict";
 const STORE="cv_v104_user",IDB="cardvault-v104";
-const DEFAULTS={feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
+const DEFAULTS={maxBuy:200,minMargin:25,minLiq:2,malMax:35,malRatio:2.5,malMinProfit:15,minProfitLo:40,feePct:5,sellShip:5,buyShip:6,usdToEur:0.86,minProfit:40,freshHours:24,restLow:0.6,restMid:0.75,restHigh:0.9,usShip:15,usVat:21,usHandling:5};
 const N=v=>{if(v==null||v==="")return NaN;const n=Number(String(v).replace(/\s/g,"").replace(",","."));return Number.isFinite(n)?n:NaN};
 const E=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const EUR=v=>Number.isFinite(v)?v.toLocaleString("es-ES",{style:"currency",currency:"EUR"}):"—";
@@ -354,12 +354,19 @@ function settingsBlock(cfg){
 
   f("buyShip","Envío de compra por defecto €","Solo se usa si el anuncio no indica envío (aparece como «estimado»).")+
 
+  f("maxBuy","Compra máxima por carta €","Tu presupuesto: lo que pagas en total por carta, con envío (y en las importadas con IVA y gestión). Nada por encima se recomienda.")+
   f("minProfit","Beneficio mínimo €","Umbral para considerar la operación interesante.")+
+  f("minMargin","Margen mínimo %","Además del beneficio en euros, lo que ganas debe ser al menos este % de lo que pagas (25 %: pagas 160 € → ganas 40 € o más). Evita compras con muy poco margen.")+
+  f("minLiq","Ventas mínimas (1, 2 o 3)","Solo se recomiendan cartas que se venden de verdad en Cardmarket: 1 = al menos una venta en los últimos 30 días · 2 = cada semana (recomendado) · 3 = a diario.")+
+  f("malMax","🩹 Mal estado barato: precio máximo €","Precio máximo de la carta en mal estado (sin envío). Por defecto 35 €.")+
+  f("malRatio","🩹 Mal estado barato: vale al menos × veces","Lo que vale en buen estado frente a lo que pagas (2,5 = una carta de 25 € que vale ≥ 62,50 €).")+
+  f("malMinProfit","🩹 Mal estado barato: beneficio mínimo €","Lo que ganas vendiéndola tal cual, sin restaurar, tras comisión y envíos (y con tu margen mínimo %).")+
+  f("minProfitLo","Beneficio mínimo en Lorcana €","Sus cartas valen menos: con 40 € casi ninguna cabe. Bájalo si aceptas márgenes menores.")+
   f("usShip","Envío desde EE. UU. €","Inglés automático (TCGplayer): envío internacional estimado hasta Sevilla.")+
   f("usVat","IVA de importación %","Se aplica a carta + envío al importar desde fuera de la UE.")+
   f("usHandling","Gestión aduanera €","Tasa de despacho del transportista (estimada).")+
 
- '</div><button type="button" class="v4btn" data-v4-cfgsave>Guardar supuestos</button></details>';
+ '</div><p class="v4note">Tarifas 2026 de Correos (carta certificada hasta 20 g): nacional 5,74 €, a o desde Europa 7,15 €. Comisión de venta en Cardmarket: 5 %.</p><button type="button" class="v4btn" data-v4-correos>Aplicar tarifas Correos 2026</button> <button type="button" class="v4btn" data-v4-cfgsave>Guardar supuestos</button></details>';
 }
 /* Imagen rota: un único reintento a los 2,5 s; si vuelve a fallar, aviso honesto (no se sustituye por otra variante). */
 function wireImages(root){root.querySelectorAll("img[data-v4img]").forEach(im=>{
@@ -403,7 +410,9 @@ function sheet(html){
  let s=document.getElementById("v4Sheet");
  if(!s){s=document.createElement("div");s.id="v4Sheet";s.className="v4sheet";s.setAttribute("role","dialog");s.setAttribute("aria-modal","true");document.body.appendChild(s)}
  s.innerHTML='<div class="v4sheetIn">'+html+'</div>';s.hidden=false;document.documentElement.classList.add("v4lock");
- setTimeout(()=>s.querySelector("input,select,textarea")?.focus?.({preventScroll:true}),50);return s;
+ /* enfoca el primer campo solo si aún no estás escribiendo en la hoja: antes robaba el foco y lo siguiente que escribías
+    acababa en el campo del enlace («…charizard180») */
+ setTimeout(()=>{if(!s.contains(document.activeElement))s.querySelector("input,select,textarea")?.focus?.({preventScroll:true})},50);return s;
 }
 function closeSheet(){const s=document.getElementById("v4Sheet");if(s){s.hidden=true;s.innerHTML=""}document.documentElement.classList.remove("v4lock")}
 const fld=(name,label,val,attrs="")=>'<label>'+label+'<input name="'+name+'" value="'+E(val??"")+'" '+attrs+'></label>';
@@ -603,7 +612,7 @@ function toast(m){let t=document.getElementById("v4Toast");if(!t){t=document.cre
 
 /* ---------- eventos ---------- */
 document.addEventListener("click",e=>{
- const t=e.target.closest("[data-v4-bought],[data-v4-verify],[data-v4-sale],[data-v4-new],[data-v4-close],[data-v4-filter],[data-v4-delsale],[data-v4-reset],[data-v4-copy],[data-v4-cfgsave],[data-v4-export],[data-v4-go]");
+ const t=e.target.closest("[data-v4-bought],[data-v4-verify],[data-v4-sale],[data-v4-new],[data-v4-close],[data-v4-filter],[data-v4-delsale],[data-v4-reset],[data-v4-copy],[data-v4-cfgsave],[data-v4-correos],[data-v4-export],[data-v4-go]");
  if(!t){if(e.target.id==="v4Sheet")closeSheet();return}
  const d=t.dataset;
  if(d.v4Bought)boughtSheet(d.v4Bought);
@@ -615,6 +624,8 @@ document.addEventListener("click",e=>{
  else if(d.v4Delsale){const [id,sid]=d.v4Delsale.split("|");if(!confirm("¿Quitar esta referencia de venta?"))return;const c=customRef(id);if(c)c.sales=(c.sales||[]).filter(s=>s.id!==sid);else{const p=patch(id);p.sales=(p.sales||[]).filter(s=>s.id!==sid);if(!String(sid).startsWith("u"))(p.removedSales=p.removedSales||[]).push(sid)}writeUser();renderAll()}
  else if(d.v4Reset){if(!confirm("¿Seguro?"))return;if(customRef(d.v4Reset))user.custom=user.custom.filter(c=>c.id!==d.v4Reset);else if(user.patches[d.v4Reset])delete user.patches[d.v4Reset].listing;writeUser();renderAll()}
  else if(d.v4Copy){const ta=t.parentElement.querySelector("textarea");const done=()=>toast("Texto copiado");if(navigator.clipboard?.writeText)navigator.clipboard.writeText(ta.value).then(done,()=>{ta.select();document.execCommand("copy");done()});else{ta.select();document.execCommand("copy");done()}}
+ else if("v4Correos" in d){/* rellena los supuestos visibles con las tarifas 2026 y guarda: venta nacional certificada, compra desde Europa certificada, 5 % */
+  const box=t.closest(".v4settings"),set=(k,v)=>{const i=box&&box.querySelector('[data-v4-cfg="'+k+'"]');if(i)i.value=String(v).replace(".",",")};user.cfg={...user.cfg,sellShip:5.74,buyShip:7.15,feePct:5};/* los que no tienen campo visible se fijan aquí */set("sellShip",5.74);set("buyShip",7.15);set("feePct",5);box?.querySelector("[data-v4-cfgsave]")?.click()}
  else if("v4Cfgsave" in d){const c={...user.cfg};let bad=false;document.querySelectorAll("[data-v4-cfg]").forEach(i=>{if(!i.closest(".tab:not(.hidden)"))return;const v=N(i.value);if(!(v>=0))bad=true;else c[i.dataset.v4Cfg]=v});if(bad||c.feePct>=100||c.restLow>c.restMid||c.restMid>c.restHigh){toast("Valores no válidos: comprueba que conservador ≤ central ≤ optimista.");return}user.cfg=c;writeUser();renderAll();toast("Supuestos guardados")}
  else if("v4Export" in d){const blob=new Blob([JSON.stringify({app:"Card Vault",format:"cv-user-v2",exportedAt:new Date().toISOString(),user,photos:photoCache},null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="cardvault-comprobaciones-"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
  else if(d.v4Go){window.CVSimpleNav?.showTab?.(d.v4Go);history.replaceState(null,"","#"+d.v4Go);window.scrollTo({top:0,behavior:"smooth"})}

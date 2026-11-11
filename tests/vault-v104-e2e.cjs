@@ -60,6 +60,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.click('[data-v4-verify="'+id+'"]');await page.waitForSelector('#v4Sheet form');
  await page.fill('#v4Sheet [name=url]','https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=charizard');
  await page.fill('#v4Sheet [name=price]','180');await page.click('#v4Sheet button[type=submit]');
+ await page.waitForFunction(()=>/búsqueda/.test(document.querySelector('#v4Sheet .v4err')?.textContent||''),null,{timeout:5000}).catch(()=>{});/* espera al mensaje: antes se leía en el mismo instante del clic */
  ok('Rechaza enlace de búsqueda',/búsqueda/.test(await page.textContent('#v4Sheet .v4err')));
  await page.fill('#v4Sheet [name=url]','https://www.ebay.es/itm/123');await page.click('#v4Sheet button[type=submit]');
  ok('Rechaza eBay',/eBay/.test(await page.textContent('#v4Sheet .v4err')));
@@ -137,7 +138,7 @@ const results=[];const ok=(name,cond,extra='')=>{results.push([cond?'OK ':'FALLO
  await page.reload({waitUntil:'load'});await page.waitForSelector('#v4Restore .v4card',{state:'attached'});await page.waitForTimeout(500);
  ok('Pasadas 24 h pasa a CADUCADA',(await page.locator('#card-'+id+' .v4status').textContent())==='CADUCADA');
  // 8. Otras pestañas siguen funcionando
- ok('V120: barra con Compra YA, Favoritos, Vender YA, Mi colección, Sellado, PSA, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.dataset.tab)))===JSON.stringify(['radar','favoritos','vender','collection','sealed','pregrade','psa-valorar','archive']));
+ ok('V123: barra con Compra YA, Favoritos, Vender YA, Mi colección, Sellado, Cartas graduadas, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.dataset.tab)))===JSON.stringify(['radar','favoritos','vender','collection','sealed','pregrade','psa-valorar','archive']));
  for(const t of ['favoritos','collection','sealed','pregrade','psa-valorar','archive','radar']){await page.click('.mainNav [data-tab="'+t+'"]');await page.waitForTimeout(250);ok('Pestaña '+t+' se muestra',await page.evaluate(x=>!document.getElementById(x).classList.contains('hidden'),t))}
  ok('Mi colección sigue con cartas',await page.evaluate(()=>window.CVStateBridge.get().cards.length>=15));
  ok('Sin errores de JavaScript',errors.length===0,errors.slice(0,5).join(' | '));

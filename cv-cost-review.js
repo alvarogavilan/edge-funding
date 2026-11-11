@@ -29,7 +29,7 @@ function boot(){
 const STATUS=[["pagado","Pagado"],["estimado","Estimado"],["desconocido","Desconocido"],["incluido","Incluido en otro importe"],["no-aplica","No aplicable"]];
 const INCL=[["","—"],["precio","en el precio"],["envío","en el envío"],["otro","en otro importe"]];
 function sheet(html){let s=document.getElementById("cvCostSheet");if(!s){s=document.createElement("div");s.id="cvCostSheet";s.className="v4sheet";s.setAttribute("role","dialog");s.setAttribute("aria-modal","true");s.setAttribute("aria-label","Revisar coste de adquisición");document.body.appendChild(s)}
- s.innerHTML='<div class="v4sheetIn">'+html+'</div>';s.hidden=false;document.documentElement.classList.add("v4lock");setTimeout(()=>s.querySelector("input,select")?.focus?.({preventScroll:true}),50)}
+ s.innerHTML='<div class="v4sheetIn">'+html+'</div>';s.hidden=false;document.documentElement.classList.add("v4lock");setTimeout(()=>{if(!s.contains(document.activeElement))s.querySelector("input,select")?.focus?.({preventScroll:true})},50)}
 function close(){const s=document.getElementById("cvCostSheet");if(s){s.hidden=true;s.innerHTML=""}document.documentElement.classList.remove("v4lock")}
 function rowFor(k,x){
  const amount=x&&x.cents!=null&&x.status!=="no-aplica"&&x.status!=="incluido"?(x.cents/100).toFixed(2).replace(".",","):"";

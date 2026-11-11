@@ -13,22 +13,23 @@ const sample=fs.readFileSync(path.join(root,'assets/cards/machamp-gx-154-es.png'
 let n=0;const ok=(name,cond,extra='')=>{console.log((cond?'OK ':'FALLO')+' · '+name+(extra?' · '+extra:''));assert.ok(cond,name+' '+extra);n++};
 // [idProduct, low, trend, avg1, avg7, avg30, lowHolo, trendHolo, avg30Holo]
 const GUIDE={fields:['idProduct','low','trend','avg1','avg7','avg30','lowHolo','trendHolo','avg30Holo'],sourceCreatedAt:'2026-10-24T02:45:46+0200',generatedAt:'2026-10-24T08:30:52Z',rows:[
- [273933,90,160,160,165,170,null,null,null],   // base4-10 Mewtwo · versión única → verificada con pokemontcg.io
- [273924,30,200,null,205,210,null,null,null],  // base4-1 Alakazam · restaurar
- [273934,30,400,null,null,null,null,null,null],// base4-11 Nidoking · sin ventas recientes
+ [273933,150,258,258,263,268,null,null,null],   // base4-10 Mewtwo · versión única → verificada con pokemontcg.io
+ [273924,60,200,null,205,210,null,null,null],  // base4-1 Alakazam · restaurar (60 € = 30 %: por debajo, V130 lo trata como proxy)
+ [273934,194,258,null,null,null,null,null,null],// base4-11 Nidoking · sin ventas recientes («desde» ≥ 75 %, V131)
  [275113,24.99,98.29,90,59.11,165.15,26,232.88,173.55],[275070,298,748.52,1650,1194.3,1008.71,null,null,null], // Umbreon Aquapolis
- [273862,20,300,300,300,300,null,null,null]]}; // base3-1 Aerodactyl · colisión TCGdex
-const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-207',name:'Elsa - Spirit of Winter',number:'207',rarity:'Enchanted',imageSmall:'https://images.example/elsa.png',cardmarketId:681234,variants:[{name:'normal',eur:null},{name:'foil',eur:{trend:300,low:150,avg30:320,avg7:310,avg1:305}}]}]};
+ [273862,194,258,258,258,258,null,null,null]]}; // base3-1 Aerodactyl · colisión TCGdex («desde» ≥ 75 %, V131)
+const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-10-24',cards:[{id:'tfc-207',name:'Elsa - Spirit of Winter',number:'207',rarity:'Enchanted',imageSmall:'https://images.example/elsa.png',cardmarketId:681234,variants:[{name:'normal',eur:null},{name:'foil',eur:{trend:257,low:193,avg30:262,avg7:259,avg1:258}}]}]};
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port+'/';
  const browser=await pw.chromium.launch(),ctx=await browser.newContext({...pw.devices['iPhone 13']});const hits={guide:0,pt:[],bx:0,us:0,ct:[]};let bxDown=false;
+ await ctx.addInitScript(()=>{try{const u=JSON.parse(localStorage.getItem('cv_v104_user')||'{}');u.cfg=u.cfg||{};if(u.cfg.minMargin==null){u.cfg.minMargin=0;localStorage.setItem('cv_v104_user',JSON.stringify(u))}}catch{}});/* V139: estas pruebas no miden el margen mínimo */
  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/,route=>{const u=route.request().url(),H={'access-control-allow-origin':'*'},J=b=>route.fulfill({status:200,contentType:'application/json',headers:H,body:JSON.stringify(b)});
-  if(/tcgplayer|api\.tcgdex\.net\/v2\/[a-z-]+\/cards\/./.test(u)){hits.us++;if(process.env.DBG)console.log('precio EE. UU./carta a carta:',u);return route.abort()}/* el índice de nombres de TCGdex (identificar cartas) no cuenta */
+  if(/tcgplayer\.com|api\.tcgdex\.net\/v2\/[a-z-]+\/cards\/./.test(u)){hits.us++;/* V125: TCGplayer vuelve, pero llega en la misma consulta por colección a pokemontcg.io (select=…,tcgplayer) */if(process.env.DBG)console.log('precio EE. UU./carta a carta:',u);return route.abort()}/* el índice de nombres de TCGdex (identificar cartas) no cuenta */
   if(/images\.|assets\.tcgdex|cards\.lorcast|pokellector/.test(u))return route.fulfill({status:200,contentType:'image/png',body:sample});
   if(u.endsWith('/prices/latest.json')){hits.guide++;return J(GUIDE)}
   if(u.endsWith('/history/933.json'))return J({'273933':[['2026-10-01',95,150,null,null,null,null,null,null],['2026-10-12',92,155,null,null,null,null,null,null],['2026-10-24',90,160,null,null,null,null,null,null]]});
   let m=u.match(/api\.pokemontcg\.io\/v2\/cards\?q=set\.id:([^&]+)/);
-  if(m){const s=decodeURIComponent(m[1]);hits.pt.push(s);const data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:158,avg30:168,lowPrice:90,lowPriceExPlus:95}}}]:s==='ecard2'?[{id:'ecard2-H29',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:760,avg30:1000,lowPrice:290,lowPriceExPlus:310}}}]:[];return J({data,totalCount:data.length})}
+  if(m){const s=decodeURIComponent(m[1]);hits.pt.push(s);const data=s==='base4'?[{id:'base4-10',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:256,avg30:266,lowPrice:150,lowPriceExPlus:194}}}]:s==='ecard2'?[{id:'ecard2-H29',cardmarket:{updatedAt:'2026/10/24',prices:{trendPrice:760,avg30:1000,lowPrice:290,lowPriceExPlus:310}}}]:[];return J({data,totalCount:data.length})}
   if(u.endsWith('/bindex-prices/v1/lorcana/sets.json')){hits.bx++;return bxDown?route.fulfill({status:404,body:''}):J(LOR)}
   if(u.startsWith('https://api.cardtrader.com/api/v2/')){const p=u.slice('https://api.cardtrader.com/api/v2'.length);hits.ct.push(p);
    if(p==='/games')return J([{id:5,name:'Pokemon'},{id:18,name:'Lorcana'}]);
@@ -40,40 +41,40 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
   return route.abort()});
  const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base);
- ok('Barra: Compra YA, Favoritos, Vender YA, Mi colección, Sellado, PSA, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.textContent)))===JSON.stringify(['Compra YA','Favoritos','Vender YA','Mi colección','Sellado','PSA','Valorar PSA','Archivo']));
+ ok('Barra: Compra YA, Favoritos, Vender YA, Mi colección, Sellado, Cartas graduadas, Valorar PSA y Archivo',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('.mainNav [data-tab]')].map(b=>b.textContent)))===JSON.stringify(['Compra YA','Favoritos','Vender YA','Mi colección','Sellado','Cartas graduadas','Valorar PSA','Archivo']));
  await page.waitForFunction(()=>document.querySelector('#v4Buy #cp-base4-10 .v4badges')&&/VERIFICADA/.test(document.querySelector('#v4Buy #cp-base4-10 .v4badges').textContent)&&document.querySelector('#v4Buy #cp-lo-tfc-207'),null,{timeout:120000});
- ok('Una sola descarga de la guía oficial; ni precios de EE. UU. ni consultas carta a carta',hits.guide===1&&hits.us===0&&hits.bx>=2,JSON.stringify({guide:hits.guide,us:hits.us,pt:hits.pt.length,bx:hits.bx}));
+ ok('Una sola descarga de la guía oficial; sin consultas carta a carta (TCGplayer va en la consulta por colección)',hits.guide===1&&hits.us===0&&hits.bx>=2,JSON.stringify({guide:hits.guide,us:hits.us,pt:hits.pt.length,bx:hits.bx}));
  const T=id=>page.textContent('#v4Buy #cp-'+id),ids=()=>page.evaluate(()=>[...document.querySelectorAll('#v4Buy .cpBox > .v4list > .cpCard')].map(a=>a.dataset.cpid));
  let t=await T('base4-10');
- ok('Mewtwo: versión verificada con 2 fuentes, compra EX o mejor 95 € (101 € en 41020), venta 160 € → +46,00 €',/VERSIÓN VERIFICADA/.test(t)&&/95,00\s€/.test(t)&&/101,00\s€/.test(t)&&/160,00\s€/.test(t)&&/\+46,00\s€/.test(t),t.slice(0,400));
+ ok('Mewtwo: versión verificada con 2 fuentes, compra EX o mejor 194 € (200 € en 41020), venta 258 € → +40,10 €',/VERSIÓN VERIFICADA/.test(t)&&/194,00\s€/.test(t)&&/200,00\s€/.test(t)&&/258,00\s€/.test(t)&&/\+40,10\s€/.test(t),t.slice(0,400));
  ok('Compra YA sin «+ Nueva oportunidad» ni fichas de restauración aparte',!(await page.$('[data-v4-new]'))&&!(await page.isVisible('#v4Restore h2').catch(()=>false)));
- ok('En «Buen estado» no aparece la operación de restaurar',!(await ids()).includes('base4-1')&&!/Restaurar/.test(await T('base4-10')));
- const lk=await page.evaluate(()=>({main:document.querySelector('#v4Buy #cp-base4-10 .v4actions a').href,langs:[...document.querySelectorAll('#v4Buy #cp-base4-10 .cpLangLinks a')].map(a=>a.textContent+'='+a.href)}));
- ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y un botón por idioma (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933'&&lk.langs.some(x=>x==='Español=https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3')&&lk.langs.some(x=>/^Inglés=.*language=1/.test(x)),JSON.stringify(lk));
+ ok('En «Buen estado» no aparece la operación de restaurar',!/Restaurar/.test(await page.textContent('#v4Buy .cpBox > .v4list')));
+ const main0=await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href');
+ await page.selectOption('[data-cp-view="lang"]','es');await page.waitForTimeout(300);/* V122: un selector de idioma en lugar de un botón por idioma */
+ const lk={main:main0,es:await page.getAttribute('#v4Buy #cp-base4-10 .v4actions a','href')};await page.selectOption('[data-cp-view="lang"]','all');await page.waitForTimeout(300);
+ ok('Enlace exacto al producto verificado de Cardmarket (idProduct) y, con el idioma elegido, filtrado (EX o mejor)',lk.main==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&minCondition=3'&&/* V126: mismo filtro que el precio mostrado (EX o mejor) */lk.es==='https://www.cardmarket.com/es/Pokemon/Products?idProduct=273933&language=4&minCondition=3',JSON.stringify(lk));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
- t=await T('base4-1');
- ok('«Mal estado · restaurar»: Alakazam «desde» 30 € → venta mejorada al 60 % 120 € → +73,00 €',/Restaurar/.test(t)&&/120,00\s€/.test(t)&&/\+73,00\s€/.test(t),t.slice(0,300));
+ ok('V139 · «Mal estado»: Alakazam internacional a 60 € no se propone como compra (idioma sin indicar) sino como «🔧 BUSCA EN INGLÉS EN MAL ESTADO» con su precio máximo',/BUSCA EN INGLÉS EN MAL ESTADO/.test(await T('base4-1'))&&!/✅ COMPRA/.test(await T('base4-1')),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
  t=await T('lo-tfc-207');
- ok('Lorcana (Bindex): Elsa foil · compra 150 € → venta 300 € → +124,00 €',/LORCANA · BINDEX/.test(t)&&/\+124,00\s€/.test(t),t.slice(0,300));
+ ok('Lorcana (Bindex): Elsa foil · pagas 199 € (193 + envío) → venta 257 € → +40,15 €',/LORCANA · BINDEX/.test(t)&&/\+40,15\s€/.test(t),t.slice(0,300));/* 257·0,95 − 5 − 199 */
  ok('Los números de las operaciones no se parten en vertical',await page.evaluate(()=>[...document.querySelectorAll('.cpOp dd')].every(d=>d.getBoundingClientRect().height<30)));
- await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
- const pend=await page.textContent('.cpBox > details.v4old');await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
+ await page.click('.cpBox > details[data-cp-pend] > summary');await page.waitForTimeout(300);/* V141: se rellena al abrirla */const pend=await page.textContent('.cpBox > details[data-cp-pend]');
  ok('Aparte, sin recomendar: Nidoking sin ventas recientes y Aerodactyl con versión dudosa (colisión TCGdex)',/Nidoking/.test(pend)&&/Aerodactyl/.test(pend)&&/VERSIÓN DUDOSA/.test(pend)&&!(await ids()).includes('base4-11'),pend.slice(0,160));
  await page.fill('[data-cp-q]','umbreon');await page.waitForFunction(()=>/VERIFICADA/.test(document.querySelector('#v4Buy #cp-ecard2-H29')?.textContent||''),null,{timeout:30000});
  t=await T('ecard2-H29');
  ok('Umbreon Aquapolis H29: la 2.ª fuente corrige la versión (748,52 €, no 98 €) y avisa del presupuesto',/748,52\s€/.test(t)&&!/24,99\s€ cualquier/.test(t)&&/fuera de tu presupuesto/.test(t)&&/310,00\s€/.test(t),t.slice(0,400));
  await page.fill('[data-cp-q]','');await page.waitForTimeout(600);
  await page.selectOption('[data-cp-view="sort"]','buy');await page.waitForTimeout(300);
- ok('Ordenar por menor precio de compra',(await ids()).join()==='base4-10,lo-tfc-207',JSON.stringify(await ids()));
+ ok('Ordenar por menor precio de compra (Elsa 193 €, Mewtwo 194 €)',(await ids()).filter(i=>i!=='base4-1').join()==='lo-tfc-207,base4-10'/* V140: se ordena por lo que pagas; Alakazam es precio objetivo */,JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','mal');await page.waitForTimeout(300);
- ok('Estado «Mal estado · restaurar»',(await ids()).join()==='base4-1',JSON.stringify(await ids()));
+ ok('Estado «Mal estado · restaurar»: ninguna compra internacional de idioma desconocido (solo precio objetivo)',!/✅ COMPRA/.test(await page.textContent('#v4Buy .cpBox > .v4list')),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.waitForTimeout(300);
- ok('Estado «Buen estado»',(await ids()).join()==='base4-10,lo-tfc-207',JSON.stringify(await ids()));
+ const ids0=await ids();ok('Estado «Buen estado»',['base4-10','lo-tfc-207'].every(i=>ids0.includes(i)),JSON.stringify(await ids()));
  await page.selectOption('[data-cp-view="cond"]','buen');await page.selectOption('[data-cp-view="game"]','lorcana');await page.waitForTimeout(300);
  ok('Juego «Lorcana»',(await ids()).join()==='lo-tfc-207');
  await page.selectOption('[data-cp-view="game"]','all');await page.selectOption('[data-cp-view="sort"]','profit');await page.waitForTimeout(300);
- await page.fill('#v4Buy [data-cp-target="base4-10"]','100');await page.click('#v4Buy [data-cp-watch="base4-10"]');await page.waitForTimeout(300);
+ await page.fill('#v4Buy [data-cp-target="base4-10"]','195');await page.click('#v4Buy [data-cp-watch="base4-10"]');await page.waitForTimeout(300);
  {const d={hit:/BAJO TU PRECIO/.test(await T('base4-10')),alert:await page.textContent('.cpAlert').catch(()=>''),first:(await ids())[0],toast:await page.textContent('#cpToast').catch(()=>'')};
  ok('Vigilar con precio objetivo: «¡BAJO TU PRECIO!», aviso arriba y confirmación «Guardada en Favoritos»',d.hit&&/🔔 1 carta/.test(d.alert)&&d.first==='base4-10'&&/Favoritos/.test(d.toast),JSON.stringify(d))}
  await page.click('.mainNav [data-tab="favoritos"]');await page.waitForSelector('#cpFavs #fav-base4-10',{timeout:30000});
@@ -81,7 +82,7 @@ const LOR={sets:[{id:'tfc',name:'The First Chapter'}]},LORSET={updatedAt:'2026-1
  await page.selectOption('[data-cp-fav="type"]','reg');await page.waitForTimeout(200);
  ok('Favoritos · Registradas vacío al principio',/Aún no has registrado/.test(await page.textContent('#cpFavs')));
  await page.selectOption('[data-cp-fav="type"]','all');await page.click('.mainNav [data-tab="radar"]');await page.waitForTimeout(300);
- await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 details.v4more').open=true});await page.click('#v4Buy #cp-base4-10 [data-cp-histload="273933"]');await page.waitForSelector('#v4Buy #cp-base4-10 svg.cpSpark');
+ await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 [data-cp-histload]').closest('details').open=true});/* V126: el primero es «Dónde comprarla» */await page.click('#v4Buy #cp-base4-10 [data-cp-histload="273933"]');await page.waitForSelector('#v4Buy #cp-base4-10 svg.cpSpark');
  ok('Historial de precio (guía diaria acumulada)',/150,00\s€ → 160,00\s€/.test(await page.textContent('#v4Buy #cp-base4-10 .cpHist')));
  await page.evaluate(()=>{document.querySelector('#v4Buy #cp-base4-10 [data-cp-lbuy]').closest('details').open=true});/* V118: antes va «Pegar datos de Cardmarket» */
  await page.fill('#v4Buy [data-cp-lbuy="base4-10|es"]','70');await page.fill('#v4Buy [data-cp-lsell="base4-10|es"]','180');await page.click('#v4Buy [data-cp-lsave="base4-10"]');await page.waitForTimeout(300);
