@@ -21,8 +21,26 @@ No representa todavía a Liora y no es su debut hiperrealista. Se conserva el te
 
 Antes de publicar: en Instagram, activar «Información de IA» solo si la pieza contiene elementos generados con IA (esta no los contiene); en TikTok, usar el sonido del propio vídeo (instrumental original), no sonidos de la biblioteca.
 
-## Primera publicación real · ESCENA 001 de Liora
-Pendiente: requiere la fotografía maestra aprobada, que solo está en el Safari de tu iPhone. Texto preparado:
+## Primera publicación real · ESCENA 001 «Mi primer maquillaje» · GENERADA — EN REVISIÓN
+Primer vídeo real de Liora: 4,1 s verticales 1080×1920 (H.264), generado con pesos oficiales de Wan 2.1 VACE 1.3B
+desde el maestro sellado de LIORA-VALE-0001, sin coste. Identidad verificada fotograma a fotograma
+(veredicto automático: misma identidad, mediana 0,180; rostro en el 100 % de los fotogramas).
+SHA-256 `f327893bbedd88d41f51ad34fcb160922edaedd050b01473c06175ba33e08216` · detalle: `evidencia-escena-001.json`.
+**Estado: NO PUBLICAR hasta que el propietario apruebe el render** (revisión visual de manos, ojos, piel y pincel) y
+después pase la revisión editorial final en Liora Studio → 5 · Publicaciones. Sin sonido: la música se añade en Montaje.
+
+**Instagram (Reel, portada `portada-escena-001.jpg`):**
+> Mi primer maquillaje ✨ Un toque de colorete y empezamos.
+> Liora Vale es una creadora virtual generada con IA. 🎨
+>
+> #lioravale #virtualinfluencer #makeup #blush #iagenerativa
+
+**TikTok:**
+> Mi primer maquillaje ✨ un toque de colorete y empezamos. Liora Vale es una creadora virtual generada con IA #lioravale #virtualcreator #makeuptok #blush
+
+Antes de publicar: marcar «contenido generado con IA» en Instagram y TikTok (obligatorio: es vídeo de IA).
+
+### Texto alternativo de presentación (si se prefiere debut con saludo)
 > Hola, soy Liora. Maquillaje, música y transformaciones imposibles. Bienvenida a mi tocador. 💄🎶 Liora Vale es una creadora virtual.
 > #lioravale #makeupartist #virtualinfluencer #fantasymakeup #makeup
 

@@ -1,0 +1,53 @@
+{
+  "format": "liora-evidencia-escena-v1",
+  "titulo": "ESCENA 001 · Mi primer maquillaje",
+  "archivo": "liora-escena-001-mi-primer-maquillaje.mp4",
+  "sha256": "f327893bbedd88d41f51ad34fcb160922edaedd050b01473c06175ba33e08216",
+  "generado": true,
+  "modelo": {
+    "repo": "Wan-AI/Wan2.1-VACE-1.3B-diffusers",
+    "commit": "ec4d2cb062b548996b179d493fdd05340de702a1",
+    "license": "apache-2.0"
+  },
+  "parametros": {
+    "fotogramas": 49,
+    "pasos": 14,
+    "resolucion_generada": "480×832",
+    "fps": 12,
+    "semilla": 20261019
+  },
+  "mp4": {
+    "resolucion": "1080×1920",
+    "duracion_s": 4.08,
+    "codec": "H.264 yuv420p",
+    "fotogramas": 49,
+    "problemas_safari": [],
+    "salud_fotogramas": {
+      "ok": true,
+      "issues": [],
+      "mean_luma": 78.4,
+      "max_motion": 15.2
+    }
+  },
+  "identidad": {
+    "veredicto": "pass",
+    "mediana": 0.1804,
+    "p90": 0.2401,
+    "rostro_en_fotogramas": 1.0,
+    "fotograma_a_fotograma": {
+      "ok": true,
+      "problems": [],
+      "coverage": 1.0,
+      "worst_run": 0,
+      "max": 0.245,
+      "sampled": 16
+    },
+    "maestro_sha256": "42a10b1fd68f8d3801fbfae2cf8eac56037bacf68e796d699fe27e96853e43d9",
+    "lock_sha256": "b096f5994adf505645e0e6269dc9f98196f6970def030c680a0b62f632c6bc05"
+  },
+  "continuidad": "review",
+  "estado": "REVISION",
+  "nota": "Pendiente de revisión visual humana (manos, ojos, piel y pincel)",
+  "generacion_s": 14405.7,
+  "terminado": "2026-11-12T02:30:58.911310+00:00"
+}
