@@ -71,6 +71,8 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=20261019)
     ap.add_argument("--wait-hours", type=float, default=0.0, help="Esperar hasta N horas a que huggingface.co sea accesible")
     ap.add_argument("--model-dir", help="Canalización local (pruebas): no descarga nada y la salida se marca test_only")
+    ap.add_argument("--first-frame", choices=["pin", "free"], default="pin",
+                    help="pin: el fotograma 1 es el maestro (cara desnuda, sin pincel). free: solo referencia de identidad; el modelo puede empezar con el pincel ya en la mejilla")
     ap.add_argument("--die-after", type=int, default=0, help="PRUEBAS: terminar en seco tras N pasos de esta ejecución (simula una suspensión del contenedor)")
     a = ap.parse_args()
     work = Path(a.work)
@@ -156,13 +158,17 @@ def main() -> int:
     pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
     pipe.vae.enable_tiling() if hasattr(pipe.vae, "enable_tiling") else None
     master = Image.open(a.master)
-    first = fit_cover(master, a.width, a.height)
     grey = Image.new("RGB", (a.width, a.height), (128, 128, 128))
-    video = [first] + [grey] * (nf - 1)
-    mask = [Image.new("L", (a.width, a.height), 0)] + [Image.new("L", (a.width, a.height), 255)] * (nf - 1)
+    white, black = Image.new("L", (a.width, a.height), 255), Image.new("L", (a.width, a.height), 0)
+    if a.first_frame == "pin":
+        video = [fit_cover(master, a.width, a.height)] + [grey] * (nf - 1)
+        mask = [black] + [white] * (nf - 1)
+    else:  # free: identidad solo por referencia; toda la escena la genera el modelo (el pincel puede empezar ya actuando)
+        video = [grey] * nf
+        mask = [white] * nf
 
     # Punto de control por paso: si el contenedor se suspende, se reanuda donde se quedó (se pierde a lo sumo el paso en curso).
-    fingerprint = hashlib.sha256(json.dumps([a.seed, a.steps, nf, a.width, a.height, a.guidance, a.cfg_steps, prompt, negative]).encode()).hexdigest()
+    fingerprint = hashlib.sha256(json.dumps([a.seed, a.steps, nf, a.width, a.height, a.guidance, a.cfg_steps, a.first_frame, prompt, negative]).encode()).hexdigest()
     base, full_ts, latents_in, guidance = 0, None, None, a.guidance
     if ckpt.exists():
         try:
