@@ -2,21 +2,6 @@
   "format": "liora-catalogo-v1",
   "items": [
     {
-      "file": "liora-escena-001-mi-primer-maquillaje.mp4",
-      "title": "ESCENA 001 · Mi primer maquillaje",
-      "kind": "liora",
-      "sha256": "f327893bbedd88d41f51ad34fcb160922edaedd050b01473c06175ba33e08216",
-      "mime": "video/mp4",
-      "width": 1080,
-      "height": 1920,
-      "duration": 4.08,
-      "thumb": "portada-escena-001.jpg",
-      "extras": ["portada-escena-001.jpg", "evidencia-escena-001.json"],
-      "platforms": ["Instagram", "TikTok"],
-      "identity": { "master_sha256": "42a10b1fd68f8d3801fbfae2cf8eac56037bacf68e796d699fe27e96853e43d9", "states": ["RENDER_PENDIENTE"] },
-      "caption": "Mi primer maquillaje ✨ Un toque de colorete y empezamos.\nLiora Vale es una creadora virtual generada con IA. 🎨\n\n#lioravale #virtualinfluencer #makeup #blush #iagenerativa"
-    },
-    {
       "file": "teaser-reina-del-eclipse.mp4",
       "title": "Teaser «La Reina del Eclipse»",
       "kind": "grafico",
@@ -26,8 +11,14 @@
       "height": 1920,
       "duration": 12.0,
       "thumb": "portada-9x16.jpg",
-      "extras": ["portada-9x16.jpg", "portada-4x5.jpg"],
-      "platforms": ["Instagram", "TikTok"],
+      "extras": [
+        "portada-9x16.jpg",
+        "portada-4x5.jpg"
+      ],
+      "platforms": [
+        "Instagram",
+        "TikTok"
+      ],
       "reserved": true,
       "reserved_reason": "RESERVADO — NO PUBLICAR POR AHORA: animación gráfica que todavía no representa a Liora. No es su debut hiperrealista.",
       "caption": "Cuando la luna cubra el sol, empezará la transformación. 🌑✨\nLa Reina del Eclipse · muy pronto.\nLiora Vale es una creadora virtual. Música original.\n\n#lioravale #makeuptransformation #fantasymakeup #eclipse #virtualinfluencer"

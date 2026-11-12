@@ -131,9 +131,8 @@ const teaser = finals.find(f => f.file === 'teaser-reina-del-eclipse.mp4');
 teaser?.state === 'NO PUBLICAR' && /RESERVADO/.test(teaser.reason) ? log('teaser: NO PUBLICAR ·', teaser.reason) : fail('teaser mal clasificado ' + JSON.stringify(teaser));
 const sc1 = finals.find(f => f.file.startsWith('liora-escena-001-') && f.file.endsWith('.webm'));
 sc1 && sc1.state === 'NO PUBLICAR' && /MP4/.test(sc1.reason) ? log('escena 001 (WebM de prueba):', sc1.state, '·', sc1.reason) : fail('escena 001 ' + JSON.stringify(sc1));
-// La ESCENA 001 real del catálogo: bloqueada hasta aprobar el render (con el candado de prueba, su maestro no coincide)
-const real1 = finals.find(f => f.file === 'liora-escena-001-mi-primer-maquillaje.mp4');
-real1 && real1.state === 'NO PUBLICAR' && /otra referencia|RENDER APROBADO/.test(real1.reason) ? log('escena 001 real:', real1.state, '·', real1.reason) : fail('escena 001 real ' + JSON.stringify(real1));
+// Un render rechazado por el propietario no aparece en Publicaciones (la v1 de ESCENA 001 se retiró del catálogo)
+finals.some(f => f.file === 'liora-escena-001-mi-primer-maquillaje.mp4') ? fail('la versión rechazada sigue en Publicaciones') : log('la versión rechazada no está en Publicaciones');
 const mst = finals.find(f => /^liora-la-reina-del-eclipse\./.test(f.file));
 mst?.state === 'REVISAR' ? log('máster (candado de prueba, escenas con RENDER APROBADO):', mst.state, '·', mst.reason) : fail('máster ' + JSON.stringify(mst));
 finals.every(f => f.dl) ? log(finals.length, 'archivos finales con enlace de descarga') : fail('falta enlace de descarga');

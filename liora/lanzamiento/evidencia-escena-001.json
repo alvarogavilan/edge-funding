@@ -46,8 +46,8 @@
     "lock_sha256": "b096f5994adf505645e0e6269dc9f98196f6970def030c680a0b62f632c6bc05"
   },
   "continuidad": "review",
-  "estado": "REVISION",
-  "nota": "Pendiente de revisión visual humana (manos, ojos, piel y pincel)",
+  "estado": "RECHAZADO",
+  "nota": "Rechazado por el propietario en la revisión visual: el maquillaje no se aprecia y el clip es demasiado corto. Se regenerará más largo y con la acción visible (GPU).",
   "generacion_s": 14405.7,
   "terminado": "2026-11-12T02:30:58.911310+00:00"
 }
