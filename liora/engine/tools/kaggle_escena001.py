@@ -65,6 +65,8 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=20261112)
     ap.add_argument("--upload-master", action="store_true",
                     help="Crea el dataset privado con el maestro si no existe (solo con autorización expresa del propietario)")
+    ap.add_argument("--resume", action="store_true",
+                    help="No empuja nada: se reengancha al kernel ya en marcha (p. ej., tras un reinicio del contenedor)")
     a = ap.parse_args()
     work = Path(a.work)
     work.mkdir(parents=True, exist_ok=True)
@@ -87,8 +89,10 @@ def main() -> int:
 
     user = username()
     ds = f"{user}/{DATASET_SLUG}"
-    st = kaggle("datasets", "status", ds, check=False)
-    if "ready" not in (st.stdout + st.stderr).lower():
+    if a.resume:
+        log(work, "Modo reanudación: sin empujar; esperando al kernel ya en marcha")
+    st = kaggle("datasets", "status", ds, check=False) if not a.resume else None
+    if st is not None and "ready" not in (st.stdout + st.stderr).lower():
         if not a.upload_master:
             return finish("bloqueado_dataset", error=f"El dataset privado {ds} con el maestro no existe en Kaggle. "
                           "Crearlo exige la autorización expresa del propietario: vuelve a ejecutar con --upload-master.")
@@ -108,21 +112,22 @@ def main() -> int:
     cfg = json.loads(pipeline.STAGES_FILE.read_text(encoding="utf-8"))
     prompt = pipeline.SCENE001_PROMPT.format(identity=cfg["identity_text"])
     ev.update(prompt=prompt, negative_prompt=cfg["negative_prompt"])
-    kdir = work / "kernel"
-    kdir.mkdir(exist_ok=True)
-    params = {"frames": a.frames, "steps": a.steps, "guidance": a.guidance, "fps": a.fps, "seed": a.seed,
-              "width": 480, "height": 832, "prompt": prompt, "negative": cfg["negative_prompt"]}
-    src = KERNEL_SRC.read_text(encoding="utf-8")
-    marker = "PARAMS_INLINE = None"
-    if marker not in src:
-        return finish("error_generacion", error="El kernel no tiene el marcador PARAMS_INLINE")
-    # un script de Kaggle solo sube su propio archivo: los parámetros van incrustados en el código
-    (kdir / "kernel.py").write_text(src.replace(marker, "PARAMS_INLINE = json.loads(" + repr(json.dumps(params, ensure_ascii=False)) + ")", 1), encoding="utf-8")
-    (kdir / "kernel-metadata.json").write_text(json.dumps({
-        "id": f"{user}/{KERNEL_SLUG}", "title": KERNEL_SLUG, "code_file": "kernel.py", "language": "python",
-        "kernel_type": "script", "is_private": True, "enable_gpu": True, "enable_internet": True,
-        "dataset_sources": [ds], "competition_sources": [], "kernel_sources": []}, indent=2))
-    log(work, kaggle("kernels", "push", "-p", str(kdir)).stdout.strip())
+    if not a.resume:
+        kdir = work / "kernel"
+        kdir.mkdir(exist_ok=True)
+        params = {"frames": a.frames, "steps": a.steps, "guidance": a.guidance, "fps": a.fps, "seed": a.seed,
+                  "width": 480, "height": 832, "prompt": prompt, "negative": cfg["negative_prompt"]}
+        src = KERNEL_SRC.read_text(encoding="utf-8")
+        marker = "PARAMS_INLINE = None"
+        if marker not in src:
+            return finish("error_generacion", error="El kernel no tiene el marcador PARAMS_INLINE")
+        # un script de Kaggle solo sube su propio archivo: los parámetros van incrustados en el código
+        (kdir / "kernel.py").write_text(src.replace(marker, "PARAMS_INLINE = json.loads(" + repr(json.dumps(params, ensure_ascii=False)) + ")", 1), encoding="utf-8")
+        (kdir / "kernel-metadata.json").write_text(json.dumps({
+            "id": f"{user}/{KERNEL_SLUG}", "title": KERNEL_SLUG, "code_file": "kernel.py", "language": "python",
+            "kernel_type": "script", "is_private": True, "enable_gpu": True, "enable_internet": True,
+            "dataset_sources": [ds], "competition_sources": [], "kernel_sources": []}, indent=2))
+        log(work, kaggle("kernels", "push", "-p", str(kdir)).stdout.strip())
 
     ref = f"{user}/{KERNEL_SLUG}"
     t0 = time.time()
