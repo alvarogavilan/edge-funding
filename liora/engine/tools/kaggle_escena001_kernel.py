@@ -3,9 +3,12 @@
 # propietario y se verifica por su huella SHA-256 antes de generar nada.
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import time
+
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")  # evita la fragmentación de VRAM
 
 MASTER_SHA = "42a10b1fd68f8d3801fbfae2cf8eac56037bacf68e796d699fe27e96853e43d9"
 REPO = "Wan-AI/Wan2.1-VACE-1.3B-diffusers"
@@ -68,7 +71,8 @@ pipe = WanVACEPipeline.from_pretrained(REPO, text_encoder=None, tokenizer=None, 
 pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config, flow_shift=3.0)
 pipe.to("cuda")
 pipe.vae.to(dtype=torch.float32)
-ev["model"] = {"repo": REPO, "dtype": "float16 (VAE float32)"}
+pipe.vae.enable_tiling()  # sin tiling, decodificar 81 fotogramas en fp32 desborda los 14,5 GB de la T4
+ev["model"] = {"repo": REPO, "dtype": "float16 (VAE float32 + tiling)"}
 log("canalización en GPU")
 
 nf, w, hgt = P["frames"], P["width"], P["height"]
@@ -80,6 +84,12 @@ mask = [Image.new("L", (w, hgt), 255)] * nf
 
 def on_step(p, i, t, kw):
     log(f"paso {i + 1}/{P['steps']}")
+    if i + 1 == P["steps"]:
+        # difusión completa: guardar los latentes (por si la decodificación fallara) y liberar VRAM para el VAE
+        torch.save(kw["latents"].detach().cpu(), WORK / "latents.pt")
+        p.transformer.to("cpu")
+        torch.cuda.empty_cache()
+        log("latentes guardados; transformador fuera de la GPU para decodificar")
     return kw
 
 
