@@ -63,6 +63,8 @@ def main() -> int:
     ap.add_argument("--guidance", type=float, default=5.0)
     ap.add_argument("--fps", type=int, default=12)
     ap.add_argument("--seed", type=int, default=20261112)
+    ap.add_argument("--first-frame", choices=["pin", "free"], default="pin",
+                    help="pin ancla la identidad con el maestro como fotograma 1 (free demostró perder la identidad: mediana 0,66)")
     ap.add_argument("--upload-master", action="store_true",
                     help="Crea el dataset privado con el maestro si no existe (solo con autorización expresa del propietario)")
     ap.add_argument("--resume", action="store_true",
@@ -116,7 +118,7 @@ def main() -> int:
         kdir = work / "kernel"
         kdir.mkdir(exist_ok=True)
         params = {"frames": a.frames, "steps": a.steps, "guidance": a.guidance, "fps": a.fps, "seed": a.seed,
-                  "width": 480, "height": 832, "prompt": prompt, "negative": cfg["negative_prompt"]}
+                  "width": 480, "height": 832, "first_frame": a.first_frame, "prompt": prompt, "negative": cfg["negative_prompt"]}
         src = KERNEL_SRC.read_text(encoding="utf-8")
         marker = "PARAMS_INLINE = None"
         if marker not in src:

@@ -78,8 +78,14 @@ log("canalización en GPU")
 nf, w, hgt = P["frames"], P["width"], P["height"]
 master = Image.open(master_path).convert("RGB")
 grey = Image.new("RGB", (w, hgt), (128, 128, 128))
-video = [grey] * nf  # identidad solo por referencia: toda la escena es acción
-mask = [Image.new("L", (w, hgt), 255)] * nf
+white, black = Image.new("L", (w, hgt), 255), Image.new("L", (w, hgt), 0)
+if P.get("first_frame", "pin") == "pin":
+    # El fotograma 1 fijado al maestro es lo que ancla la identidad (comprobado: solo-referencia da OTRO rostro, mediana 0,66)
+    video = [ImageOps.fit(master, (w, hgt), centering=(0.5, 0.4))] + [grey] * (nf - 1)
+    mask = [black] + [white] * (nf - 1)
+else:
+    video = [grey] * nf
+    mask = [white] * nf
 
 
 def on_step(p, i, t, kw):

@@ -62,9 +62,9 @@ def plan(official_image: str, identity_pack: str, *, project: str = "Liora", sce
 
 
 # ESCENA 001 · «Mi primer maquillaje»: primer plano de la auténtica Liora (primer fotograma y referencia = maestro sellado).
-SCENE001_PROMPT = ("Vertical close-up beauty tutorial shot of {identity}. From the very first frame her right hand holds a large fluffy makeup brush "
-                   "loaded with rosy pink blush powder, the bristles already resting on her right cheekbone. She looks into the camera with a warm smile "
-                   "and sweeps the brush over her cheekbone in wide, clearly visible circular strokes; with each pass the rosy pink blush becomes clearly "
+SCENE001_PROMPT = ("Vertical close-up beauty tutorial shot of {identity}. She immediately raises her right hand holding a large fluffy makeup brush "
+                   "loaded with rosy pink blush powder and presses the bristles onto her right cheekbone. Looking into the camera with a warm smile, "
+                   "she sweeps the brush over her cheekbone in wide, clearly visible circular strokes; with each pass the rosy pink blush becomes clearly "
                    "visible on her cheek, a strong rosy flush building up where the bristles touch, a few pink powder particles falling from the brush. "
                    "Large expressive hand and arm movement, natural blinking, elegant professional studio lighting with a soft key light, neutral "
                    "blue-grey studio background, bare shoulders, cinematic shallow depth of field. Anatomically correct hand with five fingers, natural "
